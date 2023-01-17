@@ -15,4 +15,5 @@ if( NOT LIB_VULKAN)
 	message(FATAL_ERROR "Could not find vulkan")
 endif()
 
-add_subdirectory(src)
+add_executable(kaleidoscope src/main.cpp)
+target_link_libraries(kaleidoscope ${LIB_GLFW} ${LIB_VULKAN})
