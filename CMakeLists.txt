@@ -43,7 +43,22 @@ function(compile_shader)
 		DEPENDS ${FULL_OUTPUT_FILE_NAME})
 endfunction()
 
-add_executable(kaleidoscope src/main.cpp)
+file(GLOB_RECURSE SOURCES "src/*.cpp")
+file(GLOB_RECURSE HEADERS "src/*.h")
+
+set(INCLUDE_DIRS "")
+foreach(HEADER ${HEADERS})
+	get_filename_component(TEMP_DIR ${HEADER} PATH)
+	list(APPEND INCLUDE_DIRS ${TEMP_DIR})
+endforeach()
+list(REMOVE_DUPLICATES INCLUDE_DIRS)
+
+message(STATUS "include dirs are ${INCLUDE_DIRS}")
+message(STATUS "sources are ${SOURCES}")
+
+include_directories(${HEADERS})
+
+add_executable(kaleidoscope ${SOURCES})
+target_include_directories(kaleidoscope PRIVATE ${INCLUDE_DIRS})
 target_link_libraries(kaleidoscope ${LIB_GLFW} ${LIB_VULKAN})
 
-add_subdirectory(src/shaders)
