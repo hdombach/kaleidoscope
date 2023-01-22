@@ -18,8 +18,8 @@ namespace vulkan {
 
 	class Instance {
 		public:
-			static SharedInstance create_shared(VkInstanceCreateInfo &createInfo);
-			static UniqueInstance create_unique(VkInstanceCreateInfo &createInfo);
+			static SharedInstance createShared(VkInstanceCreateInfo &createInfo);
+			static UniqueInstance createUnique(VkInstanceCreateInfo &createInfo);
 			VkInstance& operator*();
 			~Instance();
 
@@ -34,8 +34,8 @@ namespace vulkan {
 			InstanceFactory();
 
 			InstanceFactory &default_config();
-			SharedInstance create_shared();
-			UniqueInstance create_unique();
+			SharedInstance createShared();
+			UniqueInstance createUnique();
 
 		private:
 			void loadRequiredExtensions();

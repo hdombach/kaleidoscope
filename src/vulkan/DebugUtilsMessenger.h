@@ -19,8 +19,8 @@ namespace vulkan {
 
 	class DebugUtilsMessenger {
 		public:
-			static SharedDebugUtilsMessenger create_shared(VkDebugUtilsMessengerCreateInfoEXT &createInfo, SharedInstance instance);
-			static UniqueDebugUtilsMessenger create_unique(VkDebugUtilsMessengerCreateInfoEXT &createInfo, SharedInstance instance);
+			static SharedDebugUtilsMessenger createShared(VkDebugUtilsMessengerCreateInfoEXT &createInfo, SharedInstance instance);
+			static UniqueDebugUtilsMessenger createUnique(VkDebugUtilsMessengerCreateInfoEXT &createInfo, SharedInstance instance);
 			VkDebugUtilsMessengerEXT& operator*();
 			~DebugUtilsMessenger();
 
@@ -37,8 +37,8 @@ namespace vulkan {
 			DebugUtilsMessengerFactory(SharedInstance instance);
 
 			DebugUtilsMessengerFactory &default_config();
-			SharedDebugUtilsMessenger create_shared();
-			UniqueDebugUtilsMessenger create_unique();
+			SharedDebugUtilsMessenger createShared();
+			UniqueDebugUtilsMessenger createUnique();
 			VkDebugUtilsMessengerCreateInfoEXT createInfo();
 
 		private:

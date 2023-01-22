@@ -66,7 +66,6 @@ class KaleidoscopeApplication {
 		void initWindow();
 
 		void initVulkan();
-		void createInstance();
 		void setupDebugMessenger();
 		void pickPhysicalDevice();
 		bool isDeviceSuitable(VkPhysicalDevice device);
@@ -158,9 +157,9 @@ void KaleidoscopeApplication::initWindow() {
 }
 
 void KaleidoscopeApplication::initVulkan() {
-	instance = vulkan::InstanceFactory().default_config().create_shared();
+	instance = vulkan::InstanceFactory().default_config().createShared();
 	if (vulkan::ENABLE_VALIDATION_LAYERS) {
-		debugMessenger = vulkan::DebugUtilsMessengerFactory(instance).default_config().create_shared();
+		debugMessenger = vulkan::DebugUtilsMessengerFactory(instance).default_config().createShared();
 	}
 	createSurface();
 	pickPhysicalDevice();

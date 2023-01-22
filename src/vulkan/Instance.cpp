@@ -6,11 +6,11 @@
 #include <iostream>
 
 namespace vulkan {
-	std::shared_ptr<Instance> Instance::create_shared(VkInstanceCreateInfo &createInfo) {
+	std::shared_ptr<Instance> Instance::createShared(VkInstanceCreateInfo &createInfo) {
 		return std::shared_ptr<Instance>(new Instance(createInfo));
 	}
 
-	std::unique_ptr<Instance> Instance::create_unique(VkInstanceCreateInfo &createInfo) {
+	std::unique_ptr<Instance> Instance::createUnique(VkInstanceCreateInfo &createInfo) {
 		return std::unique_ptr<Instance>(new Instance(createInfo));
 	}
 
@@ -73,12 +73,12 @@ namespace vulkan {
 		return *this;
 	}
 
-	SharedInstance InstanceFactory::create_shared() {
-		return Instance::create_shared(createInfo);
+	SharedInstance InstanceFactory::createShared() {
+		return Instance::createShared(createInfo);
 	}
 
-	UniqueInstance InstanceFactory::create_unique() {
-		return Instance::create_unique(createInfo);
+	UniqueInstance InstanceFactory::createUnique() {
+		return Instance::createUnique(createInfo);
 	}
 
 	void InstanceFactory::loadRequiredExtensions() {

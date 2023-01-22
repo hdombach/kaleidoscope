@@ -15,11 +15,11 @@ namespace vulkan {
 		return VK_FALSE;
 	}
 
-	SharedDebugUtilsMessenger DebugUtilsMessenger::create_shared(VkDebugUtilsMessengerCreateInfoEXT &createInfo, SharedInstance instance) {
+	SharedDebugUtilsMessenger DebugUtilsMessenger::createShared(VkDebugUtilsMessengerCreateInfoEXT &createInfo, SharedInstance instance) {
 		return SharedDebugUtilsMessenger(new DebugUtilsMessenger(createInfo, instance));
 	}
 
-	UniqueDebugUtilsMessenger DebugUtilsMessenger::create_unique(VkDebugUtilsMessengerCreateInfoEXT &createInfo, SharedInstance instance) {
+	UniqueDebugUtilsMessenger DebugUtilsMessenger::createUnique(VkDebugUtilsMessengerCreateInfoEXT &createInfo, SharedInstance instance) {
 		return UniqueDebugUtilsMessenger(new DebugUtilsMessenger(createInfo, instance));
 	}
 
@@ -74,12 +74,12 @@ namespace vulkan {
 		return *this;
 	}
 
-	SharedDebugUtilsMessenger DebugUtilsMessengerFactory::create_shared() {
-		return DebugUtilsMessenger::create_shared(createInfo_, instance_);
+	SharedDebugUtilsMessenger DebugUtilsMessengerFactory::createShared() {
+		return DebugUtilsMessenger::createShared(createInfo_, instance_);
 	}
 
-	UniqueDebugUtilsMessenger DebugUtilsMessengerFactory::create_unique() {
-		return DebugUtilsMessenger::create_unique(createInfo_, instance_);
+	UniqueDebugUtilsMessenger DebugUtilsMessengerFactory::createUnique() {
+		return DebugUtilsMessenger::createUnique(createInfo_, instance_);
 	}
 
 	VkDebugUtilsMessengerCreateInfoEXT DebugUtilsMessengerFactory::createInfo() {
