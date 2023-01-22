@@ -37,7 +37,7 @@ namespace vulkan {
 		createInfo.pApplicationInfo = &appInfo;
 	};
 
-	InstanceFactory &InstanceFactory::default_config() {
+	InstanceFactory &InstanceFactory::defaultConfig() {
 		if (vulkan::ENABLE_VALIDATION_LAYERS) {
 			if (checkValidationLayerSupport()) {
 				std::cout << "Validation layer enabled" << std::endl;

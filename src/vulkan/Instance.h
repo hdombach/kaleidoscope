@@ -33,7 +33,7 @@ namespace vulkan {
 		public:
 			InstanceFactory();
 
-			InstanceFactory &default_config();
+			InstanceFactory &defaultConfig();
 			SharedInstance createShared();
 			UniqueInstance createUnique();
 

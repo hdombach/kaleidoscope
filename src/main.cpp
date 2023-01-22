@@ -1,6 +1,7 @@
 #include "DebugUtilsMessenger.h"
 #include "Defs.h"
 #include "Instance.h"
+#include "Window.h"
 #include "vulkan/vk_platform.h"
 #include "vulkan/vulkan_core.h"
 #include <_types/_uint32_t.h>
@@ -102,7 +103,7 @@ class KaleidoscopeApplication {
 
 		const uint32_t WIDTH = 800;
 		const uint32_t HEIGHT = 600;
-		GLFWwindow* window;
+		vulkan::SharedWindow window;
 		vulkan::SharedInstance instance;
 		vulkan::SharedDebugUtilsMessenger debugMessenger;
 		VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
@@ -141,23 +142,15 @@ class KaleidoscopeApplication {
 };
 
 void KaleidoscopeApplication::run() {
-	initWindow();
+	glfwInit();
+	window = vulkan::WindowFactory().defaultSetup().createShared();
 	initVulkan();
 	mainLoop();
 	cleanup();
 }
 
-void KaleidoscopeApplication::initWindow() {
-	glfwInit();
-
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-	window = glfwCreateWindow(WIDTH, HEIGHT, "Kaleidoscope", nullptr, nullptr);
-}
-
 void KaleidoscopeApplication::initVulkan() {
-	instance = vulkan::InstanceFactory().default_config().createShared();
+	instance = vulkan::InstanceFactory().defaultConfig().createShared();
 	if (vulkan::ENABLE_VALIDATION_LAYERS) {
 		debugMessenger = vulkan::DebugUtilsMessengerFactory(instance).default_config().createShared();
 	}
@@ -175,7 +168,7 @@ void KaleidoscopeApplication::initVulkan() {
 }
 
 void KaleidoscopeApplication::mainLoop() {
-	while (!glfwWindowShouldClose(window)) {
+	while (!glfwWindowShouldClose(**window)) {
 		glfwPollEvents();
 		drawFrame();
 	}
@@ -205,8 +198,6 @@ void KaleidoscopeApplication::cleanup() {
 	vkDestroyDevice(device, nullptr);
 
 	vkDestroySurfaceKHR(**instance, surface, nullptr);
-
-	glfwDestroyWindow(window);
 
 	glfwTerminate();
 }
@@ -822,7 +813,7 @@ VkExtent2D KaleidoscopeApplication::chooseSwapExtent(const VkSurfaceCapabilities
 		return capabilities.currentExtent;
 	} else {
 		int width, height;
-		glfwGetFramebufferSize(window, &width, &height);
+		glfwGetFramebufferSize(**window, &width, &height);
 
 		VkExtent2D actualExtent = {
 			static_cast<uint32_t>(width),
@@ -843,7 +834,7 @@ VkExtent2D KaleidoscopeApplication::chooseSwapExtent(const VkSurfaceCapabilities
 }
 
 void KaleidoscopeApplication::createSurface() {
-	if (glfwCreateWindowSurface(**instance, window, nullptr, &surface) != VK_SUCCESS) {
+	if (glfwCreateWindowSurface(**instance, **window, nullptr, &surface) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create window surface!");
 	}
 }
