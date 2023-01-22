@@ -1,6 +1,7 @@
 #include "DebugUtilsMessenger.h"
 #include "Defs.h"
 #include "Instance.h"
+#include "Surface.h"
 #include "Window.h"
 #include "vulkan/vk_platform.h"
 #include "vulkan/vulkan_core.h"
@@ -67,7 +68,6 @@ class KaleidoscopeApplication {
 		void initWindow();
 
 		void initVulkan();
-		void setupDebugMessenger();
 		void pickPhysicalDevice();
 		bool isDeviceSuitable(VkPhysicalDevice device);
 		bool checkDeviceExtensionSupport(VkPhysicalDevice device);
@@ -86,7 +86,6 @@ class KaleidoscopeApplication {
 
 		void mainLoop();
 		void cleanup();
-		void createSurface();
 		QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 		SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 		VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
@@ -110,7 +109,7 @@ class KaleidoscopeApplication {
 		VkDevice device;
 		VkQueue graphicsQueue;
 		VkQueue presentQueue;
-		VkSurfaceKHR surface;
+		vulkan::SharedSurface surface;
 		VkSwapchainKHR swapChain;
 		std::vector<VkImage> swapChainImages;
 		VkFormat swapChainImageFormat;
@@ -154,7 +153,7 @@ void KaleidoscopeApplication::initVulkan() {
 	if (vulkan::ENABLE_VALIDATION_LAYERS) {
 		debugMessenger = vulkan::DebugUtilsMessengerFactory(instance).default_config().createShared();
 	}
-	createSurface();
+	surface = vulkan::Surface::createShared(instance, window);
 	pickPhysicalDevice();
 	createLogicalDevice();
 	createSwapChain();
@@ -196,8 +195,6 @@ void KaleidoscopeApplication::cleanup() {
 	vkDestroySwapchainKHR(device, swapChain, nullptr);
 
 	vkDestroyDevice(device, nullptr);
-
-	vkDestroySurfaceKHR(**instance, surface, nullptr);
 
 	glfwTerminate();
 }
@@ -323,7 +320,7 @@ void KaleidoscopeApplication::createSwapChain() {
 
 	VkSwapchainCreateInfoKHR createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	createInfo.surface = surface;
+	createInfo.surface = **surface;
 
 	createInfo.minImageCount = imageCount;
 	createInfo.imageFormat = surfaceFormat.format;
@@ -748,7 +745,7 @@ QueueFamilyIndices KaleidoscopeApplication::findQueueFamilies(VkPhysicalDevice d
 		}
 
 		VkBool32 presentSupport = false;
-		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, **surface, &presentSupport);
 
 		if (presentSupport) {
 			indices.presentFamily = i;
@@ -767,22 +764,22 @@ QueueFamilyIndices KaleidoscopeApplication::findQueueFamilies(VkPhysicalDevice d
 SwapChainSupportDetails KaleidoscopeApplication::querySwapChainSupport(VkPhysicalDevice device) {
 	SwapChainSupportDetails details;
 
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, **surface, &details.capabilities);
 
 	uint32_t formatCount;
-	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device, **surface, &formatCount, nullptr);
 
 	if (formatCount != 0) {
 		details.formats.resize(formatCount);
-		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, **surface, &formatCount, details.formats.data());
 	}
 
 	uint32_t presentModeCount;
-	vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device, **surface, &presentModeCount, nullptr);
 
 	if (presentModeCount != 0) {
 		details.presentModes.resize(presentModeCount);
-		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, **surface, &presentModeCount, details.presentModes.data());
 	}
 
 	return details;
@@ -830,12 +827,6 @@ VkExtent2D KaleidoscopeApplication::chooseSwapExtent(const VkSurfaceCapabilities
 				capabilities.maxImageExtent.height);
 
 		return actualExtent;
-	}
-}
-
-void KaleidoscopeApplication::createSurface() {
-	if (glfwCreateWindowSurface(**instance, **window, nullptr, &surface) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create window surface!");
 	}
 }
 
