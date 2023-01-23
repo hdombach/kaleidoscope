@@ -1,6 +1,7 @@
 #include "DebugUtilsMessenger.h"
 #include "Defs.h"
 #include "Instance.h"
+#include "PhysicalDevice.h"
 #include "Surface.h"
 #include "Window.h"
 #include "vulkan/vk_platform.h"
@@ -65,12 +66,7 @@ class KaleidoscopeApplication {
 		void run();
 
 	private:
-		void initWindow();
-
 		void initVulkan();
-		void pickPhysicalDevice();
-		bool isDeviceSuitable(VkPhysicalDevice device);
-		bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 		void createLogicalDevice();
 		void createSwapChain();
 		void createImageViews();
@@ -105,7 +101,7 @@ class KaleidoscopeApplication {
 		vulkan::SharedWindow window;
 		vulkan::SharedInstance instance;
 		vulkan::SharedDebugUtilsMessenger debugMessenger;
-		VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+		vulkan::PhysicalDevice physicalDevice;
 		VkDevice device;
 		VkQueue graphicsQueue;
 		VkQueue presentQueue;
@@ -154,7 +150,7 @@ void KaleidoscopeApplication::initVulkan() {
 		debugMessenger = vulkan::DebugUtilsMessengerFactory(instance).default_config().createShared();
 	}
 	surface = vulkan::Surface::createShared(instance, window);
-	pickPhysicalDevice();
+	physicalDevice = vulkan::PhysicalDeviceFactory(surface, instance).pickDevice();
 	createLogicalDevice();
 	createSwapChain();
 	createImageViews();
@@ -199,64 +195,10 @@ void KaleidoscopeApplication::cleanup() {
 	glfwTerminate();
 }
 
-void KaleidoscopeApplication::pickPhysicalDevice() {
-	uint32_t deviceCount = 0;
-	vkEnumeratePhysicalDevices(**instance, &deviceCount, nullptr);
-	
-	if (deviceCount == 0) {
-		throw std::runtime_error("failed to find GPUs with Vulkan support!");
-	}
-
-	std::vector<VkPhysicalDevice> devices(deviceCount);
-	vkEnumeratePhysicalDevices(**instance, &deviceCount, devices.data());
-
-	for (const auto& device : devices) {
-		if (isDeviceSuitable(device)) {
-			physicalDevice = device;
-			break;
-		}
-	}
-
-	if (physicalDevice == VK_NULL_HANDLE) {
-		throw std::runtime_error("failed to find a suitable GPU!");
-	}
-}
-
-bool KaleidoscopeApplication::isDeviceSuitable(VkPhysicalDevice device) {
-	QueueFamilyIndices indices = findQueueFamilies(device);
-
-	bool extensionsSupported = checkDeviceExtensionSupport(device);
-
-	bool swapChainAdequate = false;
-	if (extensionsSupported) {
-		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
-		swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
-	}
-
-	return indices.isComplete() && extensionsSupported && swapChainAdequate;
-}
-
-bool KaleidoscopeApplication::checkDeviceExtensionSupport(VkPhysicalDevice device) {
-	uint32_t extensionCount;
-	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-
-	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
-
-	std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
-
-	for (const auto& extension : availableExtensions) {
-		requiredExtensions.erase(extension.extensionName);
-	}
-
-	return requiredExtensions.empty();
-}
-
 void KaleidoscopeApplication::createLogicalDevice() {
-	QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+	auto uniqueQueueFamilies = physicalDevice.queueFamilies();
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
 	float queuePriority = 1.0f;
 	for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -294,28 +236,26 @@ void KaleidoscopeApplication::createLogicalDevice() {
 		createInfo.enabledLayerCount = 0;
 	}
 
-	if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
+	if (vkCreateDevice(*physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create logical device!");
 	}
 
-	vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
-	vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+	vkGetDeviceQueue(device, physicalDevice.graphicsQueueFamily().value(), 0, &graphicsQueue);
+	vkGetDeviceQueue(device, physicalDevice.presentQueueFamily().value(), 0, &presentQueue);
 }
 
 void KaleidoscopeApplication::createSwapChain() {
-	SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
+	VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(physicalDevice.surfaceFormats());
 
-	VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
+	VkPresentModeKHR presentMode = chooseSwapPresentMode(physicalDevice.presentModes());
 
-	VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
+	VkExtent2D extent = chooseSwapExtent(physicalDevice.surfaceCapabilities());
 
-	VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
+	uint32_t imageCount = physicalDevice.surfaceCapabilities().minImageCount + 1;
 
-	uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-
-	if (swapChainSupport.capabilities.maxImageCount > 0 &&
-			imageCount > swapChainSupport.capabilities.maxImageCount) {
-		imageCount = swapChainSupport.capabilities.maxImageCount;
+	if (physicalDevice.surfaceCapabilities().maxImageCount > 0 &&
+			imageCount > physicalDevice.surfaceCapabilities().maxImageCount) {
+		imageCount = physicalDevice.surfaceCapabilities().maxImageCount;
 	}
 
 	VkSwapchainCreateInfoKHR createInfo{};
@@ -329,10 +269,9 @@ void KaleidoscopeApplication::createSwapChain() {
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-	uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+	uint32_t queueFamilyIndices[] = {physicalDevice.graphicsQueueFamily().value(), physicalDevice.presentQueueFamily().value()};
 
-	if (indices.graphicsFamily != indices.presentFamily) {
+	if (physicalDevice.graphicsQueueFamily() != physicalDevice.presentQueueFamily()) {
 		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		createInfo.queueFamilyIndexCount = 2;
 		createInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -341,7 +280,7 @@ void KaleidoscopeApplication::createSwapChain() {
 		createInfo.queueFamilyIndexCount = 0;
 		createInfo.pQueueFamilyIndices = nullptr;
 	}
-	createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+	createInfo.preTransform = physicalDevice.surfaceCapabilities().currentTransform;
 	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	createInfo.presentMode = presentMode;
 	createInfo.clipped = VK_TRUE;
@@ -598,12 +537,10 @@ void KaleidoscopeApplication::createFramebuffers() {
 }
 
 void KaleidoscopeApplication::createCommandPool() {
-	QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
-
 	VkCommandPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+	poolInfo.queueFamilyIndex = physicalDevice.graphicsQueueFamily().value();
 
 	if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create command pool!");
