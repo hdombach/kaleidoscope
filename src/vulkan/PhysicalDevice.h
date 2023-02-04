@@ -2,6 +2,7 @@
 
 #include "Instance.h"
 #include "Surface.h"
+#include "Window.h"
 #include "vulkan/vulkan_core.h"
 #include <_types/_uint32_t.h>
 #include <optional>
@@ -19,6 +20,10 @@ namespace vulkan {
 			std::vector<VkSurfaceFormatKHR> surfaceFormats();
 			std::vector<VkPresentModeKHR> presentModes();
 			bool isSuitable();
+			VkExtent2D chooseSwapExtent(SharedWindow window);
+
+			VkSurfaceFormatKHR chooseSwapSurfaceFormat();
+			VkPresentModeKHR chooseSwapPresentModes();
 
 			VkPhysicalDevice &operator*();
 

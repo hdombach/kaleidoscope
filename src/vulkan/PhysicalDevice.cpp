@@ -3,6 +3,7 @@
 #include "Instance.h"
 #include "Surface.h"
 #include "vulkan/vulkan_core.h"
+#include <limits>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -107,6 +108,52 @@ namespace vulkan {
 			presentQueueFamily_.has_value() &&
 			!surfaceFormats_.empty() &&
 			!presentModes_.empty();
+	}
+
+	VkExtent2D PhysicalDevice::chooseSwapExtent(SharedWindow window) {
+		auto capabilities = surfaceCapabilities();
+		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+			return capabilities.currentExtent;
+		} else {
+			int width, height;
+			glfwGetFramebufferSize(**window, &width, &height);
+
+			VkExtent2D actualExtent = {
+				static_cast<uint32_t>(width),
+				static_cast<uint32_t>(height)
+			};
+
+			actualExtent.width = std::clamp(
+					actualExtent.width,
+					capabilities.minImageExtent.width,
+					capabilities.maxImageExtent.width);
+			actualExtent.height = std::clamp(
+					actualExtent.height,
+					capabilities.minImageExtent.height,
+					capabilities.maxImageExtent.height);
+
+			return actualExtent;
+		}
+	}
+
+	VkSurfaceFormatKHR PhysicalDevice::chooseSwapSurfaceFormat() {
+		for (const auto& availableFormat : surfaceFormats_) {
+			if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
+					availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+				return availableFormat;
+			}
+		}
+		
+		return surfaceFormats_[0];
+	}
+
+	VkPresentModeKHR PhysicalDevice::chooseSwapPresentModes() {
+		for (const auto& availablePresentMode : presentModes_) {
+			if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+				return availablePresentMode;
+			}
+		}
+		return VK_PRESENT_MODE_FIFO_KHR;
 	}
 
 	VkPhysicalDevice &PhysicalDevice::operator*() {
