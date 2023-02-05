@@ -1,6 +1,7 @@
 #include "Swapchain.h"
 #include "Device.h"
 #include "Error.h"
+#include "ImageView.h"
 #include "Surface.h"
 #include "Window.h"
 #include "vulkan/vulkan_core.h"
@@ -53,6 +54,10 @@ namespace vulkan {
 		return images_;
 	}
 
+	std::vector<SharedImageView> Swapchain::imageViews() {
+		return imageViews_;
+	}
+
 	Swapchain::Swapchain(
 			VkSwapchainCreateInfoKHR &createInfo,
 			SharedDevice device,
@@ -71,6 +76,11 @@ namespace vulkan {
 
 		imageFormat_ = createInfo.imageFormat;
 		extent_ = createInfo.imageExtent;
+		
+		for (size_t i = 0; i < images_.size(); i++) {
+			auto imageView = ImageViewFactory(images_[i], device, imageFormat_).defaultConfig().createShared();
+			imageViews_.push_back(imageView);
+		}
 	}
 
 	SwapchainFactory::SwapchainFactory(

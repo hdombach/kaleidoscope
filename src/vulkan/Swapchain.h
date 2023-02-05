@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Device.h"
+#include "ImageView.h"
 #include "PhysicalDevice.h"
 #include "Surface.h"
 #include "Window.h"
@@ -34,6 +35,7 @@ namespace vulkan {
 			VkFormat imageFormat();
 			VkExtent2D extent();
 			std::vector<VkImage> images();
+			std::vector<SharedImageView> imageViews();
 
 		private:
 			Swapchain(
@@ -48,6 +50,7 @@ namespace vulkan {
 			VkFormat imageFormat_;
 			VkExtent2D extent_;
 			std::vector<VkImage> images_;
+			std::vector<SharedImageView> imageViews_;
 	};
 
 	class SwapchainFactory {
