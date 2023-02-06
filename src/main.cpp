@@ -3,6 +3,7 @@
 #include "Device.h"
 #include "Instance.h"
 #include "PhysicalDevice.h"
+#include "RenderPass.h"
 #include "Surface.h"
 #include "Swapchain.h"
 #include "Window.h"
@@ -99,7 +100,7 @@ class KaleidoscopeApplication {
 		vulkan::SharedDevice device;
 		vulkan::SharedSurface surface;
 		vulkan::SharedSwapchain swapchain;
-		VkRenderPass renderPass;
+		vulkan::SharedRenderPass renderPass;
 		VkPipelineLayout pipelineLayout;
 		VkPipeline graphicsPipeline;
 		std::vector<VkFramebuffer> swapChainFramebuffers;
@@ -140,7 +141,7 @@ void KaleidoscopeApplication::initVulkan() {
 	physicalDevice = vulkan::PhysicalDeviceFactory(surface, instance).pickDevice();
 	device = vulkan::DeviceFactory(physicalDevice).defaultConfig().createShared();
 	swapchain = vulkan::SwapchainFactory(surface, device, window).defaultConfig().createShared();
-	createRenderPass();
+	renderPass = vulkan::RenderPassFactory(device, swapchain).defaultConfig().createShared();
 	createGraphicsPipeline();
 	createFramebuffers();
 	createCommandPool();
@@ -168,52 +169,8 @@ void KaleidoscopeApplication::cleanup() {
 	}
 	vkDestroyPipeline(**device, graphicsPipeline, nullptr);
 	vkDestroyPipelineLayout(**device, pipelineLayout, nullptr);
-	vkDestroyRenderPass(**device, renderPass, nullptr);
 
 	glfwTerminate();
-}
-
-void KaleidoscopeApplication::createRenderPass() {
-	VkAttachmentDescription colorAttachment{};
-	colorAttachment.format = swapchain->imageFormat();
-	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-	VkAttachmentReference colorAttachmentRef{};
-	colorAttachmentRef.attachment = 0;
-	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-	VkSubpassDescription subpass{};
-	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpass.colorAttachmentCount = 1;
-	subpass.pColorAttachments = &colorAttachmentRef;
-
-	VkRenderPassCreateInfo renderPassInfo{};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.attachmentCount = 1;
-	renderPassInfo.pAttachments = &colorAttachment;
-	renderPassInfo.subpassCount = 1;
-	renderPassInfo.pSubpasses = &subpass;
-
-	VkSubpassDependency dependency{};
-	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	dependency.dstSubpass = 0;
-	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.srcAccessMask = 0;
-	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-	renderPassInfo.dependencyCount = 1;
-	renderPassInfo.pDependencies = &dependency;
-
-	if (vkCreateRenderPass(**device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create render pass!");
-	}
 }
 
 void KaleidoscopeApplication::createGraphicsPipeline() {
@@ -349,7 +306,7 @@ void KaleidoscopeApplication::createGraphicsPipeline() {
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
 	pipelineInfo.layout = pipelineLayout;
-	pipelineInfo.renderPass = renderPass;
+	pipelineInfo.renderPass = **renderPass;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 	pipelineInfo.basePipelineIndex = -1;
@@ -373,7 +330,7 @@ void KaleidoscopeApplication::createFramebuffers() {
 
 		VkFramebufferCreateInfo framebufferInfo{};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebufferInfo.renderPass = renderPass;
+		framebufferInfo.renderPass = **renderPass;
 		framebufferInfo.attachmentCount = 1;
 		framebufferInfo.pAttachments = attachments;
 		framebufferInfo.width = swapchain->extent().width;
@@ -436,7 +393,7 @@ void KaleidoscopeApplication::recordCommandBuffer(VkCommandBuffer commandBuffer,
 
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = renderPass;
+	renderPassInfo.renderPass = **renderPass;
 	renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
 	renderPassInfo.renderArea.offset = {0, 0};
 	renderPassInfo.renderArea.extent = swapchain->extent();

@@ -101,7 +101,6 @@ namespace vulkan {
 			imageCount = physicalDevice.surfaceCapabilities().maxImageCount;
 		}
 
-		std::cout << "the surface is" << **surface_ << std::endl;
 		createInfo_.surface = **surface_;
 		createInfo_.minImageCount = imageCount;
 		createInfo_.imageFormat = surfaceFormat.format;
