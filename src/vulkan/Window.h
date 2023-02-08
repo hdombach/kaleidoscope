@@ -19,6 +19,7 @@ namespace vulkan {
 			static SharedWindow createShared(WindowCreateInfo &createInfo);
 			static UniqueWindow createUnique(WindowCreateInfo &createInfo);
 			GLFWwindow* operator*();
+			GLFWwindow* raw();
 			~Window();
 
 		private:

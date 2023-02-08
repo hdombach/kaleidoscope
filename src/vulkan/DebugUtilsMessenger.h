@@ -22,6 +22,7 @@ namespace vulkan {
 			static SharedDebugUtilsMessenger createShared(VkDebugUtilsMessengerCreateInfoEXT &createInfo, SharedInstance instance);
 			static UniqueDebugUtilsMessenger createUnique(VkDebugUtilsMessengerCreateInfoEXT &createInfo, SharedInstance instance);
 			VkDebugUtilsMessengerEXT& operator*();
+			VkDebugUtilsMessengerEXT& raw();
 			~DebugUtilsMessenger();
 
 		private:

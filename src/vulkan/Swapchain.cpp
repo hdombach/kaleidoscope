@@ -30,6 +30,10 @@ namespace vulkan {
 		return swapchain_;
 	}
 
+	VkSwapchainKHR& Swapchain::raw() {
+		return swapchain_;
+	}
+
 	Swapchain::~Swapchain() {
 		vkDestroySwapchainKHR(**device_, swapchain_, nullptr);
 	}
@@ -82,6 +86,8 @@ namespace vulkan {
 			imageViews_.push_back(imageView);
 		}
 	}
+
+	/**** factory ****/
 
 	SwapchainFactory::SwapchainFactory(
 			SharedSurface surface,

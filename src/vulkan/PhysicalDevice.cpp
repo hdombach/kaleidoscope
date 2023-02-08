@@ -160,9 +160,15 @@ namespace vulkan {
 		return physicalDevice_;
 	}
 
+	VkPhysicalDevice &PhysicalDevice::raw() {
+		return physicalDevice_;
+	}
+
 	bool PhysicalDevice::hasQueueFamilies() {
 		return graphicsQueueFamily_.has_value() && presentQueueFamily_.has_value();
 	}
+
+	/**** factory ****/
 
 	PhysicalDeviceFactory::PhysicalDeviceFactory(SharedSurface surface, SharedInstance instance):
 		surface_(surface),

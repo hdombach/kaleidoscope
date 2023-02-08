@@ -26,6 +26,7 @@ namespace vulkan {
 			VkPresentModeKHR chooseSwapPresentModes();
 
 			VkPhysicalDevice &operator*();
+			VkPhysicalDevice& raw();
 
 		private:
 			bool hasQueueFamilies();

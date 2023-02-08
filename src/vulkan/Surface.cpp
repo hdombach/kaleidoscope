@@ -17,6 +17,10 @@ namespace vulkan {
 		return surface_;
 	}
 
+	VkSurfaceKHR& Surface::raw() {
+		return surface_;
+	}
+
 	Surface::~Surface() {
 		vkDestroySurfaceKHR(**instance_, surface_, nullptr);
 	}

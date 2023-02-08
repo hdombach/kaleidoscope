@@ -14,6 +14,7 @@ namespace vulkan {
 		public:
 			static SharedRenderPass createShared(VkRenderPassCreateInfo &createInfo, SharedDevice device);
 			VkRenderPass& operator*();
+			VkRenderPass& raw();
 			~RenderPass();
 
 		private:

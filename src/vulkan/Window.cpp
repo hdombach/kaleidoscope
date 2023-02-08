@@ -14,6 +14,10 @@ namespace vulkan {
 		return window_;
 	}
 
+	GLFWwindow* Window::raw() {
+		return window_;
+	}
+
 	Window::~Window() {
 		glfwDestroyWindow(window_);
 	}

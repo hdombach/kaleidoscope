@@ -27,6 +27,10 @@ namespace vulkan {
 		return debugUtilsMessenger_;
 	}
 
+	VkDebugUtilsMessengerEXT& DebugUtilsMessenger::raw() {
+		return debugUtilsMessenger_;
+	}
+
 	DebugUtilsMessenger::~DebugUtilsMessenger() {
 		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(**instance_, "vkDestroyDebugUtilsMessengerEXT");
 		if (func != nullptr) {
@@ -47,6 +51,8 @@ namespace vulkan {
 			throw vulkan::Error(result);
 		}
 	}
+
+	/**** Factory ****/
 
 	DebugUtilsMessengerFactory::DebugUtilsMessengerFactory() {
 		createInfo_.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;

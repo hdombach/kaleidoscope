@@ -39,6 +39,10 @@ namespace vulkan {
 		return device_;
 	}
 
+	VkDevice& Device::raw() {
+		return device_;
+	}
+
 	Device::~Device() {
 		vkDestroyDevice(device_, nullptr);
 	}
@@ -62,6 +66,8 @@ namespace vulkan {
 				0,
 				&presentQueue_);
 	}
+
+	/**** Factory ****/
 
 	DeviceFactory::DeviceFactory(PhysicalDevice physicalDevice):
 		physicalDevice_(physicalDevice)

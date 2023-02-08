@@ -15,19 +15,25 @@ namespace vulkan {
 	}
 
 	VkInstance& Instance::operator*() {
-		return instance;
+		return instance_;
+	}
+
+	VkInstance& Instance::raw() {
+		return instance_;
 	}
 
 	Instance::~Instance() {
-		vkDestroyInstance(instance, nullptr);
+		vkDestroyInstance(instance_, nullptr);
 	}
 
 	Instance::Instance(VkInstanceCreateInfo &createInfo) {
-		auto result = vkCreateInstance(&createInfo, nullptr, &instance);
+		auto result = vkCreateInstance(&createInfo, nullptr, &instance_);
 		if (result != VK_SUCCESS) {
 			throw vulkan::Error(result);
 		}
 	}
+
+	/**** factory ****/
 
 	InstanceFactory::InstanceFactory() {
 		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;

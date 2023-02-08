@@ -20,6 +20,7 @@ namespace vulkan {
 			VkQueue presentQueue();
 			PhysicalDevice physicalDevice();
 			VkDevice& operator*();
+			VkDevice& raw();
 			~Device();
 
 		private:

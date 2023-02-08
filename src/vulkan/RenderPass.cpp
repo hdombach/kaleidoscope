@@ -19,6 +19,10 @@ namespace vulkan {
 		return renderPass_;
 	}
 
+	VkRenderPass& RenderPass::raw() {
+		return renderPass_;
+	}
+
 	RenderPass::~RenderPass() {
 		vkDestroyRenderPass(**device_, renderPass_, nullptr);
 	}

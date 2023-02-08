@@ -16,6 +16,10 @@ namespace vulkan {
 		return imageView_;
 	}
 
+	VkImageView& ImageView::raw() {
+		return imageView_;
+	}
+
 	ImageView::~ImageView() {
 		vkDestroyImageView(**device_, imageView_, nullptr);
 	}
@@ -28,6 +32,7 @@ namespace vulkan {
 	}
 
 	/**** factory ****/
+
 	ImageViewFactory::ImageViewFactory(
 			VkImage image,
 			SharedDevice device,

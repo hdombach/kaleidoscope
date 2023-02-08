@@ -28,6 +28,7 @@ namespace vulkan {
 					SharedSurface surface,
 					SharedWindow window);
 			VkSwapchainKHR& operator*();
+			VkSwapchainKHR& raw();
 			~Swapchain();
 
 			SharedDevice device();

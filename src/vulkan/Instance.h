@@ -21,12 +21,13 @@ namespace vulkan {
 			static SharedInstance createShared(VkInstanceCreateInfo &createInfo);
 			static UniqueInstance createUnique(VkInstanceCreateInfo &createInfo);
 			VkInstance& operator*();
+			VkInstance& raw();
 			~Instance();
 
 		private:
 			Instance(VkInstanceCreateInfo &createInfo);
 
-			VkInstance instance;
+			VkInstance instance_;
 	};
 
 	class InstanceFactory {

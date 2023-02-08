@@ -14,6 +14,7 @@ namespace vulkan {
 			static SharedImageView createShared(VkImageViewCreateInfo &createInfo, SharedDevice device);
 			static UniqueImageView createUnique(VkImageViewCreateInfo &createInfo, SharedDevice device);
 			VkImageView& operator*();
+			VkImageView& raw();
 			~ImageView();
 
 		private:

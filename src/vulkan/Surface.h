@@ -2,6 +2,7 @@
 
 #include "Instance.h"
 #include "Window.h"
+#include "vulkan/vulkan_core.h"
 #include <memory>
 namespace vulkan {
 	class Surface;
@@ -13,6 +14,7 @@ namespace vulkan {
 			static SharedSurface createShared(vulkan::SharedInstance instance, vulkan::SharedWindow window);
 			static UniqueSurface createUnique(vulkan::SharedInstance instance, vulkan::SharedWindow window);
 			VkSurfaceKHR& operator*();
+			VkSurfaceKHR& raw();
 			~Surface();
 
 		private:
