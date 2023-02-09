@@ -3,6 +3,7 @@
 #include "Device.h"
 #include "Instance.h"
 #include "PhysicalDevice.h"
+#include "PipelineLayout.h"
 #include "RenderPass.h"
 #include "ShaderModule.h"
 #include "Surface.h"
@@ -83,7 +84,7 @@ class KaleidoscopeApplication {
 		vulkan::SharedSurface surface;
 		vulkan::SharedSwapchain swapchain;
 		vulkan::SharedRenderPass renderPass;
-		VkPipelineLayout pipelineLayout;
+		vulkan::SharedPipelineLayout pipelineLayout;
 		VkPipeline graphicsPipeline;
 		std::vector<VkFramebuffer> swapChainFramebuffers;
 		VkCommandPool commandPool;
@@ -124,6 +125,7 @@ void KaleidoscopeApplication::initVulkan() {
 	device = vulkan::DeviceFactory(physicalDevice).defaultConfig().createShared();
 	swapchain = vulkan::SwapchainFactory(surface, device, window).defaultConfig().createShared();
 	renderPass = vulkan::RenderPassFactory(device, swapchain).defaultConfig().createShared();
+	pipelineLayout = vulkan::PipelineLayoutFactory(swapchain, device).defaultConfig().createShared();
 	createGraphicsPipeline();
 	createFramebuffers();
 	createCommandPool();
@@ -150,7 +152,6 @@ void KaleidoscopeApplication::cleanup() {
 		vkDestroyFramebuffer(**device, framebuffer, nullptr);
 	}
 	vkDestroyPipeline(**device, graphicsPipeline, nullptr);
-	vkDestroyPipelineLayout(**device, pipelineLayout, nullptr);
 
 	glfwTerminate();
 }
@@ -260,17 +261,7 @@ void KaleidoscopeApplication::createGraphicsPipeline() {
 	dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 	dynamicState.pDynamicStates = dynamicStates.data();
 
-	//uniforms
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 0;
-	pipelineLayoutInfo.pSetLayouts = nullptr;
-	pipelineLayoutInfo.pushConstantRangeCount = 0;
-	pipelineLayoutInfo.pPushConstantRanges = nullptr;
-
-	if (vkCreatePipelineLayout(**device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create pipeline layout!");
-	}
+	//TODO create pipelineLayout here
 
 	VkGraphicsPipelineCreateInfo pipelineInfo{};
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -284,7 +275,7 @@ void KaleidoscopeApplication::createGraphicsPipeline() {
 	pipelineInfo.pDepthStencilState = nullptr;
 	pipelineInfo.pColorBlendState = &colorBlending;
 	pipelineInfo.pDynamicState = &dynamicState;
-	pipelineInfo.layout = pipelineLayout;
+	pipelineInfo.layout = pipelineLayout->raw();
 	pipelineInfo.renderPass = **renderPass;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;

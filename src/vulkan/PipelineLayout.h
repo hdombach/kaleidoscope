@@ -17,6 +17,7 @@ namespace vulkan {
 					SharedSwapchain swapchain,
 					SharedDevice device);
 			VkPipelineLayout& operator*();
+			VkPipelineLayout& raw();
 			~PipelineLayout();
 
 		private:
@@ -28,5 +29,19 @@ namespace vulkan {
 			VkPipelineLayout pipelineLayout_;
 			SharedSwapchain swapchain_;
 			SharedDevice device_;
+	};
+
+	class PipelineLayoutFactory {
+		public:
+			PipelineLayoutFactory(SharedSwapchain swapchain, SharedDevice device);
+
+			PipelineLayoutFactory &defaultConfig();
+			SharedPipelineLayout createShared();
+
+		private:
+			SharedSwapchain swapchain_;
+			SharedDevice device_;
+
+			VkPipelineLayoutCreateInfo createInfo_{};
 	};
 }
