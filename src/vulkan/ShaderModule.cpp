@@ -1,14 +1,14 @@
 #include "ShaderModule.h"
-#include "../util.h"
 #include "Device.h"
 #include "Error.h"
+#include "file.h"
 #include "vulkan/vulkan.h"
 #include "vulkan/vulkan_core.h"
 #include <_types/_uint32_t.h>
 
 namespace vulkan {
 	ShaderModule::ShaderModule(const char *filename, SharedDevice device): device_(device) {
-		auto code = util::readFile(filename);
+		auto code = util::readEnvFile(filename);
 
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -23,8 +23,24 @@ namespace vulkan {
 
 	ShaderModule::ShaderModule(VkShaderModule shaderModule, SharedDevice device): shaderModule_(shaderModule), device_(device) {}
 
+	ShaderModule::ShaderModule(ShaderModule&& other) {
+		shaderModule_ = other.shaderModule_;
+		device_ = other.device_;
+		other.shaderModule_ = nullptr;
+	}
+
+	ShaderModule &ShaderModule::operator=(ShaderModule && other) {
+		shaderModule_ = other.shaderModule_;
+		device_ = other.device_;
+		other.shaderModule_ = nullptr;
+
+		return *this;
+	}
+
 	ShaderModule::~ShaderModule() {
-		vkDestroyShaderModule(**device_, shaderModule_, nullptr);
+		if (shaderModule_ != nullptr) {
+			vkDestroyShaderModule(**device_, shaderModule_, nullptr);
+		}
 	}
 
 	VkShaderModule & ShaderModule::operator*() {
