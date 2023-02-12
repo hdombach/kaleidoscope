@@ -13,82 +13,62 @@ namespace vulkan {
 		std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
 
 		return VK_FALSE;
-	}
+	};
 
-	SharedDebugUtilsMessenger DebugUtilsMessenger::createShared(VkDebugUtilsMessengerCreateInfoEXT &createInfo, SharedInstance instance) {
-		return SharedDebugUtilsMessenger(new DebugUtilsMessenger(createInfo, instance));
-	}
-
-	UniqueDebugUtilsMessenger DebugUtilsMessenger::createUnique(VkDebugUtilsMessengerCreateInfoEXT &createInfo, SharedInstance instance) {
-		return UniqueDebugUtilsMessenger(new DebugUtilsMessenger(createInfo, instance));
-	}
-
-	VkDebugUtilsMessengerEXT& DebugUtilsMessenger::operator*() {
-		return debugUtilsMessenger_;
-	}
-
-	VkDebugUtilsMessengerEXT& DebugUtilsMessenger::raw() {
-		return debugUtilsMessenger_;
-	}
-
-	DebugUtilsMessenger::~DebugUtilsMessenger() {
-		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(**instance_, "vkDestroyDebugUtilsMessengerEXT");
+	void DebugUtilsMessengerDeleter::operator()(DebugUtilsMessengerData *data) const {
+		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(data->instance_->raw(), "vkDestroyDebugUtilsMessengerEXT");
 		if (func != nullptr) {
-			func(**instance_, debugUtilsMessenger_, nullptr);
+			func(data->instance_->raw(), data->messenger_, nullptr);
 		}
-	}
+		delete data;
+	};
 
-	DebugUtilsMessenger::DebugUtilsMessenger(VkDebugUtilsMessengerCreateInfoEXT &createInfo, SharedInstance instance): instance_(instance) {
-		auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(**instance_, "vkCreateDebugUtilsMessengerEXT");
+	DebugUtilsMessenger::DebugUtilsMessenger(SharedInstance instance):
+		base_type(new DebugUtilsMessengerData{nullptr, instance})
+	{
+		auto createInfo = defaultConfig();
+		auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance->raw(), "vkCreateDebugUtilsMessengerEXT");
 		VkResult result;
 		if (func != nullptr) {
-			result = func(**instance_, &createInfo, nullptr, &debugUtilsMessenger_);
+			result = func(instance->raw(), &createInfo, nullptr, &get()->messenger_);
 		} else {
 			result = VK_ERROR_EXTENSION_NOT_PRESENT;
 		}
-		
+
 		if (result != VK_SUCCESS) {
 			throw vulkan::Error(result);
 		}
 	}
 
-	/**** Factory ****/
-
-	DebugUtilsMessengerFactory::DebugUtilsMessengerFactory() {
-		createInfo_.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	}
-
-	DebugUtilsMessengerFactory::DebugUtilsMessengerFactory(SharedInstance instance): instance_(instance) {
-		createInfo_.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	}
-
-	DebugUtilsMessengerFactory &DebugUtilsMessengerFactory::default_config() {
-		createInfo_.messageSeverity =
+	VkDebugUtilsMessengerCreateInfoEXT DebugUtilsMessenger::defaultConfig() {
+		auto createInfo = VkDebugUtilsMessengerCreateInfoEXT{};
+		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+		createInfo.messageSeverity =
 			VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT
 			| VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
 			| VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 
-		createInfo_.messageType =
+		createInfo.messageType =
 			VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT
 			| VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT
 			| VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 
-		createInfo_.pfnUserCallback = debugCallback;
+		createInfo.pfnUserCallback = debugCallback;
 
-		createInfo_.pNext = nullptr;
+		createInfo.pNext = nullptr;
 
-		return *this;
+		return createInfo;
 	}
 
-	SharedDebugUtilsMessenger DebugUtilsMessengerFactory::createShared() {
-		return DebugUtilsMessenger::createShared(createInfo_, instance_);
+	VkDebugUtilsMessengerEXT& DebugUtilsMessenger::operator*() {
+		return get()->messenger_;
 	}
 
-	UniqueDebugUtilsMessenger DebugUtilsMessengerFactory::createUnique() {
-		return DebugUtilsMessenger::createUnique(createInfo_, instance_);
+	VkDebugUtilsMessengerEXT* DebugUtilsMessenger::operator->() {
+		return &get()->messenger_;
 	}
 
-	VkDebugUtilsMessengerCreateInfoEXT DebugUtilsMessengerFactory::createInfo() {
-		return createInfo_;
+	VkDebugUtilsMessengerEXT& DebugUtilsMessenger::raw() {
+		return get()->messenger_;
 	}
 }

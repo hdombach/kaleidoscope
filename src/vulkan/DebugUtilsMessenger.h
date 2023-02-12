@@ -15,35 +15,27 @@ namespace vulkan {
 
 	class DebugUtilsMessenger;
 	using SharedDebugUtilsMessenger = std::shared_ptr<DebugUtilsMessenger>;
-	using UniqueDebugUtilsMessenger = std::unique_ptr<DebugUtilsMessenger>;
 
-	class DebugUtilsMessenger {
-		public:
-			static SharedDebugUtilsMessenger createShared(VkDebugUtilsMessengerCreateInfoEXT &createInfo, SharedInstance instance);
-			static UniqueDebugUtilsMessenger createUnique(VkDebugUtilsMessengerCreateInfoEXT &createInfo, SharedInstance instance);
-			VkDebugUtilsMessengerEXT& operator*();
-			VkDebugUtilsMessengerEXT& raw();
-			~DebugUtilsMessenger();
-
-		private:
-			DebugUtilsMessenger(VkDebugUtilsMessengerCreateInfoEXT &createInfo, SharedInstance instance);
-
-			VkDebugUtilsMessengerEXT debugUtilsMessenger_;
-			SharedInstance instance_;
+	struct DebugUtilsMessengerData {
+		VkDebugUtilsMessengerEXT messenger_;
+		SharedInstance instance_;
 	};
 
-	class DebugUtilsMessengerFactory {
+	struct DebugUtilsMessengerDeleter {
+		void operator()(DebugUtilsMessengerData *data) const;
+	};
+
+	class DebugUtilsMessenger: std::unique_ptr<DebugUtilsMessengerData, DebugUtilsMessengerDeleter> {
 		public:
-			DebugUtilsMessengerFactory();
-			DebugUtilsMessengerFactory(SharedInstance instance);
+			using base_type = std::unique_ptr<DebugUtilsMessengerData, DebugUtilsMessengerDeleter>;
 
-			DebugUtilsMessengerFactory &default_config();
-			SharedDebugUtilsMessenger createShared();
-			UniqueDebugUtilsMessenger createUnique();
-			VkDebugUtilsMessengerCreateInfoEXT createInfo();
+			DebugUtilsMessenger() = default;
+			DebugUtilsMessenger(SharedInstance instance);
 
-		private:
-			VkDebugUtilsMessengerCreateInfoEXT createInfo_{};
-			SharedInstance instance_;
+			static VkDebugUtilsMessengerCreateInfoEXT defaultConfig();
+
+			VkDebugUtilsMessengerEXT& operator*();
+			VkDebugUtilsMessengerEXT* operator->();
+			VkDebugUtilsMessengerEXT& raw();
 	};
 }

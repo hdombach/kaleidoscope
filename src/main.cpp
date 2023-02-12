@@ -111,18 +111,18 @@ class KaleidoscopeApplication {
 
 void KaleidoscopeApplication::run() {
 	glfwInit();
-	window = vulkan::WindowFactory().defaultSetup().createShared();
+	window = std::make_shared<vulkan::Window>(vulkan::Window("Kaleidoscope"));
 	initVulkan();
 	mainLoop();
 	cleanup();
 }
 
 void KaleidoscopeApplication::initVulkan() {
-	instance = vulkan::InstanceFactory().defaultConfig().createShared();
+	instance = std::make_shared<vulkan::Instance>(vulkan::Instance("Kaleidoscope"));
 	if (vulkan::ENABLE_VALIDATION_LAYERS) {
-		debugMessenger = vulkan::DebugUtilsMessengerFactory(instance).default_config().createShared();
+		debugMessenger = std::make_shared<vulkan::DebugUtilsMessenger>(vulkan::DebugUtilsMessenger(instance));
 	}
-	surface = vulkan::Surface::createShared(instance, window);
+	surface = std::make_shared<vulkan::Surface>(vulkan::Surface(instance, window));
 	physicalDevice = vulkan::PhysicalDeviceFactory(surface, instance).pickDevice();
 	device = vulkan::DeviceFactory(physicalDevice).defaultConfig().createShared();
 	swapchain = vulkan::SwapchainFactory(surface, device, window).defaultConfig().createShared();
@@ -137,7 +137,7 @@ void KaleidoscopeApplication::initVulkan() {
 }
 
 void KaleidoscopeApplication::mainLoop() {
-	while (!glfwWindowShouldClose(**window)) {
+	while (!glfwWindowShouldClose(window->raw())) {
 		glfwPollEvents();
 		drawFrame();
 	}

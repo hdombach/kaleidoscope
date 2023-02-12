@@ -27,6 +27,7 @@ namespace vulkan {
 			~Framebuffer();
 
 		private:
+			void destroy();
 			VkFramebuffer framebuffer_=nullptr;
 			SharedDevice device_;
 	};

@@ -1,48 +1,27 @@
 #include "Window.h"
+#include "Device.h"
+#include "ImageView.h"
+#include "RenderPass.h"
+#include "Swapchain.h"
 #include <iostream>
 
 namespace vulkan {
-	SharedWindow Window::createShared(WindowCreateInfo &createInfo) {
-		return SharedWindow(new Window(createInfo));
-	}
-
-	UniqueWindow Window::createUnique(WindowCreateInfo &createInfo) {
-		return UniqueWindow(new Window(createInfo));
-	}
-
-	GLFWwindow* Window::operator*() {
-		return window_;
-	}
-
-	GLFWwindow* Window::raw() {
-		return window_;
-	}
-
-	Window::~Window() {
-		glfwDestroyWindow(window_);
-	}
-
-	Window::Window(WindowCreateInfo &createInfo) {
-		std::cout << "name is " << createInfo.name << std::endl;
-		window_ = glfwCreateWindow(createInfo.width, createInfo.height, createInfo.name, nullptr, nullptr);
-	}
-
-	WindowFactory &WindowFactory::defaultSetup() {
-		createInfo.width = 800;
-		createInfo.height = 600;
-		createInfo.name = "Kaleidoscope";
-
+	Window::Window(const char *name, uint32_t width, uint32_t height) {
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-		return *this;
+		auto window = new GLFWwindow*;
+		*window = glfwCreateWindow(width, height, name, nullptr, nullptr);
+
+		this->reset(window);
 	}
 
-	SharedWindow WindowFactory::createShared() {
-		return Window::createShared(createInfo);
+	GLFWwindow* Window::raw() {
+		return **this;
 	}
 
-	UniqueWindow WindowFactory::createUnique() {
-		return Window::createUnique(createInfo);
+	void WindowDeleter::operator()(GLFWwindow **window) {
+		glfwDestroyWindow(*window);
+		delete window;
 	}
 }

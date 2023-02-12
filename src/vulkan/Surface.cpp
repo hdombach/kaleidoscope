@@ -5,30 +5,22 @@
 #include "vulkan/vulkan_core.h"
 
 namespace vulkan {
-	SharedSurface Surface::createShared(vulkan::SharedInstance instance, vulkan::SharedWindow window) {
-		return SharedSurface(new Surface(instance, window));
+
+	void SurfaceDeleter::operator()(SurfaceData *data) const {
+		vkDestroySurfaceKHR(data->instance_->raw(), data->surface_, nullptr);
+		delete data;
 	}
 
-	UniqueSurface Surface::createUnique(vulkan::SharedInstance instance, vulkan::SharedWindow window) {
-		return UniqueSurface(new Surface(instance, window));
-	}
-
-	VkSurfaceKHR& Surface::operator*() {
-		return surface_;
-	}
-
-	VkSurfaceKHR& Surface::raw() {
-		return surface_;
-	}
-
-	Surface::~Surface() {
-		vkDestroySurfaceKHR(**instance_, surface_, nullptr);
-	}
-
-	Surface::Surface(vulkan::SharedInstance instance, vulkan::SharedWindow window): instance_(instance), window_(window) {
-		auto result = glfwCreateWindowSurface(**instance_, **window_, nullptr, &surface_);
+	Surface::Surface(SharedInstance instance, SharedWindow window):
+		base_type(new SurfaceData{nullptr, instance, window})
+	{
+		auto result = glfwCreateWindowSurface(instance->raw(), window->raw(), nullptr, &raw());
 		if (result != VK_SUCCESS) {
 			throw Error(result);
 		}
+	}
+
+	VkSurfaceKHR& Surface::raw() {
+		return get()->surface_;
 	}
 }

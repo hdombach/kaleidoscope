@@ -6,37 +6,17 @@
 namespace vulkan {
 	class Window;
 	using SharedWindow = std::shared_ptr<Window>;
-	using UniqueWindow = std::unique_ptr<Window>;
 
-	struct WindowCreateInfo {
-		uint32_t width;
-		uint32_t height;
-		const char * name;
+	struct WindowDeleter {
+		void operator()(GLFWwindow** window);
 	};
 
-	class Window {
+	class Window: public std::unique_ptr<GLFWwindow*, WindowDeleter> {
 		public:
-			static SharedWindow createShared(WindowCreateInfo &createInfo);
-			static UniqueWindow createUnique(WindowCreateInfo &createInfo);
-			GLFWwindow* operator*();
+			Window() = default;
+
+			Window(const char *name, uint32_t width=800, uint32_t height=600);
+
 			GLFWwindow* raw();
-			~Window();
-
-		private:
-			Window(WindowCreateInfo &createInfo);
-
-			GLFWwindow * window_;
-	};
-
-	class WindowFactory {
-		public:
-			WindowFactory() = default;
-
-			WindowFactory &defaultSetup();
-			SharedWindow createShared();
-			UniqueWindow createUnique();
-
-		private:
-			WindowCreateInfo createInfo{};
 	};
 }

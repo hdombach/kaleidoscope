@@ -14,38 +14,23 @@
 namespace vulkan {
 	class Instance;
 	using SharedInstance = std::shared_ptr<Instance>;
-	using UniqueInstance = std::unique_ptr<Instance>;
 
-	class Instance {
-		public:
-			static SharedInstance createShared(VkInstanceCreateInfo &createInfo);
-			static UniqueInstance createUnique(VkInstanceCreateInfo &createInfo);
-			VkInstance& operator*();
-			VkInstance& raw();
-			~Instance();
-
-		private:
-			Instance(VkInstanceCreateInfo &createInfo);
-
-			VkInstance instance_;
+	struct InstanceDeleter {
+		void operator()(VkInstance *instance) const;
 	};
 
-	class InstanceFactory {
+	class Instance: public std::unique_ptr<VkInstance, InstanceDeleter> {
 		public:
-			InstanceFactory();
+			Instance() = default;
 
-			InstanceFactory &defaultConfig();
-			SharedInstance createShared();
-			UniqueInstance createUnique();
+			Instance(const char *name);
+
+			VkInstance& raw();
+
+			std::vector<const char*> *requiredExtensions();
 
 		private:
-			void loadRequiredExtensions();
-			bool checkValidationLayerSupport();
-
-			VkInstanceCreateInfo createInfo{};
-			VkApplicationInfo appInfo{};
-			VkDebugUtilsMessengerCreateInfoEXT debugMessageCreateInfo{};
-			std::vector<const char*> requiredExtensions;
+			std::vector<const char*> requiredExtensions_;
 	};
 }
 

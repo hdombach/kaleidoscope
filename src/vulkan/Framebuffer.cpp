@@ -42,6 +42,7 @@ namespace vulkan {
 	}
 
 	Framebuffer& Framebuffer::operator=(Framebuffer&& other) {
+		destroy();
 		device_ = other.device_;
 		framebuffer_ = other.framebuffer_;
 		other.framebuffer_ = nullptr;
@@ -57,6 +58,10 @@ namespace vulkan {
 	}
 
 	Framebuffer::~Framebuffer() {
+		destroy();
+	}
+
+	void Framebuffer::destroy() {
 		if (framebuffer_ != nullptr) {
 			vkDestroyFramebuffer(device_->raw(), framebuffer_, nullptr);
 		}
