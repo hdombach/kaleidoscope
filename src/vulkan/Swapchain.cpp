@@ -107,7 +107,7 @@ namespace vulkan {
 			imageCount = physicalDevice.surfaceCapabilities().maxImageCount;
 		}
 
-		createInfo_.surface = **surface_;
+		createInfo_.surface = surface_->raw();
 		createInfo_.minImageCount = imageCount;
 		createInfo_.imageFormat = surfaceFormat.format;
 		createInfo_.imageColorSpace = surfaceFormat.colorSpace;

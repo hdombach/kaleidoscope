@@ -28,7 +28,7 @@ namespace vulkan {
 			}
 
 			VkBool32 presentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice_, i, **surface, &presentSupport);
+			vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice_, i, surface->raw(), &presentSupport);
 
 			if (presentSupport) {
 				presentQueueFamily_ = i;
@@ -46,23 +46,23 @@ namespace vulkan {
 		}
 
 		//query surface info
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR	(physicalDevice_, **surface, &surfaceCapabilities_);
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR	(physicalDevice_, surface->raw(), &surfaceCapabilities_);
 
 		uint32_t formatCount;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice_, **surface, &formatCount, nullptr);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice_, surface->raw(), &formatCount, nullptr);
 
 		if (formatCount != 0) {
 			surfaceFormats_.resize(formatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice_, **surface, &formatCount, surfaceFormats_.data());
+			vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice_, surface->raw(), &formatCount, surfaceFormats_.data());
 		}
 
 		//query present mode info
 		uint32_t presentModeCount;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice_, **surface, &presentModeCount, nullptr);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice_, surface->raw(), &presentModeCount, nullptr);
 
 		if (presentModeCount != 0) {
 			presentModes_.resize(presentModeCount);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice_, **surface, &presentModeCount, presentModes_.data());
+			vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice_, surface->raw(), &presentModeCount, presentModes_.data());
 		}
 	}
 
