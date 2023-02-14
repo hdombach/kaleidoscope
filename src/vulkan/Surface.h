@@ -17,7 +17,7 @@ namespace vulkan {
 		void operator()(SurfaceData *data) const;
 	};
 
-	class Surface: std::unique_ptr<SurfaceData, SurfaceDeleter> {
+	class Surface: public std::unique_ptr<SurfaceData, SurfaceDeleter> {
 		public:
 			using base_type = std::unique_ptr<SurfaceData, SurfaceDeleter>;
 

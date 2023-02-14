@@ -125,7 +125,7 @@ void KaleidoscopeApplication::initVulkan() {
 	surface = std::make_shared<vulkan::Surface>(vulkan::Surface(instance, window));
 	physicalDevice = vulkan::PhysicalDevice::pickDevice(surface, instance);
 	device = std::make_shared<vulkan::Device>(vulkan::Device(physicalDevice));
-	swapchain = vulkan::SwapchainFactory(surface, device, window).defaultConfig().createShared();
+	swapchain = std::make_shared<vulkan::Swapchain>(vulkan::Swapchain(surface, device, window));
 	renderPass = vulkan::RenderPassFactory(device, swapchain).defaultConfig().createShared();
 	pipeline = vulkan::PipelineFactory(device, swapchain, renderPass).defaultConfig().createShared();
 	for (auto imageView : swapchain->imageViews()) {
@@ -246,7 +246,7 @@ void KaleidoscopeApplication::drawFrame() {
 	vkResetFences(device->raw(), 1, &inFlightFence);
 
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(device->raw(), **swapchain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+	vkAcquireNextImageKHR(device->raw(), swapchain->raw(), UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
 	vkResetCommandBuffer(commandBuffer, 0);
 
@@ -276,7 +276,7 @@ void KaleidoscopeApplication::drawFrame() {
 	presentInfo.waitSemaphoreCount = 1;
 	presentInfo.pWaitSemaphores = signalSemaphores;
 
-	VkSwapchainKHR swapChains[] = {**swapchain};
+	VkSwapchainKHR swapChains[] = {swapchain->raw()};
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains;
 	presentInfo.pImageIndices = &imageIndex;

@@ -13,23 +13,26 @@
 namespace vulkan {
 	class Swapchain;
 	using SharedSwapchain = std::shared_ptr<Swapchain>;
-	using UniqueSwapchain = std::unique_ptr<Swapchain>;
 
-	class Swapchain {
+	struct SwapchainData {
+		VkSwapchainKHR swapchain_;
+		SharedDevice device_;
+		SharedSurface surface_;
+		VkFormat imageFormat_;
+		VkExtent2D extent_;
+		std::vector<VkImage> images_;
+		std::vector<SharedImageView> imageViews_;
+	};
+	struct SwapchainDeleter {
+		void operator()(SwapchainData *data) const;
+	};
+
+	class Swapchain: public std::unique_ptr<SwapchainData, SwapchainDeleter> {
 		public:
-			static SharedSwapchain createShared(
-					VkSwapchainCreateInfoKHR &createInfo,
-					SharedDevice device,
-					SharedSurface surface,
-					SharedWindow window);
-			static UniqueSwapchain createUnique(
-					VkSwapchainCreateInfoKHR &createInfo,
-					SharedDevice device,
-					SharedSurface surface,
-					SharedWindow window);
-			VkSwapchainKHR& operator*();
+			using base_type = std::unique_ptr<SwapchainData, SwapchainDeleter>;
+
+			Swapchain(SharedSurface surface, SharedDevice device, SharedWindow window);
 			VkSwapchainKHR& raw();
-			~Swapchain();
 
 			SharedDevice device();
 			SharedSurface surface();
@@ -37,40 +40,5 @@ namespace vulkan {
 			VkExtent2D extent();
 			std::vector<VkImage> images();
 			std::vector<SharedImageView> imageViews();
-
-		private:
-			Swapchain(
-					VkSwapchainCreateInfoKHR &createInfo,
-					SharedDevice device,
-					SharedSurface surface,
-					SharedWindow window);
-
-			VkSwapchainKHR swapchain_;
-			SharedDevice device_;
-			SharedSurface surface_;
-			VkFormat imageFormat_;
-			VkExtent2D extent_;
-			std::vector<VkImage> images_;
-			std::vector<SharedImageView> imageViews_;
-	};
-
-	class SwapchainFactory {
-		public:
-			SwapchainFactory(
-					SharedSurface surface,
-					SharedDevice device,
-					SharedWindow window);
-
-			SwapchainFactory &defaultConfig();
-			SharedSwapchain createShared();
-			UniqueSwapchain createUnique();
-
-		private:
-			VkSwapchainCreateInfoKHR createInfo_{};
-
-			SharedDevice device_;
-			SharedSurface surface_;
-			SharedWindow window_;
-			std::vector<uint32_t> queueFamilyIndices_;
 	};
 }
