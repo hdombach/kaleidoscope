@@ -66,6 +66,28 @@ namespace vulkan {
 		}
 	}
 
+	PhysicalDevice PhysicalDevice::pickDevice(SharedSurface surface, SharedInstance instance) {
+		uint32_t deviceCount = 0;
+		vkEnumeratePhysicalDevices(instance->raw(), &deviceCount, nullptr);
+
+		if (deviceCount == 0) {
+			throw std::runtime_error("failed to find GPUs with Vulkan support!");
+		}
+
+		std::vector<VkPhysicalDevice> devices(deviceCount);
+		vkEnumeratePhysicalDevices(instance->raw(), &deviceCount, devices.data());
+
+		for (const auto device : devices) {
+			auto tempDevice = PhysicalDevice(device, surface);
+			if (tempDevice.isSuitable()) {
+				return tempDevice;
+			}
+		}
+
+		throw std::runtime_error("failed to find a suitable GPU!");
+	}
+
+
 	std::optional<uint32_t> PhysicalDevice::graphicsQueueFamily() {
 		return graphicsQueueFamily_;
 	}
@@ -166,32 +188,5 @@ namespace vulkan {
 
 	bool PhysicalDevice::hasQueueFamilies() {
 		return graphicsQueueFamily_.has_value() && presentQueueFamily_.has_value();
-	}
-
-	/**** factory ****/
-
-	PhysicalDeviceFactory::PhysicalDeviceFactory(SharedSurface surface, SharedInstance instance):
-		surface_(surface),
-		instance_(instance) {}
-
-	PhysicalDevice PhysicalDeviceFactory::pickDevice() {
-		uint32_t deviceCount = 0;
-		vkEnumeratePhysicalDevices(**instance_, &deviceCount, nullptr);
-
-		if (deviceCount == 0) {
-			throw std::runtime_error("failed to find GPUs with Vulkan support!");
-		}
-
-		std::vector<VkPhysicalDevice> devices(deviceCount);
-		vkEnumeratePhysicalDevices(**instance_, &deviceCount, devices.data());
-
-		for (const auto& device : devices) {
-			auto tempDevice = PhysicalDevice(device, surface_);
-			if (tempDevice.isSuitable()) {
-				return tempDevice;
-			}
-		}
-
-		throw std::runtime_error("failed to find a suitable GPU!");
 	}
 }

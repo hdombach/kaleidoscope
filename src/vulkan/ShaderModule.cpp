@@ -15,7 +15,7 @@ namespace vulkan {
 		createInfo.codeSize = code.size();
 		createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
 
-		auto result = vkCreateShaderModule(**device, &createInfo, nullptr, &shaderModule_);
+		auto result = vkCreateShaderModule(device->raw(), &createInfo, nullptr, &shaderModule_);
 		if (result != VK_SUCCESS) {
 			throw vulkan::Error(result);
 		}
@@ -39,7 +39,7 @@ namespace vulkan {
 
 	ShaderModule::~ShaderModule() {
 		if (shaderModule_ != nullptr) {
-			vkDestroyShaderModule(**device_, shaderModule_, nullptr);
+			vkDestroyShaderModule(device_->raw(), shaderModule_, nullptr);
 		}
 	}
 

@@ -24,14 +24,14 @@ namespace vulkan {
 	}
 
 	RenderPass::~RenderPass() {
-		vkDestroyRenderPass(**device_, renderPass_, nullptr);
+		vkDestroyRenderPass(device_->raw(), renderPass_, nullptr);
 	}
 
 	RenderPass::RenderPass(
 			VkRenderPassCreateInfo &createInfo,
 			SharedDevice device): device_(device)
 	{
-		auto result = vkCreateRenderPass(**device_, &createInfo, nullptr, &renderPass_);
+		auto result = vkCreateRenderPass(device_->raw(), &createInfo, nullptr, &renderPass_);
 		if (result != VK_SUCCESS) {
 			throw vulkan::Error(result);
 		}

@@ -13,6 +13,8 @@ namespace vulkan {
 			PhysicalDevice();
 			PhysicalDevice(VkPhysicalDevice physicalDevice, SharedSurface surface);
 
+			static PhysicalDevice pickDevice(SharedSurface surface, SharedInstance instance);
+
 			std::optional<uint32_t> graphicsQueueFamily();
 			std::optional<uint32_t> presentQueueFamily();
 			std::set<uint32_t> queueFamilies();
@@ -37,16 +39,5 @@ namespace vulkan {
 			VkSurfaceCapabilitiesKHR surfaceCapabilities_;
 			std::vector<VkSurfaceFormatKHR> surfaceFormats_;
 			std::vector<VkPresentModeKHR> presentModes_;
-	};
-
-	class PhysicalDeviceFactory {
-		public:
-			PhysicalDeviceFactory(SharedSurface surface, SharedInstance instance);
-
-			PhysicalDevice pickDevice();
-
-		private:
-			SharedSurface surface_;
-			SharedInstance instance_;
 	};
 }

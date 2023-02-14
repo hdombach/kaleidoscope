@@ -11,42 +11,29 @@ namespace vulkan {
 	using SharedDevice = std::shared_ptr<Device>;
 	using UniqueDevice = std::unique_ptr<Device>;
 
-	class Device {
+	struct DeviceData {
+		VkDevice device_;
+
+		VkQueue graphicsQueue_;
+		VkQueue presentQueue_;
+		PhysicalDevice physicalDevice_;
+	};
+	struct DeviceDeleter {
+		void operator()(DeviceData *data) const;
+	};
+
+	class Device: public std::unique_ptr<DeviceData, DeviceDeleter> {
 		public:
-			static SharedDevice createShared(VkDeviceCreateInfo &createInfo, PhysicalDevice physicalDevice);
-			static UniqueDevice createUnique(VkDeviceCreateInfo &createInfo, PhysicalDevice physicalDevice);
+			using base_type = std::unique_ptr<DeviceData, DeviceDeleter>;
+
+			Device() = default;
+			Device(PhysicalDevice physicalDevice);
+
 			void waitIdle();
 			VkQueue graphicsQueue();
 			VkQueue presentQueue();
 			PhysicalDevice physicalDevice();
-			VkDevice& operator*();
 			VkDevice& raw();
-			~Device();
 
-		private:
-			Device(VkDeviceCreateInfo &createInfo, PhysicalDevice physicalDevice);
-
-			VkDevice device_;
-			VkQueue graphicsQueue_;
-			VkQueue presentQueue_;
-			PhysicalDevice physicalDevice_;
-	};
-
-	class DeviceFactory {
-		public:
-			DeviceFactory(PhysicalDevice physicalDevice);
-
-			DeviceFactory &defaultConfig();
-			SharedDevice createShared();
-			UniqueDevice createUnique();
-
-		private:
-			PhysicalDevice physicalDevice_;
-			VkDeviceCreateInfo createInfo_{};
-			VkPhysicalDeviceFeatures deviceFeatures_{};
-
-			std::vector<VkDeviceQueueCreateInfo> queueCreateInfos_;
-			std::vector<const char*> extensions_;
-			float queuePriority_;
 	};
 }

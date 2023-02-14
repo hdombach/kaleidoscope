@@ -35,7 +35,7 @@ namespace vulkan {
 	}
 
 	Swapchain::~Swapchain() {
-		vkDestroySwapchainKHR(**device_, swapchain_, nullptr);
+		vkDestroySwapchainKHR(device_->raw(), swapchain_, nullptr);
 	}
 
 	SharedDevice Swapchain::device() {
@@ -68,15 +68,15 @@ namespace vulkan {
 			SharedSurface surface,
 			SharedWindow window): device_(device)
 	{
-		auto result = vkCreateSwapchainKHR(**device, &createInfo, nullptr, &swapchain_);
+		auto result = vkCreateSwapchainKHR(device->raw(), &createInfo, nullptr, &swapchain_);
 		if (result != VK_SUCCESS) {
 			throw vulkan::Error(result);
 		}
 
 		uint32_t imageCount;
-		vkGetSwapchainImagesKHR(**device, swapchain_, &imageCount, nullptr);
+		vkGetSwapchainImagesKHR(device->raw(), swapchain_, &imageCount, nullptr);
 		images_.resize(imageCount);
-		vkGetSwapchainImagesKHR(**device, swapchain_, &imageCount, images_.data());
+		vkGetSwapchainImagesKHR(device->raw(), swapchain_, &imageCount, images_.data());
 
 		imageFormat_ = createInfo.imageFormat;
 		extent_ = createInfo.imageExtent;

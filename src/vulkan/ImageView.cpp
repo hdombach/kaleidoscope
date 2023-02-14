@@ -21,11 +21,11 @@ namespace vulkan {
 	}
 
 	ImageView::~ImageView() {
-		vkDestroyImageView(**device_, imageView_, nullptr);
+		vkDestroyImageView(device_->raw(), imageView_, nullptr);
 	}
 
 	ImageView::ImageView(VkImageViewCreateInfo &createInfo, SharedDevice device): device_(device) {
-		auto result = vkCreateImageView(**device, &createInfo, nullptr, &imageView_);
+		auto result = vkCreateImageView(device->raw(), &createInfo, nullptr, &imageView_);
 		if (result != VK_SUCCESS) {
 			throw vulkan::Error(result);
 		}

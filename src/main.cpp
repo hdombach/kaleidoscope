@@ -123,8 +123,8 @@ void KaleidoscopeApplication::initVulkan() {
 		debugMessenger = std::make_shared<vulkan::DebugUtilsMessenger>(vulkan::DebugUtilsMessenger(instance));
 	}
 	surface = std::make_shared<vulkan::Surface>(vulkan::Surface(instance, window));
-	physicalDevice = vulkan::PhysicalDeviceFactory(surface, instance).pickDevice();
-	device = vulkan::DeviceFactory(physicalDevice).defaultConfig().createShared();
+	physicalDevice = vulkan::PhysicalDevice::pickDevice(surface, instance);
+	device = std::make_shared<vulkan::Device>(vulkan::Device(physicalDevice));
 	swapchain = vulkan::SwapchainFactory(surface, device, window).defaultConfig().createShared();
 	renderPass = vulkan::RenderPassFactory(device, swapchain).defaultConfig().createShared();
 	pipeline = vulkan::PipelineFactory(device, swapchain, renderPass).defaultConfig().createShared();
@@ -146,11 +146,11 @@ void KaleidoscopeApplication::mainLoop() {
 }
 
 void KaleidoscopeApplication::cleanup() {
-	vkDestroySemaphore(**device, imageAvailableSemaphore, nullptr);
-	vkDestroySemaphore(**device, renderFinishedSemaphore, nullptr);
-	vkDestroyFence(**device, inFlightFence, nullptr);
+	vkDestroySemaphore(device->raw(), imageAvailableSemaphore, nullptr);
+	vkDestroySemaphore(device->raw(), renderFinishedSemaphore, nullptr);
+	vkDestroyFence(device->raw(), inFlightFence, nullptr);
 
-	vkDestroyCommandPool(**device, commandPool, nullptr);
+	vkDestroyCommandPool(device->raw(), commandPool, nullptr);
 
 	glfwTerminate();
 }
@@ -161,7 +161,7 @@ void KaleidoscopeApplication::createCommandPool() {
 	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	poolInfo.queueFamilyIndex = physicalDevice.graphicsQueueFamily().value();
 
-	if (vkCreateCommandPool(**device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
+	if (vkCreateCommandPool(device->raw(), &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create command pool!");
 	}
 }
@@ -173,7 +173,7 @@ void KaleidoscopeApplication::createCommandBuffer() {
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = 1;
 
-	if (vkAllocateCommandBuffers(**device, &allocInfo, &commandBuffer) != VK_SUCCESS) {
+	if (vkAllocateCommandBuffers(device->raw(), &allocInfo, &commandBuffer) != VK_SUCCESS) {
 		throw std::runtime_error("failed to allocate command buffers!");
 	}
 }
@@ -186,9 +186,9 @@ void KaleidoscopeApplication::createSyncObjects() {
 	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-	if (vkCreateSemaphore(**device, &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
-			vkCreateSemaphore(**device, &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS ||
-			vkCreateFence(**device, &fenceInfo, nullptr, &inFlightFence) != VK_SUCCESS) {
+	if (vkCreateSemaphore(device->raw(), &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
+			vkCreateSemaphore(device->raw(), &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS ||
+			vkCreateFence(device->raw(), &fenceInfo, nullptr, &inFlightFence) != VK_SUCCESS) {
 		throw std::runtime_error("failed to create semaphores!");
 	}
 }
@@ -242,11 +242,11 @@ void KaleidoscopeApplication::recordCommandBuffer(VkCommandBuffer commandBuffer,
 }
 
 void KaleidoscopeApplication::drawFrame() {
-	vkWaitForFences(**device, 1, &inFlightFence, VK_TRUE, UINT64_MAX);
-	vkResetFences(**device, 1, &inFlightFence);
+	vkWaitForFences(device->raw(), 1, &inFlightFence, VK_TRUE, UINT64_MAX);
+	vkResetFences(device->raw(), 1, &inFlightFence);
 
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(**device, **swapchain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+	vkAcquireNextImageKHR(device->raw(), **swapchain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
 	vkResetCommandBuffer(commandBuffer, 0);
 
