@@ -8,79 +8,59 @@
 #include <ostream>
 
 namespace vulkan {
-	SharedRenderPass RenderPass::createShared(
-			VkRenderPassCreateInfo &createInfo,
-			SharedDevice device)
+	void RenderPassDeleter::operator()(RenderPassData *data) const {
+		vkDestroyRenderPass(data->device_->raw(), data->renderPass_, nullptr);
+		delete data;
+	}
+
+	RenderPass::RenderPass(SharedDevice device, SharedSwapchain swapchain):
+		base_type(new RenderPassData{nullptr, device})
 	{
-		return SharedRenderPass(new RenderPass(createInfo, device));
-	}
+		auto createInfo = VkRenderPassCreateInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 
-	VkRenderPass& RenderPass::operator*() {
-		return renderPass_;
-	}
+		auto colorAttachment = VkAttachmentDescription{};
+		colorAttachment.format = swapchain->imageFormat();
+		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-	VkRenderPass& RenderPass::raw() {
-		return renderPass_;
-	}
+		auto colorAttachmentRef = VkAttachmentReference{};
+		colorAttachmentRef.attachment = 0;
+		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-	RenderPass::~RenderPass() {
-		vkDestroyRenderPass(device_->raw(), renderPass_, nullptr);
-	}
+		auto subpass = VkSubpassDescription{};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorAttachmentRef;
 
-	RenderPass::RenderPass(
-			VkRenderPassCreateInfo &createInfo,
-			SharedDevice device): device_(device)
-	{
-		auto result = vkCreateRenderPass(device_->raw(), &createInfo, nullptr, &renderPass_);
+		createInfo.attachmentCount = 1;
+		createInfo.pAttachments = &colorAttachment;
+		createInfo.subpassCount = 1;
+		createInfo.pSubpasses = &subpass;
+
+		auto dependency = VkSubpassDependency{};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcAccessMask = 0;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+		createInfo.dependencyCount = 1;
+		createInfo.pDependencies = &dependency;
+
+		auto result = vkCreateRenderPass(device->raw(), &createInfo, nullptr, &raw());
 		if (result != VK_SUCCESS) {
 			throw vulkan::Error(result);
 		}
 	}
 
-	/**** factory ****/
-	RenderPassFactory::RenderPassFactory(
-			SharedDevice device,
-			SharedSwapchain swapchain): device_(device), swapchain_(swapchain)
-	{
-		createInfo_.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	}
-
-	RenderPassFactory &RenderPassFactory::defaultConfig() {
-		colorAttachment_.format = swapchain_->imageFormat();
-		colorAttachment_.samples = VK_SAMPLE_COUNT_1_BIT;
-		colorAttachment_.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		colorAttachment_.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		colorAttachment_.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		colorAttachment_.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		colorAttachment_.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		colorAttachment_.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-		colorAttachmentRef_.attachment = 0;
-		colorAttachmentRef_.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		
-		subpass_.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass_.colorAttachmentCount = 1;
-		subpass_.pColorAttachments = &colorAttachmentRef_;
-
-		createInfo_.attachmentCount = 1;
-		createInfo_.pAttachments = &colorAttachment_;
-		createInfo_.subpassCount = 1;
-		createInfo_.pSubpasses = &subpass_;
-
-		dependency_.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency_.dstSubpass = 0;
-		dependency_.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency_.srcAccessMask = 0;
-		dependency_.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency_.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-		createInfo_.dependencyCount = 1;
-		createInfo_.pDependencies = &dependency_;
-
-		return *this;
-	}
-
-	SharedRenderPass RenderPassFactory::createShared() {
-		return RenderPass::createShared(createInfo_, device_);
+	VkRenderPass& RenderPass::raw() {
+		return get()->renderPass_;
 	}
 }

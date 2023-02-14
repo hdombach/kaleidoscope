@@ -10,37 +10,19 @@ namespace vulkan {
 	class RenderPass;
 	using SharedRenderPass = std::shared_ptr<RenderPass>;
 
-	class RenderPass {
+	struct RenderPassData {
+		VkRenderPass renderPass_;
+		SharedDevice device_;
+	};
+	struct RenderPassDeleter {
+		void operator()(RenderPassData *data) const;
+	};
+
+	class RenderPass: public std::unique_ptr<RenderPassData, RenderPassDeleter> {
 		public:
-			static SharedRenderPass createShared(VkRenderPassCreateInfo &createInfo, SharedDevice device);
-			VkRenderPass& operator*();
+
+			using base_type = std::unique_ptr<RenderPassData, RenderPassDeleter>;
+			RenderPass(SharedDevice device, SharedSwapchain swapchain);
 			VkRenderPass& raw();
-			~RenderPass();
-
-		private:
-			RenderPass(VkRenderPassCreateInfo &createInfo, SharedDevice device);
-
-			VkRenderPass renderPass_;
-			SharedDevice device_;
 	};
-
-	class RenderPassFactory {
-		public:
-			RenderPassFactory(SharedDevice device, SharedSwapchain swapchain);
-
-			RenderPassFactory &defaultConfig();
-			SharedRenderPass createShared();
-
-		private:
-			VkRenderPassCreateInfo createInfo_{};
-
-			VkAttachmentDescription colorAttachment_{};
-			VkAttachmentReference colorAttachmentRef_{};
-			VkSubpassDescription subpass_{};
-			VkSubpassDependency dependency_{};
-
-			SharedDevice device_;
-			SharedSwapchain swapchain_;
-	};
-
 }

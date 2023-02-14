@@ -122,11 +122,11 @@ void KaleidoscopeApplication::initVulkan() {
 	if (vulkan::ENABLE_VALIDATION_LAYERS) {
 		debugMessenger = std::make_shared<vulkan::DebugUtilsMessenger>(vulkan::DebugUtilsMessenger(instance));
 	}
-	surface = std::make_shared<vulkan::Surface>(vulkan::Surface(instance, window));
+	surface = std::make_shared<vulkan::Surface>(instance, window);
 	physicalDevice = vulkan::PhysicalDevice::pickDevice(surface, instance);
-	device = std::make_shared<vulkan::Device>(vulkan::Device(physicalDevice));
-	swapchain = std::make_shared<vulkan::Swapchain>(vulkan::Swapchain(surface, device, window));
-	renderPass = vulkan::RenderPassFactory(device, swapchain).defaultConfig().createShared();
+	device = std::make_shared<vulkan::Device>(physicalDevice);
+	swapchain = std::make_shared<vulkan::Swapchain>(surface, device, window);
+	renderPass = std::make_shared<vulkan::RenderPass>(device, swapchain);
 	pipeline = vulkan::PipelineFactory(device, swapchain, renderPass).defaultConfig().createShared();
 	for (auto imageView : swapchain->imageViews()) {
 		swapChainFramebuffers.push_back(std::make_shared<vulkan::Framebuffer>(vulkan::Framebuffer(imageView, swapchain, renderPass, device)));
@@ -205,7 +205,7 @@ void KaleidoscopeApplication::recordCommandBuffer(VkCommandBuffer commandBuffer,
 
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = **renderPass;
+	renderPassInfo.renderPass = renderPass->raw();
 	renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex]->raw();
 	renderPassInfo.renderArea.offset = {0, 0};
 	renderPassInfo.renderArea.extent = swapchain->extent();
