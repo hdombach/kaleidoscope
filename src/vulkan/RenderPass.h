@@ -20,8 +20,8 @@ namespace vulkan {
 
 	class RenderPass: public std::unique_ptr<RenderPassData, RenderPassDeleter> {
 		public:
-
 			using base_type = std::unique_ptr<RenderPassData, RenderPassDeleter>;
+
 			RenderPass(SharedDevice device, SharedSwapchain swapchain);
 			VkRenderPass& raw();
 	};

@@ -13,66 +13,24 @@ namespace vulkan {
 	class Pipeline;
 	using SharedPipeline = std::shared_ptr<Pipeline>;
 
-	class Pipeline {
-		public:
-			static SharedPipeline createShared(
-					VkGraphicsPipelineCreateInfo &createInfo,
-					SharedDevice device,
-					SharedSwapchain swapchain,
-					SharedRenderPass renderPass);
-			SharedPipelineLayout layout();
-			VkPipeline& operator*();
-			VkPipeline& raw();
-			~Pipeline();
-
-		private:
-			Pipeline(
-					VkGraphicsPipelineCreateInfo &createInfo,
-					SharedDevice device,
-					SharedSwapchain swapchain,
-					SharedRenderPass renderPass);
-
-			VkPipeline pipeline_;
-
-			SharedDevice device_;
-			SharedSwapchain swapchain_;
-			SharedRenderPass renderPass_;
-			SharedPipelineLayout layout_;
+	struct PipelineData {
+		VkPipeline pipeline_;
+		SharedDevice device_;
+		SharedSwapchain swapchain_;
+		SharedRenderPass renderPass_;
+		SharedPipelineLayout layout_;
+	};
+	struct PipelineDeleter {
+		void operator()(PipelineData *data) const;
 	};
 
-	class PipelineFactory {
+	class Pipeline: public std::unique_ptr<PipelineData, PipelineDeleter> {
 		public:
-			PipelineFactory(
-					SharedDevice device,
-					SharedSwapchain swapchain,
-					SharedRenderPass renderPass);
+			using base_type = std::unique_ptr<PipelineData, PipelineDeleter>;
 
-			PipelineFactory &defaultConfig();
-			SharedPipeline createShared();
+			Pipeline(SharedDevice device, SharedSwapchain swapchain, SharedRenderPass renderPass);
+			VkPipeline& raw();
 
-		private:
-			SharedDevice device_;
-			SharedSwapchain swapchain_;
-			SharedRenderPass renderPass_;
-
-
-			VkGraphicsPipelineCreateInfo createInfo_{};
-
-			SharedPipelineLayout layout_;
-			ShaderModule vertShaderModule_;
-			ShaderModule fragShaderModule_;
-
-			VkPipelineShaderStageCreateInfo shaderStages_[2];
-			VkPipelineVertexInputStateCreateInfo vertexInputInfo_{};
-			VkPipelineInputAssemblyStateCreateInfo inputAssembly_{};
-			VkViewport viewport_{};
-			VkRect2D scissor_{};
-			VkPipelineViewportStateCreateInfo viewportState_{};
-			VkPipelineRasterizationStateCreateInfo rasterizer_{};
-			VkPipelineMultisampleStateCreateInfo multisampling_{};
-			VkPipelineColorBlendAttachmentState colorBlendAttachment_{};
-			VkPipelineColorBlendStateCreateInfo colorBlending_{};
-			std::vector<VkDynamicState> dynamicStates_;
-			VkPipelineDynamicStateCreateInfo dynamicState_{};
+			SharedPipelineLayout layout();
 	};
 }

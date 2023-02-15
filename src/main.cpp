@@ -127,7 +127,7 @@ void KaleidoscopeApplication::initVulkan() {
 	device = std::make_shared<vulkan::Device>(physicalDevice);
 	swapchain = std::make_shared<vulkan::Swapchain>(surface, device, window);
 	renderPass = std::make_shared<vulkan::RenderPass>(device, swapchain);
-	pipeline = vulkan::PipelineFactory(device, swapchain, renderPass).defaultConfig().createShared();
+	pipeline = std::make_shared<vulkan::Pipeline>(device, swapchain, renderPass);
 	for (auto imageView : swapchain->imageViews()) {
 		swapChainFramebuffers.push_back(std::make_shared<vulkan::Framebuffer>(vulkan::Framebuffer(imageView, swapchain, renderPass, device)));
 	}
