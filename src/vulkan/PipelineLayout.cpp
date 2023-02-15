@@ -5,60 +5,33 @@
 #include "vulkan/vulkan_core.h"
 
 namespace vulkan {
-	SharedPipelineLayout PipelineLayout::createShared(
-			VkPipelineLayoutCreateInfo &createInfo,
-			SharedSwapchain swapchain,
-			SharedDevice device) 
+	void PipelineLayoutDeleter::operator()(PipelineLayoutData *data) const {
+		vkDestroyPipelineLayout(data->device_->raw(), data->pipelineLayout_, nullptr);
+		delete data;
+	}
+
+	PipelineLayout::PipelineLayout(SharedDevice device, SharedSwapchain swapchain):
+		base_type(new PipelineLayoutData{nullptr})
 	{
-		return SharedPipelineLayout(new PipelineLayout(createInfo, swapchain, device));
-	}
+		auto createInfo = VkPipelineLayoutCreateInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		createInfo.setLayoutCount = 0;
+		createInfo.pSetLayouts = nullptr;
+		createInfo.pushConstantRangeCount = 0;
+		createInfo.pPushConstantRanges = nullptr;
 
-	VkPipelineLayout& PipelineLayout::operator*() {
-		return pipelineLayout_;
-	}
-	
-	VkPipelineLayout& PipelineLayout::raw() {
-		return pipelineLayout_;
-	}
-
-	PipelineLayout::~PipelineLayout() {
-		vkDestroyPipelineLayout(device_->raw(), pipelineLayout_, nullptr);
-	}
-
-	PipelineLayout::PipelineLayout(
-			VkPipelineLayoutCreateInfo &createInfo,
-			SharedSwapchain swapchain,
-			SharedDevice device):
-		device_(device),
-		swapchain_(swapchain)
-	{
-		auto result = vkCreatePipelineLayout(device->raw(), &createInfo, nullptr, &pipelineLayout_);
-		if (result != VK_SUCCESS) {
-			throw vulkan::Error(result);
+		{
+			auto data = get();
+			auto result = vkCreatePipelineLayout(device->raw(), &createInfo, nullptr, &data->pipelineLayout_);
+			if (result != VK_SUCCESS) {
+				throw vulkan::Error(result);
+			}
+			data->swapchain_ = swapchain;
+			data->device_ = device;
 		}
 	}
 
-	/**** factory ****/
-
-	PipelineLayoutFactory::PipelineLayoutFactory(
-			SharedSwapchain swapchain,
-			SharedDevice device):
-		swapchain_(swapchain),
-		device_(device)
-	{
-		createInfo_.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	}
-
-	PipelineLayoutFactory &PipelineLayoutFactory::defaultConfig() {
-		createInfo_.setLayoutCount = 0;
-		createInfo_.pSetLayouts = nullptr;
-		createInfo_.pushConstantRangeCount = 0;
-		createInfo_.pPushConstantRanges = nullptr;
-
-		return *this;
-	}
-
-	SharedPipelineLayout PipelineLayoutFactory::createShared() {
-		return PipelineLayout::createShared(createInfo_, swapchain_, device_);
+	VkPipelineLayout& PipelineLayout::raw() {
+		return get()->pipelineLayout_;
 	}
 }

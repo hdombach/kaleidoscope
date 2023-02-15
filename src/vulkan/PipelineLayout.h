@@ -10,38 +10,20 @@ namespace vulkan {
 	class PipelineLayout;
 	using SharedPipelineLayout = std::shared_ptr<PipelineLayout>;
 
-	class PipelineLayout {
-		public:
-			static SharedPipelineLayout createShared(
-					VkPipelineLayoutCreateInfo &createInfo,
-					SharedSwapchain swapchain,
-					SharedDevice device);
-			VkPipelineLayout& operator*();
-			VkPipelineLayout& raw();
-			~PipelineLayout();
-
-		private:
-			PipelineLayout(
-					VkPipelineLayoutCreateInfo &createInfo,
-					SharedSwapchain swapchain,
-					SharedDevice device);
-
-			VkPipelineLayout pipelineLayout_;
-			SharedSwapchain swapchain_;
-			SharedDevice device_;
+	struct PipelineLayoutData {
+		VkPipelineLayout pipelineLayout_;
+		SharedSwapchain swapchain_;
+		SharedDevice device_;
+	};
+	struct PipelineLayoutDeleter {
+		void operator()(PipelineLayoutData *data) const;
 	};
 
-	class PipelineLayoutFactory {
+	class PipelineLayout: std::unique_ptr<PipelineLayoutData, PipelineLayoutDeleter> {
 		public:
-			PipelineLayoutFactory(SharedSwapchain swapchain, SharedDevice device);
+			using base_type = std::unique_ptr<PipelineLayoutData, PipelineLayoutDeleter>;
 
-			PipelineLayoutFactory &defaultConfig();
-			SharedPipelineLayout createShared();
-
-		private:
-			SharedSwapchain swapchain_;
-			SharedDevice device_;
-
-			VkPipelineLayoutCreateInfo createInfo_{};
+			PipelineLayout(SharedDevice device, SharedSwapchain swapchain);
+			VkPipelineLayout& raw();
 	};
 }

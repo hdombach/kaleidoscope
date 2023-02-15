@@ -122,7 +122,7 @@ namespace vulkan {
 		dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 		dynamicState.pDynamicStates = dynamicStates.data();
 
-		auto layout = PipelineLayoutFactory(swapchain, device).defaultConfig().createShared();
+		auto layout = std::make_shared<PipelineLayout>(device, swapchain);
 
 		auto createInfo = VkGraphicsPipelineCreateInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
