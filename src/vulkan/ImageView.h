@@ -7,36 +7,20 @@
 namespace vulkan {
 	class ImageView;
 	using SharedImageView = std::shared_ptr<ImageView>;
-	using UniqueImageView = std::unique_ptr<ImageView>;
 
-	class ImageView {
-		public:
-			static SharedImageView createShared(VkImageViewCreateInfo &createInfo, SharedDevice device);
-			static UniqueImageView createUnique(VkImageViewCreateInfo &createInfo, SharedDevice device);
-			VkImageView& operator*();
-			VkImageView& raw();
-			~ImageView();
-
-		private:
-			ImageView(VkImageViewCreateInfo &createInfo, SharedDevice device);
-
-			VkImageView imageView_;
-			SharedDevice device_;
+	struct ImageViewData {
+		VkImageView imageView_;
+		SharedDevice device_;
+	};
+	struct ImageViewDeleter {
+		void operator()(ImageViewData *data) const;
 	};
 
-	class ImageViewFactory {
+	class ImageView: public std::unique_ptr<ImageViewData, ImageViewDeleter> {
 		public:
-			ImageViewFactory(VkImage image, SharedDevice device, VkFormat format);
+			using base_type = std::unique_ptr<ImageViewData, ImageViewDeleter>;
 
-			ImageViewFactory &defaultConfig();
-			SharedImageView createShared();
-			UniqueImageView createUnique();
-
-		private:
-			VkImageViewCreateInfo createInfo_{};
-
-			VkImage image_;
-			SharedDevice device_;
-			VkFormat format_;
+			ImageView(SharedDevice device, VkImage image, VkFormat format);
+			VkImageView& raw();
 	};
 }

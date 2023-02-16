@@ -4,64 +4,39 @@
 #include "vulkan/vulkan_core.h"
 
 namespace vulkan {
-	SharedImageView ImageView::createShared(VkImageViewCreateInfo &createInfo, SharedDevice device) {
-		return SharedImageView(new ImageView(createInfo, device));
+	void ImageViewDeleter::operator()(ImageViewData *data) const {
+		vkDestroyImageView(data->device_->raw(), data->imageView_, nullptr);
+		delete data;
 	}
 
-	UniqueImageView ImageView::createUnique(VkImageViewCreateInfo &createInfo, SharedDevice device) {
-		return UniqueImageView(new ImageView(createInfo, device));
-	}
-
-	VkImageView& ImageView::operator*() {
-		return imageView_;
-	}
-
-	VkImageView& ImageView::raw() {
-		return imageView_;
-	}
-
-	ImageView::~ImageView() {
-		vkDestroyImageView(device_->raw(), imageView_, nullptr);
-	}
-
-	ImageView::ImageView(VkImageViewCreateInfo &createInfo, SharedDevice device): device_(device) {
-		auto result = vkCreateImageView(device->raw(), &createInfo, nullptr, &imageView_);
-		if (result != VK_SUCCESS) {
-			throw vulkan::Error(result);
+	ImageView::ImageView(SharedDevice device, VkImage image, VkFormat format):
+		base_type(new ImageViewData{nullptr})
+	{
+		auto createInfo = VkImageViewCreateInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		createInfo.image = image;
+		createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		createInfo.format = format;
+		createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+		createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		createInfo.subresourceRange.baseMipLevel = 0;
+		createInfo.subresourceRange.levelCount = 1;
+		createInfo.subresourceRange.baseArrayLayer = 0;
+		createInfo.subresourceRange.layerCount = 1;
+		{
+			auto data = get();
+			auto result = vkCreateImageView(device->raw(), &createInfo, nullptr, &data->imageView_);
+			if (result != VK_SUCCESS) {
+				throw vulkan::Error(result);
+			}
+			data->device_ = device;
 		}
 	}
 
-	/**** factory ****/
-
-	ImageViewFactory::ImageViewFactory(
-			VkImage image,
-			SharedDevice device,
-			VkFormat format): device_(device), format_(format), image_(image) {
-		createInfo_.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-	}
-
-	ImageViewFactory &ImageViewFactory::defaultConfig() {
-		createInfo_.image = image_;
-		createInfo_.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		createInfo_.format = format_;
-		createInfo_.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo_.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo_.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo_.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-		createInfo_.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		createInfo_.subresourceRange.baseMipLevel = 0;
-		createInfo_.subresourceRange.levelCount = 1;
-		createInfo_.subresourceRange.baseArrayLayer = 0;
-		createInfo_.subresourceRange.layerCount = 1;
-
-		return *this;
-	}
-
-	SharedImageView ImageViewFactory::createShared() {
-		return ImageView::createShared(createInfo_, device_);
-	}
-
-	UniqueImageView ImageViewFactory::createUnique() {
-		return ImageView::createUnique(createInfo_, device_);
+	VkImageView& ImageView::raw() {
+		return get()->imageView_;
 	}
 }

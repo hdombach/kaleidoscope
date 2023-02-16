@@ -5,6 +5,7 @@
 #include "Surface.h"
 #include "Window.h"
 #include "vulkan/vulkan_core.h"
+#include <memory>
 #include <stdexcept>
 
 namespace vulkan {
@@ -72,7 +73,7 @@ namespace vulkan {
 			data->extent_ = createInfo.imageExtent;
 
 			for (size_t i = 0; i < get()->images_.size(); ++i) {
-				auto imageView = ImageViewFactory(get()->images_[i], device, get()->imageFormat_).defaultConfig().createShared();
+				auto imageView = std::make_shared<vulkan::ImageView>(device, get()->images_[i], get()->imageFormat_);
 				data->imageViews_.push_back(imageView);
 			}
 		}
