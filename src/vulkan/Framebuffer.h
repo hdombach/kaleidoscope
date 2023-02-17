@@ -12,23 +12,18 @@ namespace vulkan {
 	class Framebuffer;
 	using SharedFramebuffer = std::shared_ptr<Framebuffer>;
 
-	class Framebuffer {
+	struct FramebufferData {
+		VkFramebuffer framebuffer_;
+		SharedDevice device_;
+	};
+	struct FramebufferDeleter {
+		void operator()(FramebufferData *data) const;
+	};
+
+	class Framebuffer: public std::unique_ptr<FramebufferData, FramebufferDeleter> {
 		public:
-			Framebuffer();
-
+			using base_type = std::unique_ptr<FramebufferData, FramebufferDeleter>;
 			Framebuffer(SharedImageView, SharedSwapchain, SharedRenderPass, SharedDevice);
-
-			Framebuffer(const Framebuffer &) = delete;
-			Framebuffer& operator=(const Framebuffer &) = delete;
-			Framebuffer(Framebuffer&&);
-			Framebuffer& operator=(Framebuffer &&);
-			VkFramebuffer& operator*();
 			VkFramebuffer& raw();
-			~Framebuffer();
-
-		private:
-			void destroy();
-			VkFramebuffer framebuffer_=nullptr;
-			SharedDevice device_;
 	};
 }

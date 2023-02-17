@@ -128,8 +128,6 @@ void KaleidoscopeApplication::initVulkan() {
 	renderPass = std::make_shared<vulkan::RenderPass>(device, swapchain);
 	pipeline = std::make_shared<vulkan::Pipeline>(device, swapchain, renderPass);
 	for (auto imageView : swapchain->imageViews()) {
-		//TODO: Image view does still has factory
-		//TODO: framebuffer is not unique ptr
 		//TODO: Shader Module is not unqiue ptr
 		//need to convert
 		swapChainFramebuffers.push_back(std::make_shared<vulkan::Framebuffer>(imageView, swapchain, renderPass, device));
