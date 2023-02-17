@@ -1,3 +1,4 @@
+#include "CommandPool.h"
 #include "DebugUtilsMessenger.h"
 #include "Defs.h"
 #include "Device.h"
@@ -58,7 +59,6 @@ class KaleidoscopeApplication {
 	private:
 		void initVulkan();
 		void createGraphicsPipeline();
-		void createCommandPool();
 		void createCommandBuffer();
 		void createSyncObjects();
 		void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
@@ -88,7 +88,7 @@ class KaleidoscopeApplication {
 		vulkan::SharedRenderPass renderPass;
 		vulkan::SharedPipeline pipeline;
 		std::vector<vulkan::SharedFramebuffer> swapChainFramebuffers;
-		VkCommandPool commandPool;
+		vulkan::SharedCommandPool commandPool;
 		VkCommandBuffer commandBuffer;
 		VkSemaphore imageAvailableSemaphore;
 		VkSemaphore renderFinishedSemaphore;
@@ -128,10 +128,9 @@ void KaleidoscopeApplication::initVulkan() {
 	renderPass = std::make_shared<vulkan::RenderPass>(device, swapchain);
 	pipeline = std::make_shared<vulkan::Pipeline>(device, swapchain, renderPass);
 	for (auto imageView : swapchain->imageViews()) {
-		//TODO: Shader Module is not unqiue ptr
 		swapChainFramebuffers.push_back(std::make_shared<vulkan::Framebuffer>(imageView, swapchain, renderPass, device));
 	}
-	createCommandPool();
+	commandPool = std::make_shared<vulkan::CommandPool>(device, physicalDevice);
 	createCommandBuffer();
 	createSyncObjects();
 }
@@ -150,26 +149,13 @@ void KaleidoscopeApplication::cleanup() {
 	vkDestroySemaphore(device->raw(), renderFinishedSemaphore, nullptr);
 	vkDestroyFence(device->raw(), inFlightFence, nullptr);
 
-	vkDestroyCommandPool(device->raw(), commandPool, nullptr);
-
 	glfwTerminate();
-}
-
-void KaleidoscopeApplication::createCommandPool() {
-	VkCommandPoolCreateInfo poolInfo{};
-	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-	poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-	poolInfo.queueFamilyIndex = physicalDevice.graphicsQueueFamily().value();
-
-	if (vkCreateCommandPool(device->raw(), &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create command pool!");
-	}
 }
 
 void KaleidoscopeApplication::createCommandBuffer() {
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = commandPool;
+	allocInfo.commandPool = commandPool->raw();
 	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 	allocInfo.commandBufferCount = 1;
 
