@@ -7,7 +7,14 @@
 #include <_types/_uint32_t.h>
 
 namespace vulkan {
-	ShaderModule::ShaderModule(const char *filename, SharedDevice device): device_(device) {
+	void ShaderModuleDeleter::operator()(ShaderModuleData *data) const {
+		vkDestroyShaderModule(data->device_->raw(), data->shaderModule_, nullptr);
+		delete data;
+	}
+
+	ShaderModule::ShaderModule(const char *filename, SharedDevice device):
+		base_type(new ShaderModuleData{nullptr})
+	{
 		auto code = util::readEnvFile(filename);
 
 		VkShaderModuleCreateInfo createInfo{};
@@ -15,39 +22,17 @@ namespace vulkan {
 		createInfo.codeSize = code.size();
 		createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
 
-		auto result = vkCreateShaderModule(device->raw(), &createInfo, nullptr, &shaderModule_);
-		if (result != VK_SUCCESS) {
-			throw vulkan::Error(result);
+		{
+			auto data = get();
+			auto result = vkCreateShaderModule(device->raw(), &createInfo, nullptr, &data->shaderModule_);
+			if (result != VK_SUCCESS) {
+				throw vulkan::Error(result);
+			}
+			data->device_ = device;
 		}
-	}
-
-	ShaderModule::ShaderModule(VkShaderModule shaderModule, SharedDevice device): shaderModule_(shaderModule), device_(device) {}
-
-	ShaderModule::ShaderModule(ShaderModule&& other) {
-		shaderModule_ = other.shaderModule_;
-		device_ = other.device_;
-		other.shaderModule_ = nullptr;
-	}
-
-	ShaderModule &ShaderModule::operator=(ShaderModule && other) {
-		shaderModule_ = other.shaderModule_;
-		device_ = other.device_;
-		other.shaderModule_ = nullptr;
-
-		return *this;
-	}
-
-	ShaderModule::~ShaderModule() {
-		if (shaderModule_ != nullptr) {
-			vkDestroyShaderModule(device_->raw(), shaderModule_, nullptr);
-		}
-	}
-
-	VkShaderModule & ShaderModule::operator*() {
-		return shaderModule_;
 	}
 
 	VkShaderModule & ShaderModule::raw() {
-		return shaderModule_;
+		return get()->shaderModule_;
 	}
 }

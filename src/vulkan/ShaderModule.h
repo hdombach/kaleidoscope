@@ -3,24 +3,23 @@
 #include "Device.h"
 #include "vulkan/vulkan.h"
 #include "vulkan/vulkan_core.h"
+#include <memory>
 
 namespace vulkan {
-	class ShaderModule {
+	
+	struct ShaderModuleData {
+		VkShaderModule shaderModule_;
+		SharedDevice device_;
+	};
+	struct ShaderModuleDeleter {
+		void operator()(ShaderModuleData *data) const;
+	};
+
+	class ShaderModule: std::unique_ptr<ShaderModuleData, ShaderModuleDeleter> {
 		public:
-			ShaderModule() = default;
+			using base_type = std::unique_ptr<ShaderModuleData, ShaderModuleDeleter>;
+
 			ShaderModule(const char *fileName, SharedDevice device);
-			ShaderModule(VkShaderModule shaderModule, SharedDevice device);
-			ShaderModule(const ShaderModule &) = delete;
-			ShaderModule& operator=(const ShaderModule &) = delete;
-			ShaderModule(ShaderModule&&);
-			ShaderModule& operator=(ShaderModule &&);
-			~ShaderModule();
-			VkShaderModule & operator*();
 			VkShaderModule & raw();
-
-		private:
-			VkShaderModule shaderModule_ = nullptr;
-
-			SharedDevice device_;
 	};
 }

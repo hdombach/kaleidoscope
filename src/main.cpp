@@ -129,7 +129,6 @@ void KaleidoscopeApplication::initVulkan() {
 	pipeline = std::make_shared<vulkan::Pipeline>(device, swapchain, renderPass);
 	for (auto imageView : swapchain->imageViews()) {
 		//TODO: Shader Module is not unqiue ptr
-		//need to convert
 		swapChainFramebuffers.push_back(std::make_shared<vulkan::Framebuffer>(imageView, swapchain, renderPass, device));
 	}
 	createCommandPool();
