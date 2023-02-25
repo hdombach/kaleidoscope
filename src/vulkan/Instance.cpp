@@ -5,12 +5,6 @@
 #include "vulkan/vulkan_core.h"
 #include <iostream>
 
-//			VkInstanceCreateInfo createInfo{};
-//			VkApplicationInfo appInfo{};
-//			VkDebugUtilsMessengerCreateInfoEXT debugMessageCreateInfo{};
-//			std::vector<const char*> requiredExtensions;
-
-
 namespace vulkan {
 
 	void InstanceDeleter::operator()(VkInstance *instance) const {

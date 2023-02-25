@@ -7,7 +7,9 @@
 #include "PhysicalDevice.h"
 #include "Pipeline.h"
 #include "RenderPass.h"
+#include "Semaphore.h"
 #include "ShaderModule.h"
+#include "Fence.h"
 #include "Surface.h"
 #include "Swapchain.h"
 #include "Window.h"
@@ -59,8 +61,6 @@ class KaleidoscopeApplication {
 
 	private:
 		void initVulkan();
-		void createGraphicsPipeline();
-		void createSyncObjects();
 		void recordCommandBuffer(vulkan::SharedCommandBuffer commandBuffer, uint32_t imageIndex);
 
 		void drawFrame();
@@ -90,22 +90,9 @@ class KaleidoscopeApplication {
 		std::vector<vulkan::SharedFramebuffer> swapChainFramebuffers;
 		vulkan::SharedCommandPool commandPool;
 		vulkan::SharedCommandBuffer commandBuffer;
-		VkSemaphore imageAvailableSemaphore;
-		VkSemaphore renderFinishedSemaphore;
-		VkFence inFlightFence;
-
-		const std::vector<const char*> validationLayers = {
-			"VK_LAYER_KHRONOS_validation"
-		};
-		const std::vector<const char*> deviceExtensions = {
-			VK_KHR_SWAPCHAIN_EXTENSION_NAME
-		};
-
-#ifdef NDEBUG
-		const bool enableValidationLayers = false;
-#else
-		const bool enableValidationLayers = true;
-#endif
+		vulkan::SharedSemaphore imageAvailableSemaphore;
+		vulkan::SharedSemaphore renderFinishedSemaphore;
+		vulkan::SharedFence inFlightFence;
 };
 
 void KaleidoscopeApplication::run() {
@@ -132,7 +119,10 @@ void KaleidoscopeApplication::initVulkan() {
 	}
 	commandPool = std::make_shared<vulkan::CommandPool>(device, physicalDevice);
 	commandBuffer = std::make_shared<vulkan::CommandBuffer>(device, commandPool);
-	createSyncObjects();
+	/* create sync objects */
+	imageAvailableSemaphore = std::make_shared<vulkan::Semaphore>(device);
+	renderFinishedSemaphore = std::make_shared<vulkan::Semaphore>(device);
+	inFlightFence = std::make_shared<vulkan::Fence>(device);
 }
 
 void KaleidoscopeApplication::mainLoop() {
@@ -145,26 +135,7 @@ void KaleidoscopeApplication::mainLoop() {
 }
 
 void KaleidoscopeApplication::cleanup() {
-	vkDestroySemaphore(device->raw(), imageAvailableSemaphore, nullptr);
-	vkDestroySemaphore(device->raw(), renderFinishedSemaphore, nullptr);
-	vkDestroyFence(device->raw(), inFlightFence, nullptr);
-
 	glfwTerminate();
-}
-
-void KaleidoscopeApplication::createSyncObjects() {
-	VkSemaphoreCreateInfo semaphoreInfo{};
-	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	
-	VkFenceCreateInfo fenceInfo{};
-	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-	if (vkCreateSemaphore(device->raw(), &semaphoreInfo, nullptr, &imageAvailableSemaphore) != VK_SUCCESS ||
-			vkCreateSemaphore(device->raw(), &semaphoreInfo, nullptr, &renderFinishedSemaphore) != VK_SUCCESS ||
-			vkCreateFence(device->raw(), &fenceInfo, nullptr, &inFlightFence) != VK_SUCCESS) {
-		throw std::runtime_error("failed to create semaphores!");
-	}
 }
 
 void KaleidoscopeApplication::recordCommandBuffer(vulkan::SharedCommandBuffer commandBuffer, uint32_t imageIndex) {
@@ -216,11 +187,11 @@ void KaleidoscopeApplication::recordCommandBuffer(vulkan::SharedCommandBuffer co
 }
 
 void KaleidoscopeApplication::drawFrame() {
-	vkWaitForFences(device->raw(), 1, &inFlightFence, VK_TRUE, UINT64_MAX);
-	vkResetFences(device->raw(), 1, &inFlightFence);
+	vkWaitForFences(device->raw(), 1, &inFlightFence->raw(), VK_TRUE, UINT64_MAX);
+	vkResetFences(device->raw(), 1, &inFlightFence->raw());
 
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(device->raw(), swapchain->raw(), UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+	vkAcquireNextImageKHR(device->raw(), swapchain->raw(), UINT64_MAX, imageAvailableSemaphore->raw(), VK_NULL_HANDLE, &imageIndex);
 
 	vkResetCommandBuffer(commandBuffer->raw(), 0);
 
@@ -229,26 +200,24 @@ void KaleidoscopeApplication::drawFrame() {
 	VkSubmitInfo submitInfo{};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	VkSemaphore waitSemaphores[] = {imageAvailableSemaphore};
 	VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 	submitInfo.waitSemaphoreCount = 1;
-	submitInfo.pWaitSemaphores = waitSemaphores;
+	submitInfo.pWaitSemaphores = &imageAvailableSemaphore->raw();
 	submitInfo.pWaitDstStageMask = waitStages;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer->raw();
 
-	VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
 	submitInfo.signalSemaphoreCount = 1;
-	submitInfo.pSignalSemaphores = signalSemaphores;
+	submitInfo.pSignalSemaphores = &renderFinishedSemaphore->raw();
 
-	if (vkQueueSubmit(device->graphicsQueue(), 1, &submitInfo, inFlightFence) != VK_SUCCESS) {
+	if (vkQueueSubmit(device->graphicsQueue(), 1, &submitInfo, inFlightFence->raw()) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to submit draw command buffer!");
 	}
 
 	VkPresentInfoKHR presentInfo{};
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.waitSemaphoreCount = 1;
-	presentInfo.pWaitSemaphores = signalSemaphores;
+	presentInfo.pWaitSemaphores = &renderFinishedSemaphore->raw();
 
 	VkSwapchainKHR swapChains[] = {swapchain->raw()};
 	presentInfo.swapchainCount = 1;
