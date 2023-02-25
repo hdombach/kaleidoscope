@@ -1,3 +1,4 @@
+#include "CommandBuffer.h"
 #include "CommandPool.h"
 #include "DebugUtilsMessenger.h"
 #include "Defs.h"
@@ -59,9 +60,8 @@ class KaleidoscopeApplication {
 	private:
 		void initVulkan();
 		void createGraphicsPipeline();
-		void createCommandBuffer();
 		void createSyncObjects();
-		void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+		void recordCommandBuffer(vulkan::SharedCommandBuffer commandBuffer, uint32_t imageIndex);
 
 		void drawFrame();
 
@@ -89,7 +89,7 @@ class KaleidoscopeApplication {
 		vulkan::SharedPipeline pipeline;
 		std::vector<vulkan::SharedFramebuffer> swapChainFramebuffers;
 		vulkan::SharedCommandPool commandPool;
-		VkCommandBuffer commandBuffer;
+		vulkan::SharedCommandBuffer commandBuffer;
 		VkSemaphore imageAvailableSemaphore;
 		VkSemaphore renderFinishedSemaphore;
 		VkFence inFlightFence;
@@ -131,7 +131,7 @@ void KaleidoscopeApplication::initVulkan() {
 		swapChainFramebuffers.push_back(std::make_shared<vulkan::Framebuffer>(imageView, swapchain, renderPass, device));
 	}
 	commandPool = std::make_shared<vulkan::CommandPool>(device, physicalDevice);
-	createCommandBuffer();
+	commandBuffer = std::make_shared<vulkan::CommandBuffer>(device, commandPool);
 	createSyncObjects();
 }
 
@@ -152,18 +152,6 @@ void KaleidoscopeApplication::cleanup() {
 	glfwTerminate();
 }
 
-void KaleidoscopeApplication::createCommandBuffer() {
-	VkCommandBufferAllocateInfo allocInfo{};
-	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	allocInfo.commandPool = commandPool->raw();
-	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	allocInfo.commandBufferCount = 1;
-
-	if (vkAllocateCommandBuffers(device->raw(), &allocInfo, &commandBuffer) != VK_SUCCESS) {
-		throw std::runtime_error("failed to allocate command buffers!");
-	}
-}
-
 void KaleidoscopeApplication::createSyncObjects() {
 	VkSemaphoreCreateInfo semaphoreInfo{};
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -179,13 +167,13 @@ void KaleidoscopeApplication::createSyncObjects() {
 	}
 }
 
-void KaleidoscopeApplication::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+void KaleidoscopeApplication::recordCommandBuffer(vulkan::SharedCommandBuffer commandBuffer, uint32_t imageIndex) {
 	VkCommandBufferBeginInfo beginInfo{};
 	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	beginInfo.flags = 0;
 	beginInfo.pInheritanceInfo = nullptr;
 
-	if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+	if (vkBeginCommandBuffer(commandBuffer->raw(), &beginInfo) != VK_SUCCESS) {
 		throw std::runtime_error("failed to begin recording command buffer!");
 	}
 
@@ -200,9 +188,9 @@ void KaleidoscopeApplication::recordCommandBuffer(VkCommandBuffer commandBuffer,
 	renderPassInfo.clearValueCount = 1;
 	renderPassInfo.pClearValues = &clearColor;
 
-	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	vkCmdBeginRenderPass(commandBuffer->raw(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->raw());
+	vkCmdBindPipeline(commandBuffer->raw(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->raw());
 
 	VkViewport viewport{};
 	viewport.x = 0.0f;
@@ -211,18 +199,18 @@ void KaleidoscopeApplication::recordCommandBuffer(VkCommandBuffer commandBuffer,
 	viewport.height = static_cast<float>(swapchain->extent().height);
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
-	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+	vkCmdSetViewport(commandBuffer->raw(), 0, 1, &viewport);
 
 	VkRect2D scissor{};
 	scissor.offset = {0, 0};
 	scissor.extent = swapchain->extent();
-	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+	vkCmdSetScissor(commandBuffer->raw(), 0, 1, &scissor);
 
-	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+	vkCmdDraw(commandBuffer->raw(), 3, 1, 0, 0);
 
-	vkCmdEndRenderPass(commandBuffer);
+	vkCmdEndRenderPass(commandBuffer->raw());
 
-	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+	if (vkEndCommandBuffer(commandBuffer->raw()) != VK_SUCCESS) {
 		throw std::runtime_error("failed to record command buffer!");
 	}
 }
@@ -234,7 +222,7 @@ void KaleidoscopeApplication::drawFrame() {
 	uint32_t imageIndex;
 	vkAcquireNextImageKHR(device->raw(), swapchain->raw(), UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
-	vkResetCommandBuffer(commandBuffer, 0);
+	vkResetCommandBuffer(commandBuffer->raw(), 0);
 
 	recordCommandBuffer(commandBuffer, imageIndex);
 
@@ -247,7 +235,7 @@ void KaleidoscopeApplication::drawFrame() {
 	submitInfo.pWaitSemaphores = waitSemaphores;
 	submitInfo.pWaitDstStageMask = waitStages;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &commandBuffer;
+	submitInfo.pCommandBuffers = &commandBuffer->raw();
 
 	VkSemaphore signalSemaphores[] = {renderFinishedSemaphore};
 	submitInfo.signalSemaphoreCount = 1;
