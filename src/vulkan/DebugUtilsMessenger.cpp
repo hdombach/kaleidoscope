@@ -60,14 +60,6 @@ namespace vulkan {
 		return createInfo;
 	}
 
-	VkDebugUtilsMessengerEXT& DebugUtilsMessenger::operator*() {
-		return get()->messenger_;
-	}
-
-	VkDebugUtilsMessengerEXT* DebugUtilsMessenger::operator->() {
-		return &get()->messenger_;
-	}
-
 	VkDebugUtilsMessengerEXT& DebugUtilsMessenger::raw() {
 		return get()->messenger_;
 	}

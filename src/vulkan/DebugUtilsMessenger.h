@@ -34,8 +34,6 @@ namespace vulkan {
 
 			static VkDebugUtilsMessengerCreateInfoEXT defaultConfig();
 
-			VkDebugUtilsMessengerEXT& operator*();
-			VkDebugUtilsMessengerEXT* operator->();
 			VkDebugUtilsMessengerEXT& raw();
 	};
 }

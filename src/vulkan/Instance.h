@@ -15,6 +15,9 @@ namespace vulkan {
 	class Instance;
 	using SharedInstance = std::shared_ptr<Instance>;
 
+	struct InstanceData {
+		VkInstance instance_;
+	};
 	struct InstanceDeleter {
 		void operator()(VkInstance *instance) const;
 	};
