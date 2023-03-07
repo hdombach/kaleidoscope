@@ -25,6 +25,8 @@ namespace vulkan {
 			void drawFrame();
 			void waitIdle();
 
+			static const size_t MAX_FRAMES_IN_FLIGHT = 2;
+
 		private:
 			void recordCommandBuffer(SharedCommandBuffer commandBuffer, uint32_t imageIndex);
 
@@ -39,9 +41,11 @@ namespace vulkan {
 			SharedPipeline pipeline_;
 			std::vector<SharedFramebuffer> swapChainFramebuffers_;
 			SharedCommandPool commandPool_;
-			SharedCommandBuffer commandBuffer_;
-			SharedSemaphore imageAvailableSemaphore_;
-			SharedSemaphore renderFinishedSemaphore_;
-			SharedFence inFlightFence_;
+			std::vector<SharedCommandBuffer> commandBuffers_;
+			std::vector<SharedSemaphore> imageAvailableSemaphores_;
+			std::vector<SharedSemaphore> renderFinishedSemaphores_;
+			std::vector<SharedFence> inFlightFences_;
+
+			uint32_t currentFrame_ = 0;
 	};
 }

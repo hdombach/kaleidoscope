@@ -16,6 +16,8 @@
 #include "Swapchain.h"
 #include "Window.h"
 #include "vulkan/vulkan_core.h"
+#include <cstdint>
+#include <iostream>
 #include <memory>
 #include <vulkan/vulkan.h>
 
@@ -36,37 +38,49 @@ namespace vulkan {
 			swapChainFramebuffers_.push_back(std::make_shared<Framebuffer>(imageView, swapchain_, renderPass_, device_));
 		}
 		commandPool_ = std::make_shared<CommandPool>(device_, physicalDevice_);
-		commandBuffer_ = std::make_shared<CommandBuffer>(device_, commandPool_);
+		commandBuffers_.reserve(MAX_FRAMES_IN_FLIGHT);
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+			commandBuffers_.push_back(std::make_shared<CommandBuffer>(device_, commandPool_));
+		}
 		/* create sync objects */
-		imageAvailableSemaphore_ = std::make_shared<Semaphore>(device_);
-		renderFinishedSemaphore_ = std::make_shared<Semaphore>(device_);
-		inFlightFence_ = std::make_shared<Fence>(device_);
+		imageAvailableSemaphores_.reserve(MAX_FRAMES_IN_FLIGHT);
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+			imageAvailableSemaphores_.push_back(std::make_shared<Semaphore>(device_));
+		}
+		renderFinishedSemaphores_.reserve(MAX_FRAMES_IN_FLIGHT);
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+			renderFinishedSemaphores_.push_back(std::make_shared<Semaphore>(device_));
+		}
+		inFlightFences_.reserve(MAX_FRAMES_IN_FLIGHT);
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+			inFlightFences_.push_back(std::make_shared<Fence>(device_));
+		}
 	}
 
 	void Graphics::drawFrame() {
-		vkWaitForFences(device_->raw(), 1, &inFlightFence_->raw(), VK_TRUE, UINT64_MAX);
-		vkResetFences(device_->raw(), 1, &inFlightFence_->raw());
+		vkWaitForFences(device_->raw(), 1, &inFlightFences_[currentFrame_]->raw(), VK_TRUE, UINT64_MAX);
+		vkResetFences(device_->raw(), 1, &inFlightFences_[currentFrame_]->raw());
 
 		uint32_t imageIndex;
-		vkAcquireNextImageKHR(device_->raw(), swapchain_->raw(), UINT64_MAX, imageAvailableSemaphore_->raw(), VK_NULL_HANDLE, &imageIndex);
+		vkAcquireNextImageKHR(device_->raw(), swapchain_->raw(), UINT64_MAX, imageAvailableSemaphores_[currentFrame_]->raw(), VK_NULL_HANDLE, &imageIndex);
 
-		vkResetCommandBuffer(commandBuffer_->raw(), 0);
+		vkResetCommandBuffer(commandBuffers_[currentFrame_]->raw(), 0);
 
-		recordCommandBuffer(commandBuffer_, imageIndex);
+		recordCommandBuffer(commandBuffers_[currentFrame_], imageIndex);
 
 		auto submitInfo = VkSubmitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
 		VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT};
 		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = &imageAvailableSemaphore_->raw();
+		submitInfo.pWaitSemaphores = &imageAvailableSemaphores_[currentFrame_]->raw();
 		submitInfo.pWaitDstStageMask = waitStages;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffer_->raw();
+		submitInfo.pCommandBuffers = &commandBuffers_[currentFrame_]->raw();
 		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &renderFinishedSemaphore_->raw();
+		submitInfo.pSignalSemaphores = &renderFinishedSemaphores_[currentFrame_]->raw();
 
-		auto result = vkQueueSubmit(device_->graphicsQueue(), 1, &submitInfo, inFlightFence_->raw());
+		auto result = vkQueueSubmit(device_->graphicsQueue(), 1, &submitInfo, inFlightFences_[currentFrame_]->raw());
 		if (result != VK_SUCCESS) {
 			throw vulkan::Error(result);
 		}
@@ -74,7 +88,7 @@ namespace vulkan {
 		auto presentInfo = VkPresentInfoKHR{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = &renderFinishedSemaphore_->raw();
+		presentInfo.pWaitSemaphores = &renderFinishedSemaphores_[currentFrame_]->raw();
 
 		VkSwapchainKHR swapChains[] = {swapchain_->raw()};
 		presentInfo.swapchainCount = 1;
@@ -83,6 +97,8 @@ namespace vulkan {
 		presentInfo.pResults = nullptr;
 
 		vkQueuePresentKHR(device_->presentQueue(), &presentInfo);
+
+		currentFrame_ = (currentFrame_ + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
 	void Graphics::waitIdle() {
@@ -111,9 +127,9 @@ namespace vulkan {
 		renderPassInfo.clearValueCount = 1;
 		renderPassInfo.pClearValues = &clearColor;
 
-		vkCmdBeginRenderPass(commandBuffer_->raw(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBeginRenderPass(commandBuffers_[currentFrame_]->raw(), &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBindPipeline(commandBuffer_->raw(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->raw());
+		vkCmdBindPipeline(commandBuffers_[currentFrame_]->raw(), VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_->raw());
 
 		auto viewport = VkViewport{};
 		viewport.x = 0.0f;
@@ -122,18 +138,18 @@ namespace vulkan {
 		viewport.height = static_cast<float>(swapchain_->extent().height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(commandBuffer_->raw(), 0, 1, &viewport);
+		vkCmdSetViewport(commandBuffers_[currentFrame_]->raw(), 0, 1, &viewport);
 
 		auto scissor = VkRect2D{};
 		scissor.offset = {0, 0};
 		scissor.extent = swapchain_->extent();
-		vkCmdSetScissor(commandBuffer_->raw(), 0, 1, &scissor);
+		vkCmdSetScissor(commandBuffers_[currentFrame_]->raw(), 0, 1, &scissor);
 
-		vkCmdDraw(commandBuffer_->raw(), 3, 1, 0, 0);
+		vkCmdDraw(commandBuffers_[currentFrame_]->raw(), 3, 1, 0, 0);
 
-		vkCmdEndRenderPass(commandBuffer_->raw());
+		vkCmdEndRenderPass(commandBuffers_[currentFrame_]->raw());
 
-		result = vkEndCommandBuffer(commandBuffer_->raw());
+		result = vkEndCommandBuffer(commandBuffers_[currentFrame_]->raw());
 		if (result != VK_SUCCESS) {
 			throw vulkan::Error(result);
 		}

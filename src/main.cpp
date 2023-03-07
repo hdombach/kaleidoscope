@@ -41,20 +41,6 @@ class KaleidoscopeApplication {
 		const uint32_t HEIGHT = 600;
 		vulkan::SharedWindow window;
 		vulkan::Graphics graphics;
-		vulkan::SharedInstance instance;
-		vulkan::SharedDebugUtilsMessenger debugMessenger;
-		vulkan::PhysicalDevice physicalDevice;
-		vulkan::SharedDevice device;
-		vulkan::SharedSurface surface;
-		vulkan::SharedSwapchain swapchain;
-		vulkan::SharedRenderPass renderPass;
-		vulkan::SharedPipeline pipeline;
-		std::vector<vulkan::SharedFramebuffer> swapChainFramebuffers;
-		vulkan::SharedCommandPool commandPool;
-		vulkan::SharedCommandBuffer commandBuffer;
-		vulkan::SharedSemaphore imageAvailableSemaphore;
-		vulkan::SharedSemaphore renderFinishedSemaphore;
-		vulkan::SharedFence inFlightFence;
 };
 
 void KaleidoscopeApplication::run() {
