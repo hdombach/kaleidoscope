@@ -19,11 +19,13 @@
 #include <cstdint>
 #include <iostream>
 #include <memory>
+#include <stdexcept>
 #include <vulkan/vulkan.h>
 
 namespace vulkan {
 	Graphics::Graphics(SharedWindow window) {
 		window_ = window;
+		window_->set_graphics(this);
 		instance_ = std::make_shared<Instance>(Instance("Kaleidoscope"));
 		if (ENABLE_VALIDATION_LAYERS) {
 			debugMessenger_ = std::make_shared<DebugUtilsMessenger>(DebugUtilsMessenger(instance_));
@@ -62,7 +64,16 @@ namespace vulkan {
 		vkResetFences(device_->raw(), 1, &inFlightFences_[currentFrame_]->raw());
 
 		uint32_t imageIndex;
-		vkAcquireNextImageKHR(device_->raw(), swapchain_->raw(), UINT64_MAX, imageAvailableSemaphores_[currentFrame_]->raw(), VK_NULL_HANDLE, &imageIndex);
+		auto result = vkAcquireNextImageKHR(device_->raw(), swapchain_->raw(), UINT64_MAX, imageAvailableSemaphores_[currentFrame_]->raw(), VK_NULL_HANDLE, &imageIndex);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+			recreateSwapChain();
+			return;
+		} else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+			throw vulkan::Error(result);
+		}
+
+		vkResetFences(device_->raw(), 1, &inFlightFences_[currentFrame_]->raw());
 
 		vkResetCommandBuffer(commandBuffers_[currentFrame_]->raw(), 0);
 
@@ -80,7 +91,7 @@ namespace vulkan {
 		submitInfo.signalSemaphoreCount = 1;
 		submitInfo.pSignalSemaphores = &renderFinishedSemaphores_[currentFrame_]->raw();
 
-		auto result = vkQueueSubmit(device_->graphicsQueue(), 1, &submitInfo, inFlightFences_[currentFrame_]->raw());
+		result = vkQueueSubmit(device_->graphicsQueue(), 1, &submitInfo, inFlightFences_[currentFrame_]->raw());
 		if (result != VK_SUCCESS) {
 			throw vulkan::Error(result);
 		}
@@ -96,13 +107,43 @@ namespace vulkan {
 		presentInfo.pImageIndices = &imageIndex;
 		presentInfo.pResults = nullptr;
 
-		vkQueuePresentKHR(device_->presentQueue(), &presentInfo);
+		result = vkQueuePresentKHR(device_->presentQueue(), &presentInfo);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+			framebufferResized = false;
+			recreateSwapChain();
+		} else if (result != VK_SUCCESS) {
+			throw vulkan::Error(result);
+		}
 
 		currentFrame_ = (currentFrame_ + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
 	void Graphics::waitIdle() {
 		device_->waitIdle();
+	}
+
+	void Graphics::recreateSwapChain() {
+		int width = 0, height = 0;
+		glfwGetFramebufferSize(window_->raw(), &width, &height);
+		std::cout << "new size is " << width << ", " << height << std::endl;
+		while (width == 0 || height == 0) {
+			glfwGetFramebufferSize(window_->raw(), &width, &height);
+			glfwWaitEvents();
+		}
+
+		waitIdle();
+
+		swapchain_->reset();
+		swapChainFramebuffers_ = {};
+
+		swapchain_ = std::make_shared<Swapchain>(surface_, device_, window_);
+		for (auto imageView : swapchain_->imageViews()) {
+			swapChainFramebuffers_.push_back(std::make_shared<Framebuffer>(imageView, swapchain_, renderPass_, device_));
+		}
+	}
+
+	void Graphics::triggerResize() {
+		framebufferResized = true;
 	}
 
 	void Graphics::recordCommandBuffer(SharedCommandBuffer commandBuffer, uint32_t imageIndex) {
