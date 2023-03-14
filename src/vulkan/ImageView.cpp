@@ -1,12 +1,14 @@
 #include "ImageView.h"
 #include "Device.h"
 #include "Error.h"
+#include "log.h"
 #include "vulkan/vulkan_core.h"
 
 namespace vulkan {
 	void ImageViewDeleter::operator()(ImageViewData *data) const {
 		vkDestroyImageView(data->device_->raw(), data->imageView_, nullptr);
 		delete data;
+		util::log_memory("Deleted image view");
 	}
 
 	ImageView::ImageView(SharedDevice device, VkImage image, VkFormat format):
@@ -34,6 +36,7 @@ namespace vulkan {
 			}
 			data->device_ = device;
 		}
+		util::log_memory("Created image view");
 	}
 
 	VkImageView& ImageView::raw() {

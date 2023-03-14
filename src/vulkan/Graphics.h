@@ -48,7 +48,7 @@ namespace vulkan {
 			std::vector<SharedSemaphore> renderFinishedSemaphores_;
 			std::vector<SharedFence> inFlightFences_;
 
-			bool framebufferResized = false;
+			bool framebufferResized_ = false;
 			uint32_t currentFrame_ = 0;
 	};
 }

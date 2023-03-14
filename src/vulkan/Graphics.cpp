@@ -15,6 +15,7 @@
 #include "Surface.h"
 #include "Swapchain.h"
 #include "Window.h"
+#include "log.h"
 #include "vulkan/vulkan_core.h"
 #include <cstdint>
 #include <iostream>
@@ -57,6 +58,7 @@ namespace vulkan {
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 			inFlightFences_.push_back(std::make_shared<Fence>(device_));
 		}
+		framebufferResized_ = false;
 	}
 
 	void Graphics::drawFrame() {
@@ -67,6 +69,7 @@ namespace vulkan {
 		auto result = vkAcquireNextImageKHR(device_->raw(), swapchain_->raw(), UINT64_MAX, imageAvailableSemaphores_[currentFrame_]->raw(), VK_NULL_HANDLE, &imageIndex);
 
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+			util::log_event("Out of date KHR");
 			recreateSwapChain();
 			return;
 		} else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
@@ -108,8 +111,9 @@ namespace vulkan {
 		presentInfo.pResults = nullptr;
 
 		result = vkQueuePresentKHR(device_->presentQueue(), &presentInfo);
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-			framebufferResized = false;
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized_) {
+			framebufferResized_ = false;
+			util::log_event(std::string("Out of date KHR 2 ") + std::string(string_VkResult(result)));
 			recreateSwapChain();
 		} else if (result != VK_SUCCESS) {
 			throw vulkan::Error(result);
@@ -123,9 +127,9 @@ namespace vulkan {
 	}
 
 	void Graphics::recreateSwapChain() {
+		util::log_event("recreate swapchain");
 		int width = 0, height = 0;
 		glfwGetFramebufferSize(window_->raw(), &width, &height);
-		std::cout << "new size is " << width << ", " << height << std::endl;
 		while (width == 0 || height == 0) {
 			glfwGetFramebufferSize(window_->raw(), &width, &height);
 			glfwWaitEvents();
@@ -143,7 +147,7 @@ namespace vulkan {
 	}
 
 	void Graphics::triggerResize() {
-		framebufferResized = true;
+		framebufferResized_ = true;
 	}
 
 	void Graphics::recordCommandBuffer(SharedCommandBuffer commandBuffer, uint32_t imageIndex) {

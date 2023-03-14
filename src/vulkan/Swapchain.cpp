@@ -4,6 +4,7 @@
 #include "ImageView.h"
 #include "Surface.h"
 #include "Window.h"
+#include "log.h"
 #include "vulkan/vulkan_core.h"
 #include <memory>
 #include <stdexcept>
@@ -12,6 +13,7 @@ namespace vulkan {
 	void SwapchainDeleter::operator()(SwapchainData *data) const {
 		vkDestroySwapchainKHR(data->device_->raw(), data->swapchain_, nullptr);
 		delete data;
+		util::log_memory("Deleted swapchain");
 	}
 
 	Swapchain::Swapchain(SharedSurface surface, SharedDevice device, SharedWindow window):
@@ -77,6 +79,8 @@ namespace vulkan {
 				data->imageViews_.push_back(imageView);
 			}
 		}
+
+		util::log_memory("Created swapchain");
 	}
 
 	VkSwapchainKHR& Swapchain::raw() {
