@@ -33,6 +33,7 @@ namespace vulkan {
 		private:
 			void initWindow_();
 			void initVulkan_();
+			void recreateSwapChain_();
 			void createInstance_();
 			void setupDebugMessenger_();
 			void pickPhysicalDevice_();
@@ -47,11 +48,14 @@ namespace vulkan {
 			void createCommandPool_();
 			void createCommandBuffers_();
 			void createSyncObjects_();
+			void createSurface_();
 			void recordCommandBuffer_(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
 			void drawFrame_();
 			bool checkValidationLayerSupport_();
+			void cleanupSwapChain_();
 			void cleanup_();
+
 			VkResult createDebugUtilsMessengerEXT(
 					VkInstance instance,
 					const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
@@ -61,9 +65,9 @@ namespace vulkan {
 					VkInstance instance,
 					VkDebugUtilsMessengerEXT debugMessenger,
 					const VkAllocationCallbacks* pAllocator);
+			static void framebufferResizeCallback_(GLFWwindow* window, int width, int height);
 			std::vector<const char*> getRequiredExtensions_();
 			void populateDebugMessengerCreateInfo_(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-			void createSurface_();
 			QueueFamilyIndices findQueueFamilies_(VkPhysicalDevice device);
 			SwapChainSupportDetails querySwapChainSupport_(VkPhysicalDevice device);
 			VkSurfaceFormatKHR chooseSwapSurfaceFormat_(const std::vector<VkSurfaceFormatKHR>& availableFormats);

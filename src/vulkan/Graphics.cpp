@@ -2,6 +2,7 @@
 #include "Defs.h"
 #include "Error.h"
 #include "file.h"
+#include "log.h"
 #include "vulkan/vulkan_core.h"
 #include <cstdint>
 #include <iostream>
@@ -26,9 +27,11 @@ namespace vulkan {
 		glfwInit();
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+		glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
 		window_ = glfwCreateWindow(WIDTH, HEIGHT, "Kaleidoscope", nullptr, nullptr);
+		glfwSetWindowUserPointer(window_, this);
+		glfwSetFramebufferSizeCallback(window_, framebufferResizeCallback_);
 	}
 
 	void Graphics_::initVulkan_() {
@@ -45,6 +48,24 @@ namespace vulkan {
 		createCommandPool_();
 		createCommandBuffers_();
 		createSyncObjects_();
+	}
+
+	void Graphics_::recreateSwapChain_() {
+		int width = 0, height = 0;
+		glfwGetFramebufferSize(window_, &width, &height);
+		while (width == 0 || height == 0) {
+			glfwGetFramebufferSize(window_, &width, &height);
+			glfwWaitEvents();
+		}
+		waitIdle();
+
+		util::log_event("Recreate swap chain");
+
+		cleanupSwapChain_();
+
+		createSwapChain_();
+		createImageViews_();
+		createFramebuffers_();
 	}
 
 	void Graphics_::createInstance_() {
@@ -115,7 +136,26 @@ namespace vulkan {
 		return true;
 	}
 
+	void Graphics_::cleanupSwapChain_() {
+		for (size_t i = 0; i < swapChainFramebuffers_.size(); i++) {
+			vkDestroyFramebuffer(device_, swapChainFramebuffers_[i], nullptr);
+		}
+
+		for (size_t i = 0; i < swapChainImageViews_.size(); i++) {
+			vkDestroyImageView(device_, swapChainImageViews_[i], nullptr);
+		}
+
+		vkDestroySwapchainKHR(device_, swapChain_, nullptr);
+	}
+
 	void Graphics_::cleanup_() {
+		cleanupSwapChain_();
+
+		vkDestroyPipeline(device_, graphicsPipeline_, nullptr);
+		vkDestroyPipelineLayout(device_, pipelineLayout_, nullptr);
+
+		vkDestroyRenderPass(device_, renderPass_, nullptr);
+
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroySemaphore(device_, renderFinishedSemaphores_[i], nullptr);
 			vkDestroySemaphore(device_, imageAvailableSemaphores_[i], nullptr);
@@ -123,21 +163,18 @@ namespace vulkan {
 		}
 
 		vkDestroyCommandPool(device_, commandPool_, nullptr);
-		for (auto framebuffer : swapChainFramebuffers_) {
-			vkDestroyFramebuffer(device_, framebuffer, nullptr);
-		}
-		vkDestroyPipeline(device_, graphicsPipeline_, nullptr);
-		vkDestroyPipelineLayout(device_, pipelineLayout_, nullptr);
-		vkDestroyRenderPass(device_, renderPass_, nullptr);
 
-		for (auto imageView : swapChainImages_) {
-			vkDestroyImage(device_, imageView, nullptr);
-		}
-
-		vkDestroySwapchainKHR(device_, swapChain_, nullptr);
 		vkDestroyDevice(device_, nullptr);
+
 		if (ENABLE_VALIDATION_LAYERS) {
+			destroyDebugUtilsMessengerEXT_(instance_, debugMessenger_, nullptr);
 		}
+
+		vkDestroySurfaceKHR(instance_, surface_, nullptr);
+		vkDestroyInstance(instance_, nullptr);
+
+		glfwDestroyWindow(window_);
+		glfwTerminate();
 	}
 
 	std::vector<const char*> Graphics_::getRequiredExtensions_() {
@@ -641,10 +678,24 @@ namespace vulkan {
 
 	void Graphics_::drawFrame_() {
 		vkWaitForFences(device_, 1, &inFlightFences_[currentFrame_], VK_TRUE, UINT64_MAX);
-		vkResetFences(device_, 1, &inFlightFences_[currentFrame_]);
 
 		uint32_t imageIndex;
-		vkAcquireNextImageKHR(device_, swapChain_, UINT64_MAX, imageAvailableSemaphores_[currentFrame_], VK_NULL_HANDLE, &imageIndex);
+		auto result = vkAcquireNextImageKHR(
+				device_,
+				swapChain_,
+				UINT64_MAX,
+				imageAvailableSemaphores_[currentFrame_],
+				VK_NULL_HANDLE,
+				&imageIndex);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+			recreateSwapChain_();
+			return;
+		} else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+			throw vulkan::Error(result);
+		}
+
+		vkResetFences(device_, 1, &inFlightFences_[currentFrame_]);
 
 		vkResetCommandBuffer(commandBuffers_[currentFrame_], 0);
 
@@ -680,7 +731,14 @@ namespace vulkan {
 		presentInfo.pImageIndices = &imageIndex;
 		presentInfo.pResults = nullptr;
 
-		vkQueuePresentKHR(presentQueue_, &presentInfo);
+		result = vkQueuePresentKHR(presentQueue_, &presentInfo);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized_) {
+			framebufferResized_ = false;
+			recreateSwapChain_();
+		} else if (result != VK_SUCCESS) {
+			throw vulkan::Error(result);
+		}
 
 		currentFrame_ = (currentFrame_ + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
@@ -824,6 +882,11 @@ namespace vulkan {
 		if (func != nullptr) {
 			func(instance_, debugMessenger, pAllocator);
 		}
+	}
+
+	void Graphics_::framebufferResizeCallback_(GLFWwindow* window, int width, int height) {
+		auto graphics = reinterpret_cast<Graphics_*>(glfwGetWindowUserPointer(window));
+		graphics->framebufferResized_ = true;
 	}
 
 	VkResult Graphics_::createDebugUtilsMessengerEXT(
