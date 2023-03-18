@@ -45,7 +45,7 @@ namespace vulkan {
 			void createGraphicsPipeline_();
 			void createFramebuffers_();
 			void createCommandPool_();
-			void createCommandBuffer_();
+			void createCommandBuffers_();
 			void createSyncObjects_();
 			void recordCommandBuffer_(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
@@ -96,12 +96,13 @@ namespace vulkan {
 			VkPipeline graphicsPipeline_;
 			std::vector<VkFramebuffer> swapChainFramebuffers_;
 			VkCommandPool commandPool_;
-			VkCommandBuffer commandBuffer_;
-			VkSemaphore imageAvailableSemaphore_;
-			VkSemaphore renderFinishedSemaphore_;
-			VkFence inFlightFence_;
+			std::vector<VkCommandBuffer> commandBuffers_;
+			std::vector<VkSemaphore> imageAvailableSemaphores_;
+			std::vector<VkSemaphore> renderFinishedSemaphores_;
+			std::vector<VkFence> inFlightFences_;
 			std::vector<VkImageView> swapChainImageViews_;
 
 			bool framebufferResized_ = false;
+			uint32_t currentFrame_ = 0;
 	};
 }
