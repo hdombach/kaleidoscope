@@ -1,30 +1,13 @@
-#include "Defs.h"
 #include "Graphics.h"
-#include "Window.h"
-#include "util/file.h"
-#include "vulkan/vk_platform.h"
-#include "vulkan/vulkan_core.h"
-#include <_types/_uint32_t.h>
-#include <algorithm>
 #include <cstdint>
-#include <cstring>
-#include <limits>
-#include <memory>
-#include <sstream>
-#include <string>
 #include <sys/types.h>
 #include <vector>
+#include <iostream>
 #define GLFW_INCLUDE_VULKAN
 
 #include <exception>
 #include <GLFW/glfw3.h>
 
-#include <iostream>
-#include <stdexcept>
-#include <cstdlib>
-#include <optional>
-#include <set>
-#include <fstream>
 
 class KaleidoscopeApplication {
 	public:
@@ -39,22 +22,19 @@ class KaleidoscopeApplication {
 
 		const uint32_t WIDTH = 800;
 		const uint32_t HEIGHT = 600;
-		vulkan::SharedWindow window;
-		vulkan::Graphics graphics;
+		vulkan::Graphics_ graphics;
 };
 
 void KaleidoscopeApplication::run() {
-	glfwInit();
-	window = std::make_shared<vulkan::Window>(vulkan::Window("Kaleidoscope"));
-	graphics = vulkan::Graphics(window);
+	graphics = vulkan::Graphics_("Kaleidoscope");
 	mainLoop();
 	cleanup();
 }
 
 void KaleidoscopeApplication::mainLoop() {
-	while (!glfwWindowShouldClose(window->raw())) {
+	while (!glfwWindowShouldClose(graphics.window())) {
 		glfwPollEvents();
-		graphics.drawFrame();
+		graphics.tick();
 	}
 
 	graphics.waitIdle();

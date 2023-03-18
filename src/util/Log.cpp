@@ -9,13 +9,7 @@ namespace util {
 	Log::Log(std::ostream &os, ImportanceMask::type importance_flags):
 		os_(os),
 		remembered_logs_(importance_flags)
-	{
-		std::stringstream ss;
-		std::bitset<8> bits = importance_flags;
-		ss << "importance: " << bits;
-		std::cout << ss.str() << std::endl;
-		util::log_event(ss.str());
-	}
+	{}
 
 	Log::Log(std::string name, ImportanceMask::type importance_flags, std::ostream &os):
 		name_(name),

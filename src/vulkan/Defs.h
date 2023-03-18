@@ -10,6 +10,9 @@ namespace vulkan {
 	static bool ENABLE_VALIDATION_LAYERS = true;
 #endif
 
+	static const uint32_t WIDTH = 800;
+	static const uint32_t HEIGHT = 600;
+
 	static std::vector<const char*> VALIDATION_LAYERS = {
 			"VK_LAYER_KHRONOS_validation"
 	};

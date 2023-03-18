@@ -7,6 +7,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <sstream>
 
 namespace util {
 
@@ -49,7 +50,9 @@ namespace util {
 		std::ifstream file(path);
 
 		if (!file.is_open()) {
-			throw std::runtime_error("failed to open file!");
+			std::stringstream ss;
+			ss << "failed to open file \"" << path.string() << "\"";
+			throw std::runtime_error(ss.str());
 		}
 
 		auto result = readFile(file);
