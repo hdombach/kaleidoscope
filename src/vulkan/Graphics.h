@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vertex.h"
 #include "vulkan/vulkan_core.h"
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -46,6 +47,7 @@ namespace vulkan {
 			void createGraphicsPipeline_();
 			void createFramebuffers_();
 			void createCommandPool_();
+			void createVertexBuffer_(std::vector<Vertex>& vertices);
 			void createCommandBuffers_();
 			void createSyncObjects_();
 			void createSurface_();
@@ -74,6 +76,7 @@ namespace vulkan {
 			VkPresentModeKHR chooseSwapPresentMode_(const std::vector<VkPresentModeKHR>& availablePresentModes);
 			VkExtent2D chooseSwapExtent_(const VkSurfaceCapabilitiesKHR& capabilities);
 			VkShaderModule createShaderModule_(const std::string& code);
+			uint32_t findMemoryType_(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
 			static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 				VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -100,6 +103,8 @@ namespace vulkan {
 			VkPipeline graphicsPipeline_;
 			std::vector<VkFramebuffer> swapChainFramebuffers_;
 			VkCommandPool commandPool_;
+			VkBuffer vertexBuffer_;
+			VkDeviceMemory vertexBufferMemory_;
 			std::vector<VkCommandBuffer> commandBuffers_;
 			std::vector<VkSemaphore> imageAvailableSemaphores_;
 			std::vector<VkSemaphore> renderFinishedSemaphores_;
