@@ -607,34 +607,33 @@ namespace vulkan {
 		}
 	}
 	void Graphics_::createVertexBuffer_(std::vector<Vertex>& vertices) {
-		auto bufferInfo = VkBufferCreateInfo{};
-		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		bufferInfo.size = sizeof(vertices[0]) * vertices.size();
-		bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
-		if (vkCreateBuffer(device_, &bufferInfo, nullptr, &vertexBuffer_) != VK_SUCCESS) {
-			throw std::runtime_error("failed to create vertex buffer!");
-		}
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
+		createBuffer_(
+				bufferSize,
+				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				stagingBuffer,
+				stagingBufferMemory);
 
-		VkMemoryRequirements memRequirements;
-		vkGetBufferMemoryRequirements(device_, vertexBuffer_, &memRequirements);
-		auto allocInfo = VkMemoryAllocateInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		allocInfo.allocationSize = memRequirements.size;
-		allocInfo.memoryTypeIndex = findMemoryType_(
-				memRequirements.memoryTypeBits,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+		void *data;
+		vkMapMemory(device_, stagingBufferMemory, 0, bufferSize, 0, &data);
+		memcpy(data, vertices.data(), (size_t) bufferSize);
+		vkUnmapMemory(device_, stagingBufferMemory);
 
-		if (vkAllocateMemory(device_, &allocInfo, nullptr, &vertexBufferMemory_) != VK_SUCCESS) {
-			throw std::runtime_error("failed to allocate vertex buffer memory!");
-		}
-		vkBindBufferMemory(device_, vertexBuffer_, vertexBufferMemory_, 0);
+		createBuffer_(
+				bufferSize,
+				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				vertexBuffer_,
+				vertexBufferMemory_);
 
-		void* data;
-		vkMapMemory(device_, vertexBufferMemory_, 0, bufferInfo.size, 0, &data);
-		memcpy(data, vertices.data(), (size_t) bufferInfo.size);
-		vkUnmapMemory(device_, vertexBufferMemory_);
+		copyBuffer_(stagingBuffer, vertexBuffer_, bufferSize);
+
+		vkDestroyBuffer(device_, stagingBuffer, nullptr);
+		vkFreeMemory(device_, stagingBufferMemory, nullptr);
 	}
 	void Graphics_::createCommandBuffers_() {
 		commandBuffers_.resize(MAX_FRAMES_IN_FLIGHT);
@@ -921,6 +920,73 @@ namespace vulkan {
 
 		throw std::runtime_error("failed to find suitable memory type!");
 	}
+	void Graphics_::createBuffer_(
+			VkDeviceSize size,
+			VkBufferUsageFlags usage,
+			VkMemoryPropertyFlags properties,
+			VkBuffer& buffer,
+			VkDeviceMemory& bufferMemory)
+	{
+		auto bufferInfo = VkBufferCreateInfo{};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = size;
+		bufferInfo.usage = usage;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		if (vkCreateBuffer(device_, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create buffer!");
+		}
+
+		VkMemoryRequirements memRequirements;
+		vkGetBufferMemoryRequirements(device_, buffer, &memRequirements);
+
+		auto allocInfo = VkMemoryAllocateInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = findMemoryType_(memRequirements.memoryTypeBits, properties);
+
+		if (vkAllocateMemory(device_, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate buffer memory!");
+		}
+
+		vkBindBufferMemory(device_, buffer, bufferMemory, 0);
+	}
+	void Graphics_::copyBuffer_(
+			VkBuffer srcBuffer,
+			VkBuffer dstBuffer,
+			VkDeviceSize size)
+	{
+		auto allocInfo = VkCommandBufferAllocateInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandPool = commandPool_;
+		allocInfo.commandBufferCount = 1;
+
+		VkCommandBuffer commandBuffer;
+		vkAllocateCommandBuffers(device_, &allocInfo, &commandBuffer);
+
+		auto beginInfo = VkCommandBufferBeginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+		vkBeginCommandBuffer(commandBuffer, &beginInfo);
+		auto copyRegion = VkBufferCopy{};
+		copyRegion.srcOffset = 0;
+		copyRegion.dstOffset = 0;
+		copyRegion.size = size;
+		vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+		vkEndCommandBuffer(commandBuffer);
+
+		auto submitInfo = VkSubmitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &commandBuffer;
+
+		vkQueueSubmit(graphicsQueue_, 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(graphicsQueue_);
+		vkFreeCommandBuffers(device_, commandPool_, 1, &commandBuffer);
+	}
+
 	VKAPI_ATTR VkBool32 VKAPI_CALL Graphics_::debugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		VkDebugUtilsMessageTypeFlagsEXT messageType,

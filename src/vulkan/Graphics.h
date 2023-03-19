@@ -77,6 +77,13 @@ namespace vulkan {
 			VkExtent2D chooseSwapExtent_(const VkSurfaceCapabilitiesKHR& capabilities);
 			VkShaderModule createShaderModule_(const std::string& code);
 			uint32_t findMemoryType_(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+			void createBuffer_(
+					VkDeviceSize size,
+					VkBufferUsageFlags usage,
+					VkMemoryPropertyFlags properties,
+					VkBuffer& buffer,
+					VkDeviceMemory& bufferMemory);
+			void copyBuffer_(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
 			static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 				VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
