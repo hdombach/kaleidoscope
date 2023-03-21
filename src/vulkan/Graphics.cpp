@@ -50,7 +50,8 @@ namespace vulkan {
 		createGraphicsPipeline_();
 		createFramebuffers_();
 		createCommandPool_();
-		createVertexBuffer_(vertices);
+		createVertexBuffer_();
+		createIndexBuffer_();
 		createCommandBuffers_();
 		createSyncObjects_();
 	}
@@ -155,6 +156,9 @@ namespace vulkan {
 
 	void Graphics::cleanup_() {
 		cleanupSwapChain_();
+
+		vkDestroyBuffer(device_, vertexBuffer_, nullptr);
+		vkFreeMemory(device_, vertexBufferMemory_, nullptr);
 
 		vkDestroyBuffer(device_, vertexBuffer_, nullptr);
 		vkFreeMemory(device_, vertexBufferMemory_, nullptr);
@@ -606,8 +610,8 @@ namespace vulkan {
 			throw std::runtime_error("failed to create command pool!");
 		}
 	}
-	void Graphics::createVertexBuffer_(std::vector<Vertex>& vertices) {
-		VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+	void Graphics::createVertexBuffer_() {
+		VkDeviceSize bufferSize = sizeof(vertices_[0]) * vertices_.size();
 
 		VkBuffer stagingBuffer;
 		VkDeviceMemory stagingBufferMemory;
@@ -620,7 +624,7 @@ namespace vulkan {
 
 		void *data;
 		vkMapMemory(device_, stagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, vertices.data(), (size_t) bufferSize);
+		memcpy(data, vertices_.data(), (size_t) bufferSize);
 		vkUnmapMemory(device_, stagingBufferMemory);
 
 		createBuffer_(
@@ -634,6 +638,35 @@ namespace vulkan {
 
 		vkDestroyBuffer(device_, stagingBuffer, nullptr);
 		vkFreeMemory(device_, stagingBufferMemory, nullptr);
+	}
+	void Graphics::createIndexBuffer_() {
+		VkDeviceSize bufferSize = sizeof(indices_[0]) * indices_.size();
+
+		VkBuffer staginBuffer;
+		VkDeviceMemory staginBufferMemory;
+		createBuffer_(
+				bufferSize,
+				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+				staginBuffer,
+				staginBufferMemory);
+
+		void *data;
+		vkMapMemory(device_, staginBufferMemory, 0, bufferSize, 0, &data);
+		memcpy(data, indices_.data(), (size_t) bufferSize);
+		vkUnmapMemory(device_, staginBufferMemory);
+
+		createBuffer_(
+				bufferSize,
+				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				indexBuffer_,
+				indexBufferMemory_);
+
+		copyBuffer_(staginBuffer, indexBuffer_, bufferSize);
+
+		vkDestroyBuffer(device_, staginBuffer, nullptr);
+		vkFreeMemory(device_, staginBufferMemory, nullptr);
 	}
 	void Graphics::createCommandBuffers_() {
 		commandBuffers_.resize(MAX_FRAMES_IN_FLIGHT);
@@ -711,8 +744,9 @@ namespace vulkan {
 		VkBuffer vertexBuffers[] = {vertexBuffer_};
 		VkDeviceSize offsets[] = {0};
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+		vkCmdBindIndexBuffer(commandBuffer, indexBuffer_, 0, VK_INDEX_TYPE_UINT16);
 
-		vkCmdDraw(commandBuffer, static_cast<uint32_t>(MESH_TRAINGLE.size()), 1, 0, 0);
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices_.size()), 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(commandBuffer);
 

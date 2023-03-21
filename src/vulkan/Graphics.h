@@ -47,7 +47,8 @@ namespace vulkan {
 			void createGraphicsPipeline_();
 			void createFramebuffers_();
 			void createCommandPool_();
-			void createVertexBuffer_(std::vector<Vertex>& vertices);
+			void createVertexBuffer_();
+			void createIndexBuffer_();
 			void createCommandBuffers_();
 			void createSyncObjects_();
 			void createSurface_();
@@ -112,6 +113,8 @@ namespace vulkan {
 			VkCommandPool commandPool_;
 			VkBuffer vertexBuffer_;
 			VkDeviceMemory vertexBufferMemory_;
+			VkBuffer indexBuffer_;
+			VkDeviceMemory indexBufferMemory_;
 			std::vector<VkCommandBuffer> commandBuffers_;
 			std::vector<VkSemaphore> imageAvailableSemaphores_;
 			std::vector<VkSemaphore> renderFinishedSemaphores_;
@@ -120,5 +123,14 @@ namespace vulkan {
 
 			bool framebufferResized_ = false;
 			uint32_t currentFrame_ = 0;
+			std::vector<Vertex> vertices_ = {
+				{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+				{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+				{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+				{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+			};
+			std::vector<uint16_t> indices_ = {
+				0, 1, 2, 2, 3, 0
+			};
 	};
 }
