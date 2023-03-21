@@ -23,10 +23,10 @@ namespace vulkan {
 		std::vector<VkPresentModeKHR> presentModes;
 	};
 
-	class Graphics_ {
+	class Graphics {
 		public:
-			Graphics_() = default;
-			Graphics_(const char *name);
+			Graphics() = default;
+			Graphics(const char *name);
 			void tick();
 			void waitIdle();
 			GLFWwindow * window();

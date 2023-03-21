@@ -1,6 +1,6 @@
-#include "Graphics.h"
-#include "Defs.h"
-#include "Error.h"
+#include "graphics.h"
+#include "defs.h"
+#include "error.h"
 #include "file.h"
 #include "log.h"
 #include "vertex.h"
@@ -12,20 +12,20 @@
 #include <set>
 
 namespace vulkan {
-	Graphics_::Graphics_(const char *name) {
+	Graphics::Graphics(const char *name) {
 		initWindow_();
 		initVulkan_();
 	}
-	void Graphics_::tick() {
+	void Graphics::tick() {
 		drawFrame_();
 	}
-	void Graphics_::waitIdle() {
+	void Graphics::waitIdle() {
 		vkDeviceWaitIdle(device_);
 	}
-	GLFWwindow * Graphics_::window() {
+	GLFWwindow * Graphics::window() {
 		return window_;
 	}
-	void Graphics_::initWindow_() {
+	void Graphics::initWindow_() {
 		glfwInit();
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -36,7 +36,7 @@ namespace vulkan {
 		glfwSetFramebufferSizeCallback(window_, framebufferResizeCallback_);
 	}
 
-	void Graphics_::initVulkan_() {
+	void Graphics::initVulkan_() {
 		auto vertices = MESH_TRAINGLE;
 
 		createInstance_();
@@ -55,7 +55,7 @@ namespace vulkan {
 		createSyncObjects_();
 	}
 
-	void Graphics_::recreateSwapChain_() {
+	void Graphics::recreateSwapChain_() {
 		int width = 0, height = 0;
 		glfwGetFramebufferSize(window_, &width, &height);
 		while (width == 0 || height == 0) {
@@ -73,7 +73,7 @@ namespace vulkan {
 		createFramebuffers_();
 	}
 
-	void Graphics_::createInstance_() {
+	void Graphics::createInstance_() {
 		if (ENABLE_VALIDATION_LAYERS) {
 			if (checkValidationLayerSupport_()) {
 				std::cout << "Validation layer enabled" << std::endl;
@@ -119,7 +119,7 @@ namespace vulkan {
 		}
 	}
 
-	bool Graphics_::checkValidationLayerSupport_() {
+	bool Graphics::checkValidationLayerSupport_() {
 		uint32_t layerCount;
 		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
@@ -141,7 +141,7 @@ namespace vulkan {
 		return true;
 	}
 
-	void Graphics_::cleanupSwapChain_() {
+	void Graphics::cleanupSwapChain_() {
 		for (size_t i = 0; i < swapChainFramebuffers_.size(); i++) {
 			vkDestroyFramebuffer(device_, swapChainFramebuffers_[i], nullptr);
 		}
@@ -153,7 +153,7 @@ namespace vulkan {
 		vkDestroySwapchainKHR(device_, swapChain_, nullptr);
 	}
 
-	void Graphics_::cleanup_() {
+	void Graphics::cleanup_() {
 		cleanupSwapChain_();
 
 		vkDestroyBuffer(device_, vertexBuffer_, nullptr);
@@ -185,7 +185,7 @@ namespace vulkan {
 		glfwTerminate();
 	}
 
-	std::vector<const char*> Graphics_::getRequiredExtensions_() {
+	std::vector<const char*> Graphics::getRequiredExtensions_() {
 		uint32_t glfwExtensionCount = 0;
 		const char** glfwExtensions;
 		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -196,7 +196,7 @@ namespace vulkan {
 		extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 		return extensions;
 	}
-	void Graphics_::setupDebugMessenger_() {
+	void Graphics::setupDebugMessenger_() {
 		if (!ENABLE_VALIDATION_LAYERS) return;
 		auto createInfo = VkDebugUtilsMessengerCreateInfoEXT{};
 		populateDebugMessengerCreateInfo_(createInfo);
@@ -205,7 +205,7 @@ namespace vulkan {
 			throw vulkan::Error(result);
 		}
 	}
-	void Graphics_::populateDebugMessengerCreateInfo_(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
+	void Graphics::populateDebugMessengerCreateInfo_(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
 		createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 		createInfo.messageSeverity =
@@ -219,7 +219,7 @@ namespace vulkan {
 
 		createInfo.pfnUserCallback = debugCallback;
 	}
-	void Graphics_::pickPhysicalDevice_() {
+	void Graphics::pickPhysicalDevice_() {
 		uint32_t deviceCount = 0;
 		vkEnumeratePhysicalDevices(instance_, &deviceCount, nullptr);
 
@@ -242,7 +242,7 @@ namespace vulkan {
 		}
 	}
 
-	bool Graphics_::isDeviceSuitable_(VkPhysicalDevice device) {
+	bool Graphics::isDeviceSuitable_(VkPhysicalDevice device) {
 		auto indices = findQueueFamilies_(device);
 		bool extensionsSupported = checkDeviceExtensionSupport_(device);
 		bool swapChainAdequate = false;
@@ -252,7 +252,7 @@ namespace vulkan {
 		}
 		return indices.isComplete() && extensionsSupported && swapChainAdequate;
 	}
-	bool Graphics_::checkDeviceExtensionSupport_(VkPhysicalDevice device) {
+	bool Graphics::checkDeviceExtensionSupport_(VkPhysicalDevice device) {
 		uint32_t extensionCount;
 		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 		auto availableExtensions = std::vector<VkExtensionProperties>(extensionCount);
@@ -263,7 +263,7 @@ namespace vulkan {
 		}
 		return requiredExtensions.empty();
 	}
-	void Graphics_::createLogicalDevice_() {
+	void Graphics::createLogicalDevice_() {
 		auto indices = findQueueFamilies_(physicalDevice_);
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 		auto uniqueQueueFamilies = std::set<uint32_t>{indices.graphicsFamily.value(), indices.presentFamily.value()};
@@ -304,7 +304,7 @@ namespace vulkan {
 		vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 0, &graphicsQueue_);
 		vkGetDeviceQueue(device_, indices.presentFamily.value(), 0, &presentQueue_);
 	}
-	void Graphics_::createSwapChain_() {
+	void Graphics::createSwapChain_() {
 		auto swapChainSupport = querySwapChainSupport_(physicalDevice_);
 		auto surfaceFormat = chooseSwapSurfaceFormat_(swapChainSupport.formats);
 		auto presentMode = chooseSwapPresentMode_(swapChainSupport.presentModes);
@@ -353,7 +353,7 @@ namespace vulkan {
 		swapChainExtent_ = extent;
 	}
 
-	void Graphics_::createImageViews_() {
+	void Graphics::createImageViews_() {
 		swapChainImageViews_.resize(swapChainImages_.size());
 
 		for (size_t i = 0; i < swapChainImages_.size(); i++) {
@@ -378,7 +378,7 @@ namespace vulkan {
 			}
 		}
 	}
-	void Graphics_::createRenderPass_() {
+	void Graphics::createRenderPass_() {
 		VkAttachmentDescription colorAttachment{};
 		colorAttachment.format = swapChainImageFormat_;
 		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -421,7 +421,7 @@ namespace vulkan {
 			throw vulkan::Error(result);
 		}
 	}
-	void Graphics_::createGraphicsPipeline_() {
+	void Graphics::createGraphicsPipeline_() {
 		auto vertShaderCode = util::readEnvFile("src/shaders/default_shader.vert.spv");
 		auto fragShaderCode = util::readEnvFile("src/shaders/default_shader.frag.spv");
 
@@ -572,7 +572,7 @@ namespace vulkan {
 		vkDestroyShaderModule(device_, fragShaderModule, nullptr);
 		vkDestroyShaderModule(device_, vertShaderModule, nullptr);
 	}
-	void Graphics_::createFramebuffers_() {
+	void Graphics::createFramebuffers_() {
 		swapChainFramebuffers_.resize(swapChainImageViews_.size());
 
 		for (size_t i = 0; i < swapChainImageViews_.size(); i++) {
@@ -594,7 +594,7 @@ namespace vulkan {
 			}
 		}
 	}
-	void Graphics_::createCommandPool_() {
+	void Graphics::createCommandPool_() {
 		QueueFamilyIndices queueFamilyIndices = findQueueFamilies_(physicalDevice_);
 
 		VkCommandPoolCreateInfo poolInfo{};
@@ -606,7 +606,7 @@ namespace vulkan {
 			throw std::runtime_error("failed to create command pool!");
 		}
 	}
-	void Graphics_::createVertexBuffer_(std::vector<Vertex>& vertices) {
+	void Graphics::createVertexBuffer_(std::vector<Vertex>& vertices) {
 		VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
 		VkBuffer stagingBuffer;
@@ -635,7 +635,7 @@ namespace vulkan {
 		vkDestroyBuffer(device_, stagingBuffer, nullptr);
 		vkFreeMemory(device_, stagingBufferMemory, nullptr);
 	}
-	void Graphics_::createCommandBuffers_() {
+	void Graphics::createCommandBuffers_() {
 		commandBuffers_.resize(MAX_FRAMES_IN_FLIGHT);
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -647,7 +647,7 @@ namespace vulkan {
 			throw std::runtime_error("failed to allocate command buffers!");
 		}
 	}
-	void Graphics_::createSyncObjects_() {
+	void Graphics::createSyncObjects_() {
 		imageAvailableSemaphores_.resize(MAX_FRAMES_IN_FLIGHT);
 		renderFinishedSemaphores_.resize(MAX_FRAMES_IN_FLIGHT);
 		inFlightFences_.resize(MAX_FRAMES_IN_FLIGHT);
@@ -669,7 +669,7 @@ namespace vulkan {
 		}
 	}
 
-	void Graphics_::recordCommandBuffer_(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+	void Graphics::recordCommandBuffer_(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = 0;
@@ -721,7 +721,7 @@ namespace vulkan {
 		}
 	}
 
-	void Graphics_::drawFrame_() {
+	void Graphics::drawFrame_() {
 		vkWaitForFences(device_, 1, &inFlightFences_[currentFrame_], VK_TRUE, UINT64_MAX);
 
 		uint32_t imageIndex;
@@ -788,7 +788,7 @@ namespace vulkan {
 		currentFrame_ = (currentFrame_ + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
-	QueueFamilyIndices Graphics_::findQueueFamilies_(VkPhysicalDevice device) {
+	QueueFamilyIndices Graphics::findQueueFamilies_(VkPhysicalDevice device) {
 		QueueFamilyIndices indices;
 
 		uint32_t queueFamilyCount = 0;
@@ -820,7 +820,7 @@ namespace vulkan {
 		return indices;
 	}
 
-	SwapChainSupportDetails Graphics_::querySwapChainSupport_(VkPhysicalDevice device) {
+	SwapChainSupportDetails Graphics::querySwapChainSupport_(VkPhysicalDevice device) {
 		SwapChainSupportDetails details;
 
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface_, &details.capabilities);
@@ -844,7 +844,7 @@ namespace vulkan {
 		return details;
 	}
 
-	VkSurfaceFormatKHR Graphics_::chooseSwapSurfaceFormat_(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+	VkSurfaceFormatKHR Graphics::chooseSwapSurfaceFormat_(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
 		for (const auto& availableFormat : availableFormats) {
 			if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
 					availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -855,7 +855,7 @@ namespace vulkan {
 		return availableFormats[0];
 	}
 
-	VkPresentModeKHR Graphics_::chooseSwapPresentMode_(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+	VkPresentModeKHR Graphics::chooseSwapPresentMode_(const std::vector<VkPresentModeKHR>& availablePresentModes) {
 		for (const auto& availablePresentMode : availablePresentModes) {
 			if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
 				return availablePresentMode;
@@ -864,7 +864,7 @@ namespace vulkan {
 		return VK_PRESENT_MODE_FIFO_KHR;
 	}
 
-	VkExtent2D Graphics_::chooseSwapExtent_(const VkSurfaceCapabilitiesKHR& capabilities) {
+	VkExtent2D Graphics::chooseSwapExtent_(const VkSurfaceCapabilitiesKHR& capabilities) {
 		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 			return capabilities.currentExtent;
 		} else {
@@ -889,13 +889,13 @@ namespace vulkan {
 		}
 	}
 
-	void Graphics_::createSurface_() {
+	void Graphics::createSurface_() {
 		if (glfwCreateWindowSurface(instance_, window_, nullptr, &surface_) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create window surface!");
 		}
 	}
 
-	VkShaderModule Graphics_::createShaderModule_(const std::string& code) {
+	VkShaderModule Graphics::createShaderModule_(const std::string& code) {
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		createInfo.codeSize = code.size();
@@ -908,7 +908,7 @@ namespace vulkan {
 
 		return shaderModule;
 	}
-	uint32_t Graphics_::findMemoryType_(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+	uint32_t Graphics::findMemoryType_(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
 		VkPhysicalDeviceMemoryProperties memProperties;
 		vkGetPhysicalDeviceMemoryProperties(physicalDevice_, &memProperties);
 
@@ -920,7 +920,7 @@ namespace vulkan {
 
 		throw std::runtime_error("failed to find suitable memory type!");
 	}
-	void Graphics_::createBuffer_(
+	void Graphics::createBuffer_(
 			VkDeviceSize size,
 			VkBufferUsageFlags usage,
 			VkMemoryPropertyFlags properties,
@@ -951,7 +951,7 @@ namespace vulkan {
 
 		vkBindBufferMemory(device_, buffer, bufferMemory, 0);
 	}
-	void Graphics_::copyBuffer_(
+	void Graphics::copyBuffer_(
 			VkBuffer srcBuffer,
 			VkBuffer dstBuffer,
 			VkDeviceSize size)
@@ -987,7 +987,7 @@ namespace vulkan {
 		vkFreeCommandBuffers(device_, commandPool_, 1, &commandBuffer);
 	}
 
-	VKAPI_ATTR VkBool32 VKAPI_CALL Graphics_::debugCallback(
+	VKAPI_ATTR VkBool32 VKAPI_CALL Graphics::debugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
 		const VkDebugUtilsMessengerCallbackDataEXT * pCallbackData,
@@ -998,7 +998,7 @@ namespace vulkan {
 		return VK_FALSE;
 	}
 
-	void Graphics_::destroyDebugUtilsMessengerEXT_(
+	void Graphics::destroyDebugUtilsMessengerEXT_(
 		VkInstance instance,
 		VkDebugUtilsMessengerEXT debugMessenger,
 		const VkAllocationCallbacks* pAllocator) {
@@ -1008,12 +1008,12 @@ namespace vulkan {
 		}
 	}
 
-	void Graphics_::framebufferResizeCallback_(GLFWwindow* window, int width, int height) {
-		auto graphics = reinterpret_cast<Graphics_*>(glfwGetWindowUserPointer(window));
+	void Graphics::framebufferResizeCallback_(GLFWwindow* window, int width, int height) {
+		auto graphics = reinterpret_cast<Graphics*>(glfwGetWindowUserPointer(window));
 		graphics->framebufferResized_ = true;
 	}
 
-	VkResult Graphics_::createDebugUtilsMessengerEXT(
+	VkResult Graphics::createDebugUtilsMessengerEXT(
 		VkInstance instance,
 		const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
 		const VkAllocationCallbacks* pAllocator,

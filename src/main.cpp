@@ -1,4 +1,4 @@
-#include "Graphics.h"
+#include "graphics.h"
 #include <cstdint>
 #include <sys/types.h>
 #include <vector>
@@ -22,11 +22,11 @@ class KaleidoscopeApplication {
 
 		const uint32_t WIDTH = 800;
 		const uint32_t HEIGHT = 600;
-		vulkan::Graphics_ graphics;
+		vulkan::Graphics graphics;
 };
 
 void KaleidoscopeApplication::run() {
-	graphics = vulkan::Graphics_("Kaleidoscope");
+	graphics = vulkan::Graphics("Kaleidoscope");
 	mainLoop();
 	cleanup();
 }
