@@ -170,6 +170,9 @@ namespace vulkan {
 	void Graphics::cleanup_() {
 		cleanupSwapChain_();
 
+		vkDestroyImage(device_, textureImage_, nullptr);
+		vkFreeMemory(device_, textureImageMemory_, nullptr);
+
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 			vkDestroyBuffer(device_, uniformBuffers_[i], nullptr);
 			vkFreeMemory(device_, uniformBuffersMemory_[i], nullptr);
