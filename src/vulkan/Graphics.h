@@ -58,6 +58,8 @@ namespace vulkan {
 			void createSyncObjects_();
 			void createSurface_();
 			void recordCommandBuffer_(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+			void createTextureImageView_();
+			void createTextureSampler_();
 
 			void drawFrame_();
 			void updateUniformBuffer_(uint32_t currentImage);
@@ -112,6 +114,7 @@ namespace vulkan {
 					VkImage image,
 					uint32_t width,
 					uint32_t height);
+			VkImageView createImageView_(VkImage image, VkFormat format);
 
 			static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 				VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -147,6 +150,8 @@ namespace vulkan {
 			VkDeviceMemory indexBufferMemory_;
 			VkImage textureImage_;
 			VkDeviceMemory textureImageMemory_;
+			VkImageView textureImageView_;
+			VkSampler textureSampler_;
 			std::vector<VkBuffer> uniformBuffers_;
 			std::vector<VkDeviceMemory> uniformBuffersMemory_;
 			std::vector<void*> uniformBuffersMapped_;
