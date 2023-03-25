@@ -164,10 +164,10 @@ namespace vulkan {
 			bool framebufferResized_ = false;
 			uint32_t currentFrame_ = 0;
 			std::vector<Vertex> vertices_ = {
-				{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-				{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-				{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-				{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+				{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+				{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+				{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+				{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
 			};
 			std::vector<uint16_t> indices_ = {
 				0, 1, 2, 2, 3, 0
