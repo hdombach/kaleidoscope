@@ -21,4 +21,9 @@ namespace vulkan {
 
 			VkResult result;
 	};
+	inline void require(VkResult result) {
+		if (result != VK_SUCCESS) {
+			throw vulkan::Error(result);
+		}
+	}
 }

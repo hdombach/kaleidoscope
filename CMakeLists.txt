@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.0)
 set(CMAKE_CXX_STANDARD 17)
 
 find_library(LIB_GLFW glfw)
+include_directories(~/Documents/Apps/downloaded/stb)
 
 if( NOT LIB_GLFW)
 	message(FATAL_ERROR "Could not find glm")

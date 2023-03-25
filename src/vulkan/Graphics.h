@@ -44,17 +44,23 @@ namespace vulkan {
 			void createSwapChain_();
 			void createImageViews_();
 			void createRenderPass_();
+			void createDescriptorSetLayout_();
 			void createGraphicsPipeline_();
 			void createFramebuffers_();
 			void createCommandPool_();
+			void createTextureImage_();
 			void createVertexBuffer_();
 			void createIndexBuffer_();
+			void createUniformBuffers_();
+			void createDescriptorPool_();
+			void createDescriptorSets_();
 			void createCommandBuffers_();
 			void createSyncObjects_();
 			void createSurface_();
 			void recordCommandBuffer_(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 
 			void drawFrame_();
+			void updateUniformBuffer_(uint32_t currentImage);
 			bool checkValidationLayerSupport_();
 			void cleanupSwapChain_();
 			void cleanup_();
@@ -85,6 +91,27 @@ namespace vulkan {
 					VkBuffer& buffer,
 					VkDeviceMemory& bufferMemory);
 			void copyBuffer_(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+			void createImage_(
+					uint32_t width,
+					uint32_t height,
+					VkFormat format,
+					VkImageTiling tiling,
+					VkImageUsageFlags usage,
+					VkMemoryPropertyFlags properties,
+					VkImage &image,
+					VkDeviceMemory &imageMemory);
+			VkCommandBuffer beginSingleTimeCommands_();
+			void endSingleTimeCommands_(VkCommandBuffer commandBuffer);
+			void transitionImageLayout(
+					VkImage image,
+					VkFormat format,
+					VkImageLayout oldLayout,
+					VkImageLayout newLayout);
+			void copyBufferToImage_(
+					VkBuffer buffer,
+					VkImage image,
+					uint32_t width,
+					uint32_t height);
 
 			static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 				VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -107,6 +134,9 @@ namespace vulkan {
 			VkFormat swapChainImageFormat_;
 			VkExtent2D swapChainExtent_;
 			VkRenderPass renderPass_;
+			VkDescriptorSetLayout descriptorSetLayout_;
+			VkDescriptorPool descriptorPool_;
+			std::vector<VkDescriptorSet> descriptorSets_;
 			VkPipelineLayout pipelineLayout_;
 			VkPipeline graphicsPipeline_;
 			std::vector<VkFramebuffer> swapChainFramebuffers_;
@@ -115,6 +145,11 @@ namespace vulkan {
 			VkDeviceMemory vertexBufferMemory_;
 			VkBuffer indexBuffer_;
 			VkDeviceMemory indexBufferMemory_;
+			VkImage textureImage_;
+			VkDeviceMemory textureImageMemory_;
+			std::vector<VkBuffer> uniformBuffers_;
+			std::vector<VkDeviceMemory> uniformBuffersMemory_;
+			std::vector<void*> uniformBuffersMapped_;
 			std::vector<VkCommandBuffer> commandBuffers_;
 			std::vector<VkSemaphore> imageAvailableSemaphores_;
 			std::vector<VkSemaphore> renderFinishedSemaphores_;
