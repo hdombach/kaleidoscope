@@ -60,6 +60,7 @@ namespace vulkan {
 			void recordCommandBuffer_(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 			void createTextureImageView_();
 			void createTextureSampler_();
+			void createDepthResources_();
 
 			void drawFrame_();
 			void updateUniformBuffer_(uint32_t currentImage);
@@ -104,7 +105,7 @@ namespace vulkan {
 					VkDeviceMemory &imageMemory);
 			VkCommandBuffer beginSingleTimeCommands_();
 			void endSingleTimeCommands_(VkCommandBuffer commandBuffer);
-			void transitionImageLayout(
+			void transitionImageLayout_(
 					VkImage image,
 					VkFormat format,
 					VkImageLayout oldLayout,
@@ -114,7 +115,16 @@ namespace vulkan {
 					VkImage image,
 					uint32_t width,
 					uint32_t height);
-			VkImageView createImageView_(VkImage image, VkFormat format);
+			VkImageView createImageView_(
+					VkImage image,
+					VkFormat format,
+					VkImageAspectFlags aspectFlags);
+			VkFormat findSupportedFormat_(
+					const std::vector<VkFormat>& candidates,
+					VkImageTiling tiling,
+					VkFormatFeatureFlags features);
+			VkFormat findDepthFormat_();
+			bool hasStencilComponent_(VkFormat format);
 
 			static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 				VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -152,6 +162,9 @@ namespace vulkan {
 			VkDeviceMemory textureImageMemory_;
 			VkImageView textureImageView_;
 			VkSampler textureSampler_;
+			VkImage depthImage_;
+			VkDeviceMemory depthImageMemory_;
+			VkImageView depthImageView_;
 			std::vector<VkBuffer> uniformBuffers_;
 			std::vector<VkDeviceMemory> uniformBuffersMemory_;
 			std::vector<void*> uniformBuffersMapped_;
@@ -164,13 +177,19 @@ namespace vulkan {
 			bool framebufferResized_ = false;
 			uint32_t currentFrame_ = 0;
 			std::vector<Vertex> vertices_ = {
-				{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-				{{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-				{{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-				{{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+				{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+				{{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+				{{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+				{{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+
+				{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+				{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+				{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+				{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
 			};
 			std::vector<uint16_t> indices_ = {
-				0, 1, 2, 2, 3, 0
+				0, 1, 2, 2, 3, 0,
+				4, 5, 6, 6, 7, 4,
 			};
 	};
 }
