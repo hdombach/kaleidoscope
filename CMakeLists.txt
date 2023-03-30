@@ -2,24 +2,23 @@ project(kaleidoscope)
 cmake_minimum_required(VERSION 3.0)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR})
+set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
 
-find_library(LIB_GLFW glfw)
-include_directories(~/Documents/Apps/downloaded/stb)
-
-if( NOT LIB_GLFW)
-	message(FATAL_ERROR "Could not find glm")
-endif()
-
+#Find libraries
 find_library(LIB_VULKAN vulkan)
+find_program(GLSLC glslc)
+find_package(stb REQUIRED)
+find_package(glfw3 REQUIRED)
 
 if( NOT LIB_VULKAN)
 	message(FATAL_ERROR "Could not find vulkan")
 endif()
 
-find_program(GLSLC glslc)
 if( NOT GLSLC)
 	message(FATAL_ERROR "Could not find glslc")
 endif()
+
 
 function(compile_shader)
 	set(OPTIONS)
@@ -58,6 +57,9 @@ include_directories(${HEADERS})
 
 add_executable(kaleidoscope ${SOURCES})
 target_include_directories(kaleidoscope PRIVATE ${INCLUDE_DIRS})
-target_link_libraries(kaleidoscope ${LIB_GLFW} ${LIB_VULKAN})
+target_link_libraries(kaleidoscope ${LIB_VULKAN})
+target_link_libraries(kaleidoscope glfw)
+target_link_libraries(kaleidoscope stb::stb)
+
 
 add_subdirectory(src/shaders)
