@@ -57,9 +57,11 @@ include_directories(${HEADERS})
 
 add_executable(kaleidoscope ${SOURCES})
 target_include_directories(kaleidoscope PRIVATE ${INCLUDE_DIRS})
-target_link_libraries(kaleidoscope ${LIB_VULKAN})
-target_link_libraries(kaleidoscope glfw)
-target_link_libraries(kaleidoscope stb::stb)
+target_link_libraries(kaleidoscope PUBLIC ${LIB_VULKAN})
+target_link_libraries(kaleidoscope PUBLIC glfw)
+target_link_libraries(kaleidoscope PUBLIC stb::stb)
 
+message(STATUS "printing libraries")
+message(STATUS glfw)
 
 add_subdirectory(src/shaders)

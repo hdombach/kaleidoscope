@@ -1,6 +1,7 @@
 [requires]
 stb/cci.20220909
 glfw/3.3.8
+tinyobjloader/1.0.7
 
 [generators]
 CMakeToolchain
