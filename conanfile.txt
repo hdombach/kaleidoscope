@@ -2,6 +2,7 @@
 stb/cci.20220909
 glfw/3.3.8
 tinyobjloader/1.0.7
+glm/cci.20230113
 
 [generators]
 CMakeToolchain

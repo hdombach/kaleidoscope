@@ -12,6 +12,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <set>
+#include <unordered_map>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -19,6 +20,10 @@
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/hash.hpp>
+
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
 
 namespace vulkan {
 	Graphics::Graphics(const char *name) {
@@ -62,6 +67,7 @@ namespace vulkan {
 		createTextureImage_();
 		createTextureImageView_();
 		createTextureSampler_();
+		loadModel_();
 		createVertexBuffer_();
 		createIndexBuffer_();
 		createUniformBuffers_();
@@ -398,7 +404,7 @@ namespace vulkan {
 		swapChainImageViews_.resize(swapChainImages_.size());
 
 		for (uint32_t i = 0; i < swapChainImages_.size(); ++i) {
-			swapChainImageViews_[i] = createImageView_(swapChainImages_[i], swapChainImageFormat_, VK_IMAGE_ASPECT_COLOR_BIT);
+			swapChainImageViews_[i] = createImageView_(swapChainImages_[i], swapChainImageFormat_, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 		}
 	}
 	void Graphics::createRenderPass_() {
@@ -692,8 +698,9 @@ namespace vulkan {
 	}
 	void Graphics::createTextureImage_() {
 		int texWidth, texHeight, texChannels;
-		stbi_uc* pixels = stbi_load("assets/profile.png", &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		stbi_uc* pixels = stbi_load(TEXTURE_PATH.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 		VkDeviceSize imageSize = texWidth * texHeight * 4;
+		mipLevels_ = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
 		if (!pixels) {
 			throw std::runtime_error("failed to load texture image!");
@@ -717,9 +724,10 @@ namespace vulkan {
 		createImage_(
 				texWidth,
 				texHeight,
+				mipLevels_,
 				VK_FORMAT_R8G8B8A8_SRGB,
 				VK_IMAGE_TILING_OPTIMAL,
-				VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+				VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 				textureImage_,
 				textureImageMemory_);
@@ -728,20 +736,56 @@ namespace vulkan {
 				textureImage_,
 				VK_FORMAT_R8G8B8A8_SRGB,
 				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+				mipLevels_);
 		copyBufferToImage_(
 				stagingBuffer,
 				textureImage_,
 				static_cast<uint32_t>(texWidth),
 				static_cast<uint32_t>(texHeight));
-		transitionImageLayout_(
-				textureImage_,
-				VK_FORMAT_R8G8B8A8_SRGB,
-				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		vkDestroyBuffer(device_, stagingBuffer, nullptr);
 		vkFreeMemory(device_, stagingBufferMemory, nullptr);
+
+		generateMipmaps_(textureImage_, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels_);
+	}
+	void Graphics::loadModel_() {
+		tinyobj::attrib_t attrib;
+		std::vector<tinyobj::shape_t> shapes;
+		std::vector<tinyobj::material_t> materials;
+		std::string warn, err;
+
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str())) {
+			util::log_error(warn + err);
+		}
+
+		std::unordered_map<Vertex, uint32_t> uniqueVertices{};
+
+		for (const auto& shape : shapes) {
+			for (const auto& index : shape.mesh.indices) {
+				Vertex vertex{};
+
+				vertex.pos = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2],
+				};
+
+				vertex.texCoord = {
+					attrib.texcoords[2 * index.texcoord_index + 0],
+					1.0 - attrib.texcoords[2 * index.texcoord_index + 1],
+				};
+
+				vertex.color = {1.0f, 1.0f, 1.0f};
+
+				if (uniqueVertices.count(vertex) == 0) {
+					uniqueVertices[vertex] = static_cast<uint32_t>(vertices_.size());
+					vertices_.push_back(vertex);
+				}
+
+				indices_.push_back(uniqueVertices[vertex]);
+			}
+		}
 	}
 	void Graphics::createVertexBuffer_() {
 		VkDeviceSize bufferSize = sizeof(vertices_[0]) * vertices_.size();
@@ -971,7 +1015,7 @@ namespace vulkan {
 		VkBuffer vertexBuffers[] = {vertexBuffer_};
 		VkDeviceSize offsets[] = {0};
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-		vkCmdBindIndexBuffer(commandBuffer, indexBuffer_, 0, VK_INDEX_TYPE_UINT16);
+		vkCmdBindIndexBuffer(commandBuffer, indexBuffer_, 0, VK_INDEX_TYPE_UINT32);
 
 		vkCmdBindDescriptorSets(
 				commandBuffer,
@@ -991,7 +1035,7 @@ namespace vulkan {
 		}
 	}
 	void Graphics::createTextureImageView_() {
-		textureImageView_ = createImageView_(textureImage_, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
+		textureImageView_ = createImageView_(textureImage_, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels_);
 	}
 	void Graphics::createTextureSampler_() {
 		auto samplerInfo = VkSamplerCreateInfo{};
@@ -1011,8 +1055,9 @@ namespace vulkan {
 		samplerInfo.compareEnable = VK_FALSE;
 		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
 		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerInfo.minLod = 0.0f;
-		samplerInfo.maxLod = 0.0f;
+		samplerInfo.minLod = 0;
+		samplerInfo.maxLod = static_cast<float>(mipLevels_);
+		samplerInfo.mipLodBias = 0.0f;
 
 		require(vkCreateSampler(device_, &samplerInfo, nullptr, &textureSampler_));
 	}
@@ -1021,18 +1066,20 @@ namespace vulkan {
 		createImage_(
 				swapChainExtent_.width,
 				swapChainExtent_.height,
+				1,
 				depthFormat,
 				VK_IMAGE_TILING_OPTIMAL,
 				VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 				depthImage_,
 				depthImageMemory_);
-		depthImageView_ = createImageView_(depthImage_, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+		depthImageView_ = createImageView_(depthImage_, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 		transitionImageLayout_(
 				depthImage_,
 				depthFormat,
 				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+				1);
 	}
 
 	void Graphics::drawFrame_() {
@@ -1110,7 +1157,7 @@ namespace vulkan {
 		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent_.width / (float) swapChainExtent_.height, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
@@ -1298,6 +1345,7 @@ namespace vulkan {
 	void Graphics::createImage_(
 			uint32_t width,
 			uint32_t height,
+			uint32_t mipLevels,
 			VkFormat format,
 			VkImageTiling tiling,
 			VkImageUsageFlags usage,
@@ -1319,6 +1367,7 @@ namespace vulkan {
 		imageInfo.usage = usage;
 		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
 		imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		imageInfo.mipLevels = mipLevels;
 
 		if (vkCreateImage(device_, &imageInfo, nullptr, &image) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create image!");
@@ -1373,7 +1422,8 @@ namespace vulkan {
 			VkImage image,
 			VkFormat format,
 			VkImageLayout oldLayout,
-			VkImageLayout newLayout)
+			VkImageLayout newLayout,
+			uint32_t mipLevels)
 	{
 		auto commandBuffer = beginSingleTimeCommands_();
 
@@ -1388,6 +1438,7 @@ namespace vulkan {
 		barrier.subresourceRange.levelCount = 1;
 		barrier.subresourceRange.baseArrayLayer = 0;
 		barrier.subresourceRange.layerCount = 1;
+		barrier.subresourceRange.levelCount = mipLevels;
 		barrier.srcAccessMask = 0;
 		barrier.dstAccessMask = 0;
 
@@ -1477,7 +1528,8 @@ namespace vulkan {
 	VkImageView Graphics::createImageView_(
 			VkImage image,
 			VkFormat format,
-			VkImageAspectFlags aspectFlags)
+			VkImageAspectFlags aspectFlags,
+			uint32_t mipLevels)
 	{
 		auto viewInfo = VkImageViewCreateInfo{};
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -1489,6 +1541,7 @@ namespace vulkan {
 		viewInfo.subresourceRange.levelCount = 1;
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		viewInfo.subresourceRange.layerCount = 1;
+		viewInfo.subresourceRange.levelCount = mipLevels;
 
 		VkImageView imageView;
 		require(vkCreateImageView(device_, &viewInfo, nullptr, &imageView));
@@ -1518,6 +1571,124 @@ namespace vulkan {
 	}
 	bool Graphics::hasStencilComponent_(VkFormat format) {
 		return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+	}
+	void Graphics::generateMipmaps_(
+			VkImage image,
+			VkFormat imageFormat,
+			int32_t texWidth,
+			int32_t texHeight,
+			uint32_t mipLevels)
+	{
+		VkFormatProperties formatProperties;
+		vkGetPhysicalDeviceFormatProperties(
+				physicalDevice_,
+				imageFormat,
+				&formatProperties);
+		if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
+			util::log_fatal_error("Texture image format does not support linear blitting!");
+		}
+
+		auto commandBuffer = beginSingleTimeCommands_();
+
+		auto barrier = VkImageMemoryBarrier{};
+		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		barrier.image = image;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		barrier.subresourceRange.baseArrayLayer = 0;
+		barrier.subresourceRange.layerCount = 1;
+		barrier.subresourceRange.levelCount = 1;
+
+		int32_t mipWidth = texWidth;
+		int32_t mipHeight = texHeight;
+
+		for (uint32_t i = 1; i < mipLevels_; i++) {
+			barrier.subresourceRange.baseMipLevel = i - 1;
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+
+			vkCmdPipelineBarrier(
+					commandBuffer,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					0,
+					0,
+					nullptr,
+					0,
+					nullptr,
+					1,
+					&barrier);
+
+			auto blit = VkImageBlit{};
+			blit.srcOffsets[0] = {0, 0, 0};
+			blit.srcOffsets[1] = {mipWidth, mipHeight, 1};
+			blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			blit.srcSubresource.mipLevel = i - 1;
+			blit.srcSubresource.baseArrayLayer = 0;
+			blit.srcSubresource.layerCount = 1;
+			blit.dstOffsets[0] = {0, 0, 0};
+			blit.dstOffsets[1] = {
+				mipWidth > 1 ? mipWidth / 2 : 1,
+				mipHeight > 1 ? mipHeight / 2 : 1,
+				1
+			};
+			blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			blit.dstSubresource.mipLevel = i;
+			blit.dstSubresource.baseArrayLayer = 0;
+			blit.dstSubresource.layerCount = 1;
+
+			vkCmdBlitImage(
+					commandBuffer,
+					image,
+					VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+					image,
+					VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+					1,
+					&blit,
+					VK_FILTER_LINEAR);
+
+			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+			barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+			barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+			vkCmdPipelineBarrier(
+					commandBuffer,
+					VK_PIPELINE_STAGE_TRANSFER_BIT,
+					VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+					0,
+					0,
+					nullptr,
+					0,
+					nullptr,
+					1,
+					&barrier);
+			if (mipWidth > 1) mipWidth /= 2;
+			if (mipHeight > 1) mipHeight /= 2;
+		}
+
+		barrier.subresourceRange.baseMipLevel = mipLevels_ - 1;
+		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+		vkCmdPipelineBarrier(
+				commandBuffer,
+				VK_PIPELINE_STAGE_TRANSFER_BIT,
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				0,
+				0,
+				nullptr,
+				0,
+				nullptr,
+				1,
+				&barrier);
+
+		endSingleTimeCommands_(commandBuffer);
 	}
 
 	VKAPI_ATTR VkBool32 VKAPI_CALL Graphics::debugCallback(
