@@ -503,7 +503,14 @@ namespace vulkan {
 		samplerLayoutBinding.pImmutableSamplers = nullptr;
 		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-		std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
+		auto computeSamperLayoutBinding = VkDescriptorSetLayoutBinding{};
+		computeSamperLayoutBinding.binding = 2;
+		computeSamperLayoutBinding.descriptorCount = 1;
+		computeSamperLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		computeSamperLayoutBinding.pImmutableSamplers = nullptr;
+		computeSamperLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		std::array<VkDescriptorSetLayoutBinding, 3> bindings = {uboLayoutBinding, samplerLayoutBinding, computeSamperLayoutBinding};
 		VkDescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -916,7 +923,7 @@ namespace vulkan {
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 2;
 		poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		poolSizes[2].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
@@ -955,7 +962,12 @@ namespace vulkan {
 			imageInfo.imageView = textureImageView_;
 			imageInfo.sampler = textureSampler_;
 
-			std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+			auto computeImageInfo = VkDescriptorImageInfo{};
+			computeImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+			computeImageInfo.imageView = computeResultImageView_;
+			computeImageInfo.sampler = textureSampler_;
+
+			std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
 
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrites[0].dstSet = descriptorSets_[i];
@@ -972,6 +984,15 @@ namespace vulkan {
 			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			descriptorWrites[1].descriptorCount = 1;
 			descriptorWrites[1].pImageInfo = &imageInfo;
+
+			descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[2].dstSet = descriptorSets_[i];
+			descriptorWrites[2].dstBinding = 2;
+			descriptorWrites[2].dstArrayElement = 0;
+			descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[2].descriptorCount = 1;
+			descriptorWrites[2].pImageInfo = &computeImageInfo;
+
 
 			vkUpdateDescriptorSets(
 					device_,
@@ -1152,7 +1173,7 @@ namespace vulkan {
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout_, 0, 1, &computeDescriptorSets_[currentFrame_], 0, nullptr);
 
-		vkCmdDispatch(commandBuffer, 1, 1, 1);
+		vkCmdDispatch(commandBuffer, swapChainExtent_.width, swapChainExtent_.height, 1);
 
 		require(vkEndCommandBuffer(commandBuffer));
 	}
@@ -1212,7 +1233,7 @@ namespace vulkan {
 				1,
 				imageFormat,
 				VK_IMAGE_TILING_OPTIMAL,
-				VK_IMAGE_USAGE_STORAGE_BIT,
+				VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 				computeResultImage_,
 				computeResultMemory_);
