@@ -1,5 +1,5 @@
-#include "graphics.h"
-#include "defs.h"
+#include "Graphics.h"
+#include "Defs.h"
 #include "error.h"
 #include "file.h"
 #include "log.h"
@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <cstring>
 #include <iostream>
+#include <numeric>
 #include <stdexcept>
 #include <set>
 #include <unordered_map>
@@ -60,20 +61,25 @@ namespace vulkan {
 		createImageViews_();
 		createRenderPass_();
 		createDescriptorSetLayout_();
+		createComputeDescriptorSetLayout_();
 		createGraphicsPipeline_();
+		createComputePipeline_();
 		createCommandPool_();
 		createDepthResources_();
 		createFramebuffers_();
 		createTextureImage_();
 		createTextureImageView_();
 		createTextureSampler_();
+		createComputeResultTexture_();
 		loadModel_();
 		createVertexBuffer_();
 		createIndexBuffer_();
 		createUniformBuffers_();
 		createDescriptorPool_();
 		createDescriptorSets_();
+		createComputeDescriptorSets_();
 		createCommandBuffers_();
+		createComputeCommandBuffers_();
 		createSyncObjects_();
 	}
 
@@ -196,6 +202,7 @@ namespace vulkan {
 		vkDestroyDescriptorPool(device_, descriptorPool_, nullptr);
 
 		vkDestroyDescriptorSetLayout(device_, descriptorSetLayout_, nullptr);
+		vkDestroyDescriptorSetLayout(device_, computeDescriptorSetLayout_, nullptr);
 
 		vkDestroyBuffer(device_, vertexBuffer_, nullptr);
 		vkFreeMemory(device_, vertexBufferMemory_, nullptr);
@@ -205,12 +212,18 @@ namespace vulkan {
 
 		vkDestroyPipeline(device_, graphicsPipeline_, nullptr);
 		vkDestroyPipelineLayout(device_, pipelineLayout_, nullptr);
+	
+		vkDestroyPipeline(device_, computePipeline_, nullptr);
+		vkDestroyPipelineLayout(device_, computePipelineLayout_, nullptr);
 
 		vkDestroyRenderPass(device_, renderPass_, nullptr);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			vkDestroySemaphore(device_, renderFinishedSemaphores_[i], nullptr);
 			vkDestroySemaphore(device_, imageAvailableSemaphores_[i], nullptr);
+			vkDestroyFence(device_, inFlightFences_[i], nullptr);
+
+			vkDestroySemaphore(device_, computeFinishedSemaphores_[i], nullptr);
 			vkDestroyFence(device_, inFlightFences_[i], nullptr);
 		}
 
@@ -349,6 +362,8 @@ namespace vulkan {
 			throw vulkan::Error(result);
 		}
 		vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 0, &graphicsQueue_);
+		//TODO: search specifically for a compute queue
+		vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 0, &computeQueue_);
 		vkGetDeviceQueue(device_, indices.presentFamily.value(), 0, &presentQueue_);
 	}
 	void Graphics::createSwapChain_() {
@@ -497,6 +512,33 @@ namespace vulkan {
 		if (vkCreateDescriptorSetLayout(device_, &layoutInfo, nullptr, &descriptorSetLayout_) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create descriptor set layout!");
 		}
+	}
+	void Graphics::createComputePipeline_() {
+		auto computeShaderCode = util::readEnvFile("src/shaders/default_shader.comp.spv");
+
+		auto computeShaderModule = createShaderModule_(computeShaderCode);
+
+		auto computeShaderStageInfo = VkPipelineShaderStageCreateInfo{};
+		computeShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		computeShaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		computeShaderStageInfo.module = computeShaderModule;
+		computeShaderStageInfo.pName = "main";
+
+		auto pipelineLayoutInfo = VkPipelineLayoutCreateInfo{};
+		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipelineLayoutInfo.setLayoutCount = 1;
+		pipelineLayoutInfo.pSetLayouts = &computeDescriptorSetLayout_;
+
+		require(vkCreatePipelineLayout(device_, &pipelineLayoutInfo, nullptr, &computePipelineLayout_));
+
+		auto pipelineInfo = VkComputePipelineCreateInfo{};
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipelineInfo.layout = computePipelineLayout_;
+		pipelineInfo.stage = computeShaderStageInfo;
+
+		require(vkCreateComputePipelines(device_, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &computePipeline_));
+
+		vkDestroyShaderModule(device_, computeShaderModule, nullptr);
 	}
 	void Graphics::createGraphicsPipeline_() {
 		auto vertShaderCode = util::readEnvFile("src/shaders/default_shader.vert.spv");
@@ -870,17 +912,20 @@ namespace vulkan {
 		}
 	}
 	void Graphics::createDescriptorPool_() {
-		std::array<VkDescriptorPoolSize, 2> poolSizes{};
+		std::array<VkDescriptorPoolSize, 3> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		poolSizes[2].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * 2);
 
 		if (vkCreateDescriptorPool(device_, &poolInfo, nullptr, &descriptorPool_) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create descriptor pool!");
@@ -936,6 +981,56 @@ namespace vulkan {
 					nullptr);
 		}
 	}
+	void Graphics::createComputeDescriptorSets_() {
+		auto layouts = std::vector<VkDescriptorSetLayout>(MAX_FRAMES_IN_FLIGHT, computeDescriptorSetLayout_);
+		auto allocInfo = VkDescriptorSetAllocateInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		allocInfo.descriptorPool = descriptorPool_;
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		allocInfo.pSetLayouts = layouts.data();
+
+		computeDescriptorSets_.resize(MAX_FRAMES_IN_FLIGHT);
+		require(vkAllocateDescriptorSets(device_, &allocInfo, computeDescriptorSets_.data()));
+
+		std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
+
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+			auto imageInfo = VkDescriptorImageInfo{};
+			imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+			imageInfo.imageView = computeResultImageView_;
+
+
+			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[0].dstSet = computeDescriptorSets_[i];
+			descriptorWrites[0].dstBinding = 2;
+			descriptorWrites[0].dstArrayElement = 0;
+			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+			descriptorWrites[0].descriptorCount = 1;
+			descriptorWrites[0].pImageInfo = &imageInfo;
+
+			vkUpdateDescriptorSets(
+					device_,
+					static_cast<uint32_t>(descriptorWrites.size()),
+					descriptorWrites.data(),
+					0,
+					nullptr);
+		}
+	}
+	void Graphics::createComputeDescriptorSetLayout_() {
+		auto layoutBindings = std::array<VkDescriptorSetLayoutBinding, 1>{};
+		layoutBindings[0].binding = 2;
+		layoutBindings[0].descriptorCount = 1;
+		layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		layoutBindings[0].pImmutableSamplers = nullptr;
+		layoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+		auto layoutInfo = VkDescriptorSetLayoutCreateInfo{};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
+		layoutInfo.pBindings = layoutBindings.data();
+
+		require(vkCreateDescriptorSetLayout(device_, &layoutInfo, nullptr, &computeDescriptorSetLayout_));
+	}
 	void Graphics::createCommandBuffers_() {
 		commandBuffers_.resize(MAX_FRAMES_IN_FLIGHT);
 		VkCommandBufferAllocateInfo allocInfo{};
@@ -948,10 +1043,23 @@ namespace vulkan {
 			throw std::runtime_error("failed to allocate command buffers!");
 		}
 	}
+	void Graphics::createComputeCommandBuffers_() {
+		computeCommandBuffers_.resize(MAX_FRAMES_IN_FLIGHT);
+
+		auto allocInfo = VkCommandBufferAllocateInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = commandPool_;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = (uint32_t) computeCommandBuffers_.size();
+
+		require(vkAllocateCommandBuffers(device_, &allocInfo, computeCommandBuffers_.data()));
+	}
 	void Graphics::createSyncObjects_() {
 		imageAvailableSemaphores_.resize(MAX_FRAMES_IN_FLIGHT);
 		renderFinishedSemaphores_.resize(MAX_FRAMES_IN_FLIGHT);
+		computeFinishedSemaphores_.resize(MAX_FRAMES_IN_FLIGHT);
 		inFlightFences_.resize(MAX_FRAMES_IN_FLIGHT);
+		computeInFlightFences_.resize(MAX_FRAMES_IN_FLIGHT);
 
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -961,12 +1069,12 @@ namespace vulkan {
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			if (vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &imageAvailableSemaphores_[i]) != VK_SUCCESS ||
-					vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &renderFinishedSemaphores_[i]) != VK_SUCCESS ||
-					vkCreateFence(device_, &fenceInfo, nullptr, &inFlightFences_[i]) != VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to create synchronization objects for a frame!");
-			}
+			require(vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &imageAvailableSemaphores_[i]));
+			require(vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &renderFinishedSemaphores_[i]));
+			require(vkCreateFence(device_, &fenceInfo, nullptr, &inFlightFences_[i]));
+
+			require(vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &computeFinishedSemaphores_[i]));
+			require(vkCreateFence(device_, &fenceInfo, nullptr, &computeInFlightFences_[i]));
 		}
 	}
 
@@ -1034,6 +1142,20 @@ namespace vulkan {
 			throw std::runtime_error("failed to record command buffer!");
 		}
 	}
+	void Graphics::recordComputeCommandBuffer_(VkCommandBuffer commandBuffer) {
+		auto beginInfo = VkCommandBufferBeginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+		require(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline_);
+
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout_, 0, 1, &computeDescriptorSets_[currentFrame_], 0, nullptr);
+
+		vkCmdDispatch(commandBuffer, 1, 1, 1);
+
+		require(vkEndCommandBuffer(commandBuffer));
+	}
 	void Graphics::createTextureImageView_() {
 		textureImageView_ = createImageView_(textureImage_, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels_);
 	}
@@ -1082,7 +1204,54 @@ namespace vulkan {
 				1);
 	}
 
+	void Graphics::createComputeResultTexture_() {
+		VkFormat imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
+		createImage_(
+				swapChainExtent_.width,
+				swapChainExtent_.height,
+				1,
+				imageFormat,
+				VK_IMAGE_TILING_OPTIMAL,
+				VK_IMAGE_USAGE_STORAGE_BIT,
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+				computeResultImage_,
+				computeResultMemory_);
+
+		computeResultImageView_ = createImageView_(
+				computeResultImage_,
+				imageFormat,
+				VK_IMAGE_ASPECT_COLOR_BIT,
+				1);
+		transitionImageLayout_(
+				computeResultImage_,
+				imageFormat,
+				VK_IMAGE_LAYOUT_UNDEFINED,
+				VK_IMAGE_LAYOUT_GENERAL,
+				1);
+
+	}
+
 	void Graphics::drawFrame_() {
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+		//Compute submission
+		vkWaitForFences(device_, 1, &computeInFlightFences_[currentFrame_], VK_TRUE, UINT64_MAX);
+
+		//update uniforms here maybe
+
+		vkResetFences(device_, 1, &computeInFlightFences_[currentFrame_]);
+
+		vkResetCommandBuffer(computeCommandBuffers_[currentFrame_], 0);
+		recordComputeCommandBuffer_(computeCommandBuffers_[currentFrame_]);
+
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &computeCommandBuffers_[currentFrame_];
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = &computeFinishedSemaphores_[currentFrame_];
+
+		require(vkQueueSubmit(computeQueue_, 1, &submitInfo, computeInFlightFences_[currentFrame_]));
+
 		vkWaitForFences(device_, 1, &inFlightFences_[currentFrame_], VK_TRUE, UINT64_MAX);
 
 		uint32_t imageIndex;
@@ -1109,20 +1278,15 @@ namespace vulkan {
 
 		recordCommandBuffer_(commandBuffers_[currentFrame_], imageIndex);
 
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-		VkSemaphore waitSemaphores[] = {imageAvailableSemaphores_[currentFrame_]};
-		VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-		submitInfo.waitSemaphoreCount = 1;
+		VkSemaphore waitSemaphores[] = {computeFinishedSemaphores_[currentFrame_], imageAvailableSemaphores_[currentFrame_]};
+		VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+		submitInfo.waitSemaphoreCount = 2;
 		submitInfo.pWaitSemaphores = waitSemaphores;
 		submitInfo.pWaitDstStageMask = waitStages;
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &commandBuffers_[currentFrame_];
-
-		VkSemaphore signalSemaphores[] = {renderFinishedSemaphores_[currentFrame_]};
 		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = signalSemaphores;
+		submitInfo.pSignalSemaphores = &renderFinishedSemaphores_[currentFrame_];
 
 		if (vkQueueSubmit(graphicsQueue_, 1, &submitInfo, inFlightFences_[currentFrame_]) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to submit draw command buffer!");
@@ -1131,7 +1295,7 @@ namespace vulkan {
 		VkPresentInfoKHR presentInfo{};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = signalSemaphores;
+		presentInfo.pWaitSemaphores = &renderFinishedSemaphores_[currentFrame_];
 
 		VkSwapchainKHR swapChains[] = {swapChain_};
 		presentInfo.swapchainCount = 1;
@@ -1475,6 +1639,13 @@ namespace vulkan {
 			barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		} else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
+				newLayout == VK_IMAGE_LAYOUT_GENERAL)
+		{
+			barrier.srcAccessMask = 0;
+			barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+			sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+			destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 		} else {
 			throw std::invalid_argument("unsupported layout transition!");
 		}

@@ -45,6 +45,8 @@ namespace vulkan {
 			void createImageViews_();
 			void createRenderPass_();
 			void createDescriptorSetLayout_();
+			void createComputeDescriptorSetLayout_();
+			void createComputePipeline_();
 			void createGraphicsPipeline_();
 			void createFramebuffers_();
 			void createCommandPool_();
@@ -55,13 +57,17 @@ namespace vulkan {
 			void createUniformBuffers_();
 			void createDescriptorPool_();
 			void createDescriptorSets_();
+			void createComputeDescriptorSets_();
 			void createCommandBuffers_();
+			void createComputeCommandBuffers_();
 			void createSyncObjects_();
 			void createSurface_();
 			void recordCommandBuffer_(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+			void recordComputeCommandBuffer_(VkCommandBuffer commandBuffer);
 			void createTextureImageView_();
 			void createTextureSampler_();
 			void createDepthResources_();
+			void createComputeResultTexture_();
 
 			void drawFrame_();
 			void updateUniformBuffer_(uint32_t currentImage);
@@ -151,6 +157,7 @@ namespace vulkan {
 			VkDevice device_;
 			VkQueue graphicsQueue_;
 			VkQueue presentQueue_;
+			VkQueue computeQueue_;
 			VkSurfaceKHR surface_;
 			VkSwapchainKHR swapChain_;
 			std::vector<VkImage> swapChainImages_;
@@ -158,10 +165,14 @@ namespace vulkan {
 			VkExtent2D swapChainExtent_;
 			VkRenderPass renderPass_;
 			VkDescriptorSetLayout descriptorSetLayout_;
+			VkDescriptorSetLayout computeDescriptorSetLayout_;
 			VkDescriptorPool descriptorPool_;
 			std::vector<VkDescriptorSet> descriptorSets_;
+			std::vector<VkDescriptorSet> computeDescriptorSets_;
 			VkPipelineLayout pipelineLayout_;
+			VkPipelineLayout computePipelineLayout_;
 			VkPipeline graphicsPipeline_;
+			VkPipeline computePipeline_;
 			std::vector<VkFramebuffer> swapChainFramebuffers_;
 			VkCommandPool commandPool_;
 			std::vector<Vertex> vertices_;
@@ -178,13 +189,19 @@ namespace vulkan {
 			VkImage depthImage_;
 			VkDeviceMemory depthImageMemory_;
 			VkImageView depthImageView_;
+			VkDeviceMemory computeResultMemory_;
+			VkImage computeResultImage_;
+			VkImageView computeResultImageView_;
 			std::vector<VkBuffer> uniformBuffers_;
 			std::vector<VkDeviceMemory> uniformBuffersMemory_;
 			std::vector<void*> uniformBuffersMapped_;
 			std::vector<VkCommandBuffer> commandBuffers_;
+			std::vector<VkCommandBuffer> computeCommandBuffers_;
 			std::vector<VkSemaphore> imageAvailableSemaphores_;
 			std::vector<VkSemaphore> renderFinishedSemaphores_;
+			std::vector<VkSemaphore> computeFinishedSemaphores_;
 			std::vector<VkFence> inFlightFences_;
+			std::vector<VkFence> computeInFlightFences_;
 			std::vector<VkImageView> swapChainImageViews_;
 
 			bool framebufferResized_ = false;

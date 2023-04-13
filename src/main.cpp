@@ -1,4 +1,4 @@
-#include "graphics.h"
+#include "Graphics.h"
 #include <cstdint>
 #include <sys/types.h>
 #include <vector>

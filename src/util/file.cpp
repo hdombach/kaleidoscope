@@ -43,7 +43,7 @@ namespace util {
 			file.close();
 			return result;
 		}
-		throw std::runtime_error("Could not find file");
+		throw std::runtime_error("Could not find file " + path);
 	}
 
 	std::string readFile(std::filesystem::path path) {

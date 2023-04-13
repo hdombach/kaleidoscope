@@ -1,0 +1,9 @@
+#version 450
+
+layout(binding = 2, rgba8) uniform writeonly image2D result;
+
+void main() {
+	ivec2 resultDim = imageSize(result);
+	vec2 uv = vec2(gl_GlobalInvocationID.xy) / resultDim;
+	imageStore(result, ivec2(gl_GlobalInvocationID.xy), vec4(uv, 0.0, 0.0));
+}
