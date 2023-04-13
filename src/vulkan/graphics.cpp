@@ -1,5 +1,5 @@
-#include "Graphics.h"
-#include "Defs.h"
+#include "graphics.h"
+#include "defs.h"
 #include "error.h"
 #include "file.h"
 #include "log.h"
