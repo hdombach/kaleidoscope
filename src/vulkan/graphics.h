@@ -69,7 +69,10 @@ namespace vulkan {
 			void createDepthResources_();
 			void createComputeResultTexture_();
 
+			void initImgui_();
+
 			void drawFrame_();
+			void drawUi_();
 			void updateUniformBuffer_(uint32_t currentImage);
 			bool checkValidationLayerSupport_();
 			void cleanupSwapChain_();
@@ -203,6 +206,9 @@ namespace vulkan {
 			std::vector<VkFence> inFlightFences_;
 			std::vector<VkFence> computeInFlightFences_;
 			std::vector<VkImageView> swapChainImageViews_;
+
+			//imgui stuff
+			VkDescriptorPool imguiPool_;
 
 			bool framebufferResized_ = false;
 			uint32_t currentFrame_ = 0;

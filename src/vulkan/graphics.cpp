@@ -17,6 +17,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -32,6 +36,7 @@ namespace vulkan {
 		initVulkan_();
 	}
 	void Graphics::tick() {
+		drawUi_();
 		drawFrame_();
 	}
 	void Graphics::waitIdle() {
@@ -81,6 +86,7 @@ namespace vulkan {
 		createCommandBuffers_();
 		createComputeCommandBuffers_();
 		createSyncObjects_();
+		initImgui_();
 	}
 
 	void Graphics::recreateSwapChain_() {
@@ -200,6 +206,8 @@ namespace vulkan {
 		}
 
 		vkDestroyDescriptorPool(device_, descriptorPool_, nullptr);
+		vkDestroyDescriptorPool(device_, imguiPool_, nullptr);
+		ImGui_ImplVulkan_Shutdown();
 
 		vkDestroyDescriptorSetLayout(device_, descriptorSetLayout_, nullptr);
 		vkDestroyDescriptorSetLayout(device_, computeDescriptorSetLayout_, nullptr);
@@ -1157,6 +1165,8 @@ namespace vulkan {
 				nullptr);
 		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices_.size()), 1, 0, 0, 0);
 
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
 		vkCmdEndRenderPass(commandBuffer);
 
 		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
@@ -1273,6 +1283,7 @@ namespace vulkan {
 
 		require(vkQueueSubmit(computeQueue_, 1, &submitInfo, computeInFlightFences_[currentFrame_]));
 
+		//Main render pass submission
 		vkWaitForFences(device_, 1, &inFlightFences_[currentFrame_], VK_TRUE, UINT64_MAX);
 
 		uint32_t imageIndex;
@@ -1296,6 +1307,8 @@ namespace vulkan {
 		vkResetFences(device_, 1, &inFlightFences_[currentFrame_]);
 
 		vkResetCommandBuffer(commandBuffers_[currentFrame_], 0);
+
+		ImGui::Render();
 
 		recordCommandBuffer_(commandBuffers_[currentFrame_], imageIndex);
 
@@ -1335,6 +1348,17 @@ namespace vulkan {
 
 		currentFrame_ = (currentFrame_ + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
+	
+	void Graphics::drawUi_() {
+		glfwPollEvents();
+
+		ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		ImGui::ShowDemoWindow();
+	}
+
 	void Graphics::updateUniformBuffer_(uint32_t currentImage) {
 		static auto startTime = std::chrono::high_resolution_clock::now();
 
@@ -1881,6 +1905,53 @@ namespace vulkan {
 				&barrier);
 
 		endSingleTimeCommands_(commandBuffer);
+	}
+
+	void Graphics::initImgui_() {
+		auto poolSizes = std::array<VkDescriptorPoolSize, 11>{{
+			{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+			{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+		}};
+
+		auto poolInfo = VkDescriptorPoolCreateInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+		poolInfo.maxSets = 1000;
+		poolInfo.poolSizeCount = poolSizes.size();
+		poolInfo.pPoolSizes = poolSizes.data();
+
+		require(vkCreateDescriptorPool(device_, &poolInfo, nullptr, &imguiPool_));
+
+		ImGui::CreateContext();
+
+		ImGui_ImplGlfw_InitForVulkan(window_, true);
+
+		auto initInfo = ImGui_ImplVulkan_InitInfo{};
+		initInfo.Instance = instance_;
+		initInfo.PhysicalDevice = physicalDevice_;
+		initInfo.Device = device_;
+		initInfo.Queue = graphicsQueue_;
+		initInfo.DescriptorPool = imguiPool_;
+		initInfo.MinImageCount = 3;
+		initInfo.ImageCount = 3;
+		initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
+		ImGui_ImplVulkan_Init(&initInfo, renderPass_);
+
+		auto command = beginSingleTimeCommands_();
+		ImGui_ImplVulkan_CreateFontsTexture(command);
+		endSingleTimeCommands_(command);
+
+		ImGui_ImplVulkan_DestroyFontUploadObjects();
 	}
 
 	VKAPI_ATTR VkBool32 VKAPI_CALL Graphics::debugCallback(
