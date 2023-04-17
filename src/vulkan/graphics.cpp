@@ -1406,8 +1406,8 @@ namespace vulkan {
 		return indices;
 	}
 
-	SwapChainSupportDetails Graphics::querySwapChainSupport_(VkPhysicalDevice device) {
-		SwapChainSupportDetails details;
+	SwapChainSupportDetails_ Graphics::querySwapChainSupport_(VkPhysicalDevice device) {
+		SwapChainSupportDetails_ details;
 
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface_, &details.capabilities);
 
