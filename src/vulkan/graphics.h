@@ -2,6 +2,7 @@
 
 #include "vertex.h"
 #include "vulkan/vulkan_core.h"
+#include <memory>
 #include <vector>
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
@@ -36,13 +37,18 @@ namespace vulkan {
 			VkPhysicalDevice const &physicalDevice() const;
 			VkDevice const &device() const;
 			VkSampler mainTextureSampler() const;
+			GLFWwindow* window() const;
+			VkSwapchainKHR swapchain() const;
+			VkCommandPool commandPool() const;
+			VkQueue graphicsQueue() const;
+			VkQueue presentQueue() const;
+			VkImageView computeImageView() const;
 
 			VkFormat findSupportedFormat(
 					const std::vector<VkFormat>& candidates,
 					VkImageTiling tiling,
-					VkFormatFeatureFlags features);
+					VkFormatFeatureFlags features) const;
 			VkShaderModule createShaderModule(std::string const &code) const;
-			static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice physicalDevice);
 			QueueFamilyIndices findQueueFamilies() const;
 			void createBuffer(
 					VkDeviceSize size,
@@ -82,6 +88,10 @@ namespace vulkan {
 					VkFormat format,
 					VkImageAspectFlags aspectFlags,
 					uint32_t mipLevels) const;
+			void copyBuffer(
+					VkBuffer srcBuffer,
+					VkBuffer dstBuffer,
+					VkDeviceSize size) const;
 
 
 		private:
@@ -143,20 +153,20 @@ namespace vulkan {
 			static void framebufferResizeCallback_(GLFWwindow* window, int width, int height);
 			std::vector<const char*> getRequiredExtensions_();
 			void populateDebugMessengerCreateInfo_(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-			QueueFamilyIndices findQueueFamilies_(VkPhysicalDevice device);
+			QueueFamilyIndices findQueueFamilies_(VkPhysicalDevice device) const;
 			SwapChainSupportDetails_ querySwapChainSupport_(VkPhysicalDevice device);
 			VkSurfaceFormatKHR chooseSwapSurfaceFormat_(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 			VkPresentModeKHR chooseSwapPresentMode_(const std::vector<VkPresentModeKHR>& availablePresentModes);
 			VkExtent2D chooseSwapExtent_(const VkSurfaceCapabilitiesKHR& capabilities);
-			VkShaderModule createShaderModule_(const std::string& code);
-			uint32_t findMemoryType_(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+			VkShaderModule createShaderModule_(const std::string& code) const;
+			uint32_t findMemoryType_(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
 			void createBuffer_(
 					VkDeviceSize size,
 					VkBufferUsageFlags usage,
 					VkMemoryPropertyFlags properties,
 					VkBuffer& buffer,
-					VkDeviceMemory& bufferMemory);
-			void copyBuffer_(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
+					VkDeviceMemory& bufferMemory) const;
+			void copyBuffer_(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
 			void createImage_(
 					uint32_t width,
 					uint32_t height,
@@ -166,37 +176,37 @@ namespace vulkan {
 					VkImageUsageFlags usage,
 					VkMemoryPropertyFlags properties,
 					VkImage &image,
-					VkDeviceMemory &imageMemory);
-			VkCommandBuffer beginSingleTimeCommands_();
-			void endSingleTimeCommands_(VkCommandBuffer commandBuffer);
+					VkDeviceMemory &imageMemory) const;
+			VkCommandBuffer beginSingleTimeCommands_() const;
+			void endSingleTimeCommands_(VkCommandBuffer commandBuffer) const;
 			void transitionImageLayout_(
 					VkImage image,
 					VkFormat format,
 					VkImageLayout oldLayout,
 					VkImageLayout newLayout,
-					uint32_t mipLevels);
+					uint32_t mipLevels) const;
 			void copyBufferToImage_(
 					VkBuffer buffer,
 					VkImage image,
 					uint32_t width,
-					uint32_t height);
+					uint32_t height) const;
 			VkImageView createImageView_(
 					VkImage image,
 					VkFormat format,
 					VkImageAspectFlags aspectFlags,
-					uint32_t mipLevels);
+					uint32_t mipLevels) const;
 			VkFormat findSupportedFormat_(
 					const std::vector<VkFormat>& candidates,
 					VkImageTiling tiling,
-					VkFormatFeatureFlags features);
+					VkFormatFeatureFlags features) const;
 			VkFormat findDepthFormat_();
-			bool hasStencilComponent_(VkFormat format);
+			bool hasStencilComponent_(VkFormat format) const;
 			void generateMipmaps_(
 					VkImage image,
 					VkFormat imageFormat,
 					int32_t texWidth,
 					int32_t texHeight,
-					uint32_t mipLevels);
+					uint32_t mipLevels) const;
 
 			static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 				VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -259,6 +269,8 @@ namespace vulkan {
 			std::vector<VkFence> inFlightFences_;
 			std::vector<VkFence> computeInFlightFences_;
 			std::vector<VkImageView> swapChainImageViews_;
+
+			std::unique_ptr<MainRenderPipeline> mainRenderPipeline_;
 
 			//imgui stuff
 			VkDescriptorPool imguiPool_;

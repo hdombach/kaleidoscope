@@ -8,7 +8,7 @@
 #define DEFAULT_LOG_WARNING true
 #define DEFAULT_LOG_ERROR true
 #define DEFAULT_LOG_FATAL_ERROR true
-#define DEFAULT_LOG_MEMORY false
+#define DEFAULT_LOG_MEMORY true
 
 namespace util {
 	namespace ImportanceMask {

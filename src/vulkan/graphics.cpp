@@ -3,6 +3,7 @@
 #include "error.h"
 #include "file.h"
 #include "log.h"
+#include "mainRenderPipeline.h"
 #include "uniformBufferObject.h"
 #include "vertex.h"
 #include "vulkan/vulkan_core.h"
@@ -10,6 +11,7 @@
 #include <cstdint>
 #include <cstring>
 #include <iostream>
+#include <memory>
 #include <numeric>
 #include <stdexcept>
 #include <set>
@@ -36,7 +38,7 @@ namespace vulkan {
 		initVulkan_();
 	}
 	void Graphics::tick() {
-		drawUi_();
+		//drawUi_();
 		drawFrame_();
 	}
 	void Graphics::waitIdle() {
@@ -45,6 +47,115 @@ namespace vulkan {
 	GLFWwindow * Graphics::window() {
 		return window_;
 	}
+
+	VkSurfaceKHR const &Graphics::surface() const {
+		return surface_;
+	}
+	VkPhysicalDevice const &Graphics::physicalDevice() const {
+		return physicalDevice_;
+	}
+	VkDevice const &Graphics::device() const {
+		return device_;
+	}
+	VkSampler Graphics::mainTextureSampler() const {
+		return textureSampler_;
+	}
+	GLFWwindow* Graphics::window() const {
+		return window_;
+	}
+	VkSwapchainKHR Graphics::swapchain() const {
+		return swapChain_;
+	}
+	VkCommandPool Graphics::commandPool() const {
+		return commandPool_;
+	}
+	VkQueue Graphics::graphicsQueue() const {
+		return graphicsQueue_;
+	}
+	VkQueue Graphics::presentQueue() const {
+		return presentQueue_;
+	}
+	VkImageView Graphics::computeImageView() const {
+		return computeResultImageView_;
+	}
+
+	VkFormat Graphics::findSupportedFormat(
+			const std::vector<VkFormat> &candidates,
+			VkImageTiling tiling,
+			VkFormatFeatureFlags features) const
+	{
+		return findSupportedFormat_(candidates, tiling, features);
+	}
+	VkShaderModule Graphics::createShaderModule(const std::string &code) const {
+		return createShaderModule_(code);
+	}
+	QueueFamilyIndices Graphics::findQueueFamilies() const {
+		return findQueueFamilies_(physicalDevice_);
+	}
+	void Graphics::createBuffer(
+			VkDeviceSize size,
+			VkBufferUsageFlags usage,
+			VkMemoryPropertyFlags properties,
+			VkBuffer &buffer,
+			VkDeviceMemory &bufferMemory) const
+	{
+		createBuffer_(size, usage, properties, buffer, bufferMemory);
+	}
+	void Graphics::createImage(
+			uint32_t width,
+			uint32_t height,
+			uint32_t mipLevels,
+			VkFormat format,
+			VkImageTiling tiling,
+			VkImageUsageFlags usage,
+			VkMemoryPropertyFlags properties,
+			VkImage &image,
+			VkDeviceMemory &imageMemory) const
+	{
+		createImage_(width, height, mipLevels, format, tiling, usage, properties, image, imageMemory);
+	}
+	void Graphics::transitionImageLayout(
+			VkImage image,
+			VkFormat format,
+			VkImageLayout oldLayout,
+			VkImageLayout newLayout,
+			uint32_t mipLevels) const
+	{
+		transitionImageLayout_(image, format, oldLayout, newLayout, mipLevels);
+	}
+	void Graphics::copyBufferToImage(
+			VkBuffer buffer,
+			VkImage image,
+			uint32_t width,
+			uint32_t height) const
+	{
+		copyBufferToImage_(buffer, image, width, height);
+	}
+	void Graphics::generateMipmaps(
+			VkImage image,
+			VkFormat imageFormat,
+			int32_t texWidth,
+			int32_t texHeight,
+			uint32_t mipLevels) const
+	{
+		generateMipmaps_(image, imageFormat, texWidth, texHeight, mipLevels);
+	}
+	VkImageView Graphics::createImageView(
+			VkImage image,
+			VkFormat format,
+			VkImageAspectFlags aspectFlags,
+			uint32_t mipLevels) const
+	{
+		return createImageView_(image, format, aspectFlags, mipLevels);
+	}
+	void Graphics::copyBuffer(
+			VkBuffer srcBuffer,
+			VkBuffer dstBuffer,
+			VkDeviceSize size) const
+	{
+		copyBuffer_(srcBuffer, dstBuffer, size);
+	}
+
 	void Graphics::initWindow_() {
 		glfwInit();
 
@@ -87,6 +198,9 @@ namespace vulkan {
 		createComputeCommandBuffers_();
 		createSyncObjects_();
 		initImgui_();
+
+		mainRenderPipeline_ = std::make_unique<MainRenderPipeline>(*this);
+		mainRenderPipeline_->loadVertices(vertices_, indices_);
 	}
 
 	void Graphics::recreateSwapChain_() {
@@ -369,6 +483,7 @@ namespace vulkan {
 		if (result != VK_SUCCESS) {
 			throw vulkan::Error(result);
 		}
+		//TODO: the pipeline objects should probably own graphics queue
 		vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 0, &graphicsQueue_);
 		//TODO: search specifically for a compute queue
 		vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 0, &computeQueue_);
@@ -1284,7 +1399,8 @@ namespace vulkan {
 		require(vkQueueSubmit(computeQueue_, 1, &submitInfo, computeInFlightFences_[currentFrame_]));
 
 		//Main render pass submission
-		vkWaitForFences(device_, 1, &inFlightFences_[currentFrame_], VK_TRUE, UINT64_MAX);
+		mainRenderPipeline_->submit(currentFrame_, computeFinishedSemaphores_[currentFrame_]);
+		/*vkWaitForFences(device_, 1, &inFlightFences_[currentFrame_], VK_TRUE, UINT64_MAX);
 
 		uint32_t imageIndex;
 		auto result = vkAcquireNextImageKHR(
@@ -1344,7 +1460,7 @@ namespace vulkan {
 			recreateSwapChain_();
 		} else if (result != VK_SUCCESS) {
 			throw vulkan::Error(result);
-		}
+		}*/
 
 		currentFrame_ = (currentFrame_ + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
@@ -1374,7 +1490,7 @@ namespace vulkan {
 		memcpy(uniformBuffersMapped_[currentImage], &ubo, sizeof(ubo));
 	}
 
-	QueueFamilyIndices Graphics::findQueueFamilies_(VkPhysicalDevice device) {
+	QueueFamilyIndices Graphics::findQueueFamilies_(VkPhysicalDevice device) const {
 		QueueFamilyIndices indices;
 
 		uint32_t queueFamilyCount = 0;
@@ -1481,7 +1597,7 @@ namespace vulkan {
 		}
 	}
 
-	VkShaderModule Graphics::createShaderModule_(const std::string& code) {
+	VkShaderModule Graphics::createShaderModule_(const std::string& code) const {
 		VkShaderModuleCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		createInfo.codeSize = code.size();
@@ -1494,7 +1610,7 @@ namespace vulkan {
 
 		return shaderModule;
 	}
-	uint32_t Graphics::findMemoryType_(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+	uint32_t Graphics::findMemoryType_(uint32_t typeFilter, VkMemoryPropertyFlags properties) const {
 		VkPhysicalDeviceMemoryProperties memProperties;
 		vkGetPhysicalDeviceMemoryProperties(physicalDevice_, &memProperties);
 
@@ -1511,7 +1627,7 @@ namespace vulkan {
 			VkBufferUsageFlags usage,
 			VkMemoryPropertyFlags properties,
 			VkBuffer& buffer,
-			VkDeviceMemory& bufferMemory)
+			VkDeviceMemory& bufferMemory) const
 	{
 		auto bufferInfo = VkBufferCreateInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -1540,7 +1656,7 @@ namespace vulkan {
 	void Graphics::copyBuffer_(
 			VkBuffer srcBuffer,
 			VkBuffer dstBuffer,
-			VkDeviceSize size)
+			VkDeviceSize size) const
 	{
 		VkCommandBuffer commandBuffer = beginSingleTimeCommands_();
 
@@ -1560,7 +1676,7 @@ namespace vulkan {
 			VkImageUsageFlags usage,
 			VkMemoryPropertyFlags properties,
 			VkImage &image,
-			VkDeviceMemory &imageMemory)
+			VkDeviceMemory &imageMemory) const
 	{
 		auto imageInfo = VkImageCreateInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -1596,7 +1712,7 @@ namespace vulkan {
 
 		vkBindImageMemory(device_, image, imageMemory, 0);
 	}
-	VkCommandBuffer Graphics::beginSingleTimeCommands_() {
+	VkCommandBuffer Graphics::beginSingleTimeCommands_() const {
 		auto allocInfo = VkCommandBufferAllocateInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -1614,7 +1730,7 @@ namespace vulkan {
 
 		return commandBuffer;
 	}
-	void Graphics::endSingleTimeCommands_(VkCommandBuffer commandBuffer) {
+	void Graphics::endSingleTimeCommands_(VkCommandBuffer commandBuffer) const {
 		vkEndCommandBuffer(commandBuffer);
 
 		VkSubmitInfo submitInfo{};
@@ -1632,7 +1748,7 @@ namespace vulkan {
 			VkFormat format,
 			VkImageLayout oldLayout,
 			VkImageLayout newLayout,
-			uint32_t mipLevels)
+			uint32_t mipLevels) const
 	{
 		auto commandBuffer = beginSingleTimeCommands_();
 
@@ -1710,7 +1826,7 @@ namespace vulkan {
 			VkBuffer buffer,
 			VkImage image,
 			uint32_t width,
-			uint32_t height)
+			uint32_t height) const
 	{
 		VkCommandBuffer commandBuffer = beginSingleTimeCommands_();
 
@@ -1745,7 +1861,7 @@ namespace vulkan {
 			VkImage image,
 			VkFormat format,
 			VkImageAspectFlags aspectFlags,
-			uint32_t mipLevels)
+			uint32_t mipLevels) const
 	{
 		auto viewInfo = VkImageViewCreateInfo{};
 		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -1766,7 +1882,7 @@ namespace vulkan {
 	VkFormat Graphics::findSupportedFormat_(
 			const std::vector<VkFormat>& candidates,
 			VkImageTiling tiling,
-			VkFormatFeatureFlags features)
+			VkFormatFeatureFlags features) const
 	{
 		for (auto format : candidates) {
 			VkFormatProperties props;
@@ -1785,7 +1901,7 @@ namespace vulkan {
 				VK_IMAGE_TILING_OPTIMAL,
 				VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT);
 	}
-	bool Graphics::hasStencilComponent_(VkFormat format) {
+	bool Graphics::hasStencilComponent_(VkFormat format) const {
 		return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
 	}
 	void Graphics::generateMipmaps_(
@@ -1793,7 +1909,7 @@ namespace vulkan {
 			VkFormat imageFormat,
 			int32_t texWidth,
 			int32_t texHeight,
-			uint32_t mipLevels)
+			uint32_t mipLevels) const
 	{
 		VkFormatProperties formatProperties;
 		vkGetPhysicalDeviceFormatProperties(
@@ -1819,7 +1935,7 @@ namespace vulkan {
 		int32_t mipWidth = texWidth;
 		int32_t mipHeight = texHeight;
 
-		for (uint32_t i = 1; i < mipLevels_; i++) {
+		for (uint32_t i = 1; i < mipLevels; i++) {
 			barrier.subresourceRange.baseMipLevel = i - 1;
 			barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 			barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
@@ -1886,7 +2002,7 @@ namespace vulkan {
 			if (mipHeight > 1) mipHeight /= 2;
 		}
 
-		barrier.subresourceRange.baseMipLevel = mipLevels_ - 1;
+		barrier.subresourceRange.baseMipLevel = mipLevels - 1;
 		barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 		barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;

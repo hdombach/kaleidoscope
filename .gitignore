@@ -2,3 +2,4 @@ build
 .cache
 tmux*
 CMakeUserPresets.json
+imgui.ini
