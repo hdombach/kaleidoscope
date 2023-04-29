@@ -98,7 +98,6 @@ namespace vulkan {
 		private:
 			void initWindow_();
 			void initVulkan_();
-			void recreateSwapChain_();
 			void createInstance_();
 			void setupDebugMessenger_();
 			void pickPhysicalDevice_();
