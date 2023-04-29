@@ -30,7 +30,7 @@ namespace vulkan {
 			Graphics() = default;
 			Graphics(const char *name);
 			void tick();
-			void waitIdle();
+			void waitIdle() const;
 			GLFWwindow * window();
 
 			VkSurfaceKHR const &surface() const;
@@ -43,6 +43,7 @@ namespace vulkan {
 			VkQueue graphicsQueue() const;
 			VkQueue presentQueue() const;
 			VkImageView computeImageView() const;
+			MainRenderPipeline &mainRenderPipeline() const;
 
 			VkFormat findSupportedFormat(
 					const std::vector<VkFormat>& candidates,
@@ -105,31 +106,18 @@ namespace vulkan {
 			bool checkDeviceExtensionSupport_(VkPhysicalDevice device);
 			void createLogicalDevice_();
 			void createSwapChain_();
-			void createImageViews_();
-			void createRenderPass_();
-			void createDescriptorSetLayout_();
 			void createComputeDescriptorSetLayout_();
 			void createComputePipeline_();
-			void createGraphicsPipeline_();
-			void createFramebuffers_();
 			void createCommandPool_();
-			void createTextureImage_();
 			void loadModel_();
-			void createVertexBuffer_();
-			void createIndexBuffer_();
-			void createUniformBuffers_();
 			void createDescriptorPool_();
-			void createDescriptorSets_();
 			void createComputeDescriptorSets_();
-			void createCommandBuffers_();
 			void createComputeCommandBuffers_();
 			void createSyncObjects_();
 			void createSurface_();
 			void recordCommandBuffer_(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 			void recordComputeCommandBuffer_(VkCommandBuffer commandBuffer);
-			void createTextureImageView_();
 			void createTextureSampler_();
-			void createDepthResources_();
 			void createComputeResultTexture_();
 
 			void initImgui_();

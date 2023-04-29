@@ -21,6 +21,7 @@ namespace vulkan {
 			static SwapchainSupportDetails querySwapchainSupport_(VkPhysicalDevice device, Graphics const &graphics);
 			void submit(uint32_t frameIndex, VkSemaphore previousSemaphore);
 			void loadVertices(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
+			void queueResize();
 
 		private:
 			void createSyncObjects_();
@@ -42,6 +43,7 @@ namespace vulkan {
 			void updateUniformBuffer_(uint32_t currentImage);
 
 			void recreateSwapchain_();
+			void cleanupSwapchain_();
 
 			VkSurfaceFormatKHR chooseSwapchainSurfaceFormat_(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 			VkPresentModeKHR chooseSwapchainPresentMode_(const std::vector<VkPresentModeKHR>& availabePresentModes);
@@ -82,5 +84,6 @@ namespace vulkan {
 			std::vector<VkImageView> swapchainImageViews_;
 
 			uint32_t mipLevels_;
+			bool framebufferResized_;
 	};
 }

@@ -11,4 +11,7 @@ layout(location = 0) out vec4 outColor;
 void main() {
 	outColor = texture(texSampler, fragTexCoord);
 	outColor += texture(resultTexSampler, fragTexCoord) / 10;
+	vec4 randColor[1];
+	//int index = int(fragTexCoord.x * fragTexCoord.y * 1000);
+	//outColor = randColor[index];
 }

@@ -8,6 +8,7 @@
 #include "vulkan/vulkan_core.h"
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <stdexcept>
 #include <vulkan/vulkan.h>
@@ -122,7 +123,8 @@ namespace vulkan {
 
 		result = vkQueuePresentKHR(graphics_.presentQueue(), &presentInfo);
 
-		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR /* || framebufferResized_ */) {
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized_ ) {
+			framebufferResized_ = false;
 			recreateSwapchain_();
 		} else if (result != VK_SUCCESS) {
 			throw vulkan::Error(result);
@@ -820,7 +822,37 @@ namespace vulkan {
 	}
 
 	void MainRenderPipeline::recreateSwapchain_() {
-		//TODO: impliment this thingamajig
+		int width = 0, height = 0;
+		glfwGetFramebufferSize(graphics_.window(), &width, &height);
+		while (width == 0 || height == 0) {
+			glfwGetFramebufferSize(graphics_.window(), &width, &height);
+			glfwWaitEvents();
+		}
+		graphics_.waitIdle();
+
+		util::log_event("Recreate swap chain");
+
+		cleanupSwapchain_();
+
+		createSwapchain_();
+		createSwapchainImageViews_();
+		createDepthResources_();
+		createSwapchainFramebuffers_();
+	}
+
+	void MainRenderPipeline::cleanupSwapchain_() {
+		vkDestroyImageView(graphics_.device(), depthImageView_, nullptr);
+		vkDestroyImage(graphics_.device(), depthImage_, nullptr);
+		vkFreeMemory(graphics_.device(), depthImageMemory_, nullptr);
+
+		for (auto swapchainFramebuffer : swapchainFramebuffers_) {
+			vkDestroyFramebuffer(graphics_.device(), swapchainFramebuffer, nullptr);
+		}
+		for (auto swapchainImageView : swapchainImageViews_) {
+			vkDestroyImageView(graphics_.device(), swapchainImageView, nullptr);
+		}
+
+		vkDestroySwapchainKHR(graphics_.device(), swapchain_, nullptr);
 	}
 
 	VkSurfaceFormatKHR MainRenderPipeline::chooseSwapchainSurfaceFormat_(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
