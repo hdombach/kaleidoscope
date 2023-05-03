@@ -112,7 +112,6 @@ namespace vulkan {
 			bool isDeviceSuitable_(VkPhysicalDevice device);
 			bool checkDeviceExtensionSupport_(VkPhysicalDevice device);
 			void createLogicalDevice_();
-			void createSwapChain_();
 			void createComputeDescriptorSetLayout_();
 			void createComputePipeline_();
 			void createCommandPool_();
@@ -122,7 +121,6 @@ namespace vulkan {
 			void createComputeCommandBuffers_();
 			void createSyncObjects_();
 			void createSurface_();
-			void recordCommandBuffer_(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 			void recordComputeCommandBuffer_(VkCommandBuffer commandBuffer);
 			void createTextureSampler_();
 			void createComputeResultTexture_();
@@ -133,7 +131,6 @@ namespace vulkan {
 			void drawUi_();
 			void updateUniformBuffer_(uint32_t currentImage);
 			bool checkValidationLayerSupport_();
-			void cleanupSwapChain_();
 			void cleanup_();
 
 			VkResult createDebugUtilsMessengerEXT(
@@ -152,7 +149,6 @@ namespace vulkan {
 			SwapChainSupportDetails_ querySwapChainSupport_(VkPhysicalDevice device);
 			VkSurfaceFormatKHR chooseSwapSurfaceFormat_(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 			VkPresentModeKHR chooseSwapPresentMode_(const std::vector<VkPresentModeKHR>& availablePresentModes);
-			VkExtent2D chooseSwapExtent_(const VkSurfaceCapabilitiesKHR& capabilities);
 			VkShaderModule createShaderModule_(const std::string& code) const;
 			uint32_t findMemoryType_(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
 			void createBuffer_(
@@ -220,50 +216,23 @@ namespace vulkan {
 			VkQueue presentQueue_;
 			VkQueue computeQueue_;
 			VkSurfaceKHR surface_;
-			VkSwapchainKHR swapChain_;
-			std::vector<VkImage> swapChainImages_;
-			VkFormat swapChainImageFormat_;
-			VkExtent2D swapChainExtent_;
-			VkRenderPass renderPass_;
-			VkDescriptorSetLayout descriptorSetLayout_;
 			VkDescriptorSetLayout computeDescriptorSetLayout_;
 			VkDescriptorPool descriptorPool_;
-			std::vector<VkDescriptorSet> descriptorSets_;
 			std::vector<VkDescriptorSet> computeDescriptorSets_;
-			VkPipelineLayout pipelineLayout_;
 			VkPipelineLayout computePipelineLayout_;
-			VkPipeline graphicsPipeline_;
 			VkPipeline computePipeline_;
-			std::vector<VkFramebuffer> swapChainFramebuffers_;
 			VkCommandPool commandPool_;
 			std::vector<Vertex> vertices_;
 			std::vector<uint32_t> indices_;
-			VkBuffer vertexBuffer_;
-			VkDeviceMemory vertexBufferMemory_;
-			VkBuffer indexBuffer_;
-			VkDeviceMemory indexBufferMemory_;
 			uint32_t mipLevels_;
-			VkImage textureImage_;
-			VkDeviceMemory textureImageMemory_;
-			VkImageView textureImageView_;
 			VkSampler textureSampler_;
-			VkImage depthImage_;
-			VkDeviceMemory depthImageMemory_;
-			VkImageView depthImageView_;
 			VkDeviceMemory computeResultMemory_;
 			VkImage computeResultImage_;
 			VkImageView computeResultImageView_;
-			std::vector<VkBuffer> uniformBuffers_;
-			std::vector<VkDeviceMemory> uniformBuffersMemory_;
 			std::vector<void*> uniformBuffersMapped_;
-			std::vector<VkCommandBuffer> commandBuffers_;
 			std::vector<VkCommandBuffer> computeCommandBuffers_;
-			std::vector<VkSemaphore> imageAvailableSemaphores_;
-			std::vector<VkSemaphore> renderFinishedSemaphores_;
 			std::vector<VkSemaphore> computeFinishedSemaphores_;
-			std::vector<VkFence> inFlightFences_;
 			std::vector<VkFence> computeInFlightFences_;
-			std::vector<VkImageView> swapChainImageViews_;
 
 			std::unique_ptr<MainRenderPipeline> mainRenderPipeline_;
 

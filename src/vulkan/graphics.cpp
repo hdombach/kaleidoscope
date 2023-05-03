@@ -190,7 +190,6 @@ namespace vulkan {
 		createSurface_();
 		pickPhysicalDevice_();
 		createLogicalDevice_();
-		//createSwapChain_(); //is used for size of comput text
 		createCommandPool_();
 		createComputeDescriptorSetLayout_();
 		createComputePipeline_();
@@ -275,68 +274,24 @@ namespace vulkan {
 		return true;
 	}
 
-	void Graphics::cleanupSwapChain_() {
-		vkDestroyImageView(device_, depthImageView_, nullptr);
-		vkDestroyImage(device_, depthImage_, nullptr);
-		vkFreeMemory(device_, depthImageMemory_, nullptr);
-
-		for (size_t i = 0; i < swapChainFramebuffers_.size(); i++) {
-			vkDestroyFramebuffer(device_, swapChainFramebuffers_[i], nullptr);
-		}
-
-		for (size_t i = 0; i < swapChainImageViews_.size(); i++) {
-			vkDestroyImageView(device_, swapChainImageViews_[i], nullptr);
-		}
-
-		vkDestroySwapchainKHR(device_, swapChain_, nullptr);
-	}
-
 	void Graphics::cleanup_() {
-		//cleanupSwapChain_();
-
 		vkDestroySampler(device_, textureSampler_, nullptr);
-		//vkDestroyImageView(device_, textureImageView_, nullptr);
-		//vkDestroyImage(device_, textureImage_, nullptr);
-		//vkFreeMemory(device_, textureImageMemory_, nullptr);
 		vkDestroyImageView(device_, computeResultImageView_, nullptr);
 		vkDestroyImage(device_, computeResultImage_, nullptr);
 		vkFreeMemory(device_, computeResultMemory_, nullptr);
 
-		/*for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-			vkDestroyBuffer(device_, uniformBuffers_[i], nullptr);
-			vkFreeMemory(device_, uniformBuffersMemory_[i], nullptr);
-		}*/
-
-		
 		//vkDestroyDescriptorPool(device_, imguiPool_, nullptr); //kep this
 		//ImGui_ImplVulkan_Shutdown();
 
-		//vkDestroyDescriptorSetLayout(device_, descriptorSetLayout_, nullptr);
 		vkDestroyDescriptorSetLayout(device_, computeDescriptorSetLayout_, nullptr);
 		vkFreeDescriptorSets(device_, descriptorPool_, computeDescriptorSets_.size(), computeDescriptorSets_.data());
 
 		vkDestroyDescriptorPool(device_, descriptorPool_, nullptr);
 
-		//vkDestroyBuffer(device_, vertexBuffer_, nullptr);
-		//vkFreeMemory(device_, vertexBufferMemory_, nullptr);
-
-		//vkDestroyBuffer(device_, vertexBuffer_, nullptr);
-		//vkFreeMemory(device_, vertexBufferMemory_, nullptr);
-
-		//vkDestroyPipeline(device_, graphicsPipeline_, nullptr);
-		//vkDestroyPipelineLayout(device_, pipelineLayout_, nullptr);
-	
 		vkDestroyPipeline(device_, computePipeline_, nullptr);
 		vkDestroyPipelineLayout(device_, computePipelineLayout_, nullptr);
 
-		//vkDestroyRenderPass(device_, renderPass_, nullptr);
-		//vkDestroyRenderPass(device_, renderpass, const VkAllocationCallbacks *pAllocator)
-
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			//vkDestroySemaphore(device_, renderFinishedSemaphores_[i], nullptr);
-			//vkDestroySemaphore(device_, imageAvailableSemaphores_[i], nullptr);
-			//vkDestroyFence(device_, inFlightFences_[i], nullptr);
-
 			vkDestroySemaphore(device_, computeFinishedSemaphores_[i], nullptr);
 			vkDestroyFence(device_, computeInFlightFences_[i], nullptr);
 		}
@@ -480,54 +435,6 @@ namespace vulkan {
 		//TODO: search specifically for a compute queue
 		vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 0, &computeQueue_);
 		vkGetDeviceQueue(device_, indices.presentFamily.value(), 0, &presentQueue_);
-	}
-	void Graphics::createSwapChain_() {
-		auto swapChainSupport = querySwapChainSupport_(physicalDevice_);
-		auto surfaceFormat = chooseSwapSurfaceFormat_(swapChainSupport.formats);
-		auto presentMode = chooseSwapPresentMode_(swapChainSupport.presentModes);
-		auto extent = chooseSwapExtent_(swapChainSupport.capabilities);
-		uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-		if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
-			imageCount = swapChainSupport.capabilities.maxImageCount;
-		}
-
-		auto createInfo = VkSwapchainCreateInfoKHR{};
-		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = surface_;
-		createInfo.minImageCount = imageCount;
-		createInfo.imageFormat = surfaceFormat.format;
-		createInfo.imageColorSpace = surfaceFormat.colorSpace;
-		createInfo.imageExtent = extent;
-		createInfo.imageArrayLayers = 1;
-		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-		auto indices = findQueueFamilies_(physicalDevice_);
-		uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
-		if (indices.graphicsFamily != indices.presentFamily) {
-			createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-			createInfo.queueFamilyIndexCount = 2;
-			createInfo.pQueueFamilyIndices = queueFamilyIndices;
-		} else {
-			createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			createInfo.queueFamilyIndexCount = 0;
-			createInfo.pQueueFamilyIndices = nullptr;
-		}
-		createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-		createInfo.presentMode = presentMode;
-		createInfo.clipped = VK_TRUE;
-		createInfo.oldSwapchain = VK_NULL_HANDLE;
-
-		auto result = vkCreateSwapchainKHR(device_, &createInfo, nullptr, &swapChain_);
-		if (result != VK_SUCCESS) {
-			throw vulkan::Error(result);
-		}
-		vkGetSwapchainImagesKHR(device_, swapChain_, &imageCount, nullptr);
-		swapChainImages_.resize(imageCount);
-		vkGetSwapchainImagesKHR(device_, swapChain_, &imageCount, swapChainImages_.data());
-
-		swapChainImageFormat_ = surfaceFormat.format;
-		swapChainExtent_ = extent;
 	}
 
 	void Graphics::createComputePipeline_() {
@@ -690,10 +597,7 @@ namespace vulkan {
 		require(vkAllocateCommandBuffers(device_, &allocInfo, computeCommandBuffers_.data()));
 	}
 	void Graphics::createSyncObjects_() {
-		//imageAvailableSemaphores_.resize(MAX_FRAMES_IN_FLIGHT);
-		//renderFinishedSemaphores_.resize(MAX_FRAMES_IN_FLIGHT);
 		computeFinishedSemaphores_.resize(MAX_FRAMES_IN_FLIGHT);
-		//inFlightFences_.resize(MAX_FRAMES_IN_FLIGHT);
 		computeInFlightFences_.resize(MAX_FRAMES_IN_FLIGHT);
 
 		VkSemaphoreCreateInfo semaphoreInfo{};
@@ -704,81 +608,11 @@ namespace vulkan {
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			//require(vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &imageAvailableSemaphores_[i]));
-			//require(vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &renderFinishedSemaphores_[i]));
-			//require(vkCreateFence(device_, &fenceInfo, nullptr, &inFlightFences_[i]));
-
 			require(vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &computeFinishedSemaphores_[i]));
 			require(vkCreateFence(device_, &fenceInfo, nullptr, &computeInFlightFences_[i]));
 		}
 	}
 
-	void Graphics::recordCommandBuffer_(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
-		VkCommandBufferBeginInfo beginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		beginInfo.flags = 0;
-		beginInfo.pInheritanceInfo = nullptr;
-
-		if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-			throw std::runtime_error("failed to begin recording command buffer!");
-		}
-
-		VkRenderPassBeginInfo renderPassInfo{};
-		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		renderPassInfo.renderPass = renderPass_;
-		renderPassInfo.framebuffer = swapChainFramebuffers_[imageIndex];
-		renderPassInfo.renderArea.offset = {0, 0};
-		renderPassInfo.renderArea.extent = mainRenderPipeline_->swapchainExtent();
-
-		auto clearValues = std::array<VkClearValue, 2>{};
-		clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-		clearValues[1].depthStencil = {1.0f, 0};
-
-		renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-		renderPassInfo.pClearValues = clearValues.data();
-
-		vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline_);
-
-		VkViewport viewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(mainRenderPipeline_->swapchainExtent().width);
-		viewport.height = static_cast<float>(mainRenderPipeline_->swapchainExtent().height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-		VkRect2D scissor{};
-		scissor.offset = {0, 0};
-		scissor.extent = mainRenderPipeline_->swapchainExtent();
-		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-		VkBuffer vertexBuffers[] = {vertexBuffer_};
-		VkDeviceSize offsets[] = {0};
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-		vkCmdBindIndexBuffer(commandBuffer, indexBuffer_, 0, VK_INDEX_TYPE_UINT32);
-
-		vkCmdBindDescriptorSets(
-				commandBuffer,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pipelineLayout_,
-				0,
-				1,
-				&descriptorSets_[currentFrame_],
-				0,
-				nullptr);
-		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices_.size()), 1, 0, 0, 0);
-
-		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
-
-		vkCmdEndRenderPass(commandBuffer);
-
-		if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-			throw std::runtime_error("failed to record command buffer!");
-		}
-	}
 	void Graphics::recordComputeCommandBuffer_(VkCommandBuffer commandBuffer) {
 		auto beginInfo = VkCommandBufferBeginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -971,31 +805,6 @@ namespace vulkan {
 			}
 		}
 		return VK_PRESENT_MODE_FIFO_KHR;
-	}
-
-	VkExtent2D Graphics::chooseSwapExtent_(const VkSurfaceCapabilitiesKHR& capabilities) {
-		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-			return capabilities.currentExtent;
-		} else {
-			int width, height;
-			glfwGetFramebufferSize(window_, &width, &height);
-
-			VkExtent2D actualExtent = {
-				static_cast<uint32_t>(width),
-				static_cast<uint32_t>(height)
-			};
-
-			actualExtent.width = std::clamp(
-					actualExtent.width,
-					capabilities.minImageExtent.width,
-					capabilities.maxImageExtent.width);
-			actualExtent.height = std::clamp(
-					actualExtent.height,
-					capabilities.minImageExtent.height,
-					capabilities.maxImageExtent.height);
-
-			return actualExtent;
-		}
 	}
 
 	void Graphics::createSurface_() {
@@ -1468,7 +1277,7 @@ namespace vulkan {
 		initInfo.ImageCount = 3;
 		initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
-		ImGui_ImplVulkan_Init(&initInfo, renderPass_);
+		//ImGui_ImplVulkan_Init(&initInfo, renderPass_);
 
 		auto command = beginSingleTimeCommands_();
 		ImGui_ImplVulkan_CreateFontsTexture(command);
