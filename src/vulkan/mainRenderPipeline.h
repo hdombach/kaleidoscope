@@ -23,6 +23,8 @@ namespace vulkan {
 			void loadVertices(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
 			void queueResize();
 
+			VkExtent2D swapchainExtent() const;
+
 		private:
 			void createSyncObjects_();
 			void createCommandBuffers_();

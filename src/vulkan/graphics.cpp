@@ -13,9 +13,11 @@
 #include <iostream>
 #include <memory>
 #include <numeric>
+#include <sstream>
 #include <stdexcept>
 #include <set>
 #include <unordered_map>
+#include <strstream>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -36,7 +38,18 @@ namespace vulkan {
 	Graphics::Graphics(const char *name) {
 		initWindow_();
 		initVulkan_();
+		mainRenderPipeline();
 	}
+
+	//Graphics::Graphics(Graphics&& old) { }
+
+	//Graphics& Graphics::operator=(Graphics &&old) { return *this; }
+
+	void Graphics::destroy() {
+		mainRenderPipeline_.reset();
+		cleanup_();
+	}
+
 	void Graphics::tick() {
 		//drawUi_();
 		drawFrame_();
@@ -63,9 +76,6 @@ namespace vulkan {
 	GLFWwindow* Graphics::window() const {
 		return window_;
 	}
-	VkSwapchainKHR Graphics::swapchain() const {
-		return swapChain_;
-	}
 	VkCommandPool Graphics::commandPool() const {
 		return commandPool_;
 	}
@@ -77,6 +87,13 @@ namespace vulkan {
 	}
 	VkImageView Graphics::computeImageView() const {
 		return computeResultImageView_;
+	}
+	MainRenderPipeline &Graphics::mainRenderPipeline() const {
+		std::stringstream ss;
+		ss << "pipeline is " << mainRenderPipeline_;
+		ss << " and this is " << this << std::endl;
+		util::log_memory(ss.str());
+		return *mainRenderPipeline_;
 	}
 
 	VkFormat Graphics::findSupportedFormat(
@@ -173,10 +190,10 @@ namespace vulkan {
 		createSurface_();
 		pickPhysicalDevice_();
 		createLogicalDevice_();
-		createSwapChain_(); //is used for size of comput text
+		//createSwapChain_(); //is used for size of comput text
+		createCommandPool_();
 		createComputeDescriptorSetLayout_();
 		createComputePipeline_();
-		createCommandPool_();
 		createTextureSampler_();
 		createComputeResultTexture_();
 		loadModel_();
@@ -187,7 +204,7 @@ namespace vulkan {
 		//initImgui_();
 
 		mainRenderPipeline_ = std::make_unique<MainRenderPipeline>(*this);
-		mainRenderPipeline_->loadVertices(vertices_, indices_);
+		mainRenderPipeline().loadVertices(vertices_, indices_);
 	}
 
 	void Graphics::createInstance_() {
@@ -275,46 +292,53 @@ namespace vulkan {
 	}
 
 	void Graphics::cleanup_() {
-		cleanupSwapChain_();
+		//cleanupSwapChain_();
 
 		vkDestroySampler(device_, textureSampler_, nullptr);
-		vkDestroyImageView(device_, textureImageView_, nullptr);
-		vkDestroyImage(device_, textureImage_, nullptr);
-		vkFreeMemory(device_, textureImageMemory_, nullptr);
+		//vkDestroyImageView(device_, textureImageView_, nullptr);
+		//vkDestroyImage(device_, textureImage_, nullptr);
+		//vkFreeMemory(device_, textureImageMemory_, nullptr);
+		vkDestroyImageView(device_, computeResultImageView_, nullptr);
+		vkDestroyImage(device_, computeResultImage_, nullptr);
+		vkFreeMemory(device_, computeResultMemory_, nullptr);
 
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+		/*for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 			vkDestroyBuffer(device_, uniformBuffers_[i], nullptr);
 			vkFreeMemory(device_, uniformBuffersMemory_[i], nullptr);
-		}
+		}*/
+
+		
+		//vkDestroyDescriptorPool(device_, imguiPool_, nullptr); //kep this
+		//ImGui_ImplVulkan_Shutdown();
+
+		//vkDestroyDescriptorSetLayout(device_, descriptorSetLayout_, nullptr);
+		vkDestroyDescriptorSetLayout(device_, computeDescriptorSetLayout_, nullptr);
+		vkFreeDescriptorSets(device_, descriptorPool_, computeDescriptorSets_.size(), computeDescriptorSets_.data());
 
 		vkDestroyDescriptorPool(device_, descriptorPool_, nullptr);
-		vkDestroyDescriptorPool(device_, imguiPool_, nullptr);
-		ImGui_ImplVulkan_Shutdown();
 
-		vkDestroyDescriptorSetLayout(device_, descriptorSetLayout_, nullptr);
-		vkDestroyDescriptorSetLayout(device_, computeDescriptorSetLayout_, nullptr);
+		//vkDestroyBuffer(device_, vertexBuffer_, nullptr);
+		//vkFreeMemory(device_, vertexBufferMemory_, nullptr);
 
-		vkDestroyBuffer(device_, vertexBuffer_, nullptr);
-		vkFreeMemory(device_, vertexBufferMemory_, nullptr);
+		//vkDestroyBuffer(device_, vertexBuffer_, nullptr);
+		//vkFreeMemory(device_, vertexBufferMemory_, nullptr);
 
-		vkDestroyBuffer(device_, vertexBuffer_, nullptr);
-		vkFreeMemory(device_, vertexBufferMemory_, nullptr);
-
-		vkDestroyPipeline(device_, graphicsPipeline_, nullptr);
-		vkDestroyPipelineLayout(device_, pipelineLayout_, nullptr);
+		//vkDestroyPipeline(device_, graphicsPipeline_, nullptr);
+		//vkDestroyPipelineLayout(device_, pipelineLayout_, nullptr);
 	
 		vkDestroyPipeline(device_, computePipeline_, nullptr);
 		vkDestroyPipelineLayout(device_, computePipelineLayout_, nullptr);
 
-		vkDestroyRenderPass(device_, renderPass_, nullptr);
+		//vkDestroyRenderPass(device_, renderPass_, nullptr);
+		//vkDestroyRenderPass(device_, renderpass, const VkAllocationCallbacks *pAllocator)
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			vkDestroySemaphore(device_, renderFinishedSemaphores_[i], nullptr);
-			vkDestroySemaphore(device_, imageAvailableSemaphores_[i], nullptr);
-			vkDestroyFence(device_, inFlightFences_[i], nullptr);
+			//vkDestroySemaphore(device_, renderFinishedSemaphores_[i], nullptr);
+			//vkDestroySemaphore(device_, imageAvailableSemaphores_[i], nullptr);
+			//vkDestroyFence(device_, inFlightFences_[i], nullptr);
 
 			vkDestroySemaphore(device_, computeFinishedSemaphores_[i], nullptr);
-			vkDestroyFence(device_, inFlightFences_[i], nullptr);
+			vkDestroyFence(device_, computeInFlightFences_[i], nullptr);
 		}
 
 		vkDestroyCommandPool(device_, commandPool_, nullptr);
@@ -598,6 +622,7 @@ namespace vulkan {
 		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		poolInfo.pPoolSizes = poolSizes.data();
 		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * 2);
+		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 		if (vkCreateDescriptorPool(device_, &poolInfo, nullptr, &descriptorPool_) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create descriptor pool!");
@@ -703,7 +728,7 @@ namespace vulkan {
 		renderPassInfo.renderPass = renderPass_;
 		renderPassInfo.framebuffer = swapChainFramebuffers_[imageIndex];
 		renderPassInfo.renderArea.offset = {0, 0};
-		renderPassInfo.renderArea.extent = swapChainExtent_;
+		renderPassInfo.renderArea.extent = mainRenderPipeline_->swapchainExtent();
 
 		auto clearValues = std::array<VkClearValue, 2>{};
 		clearValues[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
@@ -719,15 +744,15 @@ namespace vulkan {
 		VkViewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(swapChainExtent_.width);
-		viewport.height = static_cast<float>(swapChainExtent_.height);
+		viewport.width = static_cast<float>(mainRenderPipeline_->swapchainExtent().width);
+		viewport.height = static_cast<float>(mainRenderPipeline_->swapchainExtent().height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
 		VkRect2D scissor{};
 		scissor.offset = {0, 0};
-		scissor.extent = swapChainExtent_;
+		scissor.extent = mainRenderPipeline_->swapchainExtent();
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
 		VkBuffer vertexBuffers[] = {vertexBuffer_};
@@ -764,7 +789,7 @@ namespace vulkan {
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout_, 0, 1, &computeDescriptorSets_[currentFrame_], 0, nullptr);
 
-		vkCmdDispatch(commandBuffer, swapChainExtent_.width, swapChainExtent_.height, 1);
+		vkCmdDispatch(commandBuffer, mainRenderPipeline_->swapchainExtent().width, mainRenderPipeline_->swapchainExtent().height, 1);
 
 		require(vkEndCommandBuffer(commandBuffer));
 	}
@@ -796,8 +821,8 @@ namespace vulkan {
 	void Graphics::createComputeResultTexture_() {
 		VkFormat imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
 		createImage_(
-				swapChainExtent_.width,
-				swapChainExtent_.height,
+				100, //width
+				100, //height
 				1,
 				imageFormat,
 				VK_IMAGE_TILING_OPTIMAL,
@@ -842,7 +867,7 @@ namespace vulkan {
 		require(vkQueueSubmit(computeQueue_, 1, &submitInfo, computeInFlightFences_[currentFrame_]));
 
 		//Main render pass submission
-		mainRenderPipeline_->submit(currentFrame_, computeFinishedSemaphores_[currentFrame_]);
+		mainRenderPipeline().submit(currentFrame_, computeFinishedSemaphores_[currentFrame_]);
 
 		currentFrame_ = (currentFrame_ + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
@@ -866,7 +891,7 @@ namespace vulkan {
 		UniformBufferObject ubo{};
 		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent_.width / (float) swapChainExtent_.height, 0.1f, 10.0f);
+		ubo.proj = glm::perspective(glm::radians(45.0f), mainRenderPipeline_->swapchainExtent().width / (float) mainRenderPipeline_->swapchainExtent().height, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
 
 		memcpy(uniformBuffersMapped_[currentImage], &ubo, sizeof(ubo));
@@ -1480,7 +1505,7 @@ namespace vulkan {
 
 	void Graphics::framebufferResizeCallback_(GLFWwindow* window, int width, int height) {
 		auto graphics = reinterpret_cast<Graphics*>(glfwGetWindowUserPointer(window));
-		//graphics->mainRenderPipeline().queueResize();
+		graphics->mainRenderPipeline().queueResize();
 	}
 
 	VkResult Graphics::createDebugUtilsMessengerEXT(

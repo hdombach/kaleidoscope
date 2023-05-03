@@ -29,6 +29,15 @@ namespace vulkan {
 		public:
 			Graphics() = default;
 			Graphics(const char *name);
+
+			//Graphics(const Graphics& old) = delete;
+			//Graphics(Graphics&& old);
+			//Graphics& operator=(const Graphics& old) = delete;
+			//Graphics& operator=(Graphics&& old);
+
+			//~Graphics();
+			void destroy();
+
 			void tick();
 			void waitIdle() const;
 			GLFWwindow * window();
@@ -38,7 +47,6 @@ namespace vulkan {
 			VkDevice const &device() const;
 			VkSampler mainTextureSampler() const;
 			GLFWwindow* window() const;
-			VkSwapchainKHR swapchain() const;
 			VkCommandPool commandPool() const;
 			VkQueue graphicsQueue() const;
 			VkQueue presentQueue() const;

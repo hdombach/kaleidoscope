@@ -39,6 +39,7 @@ void KaleidoscopeApplication::mainLoop() {
 }
 
 void KaleidoscopeApplication::cleanup() {
+	graphics.destroy();
 	glfwTerminate();
 }
 

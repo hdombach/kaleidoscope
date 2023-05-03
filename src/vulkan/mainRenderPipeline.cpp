@@ -36,8 +36,41 @@ namespace vulkan {
 	}
 
 	MainRenderPipeline::~MainRenderPipeline() {
+		util::log_memory("Deconstructing main render pipeline");
+		
+		cleanupSwapchain_();
+
+		vkDestroyPipelineLayout(graphics_.device(), pipelineLayout_, nullptr);
+		vkDestroyPipeline(graphics_.device(), pipeline_, nullptr);
 		vkDestroyDescriptorSetLayout(graphics_.device(), descriptorSetLayout_, nullptr);
-		//TODO
+		vkFreeDescriptorSets(graphics_.device(), descriptorPool_, descriptorSets_.size(), descriptorSets_.data());
+		vkDestroyDescriptorPool(graphics_.device(), descriptorPool_, nullptr);
+		vkDestroyBuffer(graphics_.device(), vertexBuffer_, nullptr);
+		vkFreeMemory(graphics_.device(), vertexBufferMemory_, nullptr);
+		vkDestroyBuffer(graphics_.device(), indexBuffer_, nullptr);
+		vkFreeMemory(graphics_.device(), indexBufferMemory_, nullptr);
+		for (auto uniformBuffer : uniformBuffers_) {
+			vkDestroyBuffer(graphics_.device(), uniformBuffer, nullptr);
+		}
+		for (auto uniformBufferMemory : uniformBuffersMemory_) {
+			vkFreeMemory(graphics_.device(), uniformBufferMemory, nullptr);
+		}
+		for (auto inFlightFence : inFlightFences_) {
+			vkDestroyFence(graphics_.device(), inFlightFence, nullptr);
+		}
+		for (auto imageAvailableSemaphore : imageAvailableSemaphores_) {
+			vkDestroySemaphore(graphics_.device(), imageAvailableSemaphore, nullptr);
+		}
+		for (auto renderFinishedSemaphore : renderFinishedSemaphores_) {
+			vkDestroySemaphore(graphics_.device(), renderFinishedSemaphore, nullptr);
+		}
+
+		vkDestroyImage(graphics_.device(), textureImage_, nullptr);
+		vkFreeMemory(graphics_.device(), textureImageMemory_, nullptr);
+		vkDestroyImageView(graphics_.device(), textureImageView_, nullptr);
+
+
+		vkDestroyRenderPass(graphics_.device(), renderPass_, nullptr);
 	}
 
 	SwapchainSupportDetails MainRenderPipeline::querySwapchainSupport_(VkPhysicalDevice device, Graphics const &graphics) {
@@ -190,6 +223,14 @@ namespace vulkan {
 		vkFreeMemory(graphics_.device(), stagingBufferMemory, nullptr);
 
 		indexCount_ = indices.size();
+	}
+
+	void MainRenderPipeline::queueResize() {
+		framebufferResized_ = true;
+	}
+
+	VkExtent2D MainRenderPipeline::swapchainExtent() const {
+		return swapchainExtent_;
 	}
 
 	void MainRenderPipeline::createSyncObjects_() {
@@ -413,6 +454,7 @@ namespace vulkan {
 		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		poolInfo.pPoolSizes = poolSizes.data();
 		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * 2);
+		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 		require(vkCreateDescriptorPool(graphics_.device(), &poolInfo, nullptr, &descriptorPool_));
 	}
