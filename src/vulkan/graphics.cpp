@@ -10,6 +10,7 @@
 #include <chrono>
 #include <cstdint>
 #include <cstring>
+#include <glm/detail/compute_vector_relational.hpp>
 #include <iostream>
 #include <memory>
 #include <numeric>
@@ -41,11 +42,82 @@ namespace vulkan {
 		mainRenderPipeline();
 	}
 
-	//Graphics::Graphics(Graphics&& old) { }
+	Graphics::Graphics(Graphics&& old) {
+		name_ = old.name_;
+		window_ = old.window_;
+		instance_ = old.instance_;
+		debugMessenger_ = old.debugMessenger_;
+		physicalDevice_ = old.physicalDevice_;
+		device_ = old.device_;
+		graphicsQueue_ = old.graphicsQueue_;
+		presentQueue_ = old.presentQueue_;
+		computeQueue_ = old.computeQueue_;
+		surface_ = old.surface_;
+		computeDescriptorSetLayout_ = old.computeDescriptorSetLayout_;
+		descriptorPool_ = old.descriptorPool_;
+		computeDescriptorSets_ = std::move(old.computeDescriptorSets_);
+		computePipelineLayout_ = old.computePipelineLayout_;
+		computePipeline_ = old.computePipeline_;
+		commandPool_= old.commandPool_;
+		vertices_ = std::move(old.vertices_);
+		indices_ = std::move(old.indices_);
+		mipLevels_ = old.mipLevels_;
+		textureSampler_ = old.textureSampler_;
+		computeResultMemory_ = old.computeResultMemory_;
+		computeResultImage_ = old.computeResultImage_;
+		computeResultImageView_ = old.computeResultImageView_;
+		uniformBuffersMapped_ = std::move(old.uniformBuffersMapped_);
+		computeCommandBuffers_ = std::move(old.computeCommandBuffers_);
+		computeFinishedSemaphores_ = std::move(old.computeFinishedSemaphores_);
+		computeInFlightFences_ = std::move(old.computeInFlightFences_);
+		mainRenderPipeline_ = std::move(old.mainRenderPipeline_);
+		imguiPool_ = old.imguiPool_;
+		framebufferResized_ = old.framebufferResized_;
+		currentFrame_ = old.currentFrame_;
 
-	//Graphics& Graphics::operator=(Graphics &&old) { return *this; }
+		glfwSetWindowUserPointer(window_, this);
 
-	void Graphics::destroy() {
+	}
+
+	Graphics& Graphics::operator=(Graphics &&old) {
+		name_ = old.name_;
+		window_ = old.window_;
+		instance_ = old.instance_;
+		debugMessenger_ = old.debugMessenger_;
+		physicalDevice_ = old.physicalDevice_;
+		device_ = old.device_;
+		graphicsQueue_ = old.graphicsQueue_;
+		presentQueue_ = old.presentQueue_;
+		computeQueue_ = old.computeQueue_;
+		surface_ = old.surface_;
+		computeDescriptorSetLayout_ = old.computeDescriptorSetLayout_;
+		descriptorPool_ = old.descriptorPool_;
+		computeDescriptorSets_ = std::move(old.computeDescriptorSets_);
+		computePipelineLayout_ = old.computePipelineLayout_;
+		computePipeline_ = old.computePipeline_;
+		commandPool_= old.commandPool_;
+		vertices_ = std::move(old.vertices_);
+		indices_ = std::move(old.indices_);
+		mipLevels_ = old.mipLevels_;
+		textureSampler_ = old.textureSampler_;
+		computeResultMemory_ = old.computeResultMemory_;
+		computeResultImage_ = old.computeResultImage_;
+		computeResultImageView_ = old.computeResultImageView_;
+		uniformBuffersMapped_ = std::move(old.uniformBuffersMapped_);
+		computeCommandBuffers_ = std::move(old.computeCommandBuffers_);
+		computeFinishedSemaphores_ = std::move(old.computeFinishedSemaphores_);
+		computeInFlightFences_ = std::move(old.computeInFlightFences_);
+		mainRenderPipeline_ = std::move(old.mainRenderPipeline_);
+		imguiPool_ = old.imguiPool_;
+		framebufferResized_ = old.framebufferResized_;
+		currentFrame_ = old.currentFrame_;
+
+		glfwSetWindowUserPointer(window_, this);
+
+		return *this;
+	}
+
+	Graphics::~Graphics() {
 		mainRenderPipeline_.reset();
 		cleanup_();
 	}
@@ -89,10 +161,6 @@ namespace vulkan {
 		return computeResultImageView_;
 	}
 	MainRenderPipeline &Graphics::mainRenderPipeline() const {
-		std::stringstream ss;
-		ss << "pipeline is " << mainRenderPipeline_;
-		ss << " and this is " << this << std::endl;
-		util::log_memory(ss.str());
 		return *mainRenderPipeline_;
 	}
 

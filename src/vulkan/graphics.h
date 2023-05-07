@@ -30,13 +30,12 @@ namespace vulkan {
 			Graphics() = default;
 			Graphics(const char *name);
 
-			//Graphics(const Graphics& old) = delete;
-			//Graphics(Graphics&& old);
-			//Graphics& operator=(const Graphics& old) = delete;
-			//Graphics& operator=(Graphics&& old);
+			Graphics(const Graphics& old) = delete;
+			Graphics(Graphics&& old);
+			Graphics& operator=(const Graphics& old) = delete;
+			Graphics& operator=(Graphics&& old);
 
-			//~Graphics();
-			void destroy();
+			~Graphics();
 
 			void tick();
 			void waitIdle() const;

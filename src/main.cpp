@@ -1,5 +1,6 @@
 #include "graphics.h"
 #include <cstdint>
+#include <memory>
 #include <sys/types.h>
 #include <vector>
 #include <iostream>
@@ -20,26 +21,26 @@ class KaleidoscopeApplication {
 		void cleanup();
 		VkShaderModule createShaderModule(const std::vector<char>& code);
 
-		vulkan::Graphics graphics;
+		std::unique_ptr<vulkan::Graphics> graphics_;
 };
 
 void KaleidoscopeApplication::run() {
-	graphics = vulkan::Graphics("Kaleidoscope");
+	graphics_ = std::make_unique<vulkan::Graphics>("Kaleidoscope");
 	mainLoop();
 	cleanup();
 }
 
 void KaleidoscopeApplication::mainLoop() {
-	while (!glfwWindowShouldClose(graphics.window())) {
+	while (!glfwWindowShouldClose(graphics_->window())) {
 		glfwPollEvents();
-		graphics.tick();
+		graphics_->tick();
 	}
 
-	graphics.waitIdle();
+	graphics_->waitIdle();
 }
 
 void KaleidoscopeApplication::cleanup() {
-	graphics.destroy();
+	graphics_.reset();
 	glfwTerminate();
 }
 
