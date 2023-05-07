@@ -128,7 +128,6 @@ namespace vulkan {
 
 			void drawFrame_();
 			void drawUi_();
-			void updateUniformBuffer_(uint32_t currentImage);
 			bool checkValidationLayerSupport_();
 			void cleanup_();
 
@@ -228,7 +227,6 @@ namespace vulkan {
 			VkDeviceMemory computeResultMemory_;
 			VkImage computeResultImage_;
 			VkImageView computeResultImageView_;
-			std::vector<void*> uniformBuffersMapped_;
 			std::vector<VkCommandBuffer> computeCommandBuffers_;
 			std::vector<VkSemaphore> computeFinishedSemaphores_;
 			std::vector<VkFence> computeInFlightFences_;

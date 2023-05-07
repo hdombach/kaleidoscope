@@ -66,7 +66,6 @@ namespace vulkan {
 		computeResultMemory_ = old.computeResultMemory_;
 		computeResultImage_ = old.computeResultImage_;
 		computeResultImageView_ = old.computeResultImageView_;
-		uniformBuffersMapped_ = std::move(old.uniformBuffersMapped_);
 		computeCommandBuffers_ = std::move(old.computeCommandBuffers_);
 		computeFinishedSemaphores_ = std::move(old.computeFinishedSemaphores_);
 		computeInFlightFences_ = std::move(old.computeInFlightFences_);
@@ -103,7 +102,6 @@ namespace vulkan {
 		computeResultMemory_ = old.computeResultMemory_;
 		computeResultImage_ = old.computeResultImage_;
 		computeResultImageView_ = old.computeResultImageView_;
-		uniformBuffersMapped_ = std::move(old.uniformBuffersMapped_);
 		computeCommandBuffers_ = std::move(old.computeCommandBuffers_);
 		computeFinishedSemaphores_ = std::move(old.computeFinishedSemaphores_);
 		computeInFlightFences_ = std::move(old.computeInFlightFences_);
@@ -782,21 +780,6 @@ namespace vulkan {
 		ImGui::NewFrame();
 
 		ImGui::ShowDemoWindow();
-	}
-
-	void Graphics::updateUniformBuffer_(uint32_t currentImage) {
-		static auto startTime = std::chrono::high_resolution_clock::now();
-
-		auto currentTime = std::chrono::high_resolution_clock::now();
-		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.proj = glm::perspective(glm::radians(45.0f), mainRenderPipeline_->swapchainExtent().width / (float) mainRenderPipeline_->swapchainExtent().height, 0.1f, 10.0f);
-		ubo.proj[1][1] *= -1;
-
-		memcpy(uniformBuffersMapped_[currentImage], &ubo, sizeof(ubo));
 	}
 
 	QueueFamilyIndices Graphics::findQueueFamilies_(VkPhysicalDevice device) const {
