@@ -2,6 +2,7 @@
 
 #include "vertex.h"
 #include "vulkan/vulkan_core.h"
+#include <functional>
 #include <memory>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -44,6 +45,7 @@ namespace vulkan {
 			VkSurfaceKHR const &surface() const;
 			VkPhysicalDevice const &physicalDevice() const;
 			VkDevice const &device() const;
+			VkInstance const &instance() const;
 			VkSampler mainTextureSampler() const;
 			GLFWwindow* window() const;
 			VkCommandPool commandPool() const;
@@ -100,6 +102,7 @@ namespace vulkan {
 					VkBuffer srcBuffer,
 					VkBuffer dstBuffer,
 					VkDeviceSize size) const;
+			void executeSingleTimeCommand(std::function<void(VkCommandBuffer)>) const;
 
 
 		private:

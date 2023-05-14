@@ -3,9 +3,11 @@
 #include "error.h"
 #include "file.h"
 #include "graphics.h"
+#include "imgui_impl_glfw.h"
 #include "log.h"
 #include "uniformBufferObject.h"
 #include "vulkan/vulkan_core.h"
+
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -16,6 +18,10 @@
 #include <stb_image.h>
 #include <format>
 #include <sstream>
+
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
 
 namespace vulkan {
 	MainRenderPipeline::MainRenderPipeline(Graphics const &graphics): graphics_(graphics) {
@@ -33,10 +39,14 @@ namespace vulkan {
 		createUniformBuffers_();
 		createDescriptorSets_();
 		createPipeline_();
+		initImgui_();
 	}
 
 	MainRenderPipeline::~MainRenderPipeline() {
 		util::log_memory("Deconstructing main render pipeline");
+
+		vkDestroyDescriptorPool(graphics_.device(), imguiPool_, nullptr);
+		ImGui_ImplVulkan_Shutdown();
 		
 		cleanupSwapchain_();
 
@@ -101,6 +111,8 @@ namespace vulkan {
 			uint32_t frameIndex,
 			VkSemaphore previousSemaphore)
 	{
+		submitUi_();
+
 		auto submitInfo = VkSubmitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		vkWaitForFences(graphics_.device(), 1, &inFlightFences_[frameIndex], VK_TRUE, UINT64_MAX);
@@ -128,6 +140,7 @@ namespace vulkan {
 		vkResetCommandBuffer(commandBuffers_[frameIndex], 0);
 
 		//imgui render
+		ImGui::Render();
 
 		recordCommandBuffer_(commandBuffers_[frameIndex], imageIndex, frameIndex);
 
@@ -786,6 +799,51 @@ namespace vulkan {
 		vkDestroyShaderModule(graphics_.device(), vertShaderModule, nullptr);
 	}
 
+	void MainRenderPipeline::initImgui_() {
+		auto poolSizes = std::array<VkDescriptorPoolSize, 11>{{
+			{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+			{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+		}};
+
+		auto poolInfo = VkDescriptorPoolCreateInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+		poolInfo.maxSets = 1000;
+		poolInfo.poolSizeCount = poolSizes.size();
+		poolInfo.pPoolSizes = poolSizes.data();
+
+		require(vkCreateDescriptorPool(graphics_.device(), &poolInfo, nullptr, &imguiPool_));
+
+		ImGui::CreateContext();
+
+		ImGui_ImplGlfw_InitForVulkan(graphics_.window(), true);
+
+		auto initInfo = ImGui_ImplVulkan_InitInfo{};
+		initInfo.Instance = graphics_.instance();
+		initInfo.PhysicalDevice = graphics_.physicalDevice();
+		initInfo.Device = graphics_.device();
+		initInfo.Queue = graphics_.graphicsQueue();
+		initInfo.DescriptorPool = imguiPool_;
+		initInfo.MinImageCount = 3;
+		initInfo.ImageCount = 3;
+		initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
+		ImGui_ImplVulkan_Init(&initInfo, renderPass_);
+		graphics_.executeSingleTimeCommand([&](VkCommandBuffer commandBuffer) {
+			ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
+		});
+		ImGui_ImplVulkan_DestroyFontUploadObjects();
+	}
+
 	void MainRenderPipeline::recordCommandBuffer_(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t frameIndex) {
 		auto beginInfo = VkCommandBufferBeginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -843,6 +901,8 @@ namespace vulkan {
 
 		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indexCount_), 1, 0, 0, 0);
 
+		ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
 		vkCmdEndRenderPass(commandBuffer);
 		require(vkEndCommandBuffer(commandBuffer));
 	}
@@ -895,6 +955,16 @@ namespace vulkan {
 		}
 
 		vkDestroySwapchainKHR(graphics_.device(), swapchain_, nullptr);
+	}
+
+	void MainRenderPipeline::submitUi_() {
+		glfwPollEvents();
+
+		ImGui_ImplVulkan_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+
+		ImGui::ShowDemoWindow();
 	}
 
 	VkSurfaceFormatKHR MainRenderPipeline::chooseSwapchainSurfaceFormat_(const std::vector<VkSurfaceFormatKHR>& availableFormats) {

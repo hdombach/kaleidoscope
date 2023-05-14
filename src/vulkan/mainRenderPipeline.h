@@ -40,12 +40,14 @@ namespace vulkan {
 			void createDepthResources_();
 			void createDescriptorSets_();
 			void createPipeline_();
+			void initImgui_();
 
 			void recordCommandBuffer_(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t frameIndex);
 			void updateUniformBuffer_(uint32_t currentImage);
 
 			void recreateSwapchain_();
 			void cleanupSwapchain_();
+			void submitUi_();
 
 			VkSurfaceFormatKHR chooseSwapchainSurfaceFormat_(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 			VkPresentModeKHR chooseSwapchainPresentMode_(const std::vector<VkPresentModeKHR>& availabePresentModes);
@@ -84,6 +86,8 @@ namespace vulkan {
 			VkDeviceMemory depthImageMemory_;
 			VkImageView depthImageView_;
 			std::vector<VkImageView> swapchainImageViews_;
+
+			VkDescriptorPool imguiPool_;
 
 			uint32_t mipLevels_;
 			bool framebufferResized_;

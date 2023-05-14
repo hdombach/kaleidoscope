@@ -140,6 +140,9 @@ namespace vulkan {
 	VkDevice const &Graphics::device() const {
 		return device_;
 	}
+	VkInstance const &Graphics::instance() const {
+		return instance_;
+	}
 	VkSampler Graphics::mainTextureSampler() const {
 		return textureSampler_;
 	}
@@ -237,6 +240,13 @@ namespace vulkan {
 			VkDeviceSize size) const
 	{
 		copyBuffer_(srcBuffer, dstBuffer, size);
+	}
+	void Graphics::executeSingleTimeCommand(
+				std::function<void (VkCommandBuffer)> command) const
+	{
+		auto commandBuffer = beginSingleTimeCommands_();
+		command(commandBuffer);
+		endSingleTimeCommands_(commandBuffer);
 	}
 
 	void Graphics::initWindow_() {
@@ -742,7 +752,6 @@ namespace vulkan {
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_GENERAL,
 				1);
-
 	}
 
 	void Graphics::drawFrame_() {
