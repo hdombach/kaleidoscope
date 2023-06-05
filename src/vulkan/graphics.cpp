@@ -4,6 +4,7 @@
 #include "file.h"
 #include "log.h"
 #include "mainRenderPipeline.h"
+#include "uiRenderPipeline.h"
 #include "uniformBufferObject.h"
 #include "vertex.h"
 #include "vulkan/vulkan_core.h"
@@ -39,7 +40,7 @@ namespace vulkan {
 	Graphics::Graphics(const char *name) {
 		initWindow_();
 		initVulkan_();
-		mainRenderPipeline();
+		//mainRenderPipeline();
 	}
 
 	Graphics::Graphics(Graphics&& old) {
@@ -69,7 +70,8 @@ namespace vulkan {
 		computeCommandBuffers_ = std::move(old.computeCommandBuffers_);
 		computeFinishedSemaphores_ = std::move(old.computeFinishedSemaphores_);
 		computeInFlightFences_ = std::move(old.computeInFlightFences_);
-		mainRenderPipeline_ = std::move(old.mainRenderPipeline_);
+		//mainRenderPipeline_ = std::move(old.mainRenderPipeline_);
+		uiRenderPipeline_ = std::move(old.uiRenderPipeline_);
 		imguiPool_ = old.imguiPool_;
 		framebufferResized_ = old.framebufferResized_;
 		currentFrame_ = old.currentFrame_;
@@ -105,7 +107,8 @@ namespace vulkan {
 		computeCommandBuffers_ = std::move(old.computeCommandBuffers_);
 		computeFinishedSemaphores_ = std::move(old.computeFinishedSemaphores_);
 		computeInFlightFences_ = std::move(old.computeInFlightFences_);
-		mainRenderPipeline_ = std::move(old.mainRenderPipeline_);
+		//mainRenderPipeline_ = std::move(old.mainRenderPipeline_);
+		uiRenderPipeline_ = std::move(old.uiRenderPipeline_);
 		imguiPool_ = old.imguiPool_;
 		framebufferResized_ = old.framebufferResized_;
 		currentFrame_ = old.currentFrame_;
@@ -116,7 +119,8 @@ namespace vulkan {
 	}
 
 	Graphics::~Graphics() {
-		mainRenderPipeline_.reset();
+		uiRenderPipeline_.reset();
+		//mainRenderPipeline_.reset();
 		cleanup_();
 	}
 
@@ -161,8 +165,11 @@ namespace vulkan {
 	VkImageView Graphics::computeImageView() const {
 		return computeResultImageView_;
 	}
-	MainRenderPipeline &Graphics::mainRenderPipeline() const {
+	/*MainRenderPipeline &Graphics::mainRenderPipeline() const {
 		return *mainRenderPipeline_;
+	}*/
+	UIRenderPipeline &Graphics::uiRenderPipeline() const {
+		return *uiRenderPipeline_;
 	}
 
 	VkFormat Graphics::findSupportedFormat(
@@ -278,8 +285,9 @@ namespace vulkan {
 		createSyncObjects_();
 		//initImgui_();
 
-		mainRenderPipeline_ = std::make_unique<MainRenderPipeline>(*this);
-		mainRenderPipeline().loadVertices(vertices_, indices_);
+		//mainRenderPipeline_ = std::make_unique<MainRenderPipeline>(*this);
+		//mainRenderPipeline().loadVertices(vertices_, indices_);
+		uiRenderPipeline_ = std::make_unique<UIRenderPipeline>(*this);
 	}
 
 	void Graphics::createInstance_() {
@@ -380,7 +388,7 @@ namespace vulkan {
 			destroyDebugUtilsMessengerEXT_(instance_, debugMessenger_, nullptr);
 		}
 
-		vkDestroySurfaceKHR(instance_, surface_, nullptr);
+		//vkDestroySurfaceKHR(instance_, surface_, nullptr);
 		vkDestroyInstance(instance_, nullptr);
 
 		glfwDestroyWindow(window_);
@@ -699,7 +707,9 @@ namespace vulkan {
 
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipelineLayout_, 0, 1, &computeDescriptorSets_[currentFrame_], 0, nullptr);
 
-		vkCmdDispatch(commandBuffer, mainRenderPipeline_->swapchainExtent().width, mainRenderPipeline_->swapchainExtent().height, 1);
+		//vkCmdDispatch(commandBuffer, mainRenderPipeline_->swapchainExtent().width, mainRenderPipeline_->swapchainExtent().height, 1);
+		vkCmdDispatch(commandBuffer, 10, 10, 1);
+
 
 		require(vkEndCommandBuffer(commandBuffer));
 	}
@@ -755,6 +765,7 @@ namespace vulkan {
 	}
 
 	void Graphics::drawFrame_() {
+		/*
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -774,9 +785,10 @@ namespace vulkan {
 		submitInfo.pSignalSemaphores = &computeFinishedSemaphores_[currentFrame_];
 
 		require(vkQueueSubmit(computeQueue_, 1, &submitInfo, computeInFlightFences_[currentFrame_]));
-
+		*/
 		//Main render pass submission
-		mainRenderPipeline().submit(currentFrame_, computeFinishedSemaphores_[currentFrame_]);
+		//mainRenderPipeline().submit(currentFrame_, computeFinishedSemaphores_[currentFrame_]);
+		uiRenderPipeline_->submit();
 
 		currentFrame_ = (currentFrame_ + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
@@ -1374,7 +1386,7 @@ namespace vulkan {
 
 	void Graphics::framebufferResizeCallback_(GLFWwindow* window, int width, int height) {
 		auto graphics = reinterpret_cast<Graphics*>(glfwGetWindowUserPointer(window));
-		graphics->mainRenderPipeline().queueResize();
+		//graphics->mainRenderPipeline().queueResize();
 	}
 
 	VkResult Graphics::createDebugUtilsMessengerEXT(

@@ -5,6 +5,7 @@
 #include "graphics.h"
 #include "imgui_impl_glfw.h"
 #include "log.h"
+#include "../ui/window.h"
 #include "uniformBufferObject.h"
 #include "vulkan/vulkan_core.h"
 
@@ -964,7 +965,7 @@ namespace vulkan {
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		ImGui::ShowDemoWindow();
+		ui::Window::show();
 	}
 
 	VkSurfaceFormatKHR MainRenderPipeline::chooseSwapchainSurfaceFormat_(const std::vector<VkSurfaceFormatKHR>& availableFormats) {

@@ -9,6 +9,7 @@
 #include <GLFW/glfw3.h>
 #include <optional>
 #include "mainRenderPipeline.h"
+#include "uiRenderPipeline.h"
 
 namespace vulkan {
 	struct QueueFamilyIndices {
@@ -52,7 +53,8 @@ namespace vulkan {
 			VkQueue graphicsQueue() const;
 			VkQueue presentQueue() const;
 			VkImageView computeImageView() const;
-			MainRenderPipeline &mainRenderPipeline() const;
+			//MainRenderPipeline &mainRenderPipeline() const;
+			UIRenderPipeline &uiRenderPipeline() const;
 
 			VkFormat findSupportedFormat(
 					const std::vector<VkFormat>& candidates,
@@ -234,7 +236,8 @@ namespace vulkan {
 			std::vector<VkSemaphore> computeFinishedSemaphores_;
 			std::vector<VkFence> computeInFlightFences_;
 
-			std::unique_ptr<MainRenderPipeline> mainRenderPipeline_;
+			//std::unique_ptr<MainRenderPipeline> mainRenderPipeline_;
+			std::unique_ptr<UIRenderPipeline> uiRenderPipeline_;
 
 			//imgui stuff
 			VkDescriptorPool imguiPool_;
