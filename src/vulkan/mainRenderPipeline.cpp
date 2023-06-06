@@ -85,7 +85,8 @@ namespace vulkan {
 	}
 
 	SwapchainSupportDetails MainRenderPipeline::querySwapchainSupport_(VkPhysicalDevice device, Graphics const &graphics) {
-		auto surface = graphics.surface();
+		VkSurfaceKHR surface;
+		//auto surface = graphics.surface();
 
 		auto details = SwapchainSupportDetails{};
 
@@ -289,7 +290,7 @@ namespace vulkan {
 
 		auto createInfo = VkSwapchainCreateInfoKHR{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		createInfo.surface = graphics_.surface();
+		//createInfo.surface = graphics_.surface();
 		createInfo.minImageCount = imageCount;
 		createInfo.imageFormat = surfaceFormat.format;
 		createInfo.imageColorSpace = surfaceFormat.colorSpace;

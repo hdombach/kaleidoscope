@@ -1,5 +1,6 @@
 #include "uiRenderPipeline.h"
 #include "error.h"
+#include "format.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
 #include "log.h"
@@ -99,7 +100,7 @@ namespace vulkan {
 		auto poolInfo = VkDescriptorPoolCreateInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-		poolInfo.maxSets = 1000;
+		poolInfo.maxSets = 1000 * poolSizes.size();
 		poolInfo.poolSizeCount = poolSizes.size();
 		poolInfo.pPoolSizes = poolSizes.data();
 
@@ -116,8 +117,8 @@ namespace vulkan {
 
 		io_ = &ImGui::GetIO();
 		io_->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-		io_->ConfigFlags |= ImGuiConfigFlags_DockingEnable; //I have no clue what this is
-		io_->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+		io_->ConfigFlags |= ImGuiConfigFlags_DockingEnable; //Allows imgui windows to be combined
+		//io_->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // allows imgui windows to be dragged outisde of main window
 
 		ImGui::StyleColorsDark();
 
@@ -136,9 +137,10 @@ namespace vulkan {
 		init_info.Queue = graphics_.graphicsQueue();
 		init_info.DescriptorPool = descriptorPool_;
 		init_info.Subpass = 0;
+		util::log_event(util::stringConcat("Min image count ", minImageCount_));
 		init_info.MinImageCount = minImageCount_; //idk if these should be 3 or 2
 		init_info.ImageCount = minImageCount_;
-		//init_info.ImageCount = windowData_.ImageCount;
+		init_info.ImageCount = windowData_.ImageCount;
 		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
 		ImGui_ImplVulkan_Init(&init_info, windowData_.RenderPass);
@@ -194,7 +196,7 @@ namespace vulkan {
 				nullptr,
 				width,
 				height,
-				3);
+				minImageCount_);
 	}
 
 	void UIRenderPipeline::renderFrame_(ImDrawData* drawData) {
