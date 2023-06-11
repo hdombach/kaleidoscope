@@ -40,7 +40,6 @@ namespace vulkan {
 	Graphics::Graphics(const char *name) {
 		initWindow_();
 		initVulkan_();
-		//mainRenderPipeline();
 	}
 
 	Graphics::Graphics(Graphics&& old) {
@@ -70,11 +69,12 @@ namespace vulkan {
 		computeCommandBuffers_ = std::move(old.computeCommandBuffers_);
 		computeFinishedSemaphores_ = std::move(old.computeFinishedSemaphores_);
 		computeInFlightFences_ = std::move(old.computeInFlightFences_);
-		//mainRenderPipeline_ = std::move(old.mainRenderPipeline_);
+		mainRenderPipeline_ = std::move(old.mainRenderPipeline_);
 		uiRenderPipeline_ = std::move(old.uiRenderPipeline_);
 		imguiPool_ = old.imguiPool_;
 		framebufferResized_ = old.framebufferResized_;
 		currentFrame_ = old.currentFrame_;
+		swapchainSupportDetails_ = old.swapchainSupportDetails_;
 
 		glfwSetWindowUserPointer(window_, this);
 
@@ -107,11 +107,12 @@ namespace vulkan {
 		computeCommandBuffers_ = std::move(old.computeCommandBuffers_);
 		computeFinishedSemaphores_ = std::move(old.computeFinishedSemaphores_);
 		computeInFlightFences_ = std::move(old.computeInFlightFences_);
-		//mainRenderPipeline_ = std::move(old.mainRenderPipeline_);
+		mainRenderPipeline_ = std::move(old.mainRenderPipeline_);
 		uiRenderPipeline_ = std::move(old.uiRenderPipeline_);
 		imguiPool_ = old.imguiPool_;
 		framebufferResized_ = old.framebufferResized_;
 		currentFrame_ = old.currentFrame_;
+		swapchainSupportDetails_ = old.swapchainSupportDetails_;
 
 		glfwSetWindowUserPointer(window_, this);
 
@@ -120,14 +121,41 @@ namespace vulkan {
 
 	Graphics::~Graphics() {
 		uiRenderPipeline_.reset();
-		//mainRenderPipeline_.reset();
+		mainRenderPipeline_.reset();
 		cleanup_();
 	}
 
-	void Graphics::tick() {
-		//drawUi_();
-		drawFrame_();
+	void Graphics::drawFrame() {
+		/*
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+		//Compute submission
+		vkWaitForFences(device_, 1, &computeInFlightFences_[currentFrame_], VK_TRUE, UINT64_MAX);
+
+		//update uniforms here maybe
+
+		vkResetFences(device_, 1, &computeInFlightFences_[currentFrame_]);
+
+		vkResetCommandBuffer(computeCommandBuffers_[currentFrame_], 0);
+		recordComputeCommandBuffer_(computeCommandBuffers_[currentFrame_]);
+
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &computeCommandBuffers_[currentFrame_];
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = &computeFinishedSemaphores_[currentFrame_];
+
+		require(vkQueueSubmit(computeQueue_, 1, &submitInfo, computeInFlightFences_[currentFrame_]));
+		*/
+		//Main render pass submission
+		//mainRenderPipeline().submit(currentFrame_, computeFinishedSemaphores_[currentFrame_]);
+		//mainRenderPipeline().submit(currentFrame_);
+		uiRenderPipeline_->submit();
+
+		currentFrame_ = (currentFrame_ + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
+
+
 	void Graphics::waitIdle() const {
 		vkDeviceWaitIdle(device_);
 	}
@@ -165,11 +193,14 @@ namespace vulkan {
 	VkImageView Graphics::computeImageView() const {
 		return computeResultImageView_;
 	}
-	/*MainRenderPipeline &Graphics::mainRenderPipeline() const {
+	MainRenderPipeline &Graphics::mainRenderPipeline() const {
 		return *mainRenderPipeline_;
-	}*/
+	}
 	UIRenderPipeline &Graphics::uiRenderPipeline() const {
 		return *uiRenderPipeline_;
+	}
+	Graphics::SwapchainSupportDetails const &Graphics::swapchainSupportDetails() const {
+		return swapchainSupportDetails_;
 	}
 
 	VkFormat Graphics::findSupportedFormat(
@@ -285,9 +316,9 @@ namespace vulkan {
 		createSyncObjects_();
 		//initImgui_();
 
-		//mainRenderPipeline_ = std::make_unique<MainRenderPipeline>(*this);
-		//mainRenderPipeline().loadVertices(vertices_, indices_);
 		uiRenderPipeline_ = std::make_unique<UIRenderPipeline>(*this);
+		mainRenderPipeline_ = std::make_unique<MainRenderPipeline>(*this, uiRenderPipeline_->viewportSize());
+		mainRenderPipeline().loadVertices(vertices_, indices_);
 	}
 
 	void Graphics::createInstance_() {
@@ -457,8 +488,10 @@ namespace vulkan {
 		bool extensionsSupported = checkDeviceExtensionSupport_(device);
 		bool swapChainAdequate = false;
 		if (extensionsSupported) {
-			auto swapChainSupport = querySwapChainSupport_(device);
-			swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+			swapchainSupportDetails_ = querySwapChainSupport_(device);
+			swapChainAdequate = !swapchainSupportDetails_.formats.empty() && !swapchainSupportDetails_.presentModes.empty();
+		} else {
+			util::log_error("Extensions are not supported");
 		}
 		VkPhysicalDeviceFeatures supportedFeatures;
 		vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
@@ -764,34 +797,6 @@ namespace vulkan {
 				1);
 	}
 
-	void Graphics::drawFrame_() {
-		/*
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-		//Compute submission
-		vkWaitForFences(device_, 1, &computeInFlightFences_[currentFrame_], VK_TRUE, UINT64_MAX);
-
-		//update uniforms here maybe
-
-		vkResetFences(device_, 1, &computeInFlightFences_[currentFrame_]);
-
-		vkResetCommandBuffer(computeCommandBuffers_[currentFrame_], 0);
-		recordComputeCommandBuffer_(computeCommandBuffers_[currentFrame_]);
-
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &computeCommandBuffers_[currentFrame_];
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &computeFinishedSemaphores_[currentFrame_];
-
-		require(vkQueueSubmit(computeQueue_, 1, &submitInfo, computeInFlightFences_[currentFrame_]));
-		*/
-		//Main render pass submission
-		//mainRenderPipeline().submit(currentFrame_, computeFinishedSemaphores_[currentFrame_]);
-		uiRenderPipeline_->submit();
-
-		currentFrame_ = (currentFrame_ + 1) % MAX_FRAMES_IN_FLIGHT;
-	}
 	
 	void Graphics::drawUi_() {
 		glfwPollEvents();
@@ -835,8 +840,8 @@ namespace vulkan {
 		return indices;
 	}
 
-	SwapChainSupportDetails_ Graphics::querySwapChainSupport_(VkPhysicalDevice device) {
-		SwapChainSupportDetails_ details;
+	Graphics::SwapchainSupportDetails Graphics::querySwapChainSupport_(VkPhysicalDevice device) {
+		auto details = SwapchainSupportDetails{};
 
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface_, &details.capabilities);
 

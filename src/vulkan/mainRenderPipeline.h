@@ -6,31 +6,22 @@
 #include <vector>
 
 namespace vulkan {
-	struct SwapchainSupportDetails {
-		VkSurfaceCapabilitiesKHR capabilities;
-		std::vector<VkSurfaceFormatKHR> formats;
-		std::vector<VkPresentModeKHR> presentModes;
-	};
-
 	class Graphics;
 
 	class MainRenderPipeline {
 		public:
-			MainRenderPipeline(Graphics const &graphics);
+			MainRenderPipeline(Graphics const &graphics, VkExtent2D size);
 			~MainRenderPipeline();
-			static SwapchainSupportDetails querySwapchainSupport_(VkPhysicalDevice device, Graphics const &graphics);
-			void submit(uint32_t frameIndex, VkSemaphore previousSemaphore);
+			void submit(uint32_t frameIndex);
 			void loadVertices(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
-			void queueResize();
+			void resize(VkExtent2D size);
 
-			VkExtent2D swapchainExtent() const;
+			VkImageView getImageView(int frameIndex) const;
+			VkExtent2D getSize() const;
 
 		private:
 			void createSyncObjects_();
 			void createCommandBuffers_();
-			void createSwapchain_();
-			void createSwapchainImageViews_();
-			void createSwapchainFramebuffers_();
 			void createRenderPass_();
 			void createDescriptorSetLayout_();
 			void createDescriptorPool_();
@@ -40,29 +31,19 @@ namespace vulkan {
 			void createDepthResources_();
 			void createDescriptorSets_();
 			void createPipeline_();
-			void initImgui_();
+			void createResultImages_();
+			void recreateResultImages_();
+			void cleanupResultImages_();
 
-			void recordCommandBuffer_(VkCommandBuffer commandBuffer, uint32_t imageIndex, uint32_t frameIndex);
+			void recordCommandBuffer_(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 			void updateUniformBuffer_(uint32_t currentImage);
 
-			void recreateSwapchain_();
-			void cleanupSwapchain_();
-			void submitUi_();
-
-			VkSurfaceFormatKHR chooseSwapchainSurfaceFormat_(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-			VkPresentModeKHR chooseSwapchainPresentMode_(const std::vector<VkPresentModeKHR>& availabePresentModes);
-			VkExtent2D chooseSwapchainExtent_(const VkSurfaceCapabilitiesKHR& capabilities);
 			VkFormat findDepthFormat_();
 
 			Graphics const &graphics_;
 			VkPipelineLayout pipelineLayout_;
 			VkPipeline pipeline_;
 			VkRenderPass renderPass_;
-			VkSwapchainKHR swapchain_;
-			std::vector<VkImage> swapchainImages_;
-			VkFormat swapchainImageFormat_;
-			VkExtent2D swapchainExtent_;
-			std::vector<VkFramebuffer> swapchainFramebuffers_;
 			VkDescriptorSetLayout descriptorSetLayout_;
 			std::vector<VkDescriptorSet> descriptorSets_;
 			VkDescriptorPool descriptorPool_;
@@ -85,9 +66,13 @@ namespace vulkan {
 			VkImage depthImage_;
 			VkDeviceMemory depthImageMemory_;
 			VkImageView depthImageView_;
-			std::vector<VkImageView> swapchainImageViews_;
-
-			VkDescriptorPool imguiPool_;
+			VkExtent2D size_;
+			const static VkFormat RESULT_IMAGE_FORMAT_ = VK_FORMAT_R8G8B8A8_SRGB;
+			std::vector<VkImage> resultImages_;
+			std::vector<VkImageView> resultImageViews_;
+			std::vector<VkDeviceMemory> resultImageMemory_;
+			std::vector<VkFramebuffer> resultImageFramebuffer_;
+			std::vector<VkDescriptorSet> resultDescriptorSets_;
 
 			uint32_t mipLevels_;
 			bool framebufferResized_;

@@ -21,14 +21,10 @@ namespace vulkan {
 		}
 	};
 
-	struct SwapChainSupportDetails_ {
-		VkSurfaceCapabilitiesKHR capabilities;
-		std::vector<VkSurfaceFormatKHR> formats;
-		std::vector<VkPresentModeKHR> presentModes;
-	};
-
 	class Graphics {
 		public:
+			struct SwapchainSupportDetails;
+
 			Graphics() = default;
 			Graphics(const char *name);
 
@@ -39,7 +35,7 @@ namespace vulkan {
 
 			~Graphics();
 
-			void tick();
+			void drawFrame();
 			void waitIdle() const;
 			GLFWwindow * window();
 
@@ -53,8 +49,9 @@ namespace vulkan {
 			VkQueue graphicsQueue() const;
 			VkQueue presentQueue() const;
 			VkImageView computeImageView() const;
-			//MainRenderPipeline &mainRenderPipeline() const;
+			MainRenderPipeline &mainRenderPipeline() const;
 			UIRenderPipeline &uiRenderPipeline() const;
+			SwapchainSupportDetails const &swapchainSupportDetails() const;
 
 			VkFormat findSupportedFormat(
 					const std::vector<VkFormat>& candidates,
@@ -106,6 +103,13 @@ namespace vulkan {
 					VkDeviceSize size) const;
 			void executeSingleTimeCommand(std::function<void(VkCommandBuffer)>) const;
 
+			struct SwapchainSupportDetails {
+				VkSurfaceCapabilitiesKHR capabilities;
+				std::vector<VkSurfaceFormatKHR> formats;
+				std::vector<VkPresentModeKHR> presentModes;
+			};
+
+			static const int MIN_IMAGE_COUNT = 2;
 
 		private:
 			void initWindow_();
@@ -131,7 +135,6 @@ namespace vulkan {
 
 			void initImgui_();
 
-			void drawFrame_();
 			void drawUi_();
 			bool checkValidationLayerSupport_();
 			void cleanup_();
@@ -149,7 +152,7 @@ namespace vulkan {
 			std::vector<const char*> getRequiredExtensions_();
 			void populateDebugMessengerCreateInfo_(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 			QueueFamilyIndices findQueueFamilies_(VkPhysicalDevice device) const;
-			SwapChainSupportDetails_ querySwapChainSupport_(VkPhysicalDevice device);
+			SwapchainSupportDetails querySwapChainSupport_(VkPhysicalDevice device);
 			VkSurfaceFormatKHR chooseSwapSurfaceFormat_(const std::vector<VkSurfaceFormatKHR>& availableFormats);
 			VkPresentModeKHR chooseSwapPresentMode_(const std::vector<VkPresentModeKHR>& availablePresentModes);
 			VkShaderModule createShaderModule_(const std::string& code) const;
@@ -235,8 +238,9 @@ namespace vulkan {
 			std::vector<VkCommandBuffer> computeCommandBuffers_;
 			std::vector<VkSemaphore> computeFinishedSemaphores_;
 			std::vector<VkFence> computeInFlightFences_;
+			SwapchainSupportDetails swapchainSupportDetails_;
 
-			//std::unique_ptr<MainRenderPipeline> mainRenderPipeline_;
+			std::unique_ptr<MainRenderPipeline> mainRenderPipeline_;
 			std::unique_ptr<UIRenderPipeline> uiRenderPipeline_;
 
 			//imgui stuff

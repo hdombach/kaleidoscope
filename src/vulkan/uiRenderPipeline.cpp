@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <vulkan/vulkan.h>
 #include "graphics.h"
+#include "window.h"
 #include <array>
 #include <imgui.h>
 
@@ -37,7 +38,7 @@ namespace vulkan {
 			int width, height;
 			glfwGetFramebufferSize(graphics_.window(), &width, &height);
 			if (width > 0 && height > 0) {
-				ImGui_ImplVulkan_SetMinImageCount(minImageCount_);
+				ImGui_ImplVulkan_SetMinImageCount(Graphics::MIN_IMAGE_COUNT);
 				ImGui_ImplVulkanH_CreateOrResizeWindow(
 						graphics_.instance(),
 						graphics_.physicalDevice(),
@@ -47,7 +48,7 @@ namespace vulkan {
 						nullptr,
 						width,
 						height,
-						minImageCount_);
+						Graphics::MIN_IMAGE_COUNT);
 				windowData_.FrameIndex = 0;
 				swapchainRebuild_ = false;
 			}
@@ -57,7 +58,7 @@ namespace vulkan {
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		ImGui::ShowDemoWindow();
+		ui::Window::show(graphics_.mainRenderPipeline().getImageView(windowData_.FrameIndex), graphics_);
 
 		ImGui::Render();
 		auto mainDrawData = ImGui::GetDrawData();
@@ -80,6 +81,10 @@ namespace vulkan {
 			presentFrame_();
 		}
 
+	}
+
+	VkExtent2D UIRenderPipeline::viewportSize() const {
+		return VkExtent2D{100, 100};
 	}
 
 	void UIRenderPipeline::createDescriptorPool_() {
@@ -137,9 +142,9 @@ namespace vulkan {
 		init_info.Queue = graphics_.graphicsQueue();
 		init_info.DescriptorPool = descriptorPool_;
 		init_info.Subpass = 0;
-		util::log_event(util::stringConcat("Min image count ", minImageCount_));
-		init_info.MinImageCount = minImageCount_; //idk if these should be 3 or 2
-		init_info.ImageCount = minImageCount_;
+		util::log_event(util::stringConcat("Min image count ", Graphics::MIN_IMAGE_COUNT));
+		init_info.MinImageCount = Graphics::MIN_IMAGE_COUNT; //idk if these should be 3 or 2
+		init_info.ImageCount = Graphics::MIN_IMAGE_COUNT;
 		init_info.ImageCount = windowData_.ImageCount;
 		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
@@ -196,7 +201,7 @@ namespace vulkan {
 				nullptr,
 				width,
 				height,
-				minImageCount_);
+				Graphics::MIN_IMAGE_COUNT);
 	}
 
 	void UIRenderPipeline::renderFrame_(ImDrawData* drawData) {

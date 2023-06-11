@@ -14,6 +14,7 @@ namespace vulkan {
 			~UIRenderPipeline();
 
 			void submit();
+			VkExtent2D viewportSize() const;
 
 		private:
 			void createDescriptorPool_();
@@ -28,7 +29,6 @@ namespace vulkan {
 			ImGui_ImplVulkanH_Window windowData_;
 			ImGuiIO *io_;
 			bool swapchainRebuild_;
-			static const int minImageCount_ = 2;
 			constexpr static const ImVec4 clearColor_ = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 	};
 }
