@@ -11,7 +11,7 @@ namespace vulkan {
 
 	class UIRenderPipeline {
 		public:
-			UIRenderPipeline(Graphics const &graphics);
+			UIRenderPipeline();
 			~UIRenderPipeline();
 
 			void submit(std::function<void()> uiCallback);
@@ -24,7 +24,6 @@ namespace vulkan {
 			void renderFrame_(ImDrawData *drawData);
 			void presentFrame_();
 
-			Graphics const &graphics_;
 			VkDescriptorPool descriptorPool_;
 			ImGui_ImplVulkanH_Window windowData_;
 			ImGuiIO *io_;

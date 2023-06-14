@@ -12,7 +12,7 @@ namespace vulkan {
 
 	class MainRenderPipeline: public Texture  {
 		public:
-			MainRenderPipeline(Graphics const &graphics, VkExtent2D size);
+			MainRenderPipeline(VkExtent2D size);
 			~MainRenderPipeline();
 			void submit();
 			void loadVertices(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
@@ -44,7 +44,6 @@ namespace vulkan {
 
 			VkFormat findDepthFormat_();
 
-			Graphics const &graphics_;
 			VkPipelineLayout pipelineLayout_;
 			VkPipeline pipeline_;
 			VkRenderPass renderPass_;

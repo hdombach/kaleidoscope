@@ -7,8 +7,8 @@
 
 App::App(std::string const &name) {
 	vulkan::Graphics::initDefault("Kaleidoscope");
-	uiRenderPipeline_ = std::make_unique<vulkan::UIRenderPipeline>(*vulkan::Graphics::DEFAULT);
-	window_ = std::make_unique<ui::Window>(*vulkan::Graphics::DEFAULT);
+	uiRenderPipeline_ = std::make_unique<vulkan::UIRenderPipeline>();
+	window_ = std::make_unique<ui::Window>();
 }
 
 App::~App() {

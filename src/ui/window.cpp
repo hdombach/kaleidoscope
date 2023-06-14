@@ -1,7 +1,6 @@
 #include "window.h"
 #include "defs.h"
 #include "format.h"
-#include "graphics.h"
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"
 #include "log.h"
@@ -14,9 +13,8 @@
 #include <vector>
 
 namespace ui {
-	Window::Window(vulkan::Graphics const &graphics):
-		graphics_(graphics),
-		mainRenderPipeline_(std::make_unique<vulkan::MainRenderPipeline>(graphics_, VkExtent2D{1000, 1000})),
+	Window::Window():
+		mainRenderPipeline_(std::make_unique<vulkan::MainRenderPipeline>(VkExtent2D{1000, 1000})),
 		viewport_(*mainRenderPipeline_)
 	{
 		tempLoadModel_();

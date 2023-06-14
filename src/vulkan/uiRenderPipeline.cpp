@@ -14,38 +14,38 @@
 #include <imgui.h>
 
 namespace vulkan {
-	UIRenderPipeline::UIRenderPipeline(Graphics const &graphcs): graphics_(graphcs) {
+	UIRenderPipeline::UIRenderPipeline() {
 		createDescriptorPool_();
 		initImGui_();
 	}
 
 	UIRenderPipeline::~UIRenderPipeline() {
-		require(vkDeviceWaitIdle(graphics_.device()));
+		require(vkDeviceWaitIdle(Graphics::DEFAULT->device()));
 		ImGui_ImplVulkan_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
 		ImGui_ImplVulkanH_DestroyWindow(
-				graphics_.instance(),
-				graphics_.device(),
+				Graphics::DEFAULT->instance(),
+				Graphics::DEFAULT->device(),
 				&windowData_,
 				nullptr);
-		vkDestroyDescriptorPool(graphics_.device(), descriptorPool_, nullptr);
+		vkDestroyDescriptorPool(Graphics::DEFAULT->device(), descriptorPool_, nullptr);
 	}
 
 	void UIRenderPipeline::submit(std::function<void()> uiCallback) {
 		glfwPollEvents();
 		if (swapchainRebuild_) {
 			int width, height;
-			glfwGetFramebufferSize(graphics_.window(), &width, &height);
+			glfwGetFramebufferSize(Graphics::DEFAULT->window(), &width, &height);
 			if (width > 0 && height > 0) {
 				ImGui_ImplVulkan_SetMinImageCount(Graphics::MIN_IMAGE_COUNT);
 				ImGui_ImplVulkanH_CreateOrResizeWindow(
-						graphics_.instance(),
-						graphics_.physicalDevice(),
-						graphics_.device(),
+						Graphics::DEFAULT->instance(),
+						Graphics::DEFAULT->physicalDevice(),
+						Graphics::DEFAULT->device(),
 						&windowData_,
-						graphics_.findQueueFamilies().graphicsFamily.value(),
+						Graphics::DEFAULT->findQueueFamilies().graphicsFamily.value(),
 						nullptr,
 						width,
 						height,
@@ -106,12 +106,12 @@ namespace vulkan {
 		poolInfo.poolSizeCount = poolSizes.size();
 		poolInfo.pPoolSizes = poolSizes.data();
 
-		require(vkCreateDescriptorPool(graphics_.device(), &poolInfo, nullptr, &descriptorPool_));
+		require(vkCreateDescriptorPool(Graphics::DEFAULT->device(), &poolInfo, nullptr, &descriptorPool_));
 	}
 
 	void UIRenderPipeline::initImGui_() {
 		int w, h;
-		glfwGetFramebufferSize(graphics_.window(), &w, &h);
+		glfwGetFramebufferSize(Graphics::DEFAULT->window(), &w, &h);
 		setupVulkanWindow_(w, h);
 
 		IMGUI_CHECKVERSION();
@@ -129,13 +129,13 @@ namespace vulkan {
 		//style.Colors[ImGuiCol_WindowBg] = ImVec4{0.2f, 0.2f, 0.2f, 1.0f};
 
 
-		ImGui_ImplGlfw_InitForVulkan(graphics_.window(), true);
+		ImGui_ImplGlfw_InitForVulkan(Graphics::DEFAULT->window(), true);
 		auto init_info = ImGui_ImplVulkan_InitInfo{};
-		init_info.Instance = graphics_.instance();
-		init_info.PhysicalDevice = graphics_.physicalDevice();
-		init_info.Device = graphics_.device();
-		init_info.QueueFamily = graphics_.findQueueFamilies().graphicsFamily.value();
-		init_info.Queue = graphics_.graphicsQueue();
+		init_info.Instance = Graphics::DEFAULT->instance();
+		init_info.PhysicalDevice = Graphics::DEFAULT->physicalDevice();
+		init_info.Device = Graphics::DEFAULT->device();
+		init_info.QueueFamily = Graphics::DEFAULT->findQueueFamilies().graphicsFamily.value();
+		init_info.Queue = Graphics::DEFAULT->graphicsQueue();
 		init_info.DescriptorPool = descriptorPool_;
 		init_info.Subpass = 0;
 		util::log_event(util::stringConcat("Min image count ", Graphics::MIN_IMAGE_COUNT));
@@ -146,20 +146,20 @@ namespace vulkan {
 
 		ImGui_ImplVulkan_Init(&init_info, windowData_.RenderPass);
 
-		graphics_.executeSingleTimeCommand([&](VkCommandBuffer commandBuffer) {
+		Graphics::DEFAULT->executeSingleTimeCommand([&](VkCommandBuffer commandBuffer) {
 				ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
 		});
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
 	}
 
 	void UIRenderPipeline::setupVulkanWindow_(int width, int height) {
-		windowData_.Surface = graphics_.surface();
+		windowData_.Surface = Graphics::DEFAULT->surface();
 
 		VkBool32 res;
 		vkGetPhysicalDeviceSurfaceSupportKHR(
-				graphics_.physicalDevice(),
-				graphics_.findQueueFamilies().graphicsFamily.value(),
-				graphics_.surface(),
+				Graphics::DEFAULT->physicalDevice(),
+				Graphics::DEFAULT->findQueueFamilies().graphicsFamily.value(),
+				Graphics::DEFAULT->surface(),
 				&res);
 		if (res != VK_TRUE) {
 			util::log_error("No WSI support on physical device 0");
@@ -172,7 +172,7 @@ namespace vulkan {
 
 
 		windowData_.SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(
-				graphics_.physicalDevice(),
+				Graphics::DEFAULT->physicalDevice(),
 				windowData_.Surface,
 				requestSurfaceImageFormat,
 				(size_t)IM_ARRAYSIZE(requestSurfaceImageFormat),
@@ -181,17 +181,17 @@ namespace vulkan {
 		VkPresentModeKHR present_modes[] = { VK_PRESENT_MODE_FIFO_KHR };
 
 		windowData_.PresentMode = ImGui_ImplVulkanH_SelectPresentMode(
-				graphics_.physicalDevice(),
+				Graphics::DEFAULT->physicalDevice(),
 				windowData_.Surface,
 				present_modes,
 				IM_ARRAYSIZE(present_modes));
 
 		ImGui_ImplVulkanH_CreateOrResizeWindow(
-				graphics_.instance(),
-				graphics_.physicalDevice(),
-				graphics_.device(),
+				Graphics::DEFAULT->instance(),
+				Graphics::DEFAULT->physicalDevice(),
+				Graphics::DEFAULT->device(),
 				&windowData_,
-				graphics_.findQueueFamilies().graphicsFamily.value(),
+				Graphics::DEFAULT->findQueueFamilies().graphicsFamily.value(),
 				nullptr,
 				width,
 				height,
@@ -205,7 +205,7 @@ namespace vulkan {
 		auto renderCompleteSemaphore = windowData_.FrameSemaphores[windowData_.SemaphoreIndex].RenderCompleteSemaphore;
 
 		err = vkAcquireNextImageKHR(
-				graphics_.device(),
+				Graphics::DEFAULT->device(),
 				windowData_.Swapchain,
 				UINT64_MAX,
 				imageAcquiredSemaphore,
@@ -220,13 +220,13 @@ namespace vulkan {
 		auto frame = &windowData_.Frames[windowData_.FrameIndex];
 
 		require(vkWaitForFences(
-					graphics_.device(),
+					Graphics::DEFAULT->device(),
 					1,
 					&frame->Fence,
 					VK_TRUE, UINT64_MAX));
-		require(vkResetFences(graphics_.device(), 1, &frame->Fence));
+		require(vkResetFences(Graphics::DEFAULT->device(), 1, &frame->Fence));
 
-		require(vkResetCommandPool(graphics_.device(), frame->CommandPool, 0));
+		require(vkResetCommandPool(Graphics::DEFAULT->device(), frame->CommandPool, 0));
 		auto bufferBeginInfo = VkCommandBufferBeginInfo{};
 		bufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		bufferBeginInfo.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -262,7 +262,7 @@ namespace vulkan {
 
 		require(vkEndCommandBuffer(frame->CommandBuffer));
 		require(vkQueueSubmit(
-					graphics_.graphicsQueue(),
+					Graphics::DEFAULT->graphicsQueue(),
 					1,
 					&submitInfo,
 					frame->Fence));
@@ -283,7 +283,7 @@ namespace vulkan {
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = &windowData_.Swapchain;
 		presentInfo.pImageIndices = &windowData_.FrameIndex;
-		VkResult err = vkQueuePresentKHR(graphics_.graphicsQueue(), &presentInfo);
+		VkResult err = vkQueuePresentKHR(Graphics::DEFAULT->graphicsQueue(), &presentInfo);
 		if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) {
 			swapchainRebuild_ = true;
 			return;

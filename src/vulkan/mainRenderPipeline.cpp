@@ -23,12 +23,7 @@
 #include <sstream>
 
 namespace vulkan {
-	MainRenderPipeline::MainRenderPipeline(
-			Graphics const &graphics,
-			VkExtent2D size):
-		graphics_(graphics),
-		size_(size)
-	{
+	MainRenderPipeline::MainRenderPipeline(VkExtent2D size): size_(size) {
 		createSyncObjects_();
 		createCommandBuffers_();
 		createRenderPass_();
@@ -49,37 +44,37 @@ namespace vulkan {
 		cleanupDepthResources_();
 		cleanupResultImages_();
 		
-		vkDestroyPipelineLayout(graphics_.device(), pipelineLayout_, nullptr);
-		vkDestroyPipeline(graphics_.device(), pipeline_, nullptr);
-		vkDestroyDescriptorSetLayout(graphics_.device(), descriptorSetLayout_, nullptr);
-		vkFreeDescriptorSets(graphics_.device(), descriptorPool_, descriptorSets_.size(), descriptorSets_.data());
-		vkDestroyDescriptorPool(graphics_.device(), descriptorPool_, nullptr);
-		vkDestroyBuffer(graphics_.device(), vertexBuffer_, nullptr);
-		vkFreeMemory(graphics_.device(), vertexBufferMemory_, nullptr);
-		vkDestroyBuffer(graphics_.device(), indexBuffer_, nullptr);
-		vkFreeMemory(graphics_.device(), indexBufferMemory_, nullptr);
+		vkDestroyPipelineLayout(Graphics::DEFAULT->device(), pipelineLayout_, nullptr);
+		vkDestroyPipeline(Graphics::DEFAULT->device(), pipeline_, nullptr);
+		vkDestroyDescriptorSetLayout(Graphics::DEFAULT->device(), descriptorSetLayout_, nullptr);
+		vkFreeDescriptorSets(Graphics::DEFAULT->device(), descriptorPool_, descriptorSets_.size(), descriptorSets_.data());
+		vkDestroyDescriptorPool(Graphics::DEFAULT->device(), descriptorPool_, nullptr);
+		vkDestroyBuffer(Graphics::DEFAULT->device(), vertexBuffer_, nullptr);
+		vkFreeMemory(Graphics::DEFAULT->device(), vertexBufferMemory_, nullptr);
+		vkDestroyBuffer(Graphics::DEFAULT->device(), indexBuffer_, nullptr);
+		vkFreeMemory(Graphics::DEFAULT->device(), indexBufferMemory_, nullptr);
 		for (auto uniformBuffer : uniformBuffers_) {
-			vkDestroyBuffer(graphics_.device(), uniformBuffer, nullptr);
+			vkDestroyBuffer(Graphics::DEFAULT->device(), uniformBuffer, nullptr);
 		}
 		for (auto uniformBufferMemory : uniformBuffersMemory_) {
-			vkFreeMemory(graphics_.device(), uniformBufferMemory, nullptr);
+			vkFreeMemory(Graphics::DEFAULT->device(), uniformBufferMemory, nullptr);
 		}
 		for (auto inFlightFence : inFlightFences_) {
-			vkDestroyFence(graphics_.device(), inFlightFence, nullptr);
+			vkDestroyFence(Graphics::DEFAULT->device(), inFlightFence, nullptr);
 		}
 		for (auto renderFinishedSemaphore : renderFinishedSemaphores_) {
-			vkDestroySemaphore(graphics_.device(), renderFinishedSemaphore, nullptr);
+			vkDestroySemaphore(Graphics::DEFAULT->device(), renderFinishedSemaphore, nullptr);
 		}
 
-		vkDestroyImage(graphics_.device(), textureImage_, nullptr);
-		vkFreeMemory(graphics_.device(), textureImageMemory_, nullptr);
-		vkDestroyImageView(graphics_.device(), textureImageView_, nullptr);
+		vkDestroyImage(Graphics::DEFAULT->device(), textureImage_, nullptr);
+		vkFreeMemory(Graphics::DEFAULT->device(), textureImageMemory_, nullptr);
+		vkDestroyImageView(Graphics::DEFAULT->device(), textureImageView_, nullptr);
 
-		vkDestroyRenderPass(graphics_.device(), renderPass_, nullptr);
+		vkDestroyRenderPass(Graphics::DEFAULT->device(), renderPass_, nullptr);
 	}
 
 	void MainRenderPipeline::submit() {
-		vkWaitForFences(graphics_.device(), 1, &inFlightFences_[frameIndex_], VK_TRUE, UINT64_MAX);
+		vkWaitForFences(Graphics::DEFAULT->device(), 1, &inFlightFences_[frameIndex_], VK_TRUE, UINT64_MAX);
 		if (framebufferResized_ ) {
 			framebufferResized_ = false;
 			recreateResultImages_();
@@ -89,7 +84,7 @@ namespace vulkan {
 
 		updateUniformBuffer_(frameIndex_);
 
-		vkResetFences(graphics_.device(), 1, &inFlightFences_[frameIndex_]);
+		vkResetFences(Graphics::DEFAULT->device(), 1, &inFlightFences_[frameIndex_]);
 
 		vkResetCommandBuffer(commandBuffers_[frameIndex_], 0);
 
@@ -102,7 +97,7 @@ namespace vulkan {
 		//submitInfo.signalSemaphoreCount = 1;
 		//submitInfo.pSignalSemaphores = &renderFinishedSemaphores_[frameIndex_];
 
-		require(vkQueueSubmit(graphics_.graphicsQueue(), 1, &submitInfo, inFlightFences_[frameIndex_]));
+		require(vkQueueSubmit(Graphics::DEFAULT->graphicsQueue(), 1, &submitInfo, inFlightFences_[frameIndex_]));
 
 		frameIndex_ = (frameIndex_ + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
@@ -115,7 +110,7 @@ namespace vulkan {
 
 		auto stagingBuffer = VkBuffer{};
 		auto stagingBufferMemory = VkDeviceMemory{};
-		graphics_.createBuffer(
+		Graphics::DEFAULT->createBuffer(
 				bufferSize,
 				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -123,47 +118,47 @@ namespace vulkan {
 				stagingBufferMemory);
 
 		void *data;
-		vkMapMemory(graphics_.device(), stagingBufferMemory, 0, bufferSize, 0, &data);
+		vkMapMemory(Graphics::DEFAULT->device(), stagingBufferMemory, 0, bufferSize, 0, &data);
 		memcpy(data, vertices.data(), (size_t) bufferSize);
-		vkUnmapMemory(graphics_.device(), stagingBufferMemory);
+		vkUnmapMemory(Graphics::DEFAULT->device(), stagingBufferMemory);
 
-		graphics_.createBuffer(
+		Graphics::DEFAULT->createBuffer(
 				bufferSize,
 				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 				vertexBuffer_,
 				vertexBufferMemory_);
 
-		graphics_.copyBuffer(stagingBuffer, vertexBuffer_, bufferSize);
+		Graphics::DEFAULT->copyBuffer(stagingBuffer, vertexBuffer_, bufferSize);
 
-		vkDestroyBuffer(graphics_.device(), stagingBuffer, nullptr);
-		vkFreeMemory(graphics_.device(), stagingBufferMemory, nullptr);
+		vkDestroyBuffer(Graphics::DEFAULT->device(), stagingBuffer, nullptr);
+		vkFreeMemory(Graphics::DEFAULT->device(), stagingBufferMemory, nullptr);
 
 		//Load index buffer
 		bufferSize = sizeof(indices[0]) * indices.size();
 
-		graphics_.createBuffer(
+		Graphics::DEFAULT->createBuffer(
 				bufferSize,
 				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 				stagingBuffer,
 				stagingBufferMemory);
 
-		vkMapMemory(graphics_.device(), stagingBufferMemory, 0, bufferSize, 0, &data);
+		vkMapMemory(Graphics::DEFAULT->device(), stagingBufferMemory, 0, bufferSize, 0, &data);
 		memcpy(data, indices.data(), (size_t) bufferSize);
-		vkUnmapMemory(graphics_.device(), stagingBufferMemory);
+		vkUnmapMemory(Graphics::DEFAULT->device(), stagingBufferMemory);
 
-		graphics_.createBuffer(
+		Graphics::DEFAULT->createBuffer(
 				bufferSize,
 				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 				indexBuffer_,
 				indexBufferMemory_);
 
-		graphics_.copyBuffer(stagingBuffer, indexBuffer_, bufferSize);
+		Graphics::DEFAULT->copyBuffer(stagingBuffer, indexBuffer_, bufferSize);
 
-		vkDestroyBuffer(graphics_.device(), stagingBuffer, nullptr);
-		vkFreeMemory(graphics_.device(), stagingBufferMemory, nullptr);
+		vkDestroyBuffer(Graphics::DEFAULT->device(), stagingBuffer, nullptr);
+		vkFreeMemory(Graphics::DEFAULT->device(), stagingBufferMemory, nullptr);
 
 		indexCount_ = indices.size();
 	}
@@ -196,8 +191,8 @@ namespace vulkan {
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			require(vkCreateSemaphore(graphics_.device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores_[i]));
-			require(vkCreateFence(graphics_.device(), &fenceInfo, nullptr, &inFlightFences_[i]));
+			require(vkCreateSemaphore(Graphics::DEFAULT->device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores_[i]));
+			require(vkCreateFence(Graphics::DEFAULT->device(), &fenceInfo, nullptr, &inFlightFences_[i]));
 		}
 	}
 
@@ -205,11 +200,11 @@ namespace vulkan {
 		commandBuffers_.resize(MAX_FRAMES_IN_FLIGHT);
 		auto allocInfo = VkCommandBufferAllocateInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = graphics_.commandPool();
+		allocInfo.commandPool = Graphics::DEFAULT->commandPool();
 		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		allocInfo.commandBufferCount = (uint32_t) commandBuffers_.size();
 
-		require(vkAllocateCommandBuffers(graphics_.device(), &allocInfo, commandBuffers_.data()));
+		require(vkAllocateCommandBuffers(Graphics::DEFAULT->device(), &allocInfo, commandBuffers_.data()));
 	}
 
 
@@ -275,7 +270,7 @@ namespace vulkan {
 		renderPassInfo.dependencyCount = 1;
 		renderPassInfo.pDependencies = &dependency;
 
-		require(vkCreateRenderPass(graphics_.device(), &renderPassInfo, nullptr, &renderPass_));
+		require(vkCreateRenderPass(Graphics::DEFAULT->device(), &renderPassInfo, nullptr, &renderPass_));
 	}
 
 	void MainRenderPipeline::createDescriptorSetLayout_() {
@@ -306,7 +301,7 @@ namespace vulkan {
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 		layoutInfo.pBindings = bindings.data();
 
-		require(vkCreateDescriptorSetLayout(graphics_.device(), &layoutInfo, nullptr, &descriptorSetLayout_));
+		require(vkCreateDescriptorSetLayout(Graphics::DEFAULT->device(), &layoutInfo, nullptr, &descriptorSetLayout_));
 	}
 
 	void MainRenderPipeline::createDescriptorPool_() {
@@ -325,7 +320,7 @@ namespace vulkan {
 		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * 2);
 		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
-		require(vkCreateDescriptorPool(graphics_.device(), &poolInfo, nullptr, &descriptorPool_));
+		require(vkCreateDescriptorPool(Graphics::DEFAULT->device(), &poolInfo, nullptr, &descriptorPool_));
 	}
 
 	void MainRenderPipeline::createUniformBuffers_() {
@@ -336,7 +331,7 @@ namespace vulkan {
 		uniformBuffersMapped_.resize(MAX_FRAMES_IN_FLIGHT);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-			graphics_.createBuffer(
+			Graphics::DEFAULT->createBuffer(
 					bufferSize,
 					VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -344,7 +339,7 @@ namespace vulkan {
 					uniformBuffersMemory_[i]);
 
 			require(vkMapMemory(
-						graphics_.device(),
+						Graphics::DEFAULT->device(),
 						uniformBuffersMemory_[i],
 						0,
 						bufferSize,
@@ -365,7 +360,7 @@ namespace vulkan {
 
 		auto stagingBuffer = VkBuffer{};
 		auto stagingBufferMemory = VkDeviceMemory{};
-		graphics_.createBuffer(
+		Graphics::DEFAULT->createBuffer(
 				imageSize,
 				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -373,12 +368,12 @@ namespace vulkan {
 				stagingBufferMemory);
 
 		void *data;
-		vkMapMemory(graphics_.device(), stagingBufferMemory, 0, imageSize, 0, &data);
+		vkMapMemory(Graphics::DEFAULT->device(), stagingBufferMemory, 0, imageSize, 0, &data);
 		memcpy(data, pixels, static_cast<size_t>(imageSize));
-		vkUnmapMemory(graphics_.device(), stagingBufferMemory);
+		vkUnmapMemory(Graphics::DEFAULT->device(), stagingBufferMemory);
 		stbi_image_free(pixels);
 
-		graphics_.createImage(
+		Graphics::DEFAULT->createImage(
 				texWidth,
 				texHeight,
 				mipLevels_,
@@ -389,32 +384,32 @@ namespace vulkan {
 				textureImage_,
 				textureImageMemory_);
 
-		graphics_.transitionImageLayout(
+		Graphics::DEFAULT->transitionImageLayout(
 				textureImage_,
 				VK_FORMAT_R8G8B8A8_SRGB,
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				mipLevels_);
 
-		graphics_.copyBufferToImage(
+		Graphics::DEFAULT->copyBufferToImage(
 				stagingBuffer,
 				textureImage_,
 				static_cast<uint32_t>(texWidth),
 				static_cast<uint32_t>(texHeight));
 
-		vkDestroyBuffer(graphics_.device(), stagingBuffer, nullptr);
-		vkFreeMemory(graphics_.device(), stagingBufferMemory, nullptr);
+		vkDestroyBuffer(Graphics::DEFAULT->device(), stagingBuffer, nullptr);
+		vkFreeMemory(Graphics::DEFAULT->device(), stagingBufferMemory, nullptr);
 
-		graphics_.generateMipmaps(textureImage_, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels_);
+		Graphics::DEFAULT->generateMipmaps(textureImage_, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels_);
 	}
 
 	void MainRenderPipeline::createTextureImageView_() {
-		textureImageView_ = graphics_.createImageView(textureImage_, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels_);
+		textureImageView_ = Graphics::DEFAULT->createImageView(textureImage_, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels_);
 	}
 
 	void MainRenderPipeline::createDepthResources_() {
 		auto depthFormat = findDepthFormat_();
-		graphics_.createImage(
+		Graphics::DEFAULT->createImage(
 				size_.width,
 				size_.height,
 				1,
@@ -425,9 +420,9 @@ namespace vulkan {
 				depthImage_,
 				depthImageMemory_);
 
-		depthImageView_ = graphics_.createImageView(depthImage_, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+		depthImageView_ = Graphics::DEFAULT->createImageView(depthImage_, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 
-		graphics_.transitionImageLayout(
+		Graphics::DEFAULT->transitionImageLayout(
 				depthImage_,
 				depthFormat,
 				VK_IMAGE_LAYOUT_UNDEFINED,
@@ -444,7 +439,7 @@ namespace vulkan {
 		allocInfo.pSetLayouts = layouts.data();
 
 		descriptorSets_.resize(MAX_FRAMES_IN_FLIGHT);
-		require(vkAllocateDescriptorSets(graphics_.device(), &allocInfo, descriptorSets_.data()));
+		require(vkAllocateDescriptorSets(Graphics::DEFAULT->device(), &allocInfo, descriptorSets_.data()));
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 			auto bufferInfo = VkDescriptorBufferInfo{};
@@ -455,12 +450,12 @@ namespace vulkan {
 			auto imageInfo = VkDescriptorImageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			imageInfo.imageView = textureImageView_;
-			imageInfo.sampler = graphics_.mainTextureSampler();
+			imageInfo.sampler = Graphics::DEFAULT->mainTextureSampler();
 
 			auto computeImageInfo = VkDescriptorImageInfo{};
 			computeImageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-			computeImageInfo.imageView = graphics_.computeImageView();
-			computeImageInfo.sampler = graphics_.mainTextureSampler();
+			computeImageInfo.imageView = Graphics::DEFAULT->computeImageView();
+			computeImageInfo.sampler = Graphics::DEFAULT->mainTextureSampler();
 
 			auto descriptorWrites = std::array<VkWriteDescriptorSet, 3>{};
 
@@ -489,7 +484,7 @@ namespace vulkan {
 			descriptorWrites[2].pImageInfo = &computeImageInfo;
 
 			vkUpdateDescriptorSets(
-					graphics_.device(),
+					Graphics::DEFAULT->device(),
 					static_cast<uint32_t>(descriptorWrites.size()),
 					descriptorWrites.data(),
 					0,
@@ -501,8 +496,8 @@ namespace vulkan {
 		auto vertShaderCode = util::readEnvFile("src/shaders/default_shader.vert.spv");
 		auto fragShaderCode = util::readEnvFile("src/shaders/default_shader.frag.spv");
 
-		auto vertShaderModule = graphics_.createShaderModule(vertShaderCode);
-		auto fragShaderModule = graphics_.createShaderModule(fragShaderCode);
+		auto vertShaderModule = Graphics::DEFAULT->createShaderModule(vertShaderCode);
+		auto fragShaderModule = Graphics::DEFAULT->createShaderModule(fragShaderCode);
 
 		auto vertShaderStageInfo = VkPipelineShaderStageCreateInfo{};
 		vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -617,7 +612,7 @@ namespace vulkan {
 		pipelineLayoutInfo.pushConstantRangeCount = 0;
 		pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-		require(vkCreatePipelineLayout(graphics_.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout_));
+		require(vkCreatePipelineLayout(Graphics::DEFAULT->device(), &pipelineLayoutInfo, nullptr, &pipelineLayout_));
 
 		auto depthStencil = VkPipelineDepthStencilStateCreateInfo{};
 		depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
@@ -649,10 +644,10 @@ namespace vulkan {
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
 
-		require(vkCreateGraphicsPipelines(graphics_.device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline_));
+		require(vkCreateGraphicsPipelines(Graphics::DEFAULT->device(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline_));
 
-		vkDestroyShaderModule(graphics_.device(), fragShaderModule, nullptr);
-		vkDestroyShaderModule(graphics_.device(), vertShaderModule, nullptr);
+		vkDestroyShaderModule(Graphics::DEFAULT->device(), fragShaderModule, nullptr);
+		vkDestroyShaderModule(Graphics::DEFAULT->device(), vertShaderModule, nullptr);
 	}
 
 	void MainRenderPipeline::createResultImages_() {
@@ -663,7 +658,7 @@ namespace vulkan {
 		resultDescriptorSets_.resize(Graphics::MIN_IMAGE_COUNT);
 
 		for (int i = 0; i < Graphics::MIN_IMAGE_COUNT; i++) {
-			graphics_.createImage(
+			Graphics::DEFAULT->createImage(
 					size_.width,
 					size_.height,
 					1,
@@ -673,12 +668,12 @@ namespace vulkan {
 					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 					resultImages_[i],
 					resultImageMemory_[i]);
-			resultImageViews_[i] = graphics_.createImageView(
+			resultImageViews_[i] = Graphics::DEFAULT->createImageView(
 					resultImages_[i], 
 					RESULT_IMAGE_FORMAT_, 
 					VK_IMAGE_ASPECT_COLOR_BIT, 
 					1);
-			graphics_.transitionImageLayout(
+			Graphics::DEFAULT->transitionImageLayout(
 					resultImages_[i], 
 					RESULT_IMAGE_FORMAT_, 
 					VK_IMAGE_LAYOUT_UNDEFINED, 
@@ -700,7 +695,7 @@ namespace vulkan {
 			framebufferInfo.layers = 1;
 
 			require(vkCreateFramebuffer(
-						graphics_.device(),
+						Graphics::DEFAULT->device(),
 						&framebufferInfo,
 						nullptr,
 						&resultImageFramebuffer_[i]));
@@ -709,14 +704,14 @@ namespace vulkan {
 				ImGui_ImplVulkan_RemoveTexture(resultDescriptorSets_[i]);
 			}
 			resultDescriptorSets_[i] = ImGui_ImplVulkan_AddTexture(
-					graphics_.mainTextureSampler(),
+					Graphics::DEFAULT->mainTextureSampler(),
 					resultImageViews_[i],
 					VK_IMAGE_LAYOUT_GENERAL);
 		}
 	}
 
 	void MainRenderPipeline::recreateResultImages_() {
-		graphics_.waitIdle();
+		Graphics::DEFAULT->waitIdle();
 		cleanupDepthResources_();
 		cleanupResultImages_();
 		createDepthResources_();
@@ -725,23 +720,23 @@ namespace vulkan {
 
 	void MainRenderPipeline::cleanupResultImages_() {
 		for (auto imageView : resultImageViews_) {
-			vkDestroyImageView(graphics_.device(), imageView, nullptr);
+			vkDestroyImageView(Graphics::DEFAULT->device(), imageView, nullptr);
 		}
 		for (auto image : resultImages_) {
-			vkDestroyImage(graphics_.device(), image, nullptr);
+			vkDestroyImage(Graphics::DEFAULT->device(), image, nullptr);
 		}
 		for (auto memory : resultImageMemory_) {
-			vkFreeMemory(graphics_.device(), memory, nullptr);
+			vkFreeMemory(Graphics::DEFAULT->device(), memory, nullptr);
 		}
 		for (auto framebuffer : resultImageFramebuffer_) {
-			vkDestroyFramebuffer(graphics_.device(), framebuffer, nullptr);
+			vkDestroyFramebuffer(Graphics::DEFAULT->device(), framebuffer, nullptr);
 		}
 	}
 
 	void MainRenderPipeline::cleanupDepthResources_() {
-		vkDestroyImage(graphics_.device(), depthImage_, nullptr);
-		vkFreeMemory(graphics_.device(), depthImageMemory_, nullptr);
-		vkDestroyImageView(graphics_.device(), depthImageView_, nullptr);
+		vkDestroyImage(Graphics::DEFAULT->device(), depthImage_, nullptr);
+		vkFreeMemory(Graphics::DEFAULT->device(), depthImageMemory_, nullptr);
+		vkDestroyImageView(Graphics::DEFAULT->device(), depthImageView_, nullptr);
 	}
 
 	void MainRenderPipeline::recordCommandBuffer_(VkCommandBuffer commandBuffer) {
@@ -822,7 +817,7 @@ namespace vulkan {
 	}
 
 	VkFormat MainRenderPipeline::findDepthFormat_() {
-		return graphics_.findSupportedFormat(
+		return Graphics::DEFAULT->findSupportedFormat(
 				{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}, 
 				VK_IMAGE_TILING_OPTIMAL, 
 				VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT);
