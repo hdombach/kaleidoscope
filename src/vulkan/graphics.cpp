@@ -2,6 +2,7 @@
 #include "defs.h"
 #include "error.h"
 #include "file.h"
+#include "format.h"
 #include "log.h"
 #include "uniformBufferObject.h"
 #include "vertex.h"

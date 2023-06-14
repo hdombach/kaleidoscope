@@ -1,5 +1,6 @@
 #pragma once
 
+#include "resourceManager.h"
 #include "uiRenderPipeline.h"
 #include "window.h"
 #define GLFW_INCLUDE_VULKAN
@@ -17,4 +18,5 @@ class App {
 	private:
 		std::unique_ptr<vulkan::UIRenderPipeline> uiRenderPipeline_;
 		std::unique_ptr<ui::Window> window_;
+		std::unique_ptr<types::ResourceManager> resourceManager_;
 };

@@ -1,5 +1,8 @@
 #include "app.h"
 #include "graphics.h"
+#include "log.h"
+#include "resourceManager.h"
+#include "staticTexture.h"
 #include "uiRenderPipeline.h"
 #include "window.h"
 #include <memory>
@@ -9,11 +12,18 @@ App::App(std::string const &name) {
 	vulkan::Graphics::initDefault("Kaleidoscope");
 	uiRenderPipeline_ = std::make_unique<vulkan::UIRenderPipeline>();
 	window_ = std::make_unique<ui::Window>();
+	resourceManager_ = std::make_unique<types::ResourceManager>();
+	if (auto vikingRoom = vulkan::StaticTexture::fromFile("assets/viking_room.png")) {
+		resourceManager_->addTexture("viking_room", vikingRoom.value());
+	} else {
+		util::log_error("Could not load example texture viking_room.png");
+	}
 }
 
 App::~App() {
 	uiRenderPipeline_.reset();
 	window_.reset();
+	resourceManager_.reset();
 	vulkan::Graphics::deleteDefault();
 	glfwTerminate();
 }

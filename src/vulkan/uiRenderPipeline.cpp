@@ -138,7 +138,7 @@ namespace vulkan {
 		init_info.Queue = Graphics::DEFAULT->graphicsQueue();
 		init_info.DescriptorPool = descriptorPool_;
 		init_info.Subpass = 0;
-		util::log_event(util::stringConcat("Min image count ", Graphics::MIN_IMAGE_COUNT));
+		util::log_event(util::f("Min image count ", Graphics::MIN_IMAGE_COUNT));
 		init_info.MinImageCount = Graphics::MIN_IMAGE_COUNT; //idk if these should be 3 or 2
 		init_info.ImageCount = Graphics::MIN_IMAGE_COUNT;
 		init_info.ImageCount = windowData_.ImageCount;
