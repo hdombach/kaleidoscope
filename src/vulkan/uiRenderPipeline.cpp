@@ -84,10 +84,6 @@ namespace vulkan {
 
 	}
 
-	VkExtent2D UIRenderPipeline::viewportSize() const {
-		return VkExtent2D{100, 100};
-	}
-
 	void UIRenderPipeline::createDescriptorPool_() {
 		auto poolSizes = std::array<VkDescriptorPoolSize, 11>{{
 			{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
@@ -124,7 +120,7 @@ namespace vulkan {
 		io_ = &ImGui::GetIO();
 		io_->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 		io_->ConfigFlags |= ImGuiConfigFlags_DockingEnable; //Allows imgui windows to be combined
-		//io_->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // allows imgui windows to be dragged outisde of main window
+		io_->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // allows imgui windows to be dragged outisde of main window
 
 		ImGui::StyleColorsDark();
 

@@ -46,6 +46,7 @@ namespace vulkan {
 	MainRenderPipeline::~MainRenderPipeline() {
 		util::log_memory("Deconstructing main render pipeline");
 
+		cleanupDepthResources_();
 		cleanupResultImages_();
 		
 		vkDestroyPipelineLayout(graphics_.device(), pipelineLayout_, nullptr);
@@ -66,9 +67,6 @@ namespace vulkan {
 		for (auto inFlightFence : inFlightFences_) {
 			vkDestroyFence(graphics_.device(), inFlightFence, nullptr);
 		}
-		for (auto imageAvailableSemaphore : imageAvailableSemaphores_) {
-			vkDestroySemaphore(graphics_.device(), imageAvailableSemaphore, nullptr);
-		}
 		for (auto renderFinishedSemaphore : renderFinishedSemaphores_) {
 			vkDestroySemaphore(graphics_.device(), renderFinishedSemaphore, nullptr);
 		}
@@ -77,22 +75,17 @@ namespace vulkan {
 		vkFreeMemory(graphics_.device(), textureImageMemory_, nullptr);
 		vkDestroyImageView(graphics_.device(), textureImageView_, nullptr);
 
-		vkDestroyImage(graphics_.device(), depthImage_, nullptr);
-		vkFreeMemory(graphics_.device(), depthImageMemory_, nullptr);
-		vkDestroyImageView(graphics_.device(), depthImageView_, nullptr);
-
-
 		vkDestroyRenderPass(graphics_.device(), renderPass_, nullptr);
 	}
 
 	void MainRenderPipeline::submit() {
-			if (framebufferResized_ ) {
+		vkWaitForFences(graphics_.device(), 1, &inFlightFences_[frameIndex_], VK_TRUE, UINT64_MAX);
+		if (framebufferResized_ ) {
 			framebufferResized_ = false;
 			recreateResultImages_();
 		}
 		auto submitInfo = VkSubmitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		vkWaitForFences(graphics_.device(), 1, &inFlightFences_[frameIndex_], VK_TRUE, UINT64_MAX);
 
 		updateUniformBuffer_(frameIndex_);
 
@@ -103,8 +96,6 @@ namespace vulkan {
 		recordCommandBuffer_(commandBuffers_[frameIndex_]);
 
 		auto waitStages = std::array<VkPipelineStageFlags, 2>{VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-		//submitInfo.waitSemaphoreCount = 1;
-		//submitInfo.pWaitSemaphores = &imageAvailableSemaphores_[frameIndex_];
 		submitInfo.pWaitDstStageMask = waitStages.data();
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &commandBuffers_[frameIndex_];
@@ -182,7 +173,7 @@ namespace vulkan {
 		this->size_ = VkExtent2D{static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y)};
 	}
 	bool MainRenderPipeline::isResizable() const {
-		return false;
+		return true;
 	}
 
 	VkExtent2D MainRenderPipeline::getSize() const {
@@ -194,7 +185,6 @@ namespace vulkan {
 	}
 
 	void MainRenderPipeline::createSyncObjects_() {
-		imageAvailableSemaphores_.resize(MAX_FRAMES_IN_FLIGHT);
 		renderFinishedSemaphores_.resize(MAX_FRAMES_IN_FLIGHT);
 		inFlightFences_.resize(MAX_FRAMES_IN_FLIGHT);
 
@@ -206,7 +196,6 @@ namespace vulkan {
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			require(vkCreateSemaphore(graphics_.device(), &semaphoreInfo, nullptr, &imageAvailableSemaphores_[i]));
 			require(vkCreateSemaphore(graphics_.device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores_[i]));
 			require(vkCreateFence(graphics_.device(), &fenceInfo, nullptr, &inFlightFences_[i]));
 		}
@@ -716,6 +705,9 @@ namespace vulkan {
 						nullptr,
 						&resultImageFramebuffer_[i]));
 
+			if (resultDescriptorSets_[i]) {
+				ImGui_ImplVulkan_RemoveTexture(resultDescriptorSets_[i]);
+			}
 			resultDescriptorSets_[i] = ImGui_ImplVulkan_AddTexture(
 					graphics_.mainTextureSampler(),
 					resultImageViews_[i],
@@ -724,7 +716,10 @@ namespace vulkan {
 	}
 
 	void MainRenderPipeline::recreateResultImages_() {
+		graphics_.waitIdle();
+		cleanupDepthResources_();
 		cleanupResultImages_();
+		createDepthResources_();
 		createResultImages_();
 	}
 
@@ -741,6 +736,12 @@ namespace vulkan {
 		for (auto framebuffer : resultImageFramebuffer_) {
 			vkDestroyFramebuffer(graphics_.device(), framebuffer, nullptr);
 		}
+	}
+
+	void MainRenderPipeline::cleanupDepthResources_() {
+		vkDestroyImage(graphics_.device(), depthImage_, nullptr);
+		vkFreeMemory(graphics_.device(), depthImageMemory_, nullptr);
+		vkDestroyImageView(graphics_.device(), depthImageView_, nullptr);
 	}
 
 	void MainRenderPipeline::recordCommandBuffer_(VkCommandBuffer commandBuffer) {

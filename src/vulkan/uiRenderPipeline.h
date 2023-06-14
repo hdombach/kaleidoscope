@@ -15,7 +15,6 @@ namespace vulkan {
 			~UIRenderPipeline();
 
 			void submit(std::function<void()> uiCallback);
-			VkExtent2D viewportSize() const;
 
 		private:
 			void createDescriptorPool_();

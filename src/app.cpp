@@ -25,8 +25,6 @@ void App::mainLoop() {
 		uiRenderPipeline_->submit([&] {
 			window_->show();	
 		});
-
-		graphics_->drawFrame();
 	}
 
 	graphics_->waitIdle();

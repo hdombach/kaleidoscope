@@ -37,6 +37,7 @@ namespace vulkan {
 			void createResultImages_();
 			void recreateResultImages_();
 			void cleanupResultImages_();
+			void cleanupDepthResources_();
 
 			void recordCommandBuffer_(VkCommandBuffer commandBuffer);
 			void updateUniformBuffer_(uint32_t currentImage);
@@ -59,7 +60,6 @@ namespace vulkan {
 			std::vector<VkDeviceMemory> uniformBuffersMemory_;
 			std::vector<void*> uniformBuffersMapped_;
 			std::vector<VkFence> inFlightFences_;
-			std::vector<VkSemaphore> imageAvailableSemaphores_;
 			std::vector<VkSemaphore> renderFinishedSemaphores_;
 			std::vector<VkCommandBuffer> commandBuffers_;
 

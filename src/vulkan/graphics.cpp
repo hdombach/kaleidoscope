@@ -3,8 +3,6 @@
 #include "error.h"
 #include "file.h"
 #include "log.h"
-#include "mainRenderPipeline.h"
-#include "uiRenderPipeline.h"
 #include "uniformBufferObject.h"
 #include "vertex.h"
 #include "vulkan/vulkan_core.h"
@@ -59,8 +57,6 @@ namespace vulkan {
 		computePipelineLayout_ = old.computePipelineLayout_;
 		computePipeline_ = old.computePipeline_;
 		commandPool_= old.commandPool_;
-		vertices_ = std::move(old.vertices_);
-		indices_ = std::move(old.indices_);
 		mipLevels_ = old.mipLevels_;
 		textureSampler_ = old.textureSampler_;
 		computeResultMemory_ = old.computeResultMemory_;
@@ -69,8 +65,6 @@ namespace vulkan {
 		computeCommandBuffers_ = std::move(old.computeCommandBuffers_);
 		computeFinishedSemaphores_ = std::move(old.computeFinishedSemaphores_);
 		computeInFlightFences_ = std::move(old.computeInFlightFences_);
-		mainRenderPipeline_ = std::move(old.mainRenderPipeline_);
-		imguiPool_ = old.imguiPool_;
 		framebufferResized_ = old.framebufferResized_;
 		currentFrame_ = old.currentFrame_;
 		swapchainSupportDetails_ = old.swapchainSupportDetails_;
@@ -96,8 +90,6 @@ namespace vulkan {
 		computePipelineLayout_ = old.computePipelineLayout_;
 		computePipeline_ = old.computePipeline_;
 		commandPool_= old.commandPool_;
-		vertices_ = std::move(old.vertices_);
-		indices_ = std::move(old.indices_);
 		mipLevels_ = old.mipLevels_;
 		textureSampler_ = old.textureSampler_;
 		computeResultMemory_ = old.computeResultMemory_;
@@ -106,8 +98,6 @@ namespace vulkan {
 		computeCommandBuffers_ = std::move(old.computeCommandBuffers_);
 		computeFinishedSemaphores_ = std::move(old.computeFinishedSemaphores_);
 		computeInFlightFences_ = std::move(old.computeInFlightFences_);
-		mainRenderPipeline_ = std::move(old.mainRenderPipeline_);
-		imguiPool_ = old.imguiPool_;
 		framebufferResized_ = old.framebufferResized_;
 		currentFrame_ = old.currentFrame_;
 		swapchainSupportDetails_ = old.swapchainSupportDetails_;
@@ -118,40 +108,8 @@ namespace vulkan {
 	}
 
 	Graphics::~Graphics() {
-		mainRenderPipeline_.reset();
 		cleanup_();
 	}
-
-	void Graphics::drawFrame() {
-		/*
-		VkSubmitInfo submitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-		//Compute submission
-		vkWaitForFences(device_, 1, &computeInFlightFences_[currentFrame_], VK_TRUE, UINT64_MAX);
-
-		//update uniforms here maybe
-
-		vkResetFences(device_, 1, &computeInFlightFences_[currentFrame_]);
-
-		vkResetCommandBuffer(computeCommandBuffers_[currentFrame_], 0);
-		recordComputeCommandBuffer_(computeCommandBuffers_[currentFrame_]);
-
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &computeCommandBuffers_[currentFrame_];
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &computeFinishedSemaphores_[currentFrame_];
-
-		require(vkQueueSubmit(computeQueue_, 1, &submitInfo, computeInFlightFences_[currentFrame_]));
-		*/
-		//Main render pass submission
-		//mainRenderPipeline().submit(currentFrame_, computeFinishedSemaphores_[currentFrame_]);
-		//mainRenderPipeline().submit(currentFrame_);
-		//uiRenderPipeline_->submit();
-
-		currentFrame_ = (currentFrame_ + 1) % MAX_FRAMES_IN_FLIGHT;
-	}
-
 
 	void Graphics::waitIdle() const {
 		vkDeviceWaitIdle(device_);
@@ -189,9 +147,6 @@ namespace vulkan {
 	}
 	VkImageView Graphics::computeImageView() const {
 		return computeResultImageView_;
-	}
-	MainRenderPipeline &Graphics::mainRenderPipeline() const {
-		return *mainRenderPipeline_;
 	}
 	Graphics::SwapchainSupportDetails const &Graphics::swapchainSupportDetails() const {
 		return swapchainSupportDetails_;
@@ -303,15 +258,10 @@ namespace vulkan {
 		createComputePipeline_();
 		createTextureSampler_();
 		createComputeResultTexture_();
-		loadModel_();
 		createDescriptorPool_();
 		createComputeDescriptorSets_();
 		createComputeCommandBuffers_();
 		createSyncObjects_();
-		//initImgui_();
-
-		//mainRenderPipeline_ = std::make_unique<MainRenderPipeline>(*this, uiRenderPipeline_->viewportSize());
-		//mainRenderPipeline().loadVertices(vertices_, indices_);
 	}
 
 	void Graphics::createInstance_() {
@@ -388,9 +338,6 @@ namespace vulkan {
 		vkDestroyImage(device_, computeResultImage_, nullptr);
 		vkFreeMemory(device_, computeResultMemory_, nullptr);
 
-		//vkDestroyDescriptorPool(device_, imguiPool_, nullptr); //kep this
-		//ImGui_ImplVulkan_Shutdown();
-
 		vkDestroyDescriptorSetLayout(device_, computeDescriptorSetLayout_, nullptr);
 		vkFreeDescriptorSets(device_, descriptorPool_, computeDescriptorSets_.size(), computeDescriptorSets_.data());
 
@@ -412,7 +359,6 @@ namespace vulkan {
 			destroyDebugUtilsMessengerEXT_(instance_, debugMessenger_, nullptr);
 		}
 
-		//vkDestroySurfaceKHR(instance_, surface_, nullptr);
 		vkDestroyInstance(instance_, nullptr);
 
 		glfwDestroyWindow(window_);
@@ -586,44 +532,6 @@ namespace vulkan {
 			throw std::runtime_error("failed to create command pool!");
 		}
 	}
-	void Graphics::loadModel_() {
-		tinyobj::attrib_t attrib;
-		std::vector<tinyobj::shape_t> shapes;
-		std::vector<tinyobj::material_t> materials;
-		std::string warn, err;
-
-		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, MODEL_PATH.c_str())) {
-			util::log_error(warn + err);
-		}
-
-		std::unordered_map<Vertex, uint32_t> uniqueVertices{};
-
-		for (const auto& shape : shapes) {
-			for (const auto& index : shape.mesh.indices) {
-				Vertex vertex{};
-
-				vertex.pos = {
-					attrib.vertices[3 * index.vertex_index + 0],
-					attrib.vertices[3 * index.vertex_index + 1],
-					attrib.vertices[3 * index.vertex_index + 2],
-				};
-
-				vertex.texCoord = {
-					attrib.texcoords[2 * index.texcoord_index + 0],
-					1.0 - attrib.texcoords[2 * index.texcoord_index + 1],
-				};
-
-				vertex.color = {1.0f, 1.0f, 1.0f};
-
-				if (uniqueVertices.count(vertex) == 0) {
-					uniqueVertices[vertex] = static_cast<uint32_t>(vertices_.size());
-					vertices_.push_back(vertex);
-				}
-
-				indices_.push_back(uniqueVertices[vertex]);
-			}
-		}
-	}
 	void Graphics::createDescriptorPool_() {
 		std::array<VkDescriptorPoolSize, 3> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -791,16 +699,6 @@ namespace vulkan {
 	}
 
 	
-	void Graphics::drawUi_() {
-		glfwPollEvents();
-
-		ImGui_ImplVulkan_NewFrame();
-		ImGui_ImplGlfw_NewFrame();
-		ImGui::NewFrame();
-
-		ImGui::ShowDemoWindow();
-	}
-
 	QueueFamilyIndices Graphics::findQueueFamilies_(VkPhysicalDevice device) const {
 		QueueFamilyIndices indices;
 
@@ -1309,53 +1207,6 @@ namespace vulkan {
 		endSingleTimeCommands_(commandBuffer);
 	}
 
-	void Graphics::initImgui_() {
-		auto poolSizes = std::array<VkDescriptorPoolSize, 11>{{
-			{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
-			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
-			{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
-			{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
-			{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
-			{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
-		}};
-
-		auto poolInfo = VkDescriptorPoolCreateInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-		poolInfo.maxSets = 1000;
-		poolInfo.poolSizeCount = poolSizes.size();
-		poolInfo.pPoolSizes = poolSizes.data();
-
-		require(vkCreateDescriptorPool(device_, &poolInfo, nullptr, &imguiPool_));
-
-		ImGui::CreateContext();
-
-		ImGui_ImplGlfw_InitForVulkan(window_, true);
-
-		auto initInfo = ImGui_ImplVulkan_InitInfo{};
-		initInfo.Instance = instance_;
-		initInfo.PhysicalDevice = physicalDevice_;
-		initInfo.Device = device_;
-		initInfo.Queue = graphicsQueue_;
-		initInfo.DescriptorPool = imguiPool_;
-		initInfo.MinImageCount = 3;
-		initInfo.ImageCount = 3;
-		initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-
-		//ImGui_ImplVulkan_Init(&initInfo, renderPass_);
-
-		auto command = beginSingleTimeCommands_();
-		ImGui_ImplVulkan_CreateFontsTexture(command);
-		endSingleTimeCommands_(command);
-
-		ImGui_ImplVulkan_DestroyFontUploadObjects();
-	}
-
 	VKAPI_ATTR VkBool32 VKAPI_CALL Graphics::debugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -1384,7 +1235,6 @@ namespace vulkan {
 
 	void Graphics::framebufferResizeCallback_(GLFWwindow* window, int width, int height) {
 		auto graphics = reinterpret_cast<Graphics*>(glfwGetWindowUserPointer(window));
-		//graphics->mainRenderPipeline().queueResize();
 	}
 
 	VkResult Graphics::createDebugUtilsMessengerEXT(

@@ -8,8 +8,6 @@
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 #include <optional>
-#include "mainRenderPipeline.h"
-#include "uiRenderPipeline.h"
 
 namespace vulkan {
 	struct QueueFamilyIndices {
@@ -35,7 +33,6 @@ namespace vulkan {
 
 			~Graphics();
 
-			void drawFrame();
 			void waitIdle() const;
 			GLFWwindow * window();
 
@@ -49,8 +46,6 @@ namespace vulkan {
 			VkQueue graphicsQueue() const;
 			VkQueue presentQueue() const;
 			VkImageView computeImageView() const;
-			MainRenderPipeline &mainRenderPipeline() const;
-			UIRenderPipeline &uiRenderPipeline() const;
 			SwapchainSupportDetails const &swapchainSupportDetails() const;
 
 			VkFormat findSupportedFormat(
@@ -123,7 +118,6 @@ namespace vulkan {
 			void createComputeDescriptorSetLayout_();
 			void createComputePipeline_();
 			void createCommandPool_();
-			void loadModel_();
 			void createDescriptorPool_();
 			void createComputeDescriptorSets_();
 			void createComputeCommandBuffers_();
@@ -133,9 +127,6 @@ namespace vulkan {
 			void createTextureSampler_();
 			void createComputeResultTexture_();
 
-			void initImgui_();
-
-			void drawUi_();
 			bool checkValidationLayerSupport_();
 			void cleanup_();
 
@@ -228,8 +219,6 @@ namespace vulkan {
 			VkPipelineLayout computePipelineLayout_;
 			VkPipeline computePipeline_;
 			VkCommandPool commandPool_;
-			std::vector<Vertex> vertices_;
-			std::vector<uint32_t> indices_;
 			uint32_t mipLevels_;
 			VkSampler textureSampler_;
 			VkDeviceMemory computeResultMemory_;
@@ -240,11 +229,7 @@ namespace vulkan {
 			std::vector<VkFence> computeInFlightFences_;
 			SwapchainSupportDetails swapchainSupportDetails_;
 
-			std::unique_ptr<MainRenderPipeline> mainRenderPipeline_;
-
 			//imgui stuff
-			VkDescriptorPool imguiPool_;
-
 			bool framebufferResized_ = false;
 			uint32_t currentFrame_ = 0;
 	};
