@@ -8,6 +8,7 @@
 namespace vulkan {
 	/*
 	 * A texture interface
+	 * Has support for both static and dynamic textures (viewports)
 	 */
 	class Texture {
 		public:
