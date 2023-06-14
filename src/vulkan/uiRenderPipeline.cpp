@@ -129,10 +129,9 @@ namespace vulkan {
 		ImGui::StyleColorsDark();
 
 		auto& style = ImGui::GetStyle();
-		if (io_->ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-			style.WindowRounding = 0.0f;
-			style.Colors[ImGuiCol_WindowBg].w = 1.0f;
-		}
+		style.WindowRounding = 10.0f;
+		//style.Colors[ImGuiCol_WindowBg] = ImVec4{0.2f, 0.2f, 0.2f, 1.0f};
+
 
 		ImGui_ImplGlfw_InitForVulkan(graphics_.window(), true);
 		auto init_info = ImGui_ImplVulkan_InitInfo{};
@@ -171,12 +170,14 @@ namespace vulkan {
 		}
 
     const VkFormat requestSurfaceImageFormat[] = {
+			VK_FORMAT_R8G8B8A8_SRGB,
 			VK_FORMAT_B8G8R8A8_UNORM,
 			VK_FORMAT_R8G8B8A8_UNORM,
 			VK_FORMAT_B8G8R8_UNORM,
-			VK_FORMAT_R8G8B8_UNORM
+			VK_FORMAT_R8G8B8_UNORM,
 		};
-    const VkColorSpaceKHR requestSurfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+   	const VkColorSpaceKHR requestSurfaceColorSpace = VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT;
+
 
 		windowData_.SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(
 				graphics_.physicalDevice(),

@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <glm/fwd.hpp>
 #include <stdexcept>
 #include <vulkan/vulkan.h>
 #include <array>
@@ -176,9 +177,12 @@ namespace vulkan {
 		indexCount_ = indices.size();
 	}
 
-	void MainRenderPipeline::resize(VkExtent2D size) {
+	void MainRenderPipeline::resize(glm::ivec2 size) {
 		framebufferResized_ = true;
-		this->size_ = size;
+		this->size_ = VkExtent2D{static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y)};
+	}
+	bool MainRenderPipeline::isResizable() const {
+		return false;
 	}
 
 	VkExtent2D MainRenderPipeline::getSize() const {

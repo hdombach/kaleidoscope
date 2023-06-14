@@ -16,7 +16,7 @@
 namespace ui {
 	Window::Window(vulkan::Graphics const &graphics):
 		graphics_(graphics),
-		mainRenderPipeline_(std::make_unique<vulkan::MainRenderPipeline>(graphics_, VkExtent2D{100, 100})),
+		mainRenderPipeline_(std::make_unique<vulkan::MainRenderPipeline>(graphics_, VkExtent2D{1000, 1000})),
 		viewport_(*mainRenderPipeline_)
 	{
 		tempLoadModel_();
@@ -28,8 +28,8 @@ namespace ui {
 	void Window::show() {
 		mainRenderPipeline_->submit();
 		auto imguiViewport = ImGui::GetMainViewport();
-		ImGui::SetNextWindowPos(imguiViewport->WorkPos);
-		ImGui::SetNextWindowSize(imguiViewport->WorkSize);
+		//ImGui::SetNextWindowPos(imguiViewport->WorkPos);
+		//ImGui::SetNextWindowSize(imguiViewport->WorkSize);
 
 		ImGui::Begin("Hello World Example");
 		ImGui::Text("Hello World");

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 #include "vertex.h"
 #include "vulkan/vulkan_core.h"
@@ -15,7 +16,8 @@ namespace vulkan {
 			~MainRenderPipeline();
 			void submit();
 			void loadVertices(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
-			void resize(VkExtent2D size);
+			void resize(glm::ivec2 size);
+			bool isResizable() const;
 
 			VkExtent2D getSize() const;
 			VkDescriptorSet getDescriptorSet() const;

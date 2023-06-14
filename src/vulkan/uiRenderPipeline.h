@@ -30,6 +30,6 @@ namespace vulkan {
 			ImGui_ImplVulkanH_Window windowData_;
 			ImGuiIO *io_;
 			bool swapchainRebuild_;
-			constexpr static const ImVec4 clearColor_ = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+			constexpr static const ImVec4 clearColor_ = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
 	};
 }
