@@ -15,7 +15,6 @@ class App {
 		void mainLoop();
 
 	private:
-		std::unique_ptr<vulkan::Graphics> graphics_;
 		std::unique_ptr<vulkan::UIRenderPipeline> uiRenderPipeline_;
 		std::unique_ptr<ui::Window> window_;
 };

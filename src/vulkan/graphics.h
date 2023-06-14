@@ -23,13 +23,9 @@ namespace vulkan {
 		public:
 			struct SwapchainSupportDetails;
 
-			Graphics() = default;
-			Graphics(const char *name);
-
-			Graphics(const Graphics& old) = delete;
-			Graphics(Graphics&& old);
-			Graphics& operator=(const Graphics& old) = delete;
-			Graphics& operator=(Graphics&& old);
+			static Graphics *DEFAULT;
+			static void initDefault(const char *name);
+			static void deleteDefault();
 
 			~Graphics();
 
@@ -107,6 +103,7 @@ namespace vulkan {
 			static const int MIN_IMAGE_COUNT = 2;
 
 		private:
+			Graphics(const char *name);
 			void initWindow_();
 			void initVulkan_();
 			void createInstance_();

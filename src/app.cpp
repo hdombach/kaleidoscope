@@ -6,20 +6,20 @@
 #include <GLFW/glfw3.h>
 
 App::App(std::string const &name) {
-	graphics_ = std::make_unique<vulkan::Graphics>("Kaleidoscope");
-	uiRenderPipeline_ = std::make_unique<vulkan::UIRenderPipeline>(*graphics_);
-	window_ = std::make_unique<ui::Window>(*graphics_);
+	vulkan::Graphics::initDefault("Kaleidoscope");
+	uiRenderPipeline_ = std::make_unique<vulkan::UIRenderPipeline>(*vulkan::Graphics::DEFAULT);
+	window_ = std::make_unique<ui::Window>(*vulkan::Graphics::DEFAULT);
 }
 
 App::~App() {
 	uiRenderPipeline_.reset();
 	window_.reset();
-	graphics_.reset();
+	vulkan::Graphics::deleteDefault();
 	glfwTerminate();
 }
 
 void App::mainLoop() {
-	while (!glfwWindowShouldClose(graphics_->window())) {
+	while (!glfwWindowShouldClose(vulkan::Graphics::DEFAULT->window())) {
 		glfwPollEvents();
 
 		uiRenderPipeline_->submit([&] {
@@ -27,5 +27,5 @@ void App::mainLoop() {
 		});
 	}
 
-	graphics_->waitIdle();
+	vulkan::Graphics::DEFAULT->waitIdle();
 }

@@ -35,76 +35,15 @@
 #include <tiny_obj_loader.h>
 
 namespace vulkan {
-	Graphics::Graphics(const char *name) {
-		initWindow_();
-		initVulkan_();
+
+	Graphics *Graphics::DEFAULT = nullptr;
+
+	void Graphics::initDefault(const char *name) {
+		DEFAULT = new Graphics(name);
 	}
 
-	Graphics::Graphics(Graphics&& old) {
-		name_ = old.name_;
-		window_ = old.window_;
-		instance_ = old.instance_;
-		debugMessenger_ = old.debugMessenger_;
-		physicalDevice_ = old.physicalDevice_;
-		device_ = old.device_;
-		graphicsQueue_ = old.graphicsQueue_;
-		presentQueue_ = old.presentQueue_;
-		computeQueue_ = old.computeQueue_;
-		surface_ = old.surface_;
-		computeDescriptorSetLayout_ = old.computeDescriptorSetLayout_;
-		descriptorPool_ = old.descriptorPool_;
-		computeDescriptorSets_ = std::move(old.computeDescriptorSets_);
-		computePipelineLayout_ = old.computePipelineLayout_;
-		computePipeline_ = old.computePipeline_;
-		commandPool_= old.commandPool_;
-		mipLevels_ = old.mipLevels_;
-		textureSampler_ = old.textureSampler_;
-		computeResultMemory_ = old.computeResultMemory_;
-		computeResultImage_ = old.computeResultImage_;
-		computeResultImageView_ = old.computeResultImageView_;
-		computeCommandBuffers_ = std::move(old.computeCommandBuffers_);
-		computeFinishedSemaphores_ = std::move(old.computeFinishedSemaphores_);
-		computeInFlightFences_ = std::move(old.computeInFlightFences_);
-		framebufferResized_ = old.framebufferResized_;
-		currentFrame_ = old.currentFrame_;
-		swapchainSupportDetails_ = old.swapchainSupportDetails_;
-
-		glfwSetWindowUserPointer(window_, this);
-
-	}
-
-	Graphics& Graphics::operator=(Graphics &&old) {
-		name_ = old.name_;
-		window_ = old.window_;
-		instance_ = old.instance_;
-		debugMessenger_ = old.debugMessenger_;
-		physicalDevice_ = old.physicalDevice_;
-		device_ = old.device_;
-		graphicsQueue_ = old.graphicsQueue_;
-		presentQueue_ = old.presentQueue_;
-		computeQueue_ = old.computeQueue_;
-		surface_ = old.surface_;
-		computeDescriptorSetLayout_ = old.computeDescriptorSetLayout_;
-		descriptorPool_ = old.descriptorPool_;
-		computeDescriptorSets_ = std::move(old.computeDescriptorSets_);
-		computePipelineLayout_ = old.computePipelineLayout_;
-		computePipeline_ = old.computePipeline_;
-		commandPool_= old.commandPool_;
-		mipLevels_ = old.mipLevels_;
-		textureSampler_ = old.textureSampler_;
-		computeResultMemory_ = old.computeResultMemory_;
-		computeResultImage_ = old.computeResultImage_;
-		computeResultImageView_ = old.computeResultImageView_;
-		computeCommandBuffers_ = std::move(old.computeCommandBuffers_);
-		computeFinishedSemaphores_ = std::move(old.computeFinishedSemaphores_);
-		computeInFlightFences_ = std::move(old.computeInFlightFences_);
-		framebufferResized_ = old.framebufferResized_;
-		currentFrame_ = old.currentFrame_;
-		swapchainSupportDetails_ = old.swapchainSupportDetails_;
-
-		glfwSetWindowUserPointer(window_, this);
-
-		return *this;
+	void Graphics::deleteDefault() {
+		delete DEFAULT;
 	}
 
 	Graphics::~Graphics() {
@@ -234,6 +173,11 @@ namespace vulkan {
 		auto commandBuffer = beginSingleTimeCommands_();
 		command(commandBuffer);
 		endSingleTimeCommands_(commandBuffer);
+	
+	}
+	Graphics::Graphics(const char *name) {
+		initWindow_();
+		initVulkan_();
 	}
 
 	void Graphics::initWindow_() {
