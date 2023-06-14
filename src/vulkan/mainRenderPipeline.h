@@ -4,20 +4,21 @@
 #include "vertex.h"
 #include "vulkan/vulkan_core.h"
 #include <vector>
+#include "texture.h"
 
 namespace vulkan {
 	class Graphics;
 
-	class MainRenderPipeline {
+	class MainRenderPipeline: public Texture  {
 		public:
 			MainRenderPipeline(Graphics const &graphics, VkExtent2D size);
 			~MainRenderPipeline();
-			void submit(uint32_t frameIndex);
+			void submit();
 			void loadVertices(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
 			void resize(VkExtent2D size);
 
-			VkImageView getImageView(int frameIndex) const;
 			VkExtent2D getSize() const;
+			VkDescriptorSet getDescriptorSet() const;
 
 		private:
 			void createSyncObjects_();
@@ -35,7 +36,7 @@ namespace vulkan {
 			void recreateResultImages_();
 			void cleanupResultImages_();
 
-			void recordCommandBuffer_(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+			void recordCommandBuffer_(VkCommandBuffer commandBuffer);
 			void updateUniformBuffer_(uint32_t currentImage);
 
 			VkFormat findDepthFormat_();
@@ -73,6 +74,7 @@ namespace vulkan {
 			std::vector<VkDeviceMemory> resultImageMemory_;
 			std::vector<VkFramebuffer> resultImageFramebuffer_;
 			std::vector<VkDescriptorSet> resultDescriptorSets_;
+			int frameIndex_;
 
 			uint32_t mipLevels_;
 			bool framebufferResized_;

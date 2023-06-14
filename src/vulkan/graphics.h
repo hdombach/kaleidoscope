@@ -241,7 +241,6 @@ namespace vulkan {
 			SwapchainSupportDetails swapchainSupportDetails_;
 
 			std::unique_ptr<MainRenderPipeline> mainRenderPipeline_;
-			std::unique_ptr<UIRenderPipeline> uiRenderPipeline_;
 
 			//imgui stuff
 			VkDescriptorPool imguiPool_;

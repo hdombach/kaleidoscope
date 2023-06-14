@@ -4,6 +4,7 @@
 #include "file.h"
 #include "format.h"
 #include "graphics.h"
+#include "imgui_impl_vulkan.h"
 #include "log.h"
 #include "../ui/window.h"
 #include "uniformBufferObject.h"
@@ -83,33 +84,35 @@ namespace vulkan {
 		vkDestroyRenderPass(graphics_.device(), renderPass_, nullptr);
 	}
 
-	void MainRenderPipeline::submit(uint32_t imageIndex) {
+	void MainRenderPipeline::submit() {
 			if (framebufferResized_ ) {
 			framebufferResized_ = false;
 			recreateResultImages_();
 		}
 		auto submitInfo = VkSubmitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		vkWaitForFences(graphics_.device(), 1, &inFlightFences_[imageIndex], VK_TRUE, UINT64_MAX);
+		vkWaitForFences(graphics_.device(), 1, &inFlightFences_[frameIndex_], VK_TRUE, UINT64_MAX);
 
-		updateUniformBuffer_(imageIndex);
+		updateUniformBuffer_(frameIndex_);
 
-		vkResetFences(graphics_.device(), 1, &inFlightFences_[imageIndex]);
+		vkResetFences(graphics_.device(), 1, &inFlightFences_[frameIndex_]);
 
-		vkResetCommandBuffer(commandBuffers_[imageIndex], 0);
+		vkResetCommandBuffer(commandBuffers_[frameIndex_], 0);
 
-		recordCommandBuffer_(commandBuffers_[imageIndex], imageIndex);
+		recordCommandBuffer_(commandBuffers_[frameIndex_]);
 
 		auto waitStages = std::array<VkPipelineStageFlags, 2>{VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = &imageAvailableSemaphores_[imageIndex];
+		//submitInfo.waitSemaphoreCount = 1;
+		//submitInfo.pWaitSemaphores = &imageAvailableSemaphores_[frameIndex_];
 		submitInfo.pWaitDstStageMask = waitStages.data();
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &commandBuffers_[imageIndex];
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &renderFinishedSemaphores_[imageIndex];
+		submitInfo.pCommandBuffers = &commandBuffers_[frameIndex_];
+		//submitInfo.signalSemaphoreCount = 1;
+		//submitInfo.pSignalSemaphores = &renderFinishedSemaphores_[frameIndex_];
 
-		require(vkQueueSubmit(graphics_.graphicsQueue(), 1, &submitInfo, inFlightFences_[imageIndex]));
+		require(vkQueueSubmit(graphics_.graphicsQueue(), 1, &submitInfo, inFlightFences_[frameIndex_]));
+
+		frameIndex_ = (frameIndex_ + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
 
 	void MainRenderPipeline::loadVertices(std::vector<Vertex> vertices, std::vector<uint32_t> indices) {
@@ -178,12 +181,12 @@ namespace vulkan {
 		this->size_ = size;
 	}
 
-	VkImageView MainRenderPipeline::getImageView(int frameIndex) const {
-		return resultImageViews_[frameIndex];
-	}
-
 	VkExtent2D MainRenderPipeline::getSize() const {
 		return size_;
+	}
+
+	VkDescriptorSet MainRenderPipeline::getDescriptorSet() const {
+		return resultDescriptorSets_[frameIndex_];
 	}
 
 	void MainRenderPipeline::createSyncObjects_() {
@@ -226,7 +229,7 @@ namespace vulkan {
 		resultAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		resultAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		resultAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		resultAttachment.finalLayout = VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL;
+		resultAttachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
 
 		auto resultAttachmentRef = VkAttachmentReference{};
 		resultAttachmentRef.attachment = 0;
@@ -664,6 +667,7 @@ namespace vulkan {
 		resultImageViews_.resize(Graphics::MIN_IMAGE_COUNT);
 		resultImageMemory_.resize(Graphics::MIN_IMAGE_COUNT);
 		resultImageFramebuffer_.resize(Graphics::MIN_IMAGE_COUNT);
+		resultDescriptorSets_.resize(Graphics::MIN_IMAGE_COUNT);
 
 		for (int i = 0; i < Graphics::MIN_IMAGE_COUNT; i++) {
 			graphics_.createImage(
@@ -707,6 +711,11 @@ namespace vulkan {
 						&framebufferInfo,
 						nullptr,
 						&resultImageFramebuffer_[i]));
+
+			resultDescriptorSets_[i] = ImGui_ImplVulkan_AddTexture(
+					graphics_.mainTextureSampler(),
+					resultImageViews_[i],
+					VK_IMAGE_LAYOUT_GENERAL);
 		}
 	}
 
@@ -730,7 +739,7 @@ namespace vulkan {
 		}
 	}
 
-	void MainRenderPipeline::recordCommandBuffer_(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
+	void MainRenderPipeline::recordCommandBuffer_(VkCommandBuffer commandBuffer) {
 		auto beginInfo = VkCommandBufferBeginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = 0;
@@ -741,7 +750,7 @@ namespace vulkan {
 		auto renderPassInfo = VkRenderPassBeginInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = renderPass_;
-		renderPassInfo.framebuffer = resultImageFramebuffer_[imageIndex];
+		renderPassInfo.framebuffer = resultImageFramebuffer_[frameIndex_];
 		renderPassInfo.renderArea.offset = {0, 0};
 		renderPassInfo.renderArea.extent = size_;
 
@@ -781,7 +790,7 @@ namespace vulkan {
 				pipelineLayout_,
 				0,
 				1,
-				&descriptorSets_[imageIndex],
+				&descriptorSets_[frameIndex_],
 				0,
 				nullptr);
 

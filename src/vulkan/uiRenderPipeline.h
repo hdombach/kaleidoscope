@@ -2,6 +2,7 @@
 
 #include "imgui_impl_vulkan.h"
 #include "vulkan/vulkan_core.h"
+#include <functional>
 #include <imgui.h>
 #include <vulkan/vulkan.h>
 
@@ -13,7 +14,7 @@ namespace vulkan {
 			UIRenderPipeline(Graphics const &graphics);
 			~UIRenderPipeline();
 
-			void submit();
+			void submit(std::function<void()> uiCallback);
 			VkExtent2D viewportSize() const;
 
 		private:

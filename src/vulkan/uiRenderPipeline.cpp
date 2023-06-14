@@ -6,6 +6,7 @@
 #include "log.h"
 #include "vulkan/vulkan_core.h"
 #include <cstdint>
+#include <functional>
 #include <vulkan/vulkan.h>
 #include "graphics.h"
 #include "window.h"
@@ -32,7 +33,7 @@ namespace vulkan {
 		vkDestroyDescriptorPool(graphics_.device(), descriptorPool_, nullptr);
 	}
 
-	void UIRenderPipeline::submit() {
+	void UIRenderPipeline::submit(std::function<void()> uiCallback) {
 		glfwPollEvents();
 		if (swapchainRebuild_) {
 			int width, height;
@@ -58,7 +59,7 @@ namespace vulkan {
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
-		ui::Window::show(graphics_.mainRenderPipeline().getImageView(windowData_.FrameIndex), graphics_);
+		uiCallback();
 
 		ImGui::Render();
 		auto mainDrawData = ImGui::GetDrawData();

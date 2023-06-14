@@ -1,13 +1,32 @@
 #include "window.h"
+#include "defs.h"
 #include "format.h"
+#include "graphics.h"
 #include "imgui.h"
 #include "imgui_impl_vulkan.h"
 #include "log.h"
+#include "mainRenderPipeline.h"
+#include "textureView.h"
 #include "vulkan/vulkan_core.h"
+#include <memory>
+#include <tiny_obj_loader.h>
+#include <unordered_map>
 #include <vector>
 
 namespace ui {
-	void Window::show(VkImageView viewport, vulkan::Graphics const &graphics) {
+	Window::Window(vulkan::Graphics const &graphics):
+		graphics_(graphics),
+		mainRenderPipeline_(std::make_unique<vulkan::MainRenderPipeline>(graphics_, VkExtent2D{100, 100})),
+		viewport_(*mainRenderPipeline_)
+	{
+		tempLoadModel_();
+	}
+	Window::~Window() {
+		mainRenderPipeline_.reset();
+	}
+
+	void Window::show() {
+		mainRenderPipeline_->submit();
 		auto imguiViewport = ImGui::GetMainViewport();
 		ImGui::SetNextWindowPos(imguiViewport->WorkPos);
 		ImGui::SetNextWindowSize(imguiViewport->WorkSize);
@@ -15,15 +34,51 @@ namespace ui {
 		ImGui::Begin("Hello World Example");
 		ImGui::Text("Hello World");
 
-		static auto textures = std::vector<VkDescriptorSet>{vulkan::Graphics::MIN_IMAGE_COUNT};
+		viewport_.show();
 
-		auto texture = ImGui_ImplVulkan_AddTexture(
-				graphics.mainTextureSampler(),
-				viewport,
-				VK_IMAGE_LAYOUT_GENERAL);
-
-		ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-		ImGui::Image(texture, ImVec2{viewportPanelSize.x, viewportPanelSize.y});
 		ImGui::End();
+	}
+
+	void Window::tempLoadModel_() {
+		tinyobj::attrib_t attrib;
+		std::vector<tinyobj::shape_t> shapes;
+		std::vector<tinyobj::material_t> materials;
+		std::string warn, err;
+		std::vector<vulkan::Vertex> vertices;
+		std::vector<uint32_t> indices;
+
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, vulkan::MODEL_PATH.c_str())) {
+			util::log_error(warn + err);
+		}
+
+		std::unordered_map<vulkan::Vertex, uint32_t> uniqueVertices{};
+
+		for (const auto& shape : shapes) {
+			for (const auto& index : shape.mesh.indices) {
+				vulkan::Vertex vertex{};
+
+				vertex.pos = {
+					attrib.vertices[3 * index.vertex_index + 0],
+					attrib.vertices[3 * index.vertex_index + 1],
+					attrib.vertices[3 * index.vertex_index + 2],
+				};
+
+				vertex.texCoord = {
+					attrib.texcoords[2 * index.texcoord_index + 0],
+					1.0 - attrib.texcoords[2 * index.texcoord_index + 1],
+				};
+
+				vertex.color = {1.0f, 1.0f, 1.0f};
+
+				if (uniqueVertices.count(vertex) == 0) {
+					uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+					vertices.push_back(vertex);
+				}
+
+				indices.push_back(uniqueVertices[vertex]);
+			}
+		}
+
+		mainRenderPipeline_->loadVertices(vertices, indices);
 	}
 }

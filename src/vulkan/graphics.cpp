@@ -70,7 +70,6 @@ namespace vulkan {
 		computeFinishedSemaphores_ = std::move(old.computeFinishedSemaphores_);
 		computeInFlightFences_ = std::move(old.computeInFlightFences_);
 		mainRenderPipeline_ = std::move(old.mainRenderPipeline_);
-		uiRenderPipeline_ = std::move(old.uiRenderPipeline_);
 		imguiPool_ = old.imguiPool_;
 		framebufferResized_ = old.framebufferResized_;
 		currentFrame_ = old.currentFrame_;
@@ -108,7 +107,6 @@ namespace vulkan {
 		computeFinishedSemaphores_ = std::move(old.computeFinishedSemaphores_);
 		computeInFlightFences_ = std::move(old.computeInFlightFences_);
 		mainRenderPipeline_ = std::move(old.mainRenderPipeline_);
-		uiRenderPipeline_ = std::move(old.uiRenderPipeline_);
 		imguiPool_ = old.imguiPool_;
 		framebufferResized_ = old.framebufferResized_;
 		currentFrame_ = old.currentFrame_;
@@ -120,7 +118,6 @@ namespace vulkan {
 	}
 
 	Graphics::~Graphics() {
-		uiRenderPipeline_.reset();
 		mainRenderPipeline_.reset();
 		cleanup_();
 	}
@@ -150,7 +147,7 @@ namespace vulkan {
 		//Main render pass submission
 		//mainRenderPipeline().submit(currentFrame_, computeFinishedSemaphores_[currentFrame_]);
 		//mainRenderPipeline().submit(currentFrame_);
-		uiRenderPipeline_->submit();
+		//uiRenderPipeline_->submit();
 
 		currentFrame_ = (currentFrame_ + 1) % MAX_FRAMES_IN_FLIGHT;
 	}
@@ -195,9 +192,6 @@ namespace vulkan {
 	}
 	MainRenderPipeline &Graphics::mainRenderPipeline() const {
 		return *mainRenderPipeline_;
-	}
-	UIRenderPipeline &Graphics::uiRenderPipeline() const {
-		return *uiRenderPipeline_;
 	}
 	Graphics::SwapchainSupportDetails const &Graphics::swapchainSupportDetails() const {
 		return swapchainSupportDetails_;
@@ -316,9 +310,8 @@ namespace vulkan {
 		createSyncObjects_();
 		//initImgui_();
 
-		uiRenderPipeline_ = std::make_unique<UIRenderPipeline>(*this);
-		mainRenderPipeline_ = std::make_unique<MainRenderPipeline>(*this, uiRenderPipeline_->viewportSize());
-		mainRenderPipeline().loadVertices(vertices_, indices_);
+		//mainRenderPipeline_ = std::make_unique<MainRenderPipeline>(*this, uiRenderPipeline_->viewportSize());
+		//mainRenderPipeline().loadVertices(vertices_, indices_);
 	}
 
 	void Graphics::createInstance_() {
