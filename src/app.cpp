@@ -21,9 +21,9 @@ App::App(std::string const &name) {
 }
 
 App::~App() {
-	uiRenderPipeline_.reset();
 	window_.reset();
 	resourceManager_.reset();
+	uiRenderPipeline_.reset();
 	vulkan::Graphics::deleteDefault();
 	glfwTerminate();
 }
