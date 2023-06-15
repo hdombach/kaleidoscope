@@ -121,6 +121,7 @@ namespace vulkan {
 		io_->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 		io_->ConfigFlags |= ImGuiConfigFlags_DockingEnable; //Allows imgui windows to be combined
 		io_->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // allows imgui windows to be dragged outisde of main window
+		io_->Fonts->AddFontFromFileTTF("assets/Helvetica.ttc", 14);
 
 		ImGui::StyleColorsDark();
 
