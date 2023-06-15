@@ -16,7 +16,6 @@ namespace vulkan {
 			MainRenderPipeline(types::ResourceManager &resourceManager, VkExtent2D size);
 			~MainRenderPipeline();
 			void submit();
-			void loadVertices(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
 			void resize(glm::ivec2 size);
 			bool isResizable() const;
 
@@ -50,11 +49,6 @@ namespace vulkan {
 			VkDescriptorSetLayout descriptorSetLayout_;
 			std::vector<VkDescriptorSet> descriptorSets_;
 			VkDescriptorPool descriptorPool_;
-			VkBuffer vertexBuffer_;
-			VkDeviceMemory vertexBufferMemory_;
-			VkBuffer indexBuffer_;
-			VkDeviceMemory indexBufferMemory_;
-			uint32_t indexCount_;
 			std::vector<VkBuffer> uniformBuffers_;
 			std::vector<VkDeviceMemory> uniformBuffersMemory_;
 			std::vector<void*> uniformBuffersMapped_;

@@ -2,6 +2,7 @@
 #include "graphics.h"
 #include "log.h"
 #include "resourceManager.h"
+#include "staticMesh.h"
 #include "staticTexture.h"
 #include "uiRenderPipeline.h"
 #include "window.h"
@@ -16,6 +17,11 @@ App::App(std::string const &name) {
 		resourceManager_->addTexture("viking_room", vikingRoom.value());
 	} else {
 		util::log_error("Could not load example texture viking_room.png");
+	}
+	if (auto vikingRoom = vulkan::StaticMesh::fromFile("assets/viking_room.obj")) {
+		resourceManager_->addMesh("viking_room", vikingRoom.value());
+	} else {
+		util::log_error(util::f(vikingRoom.error()));
 	}
 	window_ = std::make_unique<ui::Window>(*resourceManager_);
 }

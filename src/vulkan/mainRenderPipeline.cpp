@@ -52,10 +52,6 @@ namespace vulkan {
 		vkDestroyDescriptorSetLayout(Graphics::DEFAULT->device(), descriptorSetLayout_, nullptr);
 		vkFreeDescriptorSets(Graphics::DEFAULT->device(), descriptorPool_, descriptorSets_.size(), descriptorSets_.data());
 		vkDestroyDescriptorPool(Graphics::DEFAULT->device(), descriptorPool_, nullptr);
-		vkDestroyBuffer(Graphics::DEFAULT->device(), vertexBuffer_, nullptr);
-		vkFreeMemory(Graphics::DEFAULT->device(), vertexBufferMemory_, nullptr);
-		vkDestroyBuffer(Graphics::DEFAULT->device(), indexBuffer_, nullptr);
-		vkFreeMemory(Graphics::DEFAULT->device(), indexBufferMemory_, nullptr);
 		for (auto uniformBuffer : uniformBuffers_) {
 			vkDestroyBuffer(Graphics::DEFAULT->device(), uniformBuffer, nullptr);
 		}
@@ -99,67 +95,6 @@ namespace vulkan {
 		require(vkQueueSubmit(Graphics::DEFAULT->graphicsQueue(), 1, &submitInfo, inFlightFences_[frameIndex_]));
 
 		frameIndex_ = (frameIndex_ + 1) % MAX_FRAMES_IN_FLIGHT;
-	}
-
-	void MainRenderPipeline::loadVertices(std::vector<Vertex> vertices, std::vector<uint32_t> indices) {
-		//TODO: loading vertexes should be abstracted away
-
-		//Load vertex buffer
-		auto bufferSize = VkDeviceSize(sizeof(vertices[0]) * vertices.size());
-
-		auto stagingBuffer = VkBuffer{};
-		auto stagingBufferMemory = VkDeviceMemory{};
-		Graphics::DEFAULT->createBuffer(
-				bufferSize,
-				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				stagingBuffer,
-				stagingBufferMemory);
-
-		void *data;
-		vkMapMemory(Graphics::DEFAULT->device(), stagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, vertices.data(), (size_t) bufferSize);
-		vkUnmapMemory(Graphics::DEFAULT->device(), stagingBufferMemory);
-
-		Graphics::DEFAULT->createBuffer(
-				bufferSize,
-				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-				vertexBuffer_,
-				vertexBufferMemory_);
-
-		Graphics::DEFAULT->copyBuffer(stagingBuffer, vertexBuffer_, bufferSize);
-
-		vkDestroyBuffer(Graphics::DEFAULT->device(), stagingBuffer, nullptr);
-		vkFreeMemory(Graphics::DEFAULT->device(), stagingBufferMemory, nullptr);
-
-		//Load index buffer
-		bufferSize = sizeof(indices[0]) * indices.size();
-
-		Graphics::DEFAULT->createBuffer(
-				bufferSize,
-				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				stagingBuffer,
-				stagingBufferMemory);
-
-		vkMapMemory(Graphics::DEFAULT->device(), stagingBufferMemory, 0, bufferSize, 0, &data);
-		memcpy(data, indices.data(), (size_t) bufferSize);
-		vkUnmapMemory(Graphics::DEFAULT->device(), stagingBufferMemory);
-
-		Graphics::DEFAULT->createBuffer(
-				bufferSize,
-				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-				indexBuffer_,
-				indexBufferMemory_);
-
-		Graphics::DEFAULT->copyBuffer(stagingBuffer, indexBuffer_, bufferSize);
-
-		vkDestroyBuffer(Graphics::DEFAULT->device(), stagingBuffer, nullptr);
-		vkFreeMemory(Graphics::DEFAULT->device(), stagingBufferMemory, nullptr);
-
-		indexCount_ = indices.size();
 	}
 
 	void MainRenderPipeline::resize(glm::ivec2 size) {
@@ -686,6 +621,8 @@ namespace vulkan {
 	}
 
 	void MainRenderPipeline::recordCommandBuffer_(VkCommandBuffer commandBuffer) {
+		auto mainMesh = resourceManager_.getMesh("viking_room");
+
 		auto beginInfo = VkCommandBufferBeginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		beginInfo.flags = 0;
@@ -725,10 +662,10 @@ namespace vulkan {
 		scissor.extent = size_;
 		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-		VkBuffer vertexBuffers[] = {vertexBuffer_};
+		VkBuffer vertexBuffers[] = {mainMesh->vertexBuffer()};
 		VkDeviceSize offsets[] = {0};
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-		vkCmdBindIndexBuffer(commandBuffer, indexBuffer_, 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(commandBuffer, mainMesh->indexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 		vkCmdBindDescriptorSets(
 				commandBuffer,
@@ -740,7 +677,7 @@ namespace vulkan {
 				0,
 				nullptr);
 
-		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indexCount_), 1, 0, 0, 0);
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mainMesh->indexCount()), 1, 0, 0, 0);
 
 		vkCmdEndRenderPass(commandBuffer);
 		require(vkEndCommandBuffer(commandBuffer));

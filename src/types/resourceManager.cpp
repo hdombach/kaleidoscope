@@ -1,5 +1,7 @@
 #include "resourceManager.h"
 #include "errors.h"
+#include "mesh.h"
+#include "result.h"
 #include "staticTexture.h"
 #include "texture.h"
 
@@ -15,6 +17,9 @@ namespace types {
 		for (auto texture : textures_) {
 			delete texture.second;
 		}
+		for (auto mesh : meshes_) {
+			delete mesh.second;
+		}
 	}
 
 	util::Result<void, errors::TextureAlreadyExists> ResourceManager::addTexture(
@@ -28,12 +33,16 @@ namespace types {
 		return {};
 	}
 
+	vulkan::Texture *ResourceManager::defaultTexture() {
+		return defaultTexture_;
+	}
+
 	vulkan::Texture const *ResourceManager::defaultTexture() const {
 		return defaultTexture_;
 	}
 
 	vulkan::Texture const *ResourceManager::getTexture(const std::string &name) const {
-		if (textures_.count(name)) {
+		if (hasTexture(name)) {
 			return textures_.at(name);
 		}
 		return defaultTexture_;
@@ -41,5 +50,35 @@ namespace types {
 
 	bool ResourceManager::hasTexture(const std::string &name) const {
 		return textures_.count(name);
+	}
+
+	util::Result<void, errors::MeshAlreadyExists> ResourceManager::addMesh(
+			const std::string &name,
+			vulkan::Mesh *mesh)
+	{
+		if (meshes_.count(name)) {
+			return errors::MeshAlreadyExists{name};
+		}
+		meshes_[name] = mesh;
+		return {};
+	}
+
+	vulkan::Mesh *ResourceManager::defaultMesh() {
+		return defaultMesh_;
+	}
+
+	vulkan::Mesh const *ResourceManager::defaultMesh() const {
+		return defaultMesh_;
+	}
+
+	vulkan::Mesh const *ResourceManager::getMesh(const std::string &name) const {
+		if (hasMesh(name)) {
+			return meshes_.at(name);
+		}
+		return defaultMesh_;
+	}
+
+	bool ResourceManager::hasMesh(const std::string &name) const {
+		return meshes_.count(name);
 	}
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "errors.h"
+#include "mesh.h"
 #include "result.h"
 #include "texture.h"
 #include <optional>
@@ -19,7 +20,6 @@ namespace types {
 			ResourceManager();
 			~ResourceManager();
 	
-			struct TextureAlreadyExists {};
 			util::Result<void, errors::TextureAlreadyExists> addTexture(
 					std::string const &name,
 					vulkan::Texture *texture);
@@ -28,8 +28,19 @@ namespace types {
 			vulkan::Texture const *getTexture(std::string const &name) const;
 			bool hasTexture(std::string const &name) const;
 
+			util::Result<void, errors::MeshAlreadyExists> addMesh(
+					std::string const &name,
+					vulkan::Mesh *mesh);
+			vulkan::Mesh *defaultMesh();
+			vulkan::Mesh const *defaultMesh() const;
+			vulkan::Mesh const *getMesh(std::string const &name) const;
+			bool hasMesh(std::string const &name) const;
+
 		private:
 			std::unordered_map<std::string, vulkan::Texture *> textures_;
-			vulkan::Texture const *defaultTexture_;
+			vulkan::Texture *defaultTexture_;
+
+			std::unordered_map<std::string, vulkan::Mesh *> meshes_;
+			vulkan::Mesh *defaultMesh_;
 	};
 }

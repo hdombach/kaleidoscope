@@ -16,7 +16,5 @@ namespace ui {
 		private:
 			std::unique_ptr<vulkan::MainRenderPipeline> mainRenderPipeline_;
 			TextureView viewport_;
-
-			void tempLoadModel_();
 	};
 }
