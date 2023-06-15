@@ -5,6 +5,7 @@
 #include "imgui_impl_vulkan.h"
 #include "log.h"
 #include "mainRenderPipeline.h"
+#include "resourceManager.h"
 #include "textureView.h"
 #include "vulkan/vulkan_core.h"
 #include <memory>
@@ -13,8 +14,8 @@
 #include <vector>
 
 namespace ui {
-	Window::Window():
-		mainRenderPipeline_(std::make_unique<vulkan::MainRenderPipeline>(VkExtent2D{1000, 1000})),
+	Window::Window(types::ResourceManager &resourceManager):
+		mainRenderPipeline_(std::make_unique<vulkan::MainRenderPipeline>(resourceManager, VkExtent2D{1000, 1000})),
 		viewport_(*mainRenderPipeline_)
 	{
 		tempLoadModel_();

@@ -11,13 +11,13 @@
 App::App(std::string const &name) {
 	vulkan::Graphics::initDefault("Kaleidoscope");
 	uiRenderPipeline_ = std::make_unique<vulkan::UIRenderPipeline>();
-	window_ = std::make_unique<ui::Window>();
 	resourceManager_ = std::make_unique<types::ResourceManager>();
 	if (auto vikingRoom = vulkan::StaticTexture::fromFile("assets/viking_room.png")) {
 		resourceManager_->addTexture("viking_room", vikingRoom.value());
 	} else {
 		util::log_error("Could not load example texture viking_room.png");
 	}
+	window_ = std::make_unique<ui::Window>(*resourceManager_);
 }
 
 App::~App() {

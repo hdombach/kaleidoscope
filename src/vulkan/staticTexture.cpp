@@ -104,4 +104,8 @@ namespace vulkan {
 	VkDescriptorSet StaticTexture::getDescriptorSet() const {
 		return imguiDescriptorSet_;
 	}
+
+	VkImageView StaticTexture::imageView() const {
+		return textureView_;
+	}
 }

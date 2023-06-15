@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
+#include "resourceManager.h"
 #include "vertex.h"
 #include "vulkan/vulkan_core.h"
 #include <vector>
@@ -12,7 +13,7 @@ namespace vulkan {
 
 	class MainRenderPipeline: public Texture  {
 		public:
-			MainRenderPipeline(VkExtent2D size);
+			MainRenderPipeline(types::ResourceManager &resourceManager, VkExtent2D size);
 			~MainRenderPipeline();
 			void submit();
 			void loadVertices(std::vector<Vertex> vertices, std::vector<uint32_t> indices);
@@ -21,6 +22,7 @@ namespace vulkan {
 
 			VkExtent2D getSize() const;
 			VkDescriptorSet getDescriptorSet() const;
+			VkImageView imageView() const;
 
 		private:
 			void createSyncObjects_();
@@ -29,8 +31,6 @@ namespace vulkan {
 			void createDescriptorSetLayout_();
 			void createDescriptorPool_();
 			void createUniformBuffers_();
-			void createTextureImage_();
-			void createTextureImageView_();
 			void createDepthResources_();
 			void createDescriptorSets_();
 			void createPipeline_();
@@ -62,9 +62,6 @@ namespace vulkan {
 			std::vector<VkSemaphore> renderFinishedSemaphores_;
 			std::vector<VkCommandBuffer> commandBuffers_;
 
-			VkImage textureImage_;
-			VkDeviceMemory textureImageMemory_;
-			VkImageView textureImageView_;
 			VkImage depthImage_;
 			VkDeviceMemory depthImageMemory_;
 			VkImageView depthImageView_;
@@ -79,5 +76,7 @@ namespace vulkan {
 
 			uint32_t mipLevels_;
 			bool framebufferResized_;
+
+			types::ResourceManager const &resourceManager_;
 	};
 }

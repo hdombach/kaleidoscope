@@ -13,6 +13,7 @@ namespace vulkan {
 			~StaticTexture();
 
 			VkDescriptorSet getDescriptorSet() const;
+			VkImageView imageView() const;
 		private:
 			StaticTexture() = default;
 			VkImage texture_;

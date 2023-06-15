@@ -1,5 +1,6 @@
 #pragma once
 #include "mainRenderPipeline.h"
+#include "resourceManager.h"
 #include "textureView.h"
 #include "vulkan/vulkan_core.h"
 #include <memory>
@@ -9,7 +10,7 @@
 namespace ui {
 	class Window {
 		public:
-			Window();
+			Window(types::ResourceManager &resourceManager);
 			~Window();
 			void show();
 		private:
