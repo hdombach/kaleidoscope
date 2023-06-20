@@ -13,6 +13,7 @@ namespace ui {
 			Window(types::ResourceManager &resourceManager);
 			~Window();
 			void show();
+			vulkan::MainRenderPipeline const &mainRendePipeline() const;
 		private:
 			std::unique_ptr<vulkan::MainRenderPipeline> mainRenderPipeline_;
 			TextureView viewport_;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "materialFactory.h"
 #include "resourceManager.h"
 #include "uiRenderPipeline.h"
 #include "window.h"
@@ -19,4 +20,5 @@ class App {
 		std::unique_ptr<vulkan::UIRenderPipeline> uiRenderPipeline_;
 		std::unique_ptr<ui::Window> window_;
 		std::unique_ptr<types::ResourceManager> resourceManager_;
+		std::unique_ptr<vulkan::MaterialFactory> materialFactory_;
 };

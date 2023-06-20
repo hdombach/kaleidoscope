@@ -1,6 +1,7 @@
 #pragma once
 
 #include "errors.h"
+#include "material.h"
 #include "mesh.h"
 #include "result.h"
 #include "texture.h"
@@ -36,11 +37,22 @@ namespace types {
 			vulkan::Mesh const *getMesh(std::string const &name) const;
 			bool hasMesh(std::string const &name) const;
 
+			util::Result<void, errors::MaterialAlreadyExists> addMaterial(
+					std::string const &name,
+					vulkan::Material *material);
+			vulkan::Material *defaultMaterial();
+			vulkan::Material const *defaultMaterial() const;
+			vulkan::Material const *getMaterial(std::string const &name) const;
+			bool hasMaterial(std::string const &name) const;
+
 		private:
 			std::unordered_map<std::string, vulkan::Texture *> textures_;
 			vulkan::Texture *defaultTexture_;
 
 			std::unordered_map<std::string, vulkan::Mesh *> meshes_;
 			vulkan::Mesh *defaultMesh_;
+
+			std::unordered_map<std::string, vulkan::Material *> materials_;
+			vulkan::Material *defaultMaterial_;
 	};
 }

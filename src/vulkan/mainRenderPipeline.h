@@ -22,17 +22,17 @@ namespace vulkan {
 			VkExtent2D getSize() const;
 			VkDescriptorSet getDescriptorSet() const;
 			VkImageView imageView() const;
+			VkDescriptorPool descriptorPool() const;
+			VkRenderPass renderPass() const;
+			std::vector<VkBuffer> const &uniformBuffers() const;
 
 		private:
 			void createSyncObjects_();
 			void createCommandBuffers_();
 			void createRenderPass_();
-			void createDescriptorSetLayout_();
 			void createDescriptorPool_();
 			void createUniformBuffers_();
 			void createDepthResources_();
-			void createDescriptorSets_();
-			void createPipeline_();
 			void createResultImages_();
 			void recreateResultImages_();
 			void cleanupResultImages_();
@@ -43,11 +43,7 @@ namespace vulkan {
 
 			VkFormat findDepthFormat_();
 
-			VkPipelineLayout pipelineLayout_;
-			VkPipeline pipeline_;
 			VkRenderPass renderPass_;
-			VkDescriptorSetLayout descriptorSetLayout_;
-			std::vector<VkDescriptorSet> descriptorSets_;
 			VkDescriptorPool descriptorPool_;
 			std::vector<VkBuffer> uniformBuffers_;
 			std::vector<VkDeviceMemory> uniformBuffersMemory_;

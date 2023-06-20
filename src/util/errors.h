@@ -28,4 +28,8 @@ namespace errors {
 		std::string meshName;
 	};
 
+	struct MaterialAlreadyExists {
+		std::string materialName;
+	};
+
 }

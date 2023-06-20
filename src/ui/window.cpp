@@ -15,7 +15,7 @@
 
 namespace ui {
 	Window::Window(types::ResourceManager &resourceManager):
-		mainRenderPipeline_(std::make_unique<vulkan::MainRenderPipeline>(resourceManager, VkExtent2D{1000, 1000})),
+		mainRenderPipeline_(std::make_unique<vulkan::MainRenderPipeline>(resourceManager, VkExtent2D{300, 300})),
 		viewport_(*mainRenderPipeline_)
 	{}
 
@@ -35,5 +35,9 @@ namespace ui {
 		viewport_.show();
 
 		ImGui::End();
+	}
+
+	vulkan::MainRenderPipeline const &Window::mainRendePipeline() const {
+		return *mainRenderPipeline_;
 	}
 }

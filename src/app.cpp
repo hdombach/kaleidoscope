@@ -1,6 +1,7 @@
 #include "app.h"
 #include "graphics.h"
 #include "log.h"
+#include "materialFactory.h"
 #include "resourceManager.h"
 #include "staticMesh.h"
 #include "staticTexture.h"
@@ -24,11 +25,13 @@ App::App(std::string const &name) {
 		util::log_error(util::f(vikingRoom.error()));
 	}
 	window_ = std::make_unique<ui::Window>(*resourceManager_);
+	materialFactory_ = std::make_unique<vulkan::MaterialFactory>(window_->mainRendePipeline());
+	resourceManager_->addMaterial("viking_room", materialFactory_->textureMaterial(resourceManager_->getTexture("viking_room")));
 }
 
 App::~App() {
-	window_.reset();
 	resourceManager_.reset();
+	window_.reset();
 	uiRenderPipeline_.reset();
 	vulkan::Graphics::deleteDefault();
 	glfwTerminate();
