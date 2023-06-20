@@ -1,4 +1,5 @@
 #include "uiRenderPipeline.h"
+#include "defs.h"
 #include "error.h"
 #include "format.h"
 #include "imgui_impl_glfw.h"
@@ -39,7 +40,7 @@ namespace vulkan {
 			int width, height;
 			glfwGetFramebufferSize(Graphics::DEFAULT->window(), &width, &height);
 			if (width > 0 && height > 0) {
-				ImGui_ImplVulkan_SetMinImageCount(Graphics::MIN_IMAGE_COUNT);
+				ImGui_ImplVulkan_SetMinImageCount(vulkan::FRAMES_IN_FLIGHT);
 				ImGui_ImplVulkanH_CreateOrResizeWindow(
 						Graphics::DEFAULT->instance(),
 						Graphics::DEFAULT->physicalDevice(),
@@ -49,7 +50,7 @@ namespace vulkan {
 						nullptr,
 						width,
 						height,
-						Graphics::MIN_IMAGE_COUNT);
+						FRAMES_IN_FLIGHT);
 				windowData_.FrameIndex = 0;
 				swapchainRebuild_ = false;
 			}
@@ -139,9 +140,9 @@ namespace vulkan {
 		init_info.Queue = Graphics::DEFAULT->graphicsQueue();
 		init_info.DescriptorPool = descriptorPool_;
 		init_info.Subpass = 0;
-		util::log_event(util::f("Min image count ", Graphics::MIN_IMAGE_COUNT));
-		init_info.MinImageCount = Graphics::MIN_IMAGE_COUNT; //idk if these should be 3 or 2
-		init_info.ImageCount = Graphics::MIN_IMAGE_COUNT;
+		util::log_event(util::f("Min image count ", FRAMES_IN_FLIGHT));
+		init_info.MinImageCount = FRAMES_IN_FLIGHT;
+		init_info.ImageCount = FRAMES_IN_FLIGHT;
 		init_info.ImageCount = windowData_.ImageCount;
 		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
@@ -196,7 +197,7 @@ namespace vulkan {
 				nullptr,
 				width,
 				height,
-				Graphics::MIN_IMAGE_COUNT);
+				FRAMES_IN_FLIGHT);
 	}
 
 	void UIRenderPipeline::renderFrame_(ImDrawData* drawData) {

@@ -87,7 +87,7 @@ namespace vulkan {
 
 		require(vkQueueSubmit(Graphics::DEFAULT->graphicsQueue(), 1, &submitInfo, inFlightFences_[frameIndex_]));
 
-		frameIndex_ = (frameIndex_ + 1) % MAX_FRAMES_IN_FLIGHT;
+		frameIndex_ = (frameIndex_ + 1) % FRAMES_IN_FLIGHT;
 	}
 
 	void MainRenderPipeline::resize(glm::ivec2 size) {
@@ -120,8 +120,8 @@ namespace vulkan {
 	}
 
 	void MainRenderPipeline::createSyncObjects_() {
-		renderFinishedSemaphores_.resize(MAX_FRAMES_IN_FLIGHT);
-		inFlightFences_.resize(MAX_FRAMES_IN_FLIGHT);
+		renderFinishedSemaphores_.resize(FRAMES_IN_FLIGHT);
+		inFlightFences_.resize(FRAMES_IN_FLIGHT);
 
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -130,14 +130,14 @@ namespace vulkan {
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 			require(vkCreateSemaphore(Graphics::DEFAULT->device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores_[i]));
 			require(vkCreateFence(Graphics::DEFAULT->device(), &fenceInfo, nullptr, &inFlightFences_[i]));
 		}
 	}
 
 	void MainRenderPipeline::createCommandBuffers_() {
-		commandBuffers_.resize(MAX_FRAMES_IN_FLIGHT);
+		commandBuffers_.resize(FRAMES_IN_FLIGHT);
 		auto allocInfo = VkCommandBufferAllocateInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		allocInfo.commandPool = Graphics::DEFAULT->commandPool();
@@ -216,17 +216,17 @@ namespace vulkan {
 	void MainRenderPipeline::createDescriptorPool_() {
 		auto poolSizes = std::array<VkDescriptorPoolSize, 3>{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 4;
+		poolSizes[0].descriptorCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT) * 4;
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 8;
+		poolSizes[1].descriptorCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT) * 8;
 		poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		poolSizes[2].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 4;
+		poolSizes[2].descriptorCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT) * 4;
 
 		auto poolInfo = VkDescriptorPoolCreateInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * 2);
+		poolInfo.maxSets = static_cast<uint32_t>(FRAMES_IN_FLIGHT * 2);
 		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 		require(vkCreateDescriptorPool(Graphics::DEFAULT->device(), &poolInfo, nullptr, &descriptorPool_));
@@ -235,11 +235,11 @@ namespace vulkan {
 	void MainRenderPipeline::createUniformBuffers_() {
 		auto bufferSize = VkDeviceSize(sizeof(UniformBufferObject));
 
-		uniformBuffers_.resize(MAX_FRAMES_IN_FLIGHT);
-		uniformBuffersMemory_.resize(MAX_FRAMES_IN_FLIGHT);
-		uniformBuffersMapped_.resize(MAX_FRAMES_IN_FLIGHT);
+		uniformBuffers_.resize(FRAMES_IN_FLIGHT);
+		uniformBuffersMemory_.resize(FRAMES_IN_FLIGHT);
+		uniformBuffersMapped_.resize(FRAMES_IN_FLIGHT);
 
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+		for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i) {
 			Graphics::DEFAULT->createBuffer(
 					bufferSize,
 					VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -281,13 +281,13 @@ namespace vulkan {
 	}
 
 	void MainRenderPipeline::createResultImages_() {
-		resultImages_.resize(Graphics::MIN_IMAGE_COUNT);
-		resultImageViews_.resize(Graphics::MIN_IMAGE_COUNT);
-		resultImageMemory_.resize(Graphics::MIN_IMAGE_COUNT);
-		resultImageFramebuffer_.resize(Graphics::MIN_IMAGE_COUNT);
-		resultDescriptorSets_.resize(Graphics::MIN_IMAGE_COUNT);
+		resultImages_.resize(FRAMES_IN_FLIGHT);
+		resultImageViews_.resize(FRAMES_IN_FLIGHT);
+		resultImageMemory_.resize(FRAMES_IN_FLIGHT);
+		resultImageFramebuffer_.resize(FRAMES_IN_FLIGHT);
+		resultDescriptorSets_.resize(FRAMES_IN_FLIGHT);
 
-		for (int i = 0; i < Graphics::MIN_IMAGE_COUNT; i++) {
+		for (int i = 0; i < FRAMES_IN_FLIGHT; i++) {
 			Graphics::DEFAULT->createImage(
 					size_.width,
 					size_.height,

@@ -75,17 +75,17 @@ namespace vulkan {
 	}
 
 	void TextureMaterial::createDescriptorSets_(MaterialFactory const &materialFactory) {
-		auto layouts = std::vector<VkDescriptorSetLayout>(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout_);
+		auto layouts = std::vector<VkDescriptorSetLayout>(FRAMES_IN_FLIGHT, descriptorSetLayout_);
 		auto allocInfo = VkDescriptorSetAllocateInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = materialFactory.mainRenderPipeline().descriptorPool();
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT);
 		allocInfo.pSetLayouts = layouts.data();
 
-		descriptorSets_.resize(MAX_FRAMES_IN_FLIGHT);
+		descriptorSets_.resize(FRAMES_IN_FLIGHT);
 		require(vkAllocateDescriptorSets(Graphics::DEFAULT->device(), &allocInfo, descriptorSets_.data()));
 
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 			auto bufferInfo = VkDescriptorBufferInfo{};
 			bufferInfo.buffer = materialFactory.mainRenderPipeline().uniformBuffers()[i];
 			bufferInfo.offset = 0;

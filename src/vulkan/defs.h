@@ -13,7 +13,7 @@ namespace vulkan {
 
 	static const uint32_t WIDTH = 800;
 	static const uint32_t HEIGHT = 600;
-	static const int MAX_FRAMES_IN_FLIGHT = 2;
+	static const int FRAMES_IN_FLIGHT = 2;
 	static const std::string MODEL_PATH = "assets/viking_room.obj";
 	static const std::string TEXTURE_PATH = "assets/viking_room.png";
 

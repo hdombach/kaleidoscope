@@ -287,7 +287,7 @@ namespace vulkan {
 		vkDestroyPipeline(device_, computePipeline_, nullptr);
 		vkDestroyPipelineLayout(device_, computePipelineLayout_, nullptr);
 
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 			vkDestroySemaphore(device_, computeFinishedSemaphores_[i], nullptr);
 			vkDestroyFence(device_, computeInFlightFences_[i], nullptr);
 		}
@@ -476,18 +476,18 @@ namespace vulkan {
 	void Graphics::createDescriptorPool_() {
 		std::array<VkDescriptorPoolSize, 3> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		poolSizes[0].descriptorCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT);
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 2;
+		poolSizes[1].descriptorCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT) * 2;
 		poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		poolSizes[2].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		poolSizes[2].descriptorCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT);
 
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
 		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * 2);
+		poolInfo.maxSets = static_cast<uint32_t>(FRAMES_IN_FLIGHT * 2);
 		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 		if (vkCreateDescriptorPool(device_, &poolInfo, nullptr, &descriptorPool_) != VK_SUCCESS) {
@@ -495,19 +495,19 @@ namespace vulkan {
 		}
 	}
 	void Graphics::createComputeDescriptorSets_() {
-		auto layouts = std::vector<VkDescriptorSetLayout>(MAX_FRAMES_IN_FLIGHT, computeDescriptorSetLayout_);
+		auto layouts = std::vector<VkDescriptorSetLayout>(FRAMES_IN_FLIGHT, computeDescriptorSetLayout_);
 		auto allocInfo = VkDescriptorSetAllocateInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		allocInfo.descriptorPool = descriptorPool_;
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+		allocInfo.descriptorSetCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT);
 		allocInfo.pSetLayouts = layouts.data();
 
-		computeDescriptorSets_.resize(MAX_FRAMES_IN_FLIGHT);
+		computeDescriptorSets_.resize(FRAMES_IN_FLIGHT);
 		require(vkAllocateDescriptorSets(device_, &allocInfo, computeDescriptorSets_.data()));
 
 		std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
 
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 			auto imageInfo = VkDescriptorImageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 			imageInfo.imageView = computeResultImageView_;
@@ -545,7 +545,7 @@ namespace vulkan {
 		require(vkCreateDescriptorSetLayout(device_, &layoutInfo, nullptr, &computeDescriptorSetLayout_));
 	}
 	void Graphics::createComputeCommandBuffers_() {
-		computeCommandBuffers_.resize(MAX_FRAMES_IN_FLIGHT);
+		computeCommandBuffers_.resize(FRAMES_IN_FLIGHT);
 
 		auto allocInfo = VkCommandBufferAllocateInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -556,8 +556,8 @@ namespace vulkan {
 		require(vkAllocateCommandBuffers(device_, &allocInfo, computeCommandBuffers_.data()));
 	}
 	void Graphics::createSyncObjects_() {
-		computeFinishedSemaphores_.resize(MAX_FRAMES_IN_FLIGHT);
-		computeInFlightFences_.resize(MAX_FRAMES_IN_FLIGHT);
+		computeFinishedSemaphores_.resize(FRAMES_IN_FLIGHT);
+		computeInFlightFences_.resize(FRAMES_IN_FLIGHT);
 
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -566,7 +566,7 @@ namespace vulkan {
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 			require(vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &computeFinishedSemaphores_[i]));
 			require(vkCreateFence(device_, &fenceInfo, nullptr, &computeInFlightFences_[i]));
 		}

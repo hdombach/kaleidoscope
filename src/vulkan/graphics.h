@@ -100,8 +100,6 @@ namespace vulkan {
 				std::vector<VkPresentModeKHR> presentModes;
 			};
 
-			static const int MIN_IMAGE_COUNT = 2;
-
 		private:
 			Graphics(const char *name);
 			void initWindow_();
