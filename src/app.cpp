@@ -1,4 +1,5 @@
 #include "app.h"
+#include "descriptorPool.h"
 #include "graphics.h"
 #include "log.h"
 #include "materialFactory.h"
@@ -12,6 +13,7 @@
 
 App::App(std::string const &name) {
 	vulkan::Graphics::initDefault("Kaleidoscope");
+	descriptorPool_ = std::make_unique<vulkan::DescriptorPool>();
 	uiRenderPipeline_ = std::make_unique<vulkan::UIRenderPipeline>();
 	resourceManager_ = std::make_unique<types::ResourceManager>();
 	if (auto vikingRoom = vulkan::StaticTexture::fromFile("assets/viking_room.png")) {
@@ -25,7 +27,7 @@ App::App(std::string const &name) {
 		util::log_error(util::f(vikingRoom.error()));
 	}
 	window_ = std::make_unique<ui::Window>(*resourceManager_);
-	materialFactory_ = std::make_unique<vulkan::MaterialFactory>(window_->mainRendePipeline());
+	materialFactory_ = std::make_unique<vulkan::MaterialFactory>(window_->mainRendePipeline(), *descriptorPool_);
 	resourceManager_->addMaterial("viking_room", materialFactory_->textureMaterial(resourceManager_->getTexture("viking_room")));
 }
 
@@ -33,6 +35,7 @@ App::~App() {
 	resourceManager_.reset();
 	window_.reset();
 	uiRenderPipeline_.reset();
+	descriptorPool_.reset();
 	vulkan::Graphics::deleteDefault();
 	glfwTerminate();
 }

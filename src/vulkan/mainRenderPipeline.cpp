@@ -34,7 +34,6 @@ namespace vulkan {
 		createRenderPass_();
 		createDepthResources_();
 		createResultImages_();
-		createDescriptorPool_();
 		createUniformBuffers_();
 	}
 
@@ -44,7 +43,6 @@ namespace vulkan {
 		cleanupDepthResources_();
 		cleanupResultImages_();
 		
-		vkDestroyDescriptorPool(Graphics::DEFAULT->device(), descriptorPool_, nullptr);
 		for (auto uniformBuffer : uniformBuffers_) {
 			vkDestroyBuffer(Graphics::DEFAULT->device(), uniformBuffer, nullptr);
 		}
@@ -108,9 +106,6 @@ namespace vulkan {
 
 	VkImageView MainRenderPipeline::imageView() const {
 		return resultImageViews_[frameIndex_];
-	}
-	VkDescriptorPool MainRenderPipeline::descriptorPool() const {
-		return descriptorPool_;
 	}
 	VkRenderPass MainRenderPipeline::renderPass() const {
 		return renderPass_;
@@ -211,25 +206,6 @@ namespace vulkan {
 		renderPassInfo.pDependencies = &dependency;
 
 		require(vkCreateRenderPass(Graphics::DEFAULT->device(), &renderPassInfo, nullptr, &renderPass_));
-	}
-
-	void MainRenderPipeline::createDescriptorPool_() {
-		auto poolSizes = std::array<VkDescriptorPoolSize, 3>{};
-		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		poolSizes[0].descriptorCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT) * 4;
-		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSizes[1].descriptorCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT) * 8;
-		poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		poolSizes[2].descriptorCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT) * 4;
-
-		auto poolInfo = VkDescriptorPoolCreateInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
-		poolInfo.pPoolSizes = poolSizes.data();
-		poolInfo.maxSets = static_cast<uint32_t>(FRAMES_IN_FLIGHT * 2);
-		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-
-		require(vkCreateDescriptorPool(Graphics::DEFAULT->device(), &poolInfo, nullptr, &descriptorPool_));
 	}
 
 	void MainRenderPipeline::createUniformBuffers_() {

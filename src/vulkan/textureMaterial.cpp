@@ -21,7 +21,7 @@ namespace vulkan {
 				nullptr);
 		vkFreeDescriptorSets(
 				Graphics::DEFAULT->device(),
-				materialFactory_.mainRenderPipeline().descriptorPool(),
+				materialFactory_.descriptorPool(),
 				descriptorSets_.size(),
 				descriptorSets_.data());
 	}
@@ -78,7 +78,7 @@ namespace vulkan {
 		auto layouts = std::vector<VkDescriptorSetLayout>(FRAMES_IN_FLIGHT, descriptorSetLayout_);
 		auto allocInfo = VkDescriptorSetAllocateInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = materialFactory.mainRenderPipeline().descriptorPool();
+		allocInfo.descriptorPool = materialFactory_.descriptorPool();
 		allocInfo.descriptorSetCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT);
 		allocInfo.pSetLayouts = layouts.data();
 

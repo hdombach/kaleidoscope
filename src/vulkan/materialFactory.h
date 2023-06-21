@@ -1,5 +1,6 @@
 #pragma once
 
+#include "descriptorPool.h"
 #include "mainRenderPipeline.h"
 #include "material.h"
 #include "shader.h"
@@ -17,11 +18,13 @@ namespace vulkan {
 	 */
 	class MaterialFactory {
 		public:
-			MaterialFactory(MainRenderPipeline const &mainRenderPipeline);
+			MaterialFactory(MainRenderPipeline const &mainRenderPipeline, DescriptorPool const &descriptorPool);
 
 			MainRenderPipeline const &mainRenderPipeline() const;
 			Material *textureMaterial(Texture const *texture);
+			VkDescriptorPool descriptorPool() const;
 		private:
 			MainRenderPipeline const &mainRenderPipeline_;
+			DescriptorPool const &descriptorPool_;
 	};
 }

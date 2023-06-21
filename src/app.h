@@ -3,6 +3,7 @@
 #include "materialFactory.h"
 #include "resourceManager.h"
 #include "uiRenderPipeline.h"
+#include "descriptorPool.h"
 #include "window.h"
 #define GLFW_INCLUDE_VULKAN
 #include <vulkan/vulkan.h>
@@ -21,4 +22,5 @@ class App {
 		std::unique_ptr<ui::Window> window_;
 		std::unique_ptr<types::ResourceManager> resourceManager_;
 		std::unique_ptr<vulkan::MaterialFactory> materialFactory_;
+		std::unique_ptr<vulkan::DescriptorPool> descriptorPool_;
 };

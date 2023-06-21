@@ -22,7 +22,6 @@ namespace vulkan {
 			VkExtent2D getSize() const;
 			VkDescriptorSet getDescriptorSet() const;
 			VkImageView imageView() const;
-			VkDescriptorPool descriptorPool() const;
 			VkRenderPass renderPass() const;
 			std::vector<VkBuffer> const &uniformBuffers() const;
 
@@ -30,7 +29,6 @@ namespace vulkan {
 			void createSyncObjects_();
 			void createCommandBuffers_();
 			void createRenderPass_();
-			void createDescriptorPool_();
 			void createUniformBuffers_();
 			void createDepthResources_();
 			void createResultImages_();
@@ -44,7 +42,6 @@ namespace vulkan {
 			VkFormat findDepthFormat_();
 
 			VkRenderPass renderPass_;
-			VkDescriptorPool descriptorPool_;
 			std::vector<VkBuffer> uniformBuffers_;
 			std::vector<VkDeviceMemory> uniformBuffersMemory_;
 			std::vector<void*> uniformBuffersMapped_;
