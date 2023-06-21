@@ -1,7 +1,7 @@
-#include "textureView.h"
-#include "format.h"
-#include "log.h"
-#include "texture.h"
+#include "textureView.hpp"
+#include "format.hpp"
+#include "log.hpp"
+#include "texture.hpp"
 #include <glm/fwd.hpp>
 #include <imgui.h>
 

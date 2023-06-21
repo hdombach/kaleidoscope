@@ -1,4 +1,4 @@
-#include "log.h"
+#include "log.hpp"
 #include <bitset>
 #include <ostream>
 #include <sstream>

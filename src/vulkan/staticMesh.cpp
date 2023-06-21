@@ -1,7 +1,7 @@
-#include "staticMesh.h"
+#include "staticMesh.hpp"
 #include <tiny_obj_loader.h>
 #include <unordered_map>
-#include "graphics.h"
+#include "graphics.hpp"
 #include "vulkan/vulkan_core.h"
 
 namespace vulkan {

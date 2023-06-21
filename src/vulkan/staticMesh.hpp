@@ -1,10 +1,10 @@
 #pragma once
 
-#include "errors.h"
-#include "mesh.h"
-#include "result.h"
+#include "errors.hpp"
+#include "mesh.hpp"
+#include "result.hpp"
 #include <vulkan/vulkan.h>
-#include "vertex.h"
+#include "vertex.hpp"
 #include "vulkan/vulkan_core.h"
 
 

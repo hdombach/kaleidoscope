@@ -2,11 +2,11 @@
 
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
-#include "resourceManager.h"
-#include "vertex.h"
+#include "resourceManager.hpp"
+#include "vertex.hpp"
 #include "vulkan/vulkan_core.h"
 #include <vector>
-#include "texture.h"
+#include "texture.hpp"
 
 namespace vulkan {
 	class Graphics;

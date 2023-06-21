@@ -1,5 +1,5 @@
-#include "app.h"
-#include "graphics.h"
+#include "app.hpp"
+#include "graphics.hpp"
 #include <cstdint>
 #include <memory>
 #include <sys/types.h>

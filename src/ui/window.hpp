@@ -1,7 +1,7 @@
 #pragma once
-#include "mainRenderPipeline.h"
-#include "resourceManager.h"
-#include "textureView.h"
+#include "mainRenderPipeline.hpp"
+#include "resourceManager.hpp"
+#include "textureView.hpp"
 #include "vulkan/vulkan_core.h"
 #include <memory>
 #include <vulkan/vulkan.h>

@@ -1,14 +1,14 @@
 #pragma once
 
-#include "materialFactory.h"
-#include "resourceManager.h"
-#include "uiRenderPipeline.h"
-#include "descriptorPool.h"
-#include "window.h"
+#include "materialFactory.hpp"
+#include "resourceManager.hpp"
+#include "uiRenderPipeline.hpp"
+#include "descriptorPool.hpp"
+#include "window.hpp"
 #define GLFW_INCLUDE_VULKAN
 #include <vulkan/vulkan.h>
 #include <memory>
-#include "vulkan/graphics.h"
+#include "vulkan/graphics.hpp"
 
 
 class App {

@@ -1,13 +1,13 @@
-#include "app.h"
-#include "descriptorPool.h"
-#include "graphics.h"
-#include "log.h"
-#include "materialFactory.h"
-#include "resourceManager.h"
-#include "staticMesh.h"
-#include "staticTexture.h"
-#include "uiRenderPipeline.h"
-#include "window.h"
+#include "app.hpp"
+#include "descriptorPool.hpp"
+#include "graphics.hpp"
+#include "log.hpp"
+#include "materialFactory.hpp"
+#include "resourceManager.hpp"
+#include "staticMesh.hpp"
+#include "staticTexture.hpp"
+#include "uiRenderPipeline.hpp"
+#include "window.hpp"
 #include <memory>
 #include <GLFW/glfw3.h>
 

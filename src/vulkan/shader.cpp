@@ -1,7 +1,7 @@
-#include "shader.h"
-#include "error.h"
-#include "file.h"
-#include "graphics.h"
+#include "shader.hpp"
+#include "error.hpp"
+#include "file.hpp"
+#include "graphics.hpp"
 #include "vulkan/vulkan_core.h"
 
 namespace vulkan {

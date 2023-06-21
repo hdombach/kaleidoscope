@@ -1,9 +1,9 @@
-#include "resourceManager.h"
-#include "errors.h"
-#include "mesh.h"
-#include "result.h"
-#include "staticTexture.h"
-#include "texture.h"
+#include "resourceManager.hpp"
+#include "errors.hpp"
+#include "mesh.hpp"
+#include "result.hpp"
+#include "staticTexture.hpp"
+#include "texture.hpp"
 
 namespace types {
 	ResourceManager::ResourceManager() {

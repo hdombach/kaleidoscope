@@ -1,9 +1,9 @@
 #pragma once
 
-#include "errors.h"
-#include "result.h"
+#include "errors.hpp"
+#include "result.hpp"
+#include "vertex.hpp"
 #include <vulkan/vulkan.h>
-#include "vertex.h"
 
 namespace vulkan {
 	class Mesh {

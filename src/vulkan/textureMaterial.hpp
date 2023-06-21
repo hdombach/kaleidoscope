@@ -1,9 +1,9 @@
 #pragma once
 
-#include "mainRenderPipeline.h"
-#include "material.h"
-#include "materialFactory.h"
-#include "texture.h"
+#include "mainRenderPipeline.hpp"
+#include "material.hpp"
+#include "materialFactory.hpp"
+#include "texture.hpp"
 #include "vulkan/vulkan_core.h"
 #include <vector>
 

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "descriptorPool.h"
-#include "mainRenderPipeline.h"
-#include "material.h"
-#include "shader.h"
-#include "texture.h"
+#include "descriptorPool.hpp"
+#include "mainRenderPipeline.hpp"
+#include "material.hpp"
+#include "shader.hpp"
+#include "texture.hpp"
 #include <string>
 #include <unordered_map>
 

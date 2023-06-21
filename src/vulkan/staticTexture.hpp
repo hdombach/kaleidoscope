@@ -1,8 +1,8 @@
 #pragma once
 #include <vulkan/vulkan.h>
-#include "errors.h"
-#include "texture.h"
-#include "result.h"
+#include "errors.hpp"
+#include "texture.hpp"
+#include "result.hpp"
 #include "vulkan/vulkan_core.h"
 
 namespace vulkan {

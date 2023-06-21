@@ -1,10 +1,10 @@
 #pragma once
 
-#include "errors.h"
-#include "material.h"
-#include "mesh.h"
-#include "result.h"
-#include "texture.h"
+#include "errors.hpp"
+#include "material.hpp"
+#include "mesh.hpp"
+#include "result.hpp"
+#include "texture.hpp"
 #include <optional>
 #include <string>
 #include <unordered_map>

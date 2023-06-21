@@ -1,6 +1,6 @@
 #pragma once
 
-#include "texture.h"
+#include "texture.hpp"
 #include <imgui.h>
 namespace ui {
 	class TextureView {

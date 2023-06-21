@@ -1,6 +1,6 @@
 #pragma once
 
-#include "vertex.h"
+#include "vertex.hpp"
 #include "vulkan/vulkan_core.h"
 #include <functional>
 #include <memory>

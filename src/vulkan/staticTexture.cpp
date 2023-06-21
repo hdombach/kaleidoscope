@@ -1,5 +1,5 @@
-#include "staticTexture.h"
-#include "graphics.h"
+#include "staticTexture.hpp"
+#include "graphics.hpp"
 #include "imgui_impl_vulkan.h"
 #include "vulkan/vulkan_core.h"
 #include <cmath>

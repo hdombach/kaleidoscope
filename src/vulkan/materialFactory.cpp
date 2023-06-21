@@ -1,7 +1,7 @@
-#include "materialFactory.h"
-#include "descriptorPool.h"
-#include "mainRenderPipeline.h"
-#include "textureMaterial.h"
+#include "materialFactory.hpp"
+#include "descriptorPool.hpp"
+#include "mainRenderPipeline.hpp"
+#include "textureMaterial.hpp"
 #include "vulkan/vulkan_core.h"
 
 namespace vulkan {
