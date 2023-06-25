@@ -1,7 +1,7 @@
 #pragma once
 
-#include "errors.hpp"
-#include "result.hpp"
+#include "../util/errors.hpp"
+#include "../util/result.hpp"
 #include "vertex.hpp"
 #include <vulkan/vulkan.h>
 

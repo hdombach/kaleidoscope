@@ -1,10 +1,10 @@
 #pragma once
 
-#include "errors.hpp"
-#include "material.hpp"
-#include "mesh.hpp"
-#include "result.hpp"
-#include "texture.hpp"
+#include "../util/errors.hpp"
+#include "../vulkan/material.hpp"
+#include "../vulkan/mesh.hpp"
+#include "../util/result.hpp"
+#include "../vulkan/texture.hpp"
 #include <optional>
 #include <string>
 #include <unordered_map>

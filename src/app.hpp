@@ -1,10 +1,10 @@
 #pragma once
 
-#include "materialFactory.hpp"
-#include "resourceManager.hpp"
-#include "uiRenderPipeline.hpp"
-#include "descriptorPool.hpp"
-#include "window.hpp"
+#include "./vulkan/materialFactory.hpp"
+#include "./types/resourceManager.hpp"
+#include "./vulkan/uiRenderPipeline.hpp"
+#include "./vulkan/descriptorPool.hpp"
+#include "./ui/window.hpp"
 #define GLFW_INCLUDE_VULKAN
 #include <vulkan/vulkan.h>
 #include <memory>

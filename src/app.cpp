@@ -1,13 +1,13 @@
 #include "app.hpp"
-#include "descriptorPool.hpp"
-#include "graphics.hpp"
-#include "log.hpp"
-#include "materialFactory.hpp"
-#include "resourceManager.hpp"
-#include "staticMesh.hpp"
-#include "staticTexture.hpp"
-#include "uiRenderPipeline.hpp"
-#include "window.hpp"
+#include "./vulkan/descriptorPool.hpp"
+#include "./vulkan/graphics.hpp"
+#include "./util/log.hpp"
+#include "./vulkan/materialFactory.hpp"
+#include "./types/resourceManager.hpp"
+#include "./vulkan/staticMesh.hpp"
+#include "./vulkan/staticTexture.hpp"
+#include "./vulkan/uiRenderPipeline.hpp"
+#include "./ui/window.hpp"
 #include <memory>
 #include <GLFW/glfw3.h>
 

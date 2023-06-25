@@ -2,7 +2,7 @@
 
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
-#include "resourceManager.hpp"
+#include "../types/resourceManager.hpp"
 #include "vertex.hpp"
 #include "vulkan/vulkan_core.h"
 #include <vector>

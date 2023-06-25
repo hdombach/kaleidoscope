@@ -1,7 +1,7 @@
 #include "textureView.hpp"
-#include "format.hpp"
-#include "log.hpp"
-#include "texture.hpp"
+#include "../util/format.hpp"
+#include "../util/log.hpp"
+#include "../vulkan/texture.hpp"
 #include <glm/fwd.hpp>
 #include <imgui.h>
 

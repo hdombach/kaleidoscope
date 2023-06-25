@@ -1,8 +1,8 @@
 #pragma once
 
-#include "errors.hpp"
-#include "mesh.hpp"
-#include "result.hpp"
+#include "../util/errors.hpp"
+#include "../vulkan/mesh.hpp"
+#include "../util/result.hpp"
 #include <vulkan/vulkan.h>
 #include "vertex.hpp"
 #include "vulkan/vulkan_core.h"
