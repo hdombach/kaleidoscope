@@ -3,3 +3,4 @@ build
 tmux*
 CMakeUserPresets.json
 imgui.ini
+.DS_STORE

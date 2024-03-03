@@ -1,21 +1,23 @@
 project(kaleidoscope)
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR})
 set(CMAKE_MODULE_PATH ${CMAKE_BINARY_DIR})
 
 #Find libraries
-find_library(LIB_VULKAN vulkan)
+#find_library(LIB_VULKAN vulkan)
+find_package(Vulkan REQUIRED)
 find_program(GLSLC glslc)
 find_package(stb REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(tinyobjloader REQUIRED)
 find_package(glm REQUIRED)
 find_package(imgui REQUIRED)
+find_package(VulkanHeaders REQUIRED)
 
 if( NOT LIB_VULKAN)
-	message(FATAL_ERROR "Could not find vulkan")
+	#message(FATAL_ERROR "Could not find vulkan")
 endif()
 
 if( NOT GLSLC)
@@ -49,8 +51,11 @@ endfunction()
 file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE HEADERS "src/*.h")
 
-list(APPEND SOURCES "imgui_impl_glfw.cpp")
-list(APPEND SOURCES "imgui_impl_vulkan.cpp")
+list(APPEND SOURCES "${CMAKE_BINARY_DIR}/imgui_impl_vulkan.cpp")
+list(APPEND HEADERS "${CMAKE_BINARY_DIR}/imgui_impl_vulkan.h")
+
+list(APPEND SOURCES "${CMAKE_BINARY_DIR}/imgui_impl_glfw.cpp")
+list(APPEND HEADERS "${CMAKE_BINARY_DIR}/imgui_impl_glfw.h")
 
 set(INCLUDE_DIRS "")
 foreach(HEADER ${HEADERS})
@@ -63,12 +68,13 @@ include_directories(${HEADERS})
 
 add_executable(kaleidoscope ${SOURCES})
 target_include_directories(kaleidoscope PRIVATE ${INCLUDE_DIRS})
-target_link_libraries(kaleidoscope PUBLIC ${LIB_VULKAN})
+target_link_libraries(kaleidoscope PUBLIC ${Vulkan_LIBRARIES})
 target_link_libraries(kaleidoscope PUBLIC glfw)
 target_link_libraries(kaleidoscope PUBLIC stb::stb)
 target_link_libraries(kaleidoscope PUBLIC tinyobjloader)
 target_link_libraries(kaleidoscope PUBLIC glm::glm)
 target_link_libraries(kaleidoscope PUBLIC imgui::imgui)
+target_link_libraries(kaleidoscope PUBLIC vulkan-headers::vulkan-headers)
 
 message(STATUS "printing libraries")
 message(STATUS glfw)

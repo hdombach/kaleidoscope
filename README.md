@@ -1,5 +1,23 @@
 # kaleidoscope
 
+# Compiling For Release
+```
+conan install . --output-folder=build --build=missing
+cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+```
+
+# Compiling For Debug 
+```
+conan install . --output-folder=build --build=missing --profile=debug
+cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug
+cmake --build build
+```
+
+
+
+
+# Overview
 This will be the successor of Fractal Renderer (https://github.com/hdombach/Fractal-Renderer/tree/main).
 The goal is to include more tools like the ability to load textures and meshes instead of just using SDF's and procedural textures.
 
