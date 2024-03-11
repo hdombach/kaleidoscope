@@ -1,15 +1,18 @@
 #pragma once
 
-#include "vertex.hpp"
-#include "vulkan/vulkan_core.h"
 #include <functional>
-#include <memory>
 #include <vector>
-#include <vulkan/vulkan.h>
-#include <GLFW/glfw3.h>
 #include <optional>
 
+#include <vulkan/vulkan.h>
+#include <GLFW/glfw3.h>
+
+#include "vulkan/vulkan_core.h"
+#include "semaphore.hpp"
+
 namespace vulkan {
+	class Semaphore;
+
 	struct QueueFamilyIndices {
 		std::optional<uint32_t> graphicsFamily;
 		std::optional<uint32_t> presentFamily;
@@ -116,7 +119,7 @@ namespace vulkan {
 			void createDescriptorPool_();
 			void createComputeDescriptorSets_();
 			void createComputeCommandBuffers_();
-			void createSyncObjects_();
+			VkResult createSyncObjects_();
 			void createSurface_();
 			void recordComputeCommandBuffer_(VkCommandBuffer commandBuffer);
 			void createTextureSampler_();
@@ -220,7 +223,7 @@ namespace vulkan {
 			VkImage computeResultImage_;
 			VkImageView computeResultImageView_;
 			std::vector<VkCommandBuffer> computeCommandBuffers_;
-			std::vector<VkSemaphore> computeFinishedSemaphores_;
+			std::vector<Semaphore> computeFinishedSemaphores_;
 			std::vector<VkFence> computeInFlightFences_;
 			SwapchainSupportDetails swapchainSupportDetails_;
 

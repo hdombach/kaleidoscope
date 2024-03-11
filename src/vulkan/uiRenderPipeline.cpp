@@ -14,6 +14,8 @@
 #include <array>
 #include <imgui.h>
 
+//https://github.com/ocornut/imgui/blob/master/examples/example_glfw_vulkan/main.cpp
+
 namespace vulkan {
 	UIRenderPipeline::UIRenderPipeline() {
 		createDescriptorPool_();

@@ -7,6 +7,7 @@
 #include "imgui_impl_vulkan.h"
 #include "../util/log.hpp"
 #include "../ui/window.hpp"
+#include "semaphore.hpp"
 #include "uniformBufferObject.hpp"
 #include "vulkan/vulkan_core.h"
 
@@ -15,6 +16,7 @@
 #include <cstdio>
 #include <cstring>
 #include <glm/fwd.hpp>
+#include <memory>
 #include <stdexcept>
 #include <vulkan/vulkan.h>
 #include <array>
@@ -52,9 +54,7 @@ namespace vulkan {
 		for (auto inFlightFence : inFlightFences_) {
 			vkDestroyFence(Graphics::DEFAULT->device(), inFlightFence, nullptr);
 		}
-		for (auto renderFinishedSemaphore : renderFinishedSemaphores_) {
-			vkDestroySemaphore(Graphics::DEFAULT->device(), renderFinishedSemaphore, nullptr);
-		}
+		renderFinishedSemaphores_.clear();
 
 		vkDestroyRenderPass(Graphics::DEFAULT->device(), renderPass_, nullptr);
 	}
@@ -114,21 +114,21 @@ namespace vulkan {
 		return uniformBuffers_;
 	}
 
-	void MainRenderPipeline::createSyncObjects_() {
+	VkResult MainRenderPipeline::createSyncObjects_() {
 		renderFinishedSemaphores_.resize(FRAMES_IN_FLIGHT);
 		inFlightFences_.resize(FRAMES_IN_FLIGHT);
-
-		VkSemaphoreCreateInfo semaphoreInfo{};
-		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
 		VkFenceCreateInfo fenceInfo{};
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-			require(vkCreateSemaphore(Graphics::DEFAULT->device(), &semaphoreInfo, nullptr, &renderFinishedSemaphores_[i]));
+			auto semaphore = Semaphore::create();
+			RETURN_IF_ERR(semaphore);
+			renderFinishedSemaphores_[i] = std::move(semaphore.value());
 			require(vkCreateFence(Graphics::DEFAULT->device(), &fenceInfo, nullptr, &inFlightFences_[i]));
 		}
+		return VK_SUCCESS;
 	}
 
 	void MainRenderPipeline::createCommandBuffers_() {

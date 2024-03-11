@@ -1,24 +1,18 @@
+#include <cstdint>
+#include <cstring>
+#include <iostream>
+#include <stdexcept>
+#include <set>
+#include <array>
+
+#include <vulkan/vulkan_core.h>
+
 #include "graphics.hpp"
 #include "defs.hpp"
 #include "error.hpp"
 #include "../util/file.hpp"
-#include "../util/format.hpp"
 #include "../util/log.hpp"
-#include "uniformBufferObject.hpp"
-#include "vertex.hpp"
-#include "vulkan/vulkan_core.h"
-#include <chrono>
-#include <cstdint>
-#include <cstring>
-#include <glm/detail/compute_vector_relational.hpp>
-#include <iostream>
-#include <memory>
-#include <numeric>
-#include <sstream>
-#include <stdexcept>
-#include <set>
-#include <unordered_map>
-#include <strstream>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -27,6 +21,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/hash.hpp>
+#include <glm/detail/compute_vector_relational.hpp>
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
@@ -288,9 +283,9 @@ namespace vulkan {
 		vkDestroyPipelineLayout(device_, computePipelineLayout_, nullptr);
 
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-			vkDestroySemaphore(device_, computeFinishedSemaphores_[i], nullptr);
 			vkDestroyFence(device_, computeInFlightFences_[i], nullptr);
 		}
+		computeFinishedSemaphores_.clear();
 
 		vkDestroyCommandPool(device_, commandPool_, nullptr);
 
@@ -555,21 +550,21 @@ namespace vulkan {
 
 		require(vkAllocateCommandBuffers(device_, &allocInfo, computeCommandBuffers_.data()));
 	}
-	void Graphics::createSyncObjects_() {
+	VkResult Graphics::createSyncObjects_() {
 		computeFinishedSemaphores_.resize(FRAMES_IN_FLIGHT);
 		computeInFlightFences_.resize(FRAMES_IN_FLIGHT);
 
-		VkSemaphoreCreateInfo semaphoreInfo{};
-		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-		
 		VkFenceCreateInfo fenceInfo{};
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-			require(vkCreateSemaphore(device_, &semaphoreInfo, nullptr, &computeFinishedSemaphores_[i]));
+			auto semaphore = Semaphore::create(device_);
+			RETURN_IF_ERR(semaphore);
+			computeFinishedSemaphores_[i] = std::move(semaphore.value());
 			require(vkCreateFence(device_, &fenceInfo, nullptr, &computeInFlightFences_[i]));
 		}
+		return VK_SUCCESS;
 	}
 
 	void Graphics::recordComputeCommandBuffer_(VkCommandBuffer commandBuffer) {

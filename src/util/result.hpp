@@ -13,13 +13,23 @@ namespace util {
 	template<typename Value, typename Error>
 		class Result: private std::variant<Value, Error> {
 			public:
-				Result(Value value): parent_t(value) {}
-				Result(Error error): parent_t(error) {}
+				Result(Value value): parent_t(std::move(value)) {}
+				Result(Error error): parent_t(std::move(error)) {}
 
 				operator bool() const {
 					return std::holds_alternative<Value>(*this);
 				}
 
+				Value &value() {
+					try {
+						return std::get<Value>(*this);
+					} catch (std::bad_variant_access) {
+						throw std::runtime_error(util::f(
+									"Trying to get value of function that threw \"",
+									error(),
+									'"'));
+					}
+				}
 				Value const &value() const {
 					try {
 						return std::get<Value>(*this);
@@ -31,13 +41,19 @@ namespace util {
 					}
 				}
 
+				Value &value(Value defaultValue) {
+					try {
+						return std::get<Value>(*this);
+					} catch (std::bad_variant_access) {
+						return defaultValue;
+					}
+				}
 				Value const &value(Value defaultValue) const {
 					try {
 						return std::get<Value>(*this);
 					} catch (std::bad_variant_access) {
 						return defaultValue;
 					}
-
 				}
 
 				Error const &error() const {
@@ -73,4 +89,6 @@ namespace util {
 				using parent_t = std::optional<Error>;
 
 		};
+
+#define RETURN_IF_ERR(result) if (!result) return result.error();
 }

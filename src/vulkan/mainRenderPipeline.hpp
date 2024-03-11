@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 #include "../types/resourceManager.hpp"
-#include "vertex.hpp"
+#include "semaphore.hpp"
 #include "vulkan/vulkan_core.h"
 #include <vector>
 #include "texture.hpp"
@@ -26,7 +26,7 @@ namespace vulkan {
 			std::vector<VkBuffer> const &uniformBuffers() const;
 
 		private:
-			void createSyncObjects_();
+			VkResult createSyncObjects_();
 			void createCommandBuffers_();
 			void createRenderPass_();
 			void createUniformBuffers_();
@@ -46,7 +46,7 @@ namespace vulkan {
 			std::vector<VkDeviceMemory> uniformBuffersMemory_;
 			std::vector<void*> uniformBuffersMapped_;
 			std::vector<VkFence> inFlightFences_;
-			std::vector<VkSemaphore> renderFinishedSemaphores_;
+			std::vector<Semaphore> renderFinishedSemaphores_;
 			std::vector<VkCommandBuffer> commandBuffers_;
 
 			VkImage depthImage_;
