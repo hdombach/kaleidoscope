@@ -282,9 +282,7 @@ namespace vulkan {
 		vkDestroyPipeline(device_, computePipeline_, nullptr);
 		vkDestroyPipelineLayout(device_, computePipelineLayout_, nullptr);
 
-		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-			vkDestroyFence(device_, computeInFlightFences_[i], nullptr);
-		}
+		computeInFlightFences_.clear();
 		computeFinishedSemaphores_.clear();
 
 		vkDestroyCommandPool(device_, commandPool_, nullptr);
@@ -554,15 +552,14 @@ namespace vulkan {
 		computeFinishedSemaphores_.resize(FRAMES_IN_FLIGHT);
 		computeInFlightFences_.resize(FRAMES_IN_FLIGHT);
 
-		VkFenceCreateInfo fenceInfo{};
-		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 			auto semaphore = Semaphore::create(device_);
 			RETURN_IF_ERR(semaphore);
 			computeFinishedSemaphores_[i] = std::move(semaphore.value());
-			require(vkCreateFence(device_, &fenceInfo, nullptr, &computeInFlightFences_[i]));
+
+			auto fence = Fence::create(device_);
+			RETURN_IF_ERR(fence);
+			computeInFlightFences_[i] = std::move(fence.value());
 		}
 		return VK_SUCCESS;
 	}

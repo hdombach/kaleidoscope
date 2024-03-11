@@ -1,28 +1,21 @@
-#include "mainRenderPipeline.hpp"
-#include "defs.hpp"
-#include "error.hpp"
-#include "../util/file.hpp"
-#include "../util/format.hpp"
-#include "graphics.hpp"
-#include "imgui_impl_vulkan.h"
-#include "../util/log.hpp"
-#include "../ui/window.hpp"
-#include "semaphore.hpp"
-#include "uniformBufferObject.hpp"
-#include "vulkan/vulkan_core.h"
-
-#include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <glm/fwd.hpp>
-#include <memory>
-#include <stdexcept>
-#include <vulkan/vulkan.h>
 #include <array>
+
+#include "mainRenderPipeline.hpp"
+#include "defs.hpp"
+#include "error.hpp"
+#include "graphics.hpp"
+#include "imgui_impl_vulkan.h"
+#include "../util/log.hpp"
+#include "semaphore.hpp"
+#include "uniformBufferObject.hpp"
+
+#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
+#include <glm/fwd.hpp>
 #include <stb_image.h>
-#include <format>
-#include <sstream>
 
 namespace vulkan {
 	MainRenderPipeline::MainRenderPipeline(
@@ -51,16 +44,14 @@ namespace vulkan {
 		for (auto uniformBufferMemory : uniformBuffersMemory_) {
 			vkFreeMemory(Graphics::DEFAULT->device(), uniformBufferMemory, nullptr);
 		}
-		for (auto inFlightFence : inFlightFences_) {
-			vkDestroyFence(Graphics::DEFAULT->device(), inFlightFence, nullptr);
-		}
+		inFlightFences_.clear();
 		renderFinishedSemaphores_.clear();
 
 		vkDestroyRenderPass(Graphics::DEFAULT->device(), renderPass_, nullptr);
 	}
 
 	void MainRenderPipeline::submit() {
-		vkWaitForFences(Graphics::DEFAULT->device(), 1, &inFlightFences_[frameIndex_], VK_TRUE, UINT64_MAX);
+		require(inFlightFences_[frameIndex_].wait());
 		if (framebufferResized_ ) {
 			framebufferResized_ = false;
 			recreateResultImages_();
@@ -70,7 +61,7 @@ namespace vulkan {
 
 		updateUniformBuffer_(frameIndex_);
 
-		vkResetFences(Graphics::DEFAULT->device(), 1, &inFlightFences_[frameIndex_]);
+		inFlightFences_[frameIndex_].reset();
 
 		vkResetCommandBuffer(commandBuffers_[frameIndex_], 0);
 
@@ -83,7 +74,7 @@ namespace vulkan {
 		//submitInfo.signalSemaphoreCount = 1;
 		//submitInfo.pSignalSemaphores = &renderFinishedSemaphores_[frameIndex_];
 
-		require(vkQueueSubmit(Graphics::DEFAULT->graphicsQueue(), 1, &submitInfo, inFlightFences_[frameIndex_]));
+		require(vkQueueSubmit(Graphics::DEFAULT->graphicsQueue(), 1, &submitInfo, *inFlightFences_[frameIndex_]));
 
 		frameIndex_ = (frameIndex_ + 1) % FRAMES_IN_FLIGHT;
 	}
@@ -118,15 +109,14 @@ namespace vulkan {
 		renderFinishedSemaphores_.resize(FRAMES_IN_FLIGHT);
 		inFlightFences_.resize(FRAMES_IN_FLIGHT);
 
-		VkFenceCreateInfo fenceInfo{};
-		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 			auto semaphore = Semaphore::create();
 			RETURN_IF_ERR(semaphore);
 			renderFinishedSemaphores_[i] = std::move(semaphore.value());
-			require(vkCreateFence(Graphics::DEFAULT->device(), &fenceInfo, nullptr, &inFlightFences_[i]));
+
+			auto fence = Fence::create();
+			RETURN_IF_ERR(fence);
+			inFlightFences_[i] = std::move(fence.value());
 		}
 		return VK_SUCCESS;
 	}

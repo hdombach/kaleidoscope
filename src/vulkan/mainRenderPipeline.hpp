@@ -1,11 +1,14 @@
 #pragma once
 
+#include <vector>
+
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
+
 #include "../types/resourceManager.hpp"
 #include "semaphore.hpp"
+#include "fence.hpp"
 #include "vulkan/vulkan_core.h"
-#include <vector>
 #include "texture.hpp"
 
 namespace vulkan {
@@ -45,7 +48,7 @@ namespace vulkan {
 			std::vector<VkBuffer> uniformBuffers_;
 			std::vector<VkDeviceMemory> uniformBuffersMemory_;
 			std::vector<void*> uniformBuffersMapped_;
-			std::vector<VkFence> inFlightFences_;
+			std::vector<Fence> inFlightFences_;
 			std::vector<Semaphore> renderFinishedSemaphores_;
 			std::vector<VkCommandBuffer> commandBuffers_;
 

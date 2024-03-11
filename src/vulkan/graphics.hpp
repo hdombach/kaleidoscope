@@ -9,6 +9,7 @@
 
 #include "vulkan/vulkan_core.h"
 #include "semaphore.hpp"
+#include "fence.hpp"
 
 namespace vulkan {
 	class Semaphore;
@@ -224,7 +225,7 @@ namespace vulkan {
 			VkImageView computeResultImageView_;
 			std::vector<VkCommandBuffer> computeCommandBuffers_;
 			std::vector<Semaphore> computeFinishedSemaphores_;
-			std::vector<VkFence> computeInFlightFences_;
+			std::vector<Fence> computeInFlightFences_;
 			SwapchainSupportDetails swapchainSupportDetails_;
 
 			//imgui stuff
