@@ -10,6 +10,7 @@
 #include "fence.hpp"
 #include "vulkan/vulkan_core.h"
 #include "texture.hpp"
+#include "imageView.hpp"
 
 namespace vulkan {
 	class Graphics;
@@ -24,17 +25,17 @@ namespace vulkan {
 
 			VkExtent2D getSize() const;
 			VkDescriptorSet getDescriptorSet() const;
-			VkImageView imageView() const;
+			ImageView const &imageView() const;
 			VkRenderPass renderPass() const;
 			std::vector<VkBuffer> const &uniformBuffers() const;
 
 		private:
-			VkResult createSyncObjects_();
+			util::Result<void, KError> createSyncObjects_();
 			void createCommandBuffers_();
 			void createRenderPass_();
 			void createUniformBuffers_();
 			void createDepthResources_();
-			void createResultImages_();
+			util::Result<void, KError> createResultImages_();
 			void recreateResultImages_();
 			void cleanupResultImages_();
 			void cleanupDepthResources_();
@@ -58,7 +59,7 @@ namespace vulkan {
 			VkExtent2D size_;
 			const static VkFormat RESULT_IMAGE_FORMAT_ = VK_FORMAT_R8G8B8A8_SRGB;
 			std::vector<VkImage> resultImages_;
-			std::vector<VkImageView> resultImageViews_;
+			std::vector<ImageView> _resultImageViews;
 			std::vector<VkDeviceMemory> resultImageMemory_;
 			std::vector<VkFramebuffer> resultImageFramebuffer_;
 			std::vector<VkDescriptorSet> resultDescriptorSets_;

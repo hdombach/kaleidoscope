@@ -25,12 +25,12 @@ namespace types {
 		}
 	}
 
-	util::Result<void, errors::TextureAlreadyExists> ResourceManager::addTexture(
+	util::Result<void, KError> ResourceManager::addTexture(
 			const std::string &name,
 			vulkan::Texture *texture)
 	{
 		if (textures_.count(name)) {
-			return errors::TextureAlreadyExists{name};
+			return KError::texture_exists(name);
 		}
 		textures_[name] = texture;
 		return {};
@@ -55,12 +55,12 @@ namespace types {
 		return textures_.count(name);
 	}
 
-	util::Result<void, errors::MeshAlreadyExists> ResourceManager::addMesh(
+	util::Result<void, KError> ResourceManager::addMesh(
 			const std::string &name,
 			vulkan::Mesh *mesh)
 	{
 		if (meshes_.count(name)) {
-			return errors::MeshAlreadyExists{name};
+			return KError::mesh_already_exists(name);
 		}
 		meshes_[name] = mesh;
 		return {};
@@ -85,12 +85,12 @@ namespace types {
 		return meshes_.count(name);
 	}
 
-	util::Result<void, errors::MaterialAlreadyExists> ResourceManager::addMaterial(
+	util::Result<void, KError> ResourceManager::addMaterial(
 			const std::string &name,
 			vulkan::Material *material)
 	{
 		if (hasMaterial(name)) {
-			return errors::MaterialAlreadyExists{name};
+			return KError::material_already_exists(name);
 		}
 		materials_[name] = material;
 		return {};

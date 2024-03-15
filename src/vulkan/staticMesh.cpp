@@ -5,7 +5,7 @@
 #include "vulkan/vulkan_core.h"
 
 namespace vulkan {
-	util::Result<StaticMesh *, errors::InvalidMeshFile> StaticMesh::fromFile(
+	util::Result<StaticMesh *, KError> StaticMesh::fromFile(
 			const std::string &url)
 	{
 		tinyobj::attrib_t attrib;
@@ -16,7 +16,7 @@ namespace vulkan {
 		std::vector<uint32_t> indices;
 
 		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, url.c_str())) {
-			return errors::InvalidMeshFile{util::f("Cannot load mesh ", url, ": ", warn, err)};
+			return KError::invalid_mesh_file("Cannot load mesh " + url + ": " + warn + err);
 		}
 
 		std::unordered_map<vulkan::Vertex, uint32_t> uniqueVertices{};

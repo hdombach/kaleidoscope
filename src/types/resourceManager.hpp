@@ -21,7 +21,7 @@ namespace types {
 			ResourceManager();
 			~ResourceManager();
 	
-			util::Result<void, errors::TextureAlreadyExists> addTexture(
+			util::Result<void, KError> addTexture(
 					std::string const &name,
 					vulkan::Texture *texture);
 			vulkan::Texture *defaultTexture();
@@ -29,7 +29,7 @@ namespace types {
 			vulkan::Texture const *getTexture(std::string const &name) const;
 			bool hasTexture(std::string const &name) const;
 
-			util::Result<void, errors::MeshAlreadyExists> addMesh(
+			util::Result<void, KError> addMesh(
 					std::string const &name,
 					vulkan::Mesh *mesh);
 			vulkan::Mesh *defaultMesh();
@@ -37,7 +37,7 @@ namespace types {
 			vulkan::Mesh const *getMesh(std::string const &name) const;
 			bool hasMesh(std::string const &name) const;
 
-			util::Result<void, errors::MaterialAlreadyExists> addMaterial(
+			util::Result<void, KError> addMaterial(
 					std::string const &name,
 					vulkan::Material *material);
 			vulkan::Material *defaultMaterial();

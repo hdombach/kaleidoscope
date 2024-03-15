@@ -6,9 +6,7 @@
 #include <variant>
 namespace util {
 	/*
-	 * I want to try an error system similar
-	 * to rust because I feel like I have more
-	 * control (vs throwing exceptions)
+	 * @brief Rust style error handling
 	 */
 	template<typename Value, typename Error>
 		class Result: private std::variant<Value, Error> {
@@ -90,5 +88,5 @@ namespace util {
 
 		};
 
-#define RETURN_IF_ERR(result) if (!result) return result.error();
+#define RETURN_IF_ERR(result) if (!result) return {result.error()};
 }

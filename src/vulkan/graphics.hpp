@@ -5,11 +5,12 @@
 #include <optional>
 
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 #include <GLFW/glfw3.h>
 
-#include "vulkan/vulkan_core.h"
 #include "semaphore.hpp"
 #include "fence.hpp"
+#include "../util/errors.hpp"
 
 namespace vulkan {
 	class Semaphore;
@@ -108,19 +109,19 @@ namespace vulkan {
 			Graphics(const char *name);
 			void initWindow_();
 			void initVulkan_();
-			void createInstance_();
-			void setupDebugMessenger_();
+			util::Result<void, KError> createInstance_();
+			util::Result<void, KError> setupDebugMessenger_();
 			void pickPhysicalDevice_();
 			bool isDeviceSuitable_(VkPhysicalDevice device);
 			bool checkDeviceExtensionSupport_(VkPhysicalDevice device);
-			void createLogicalDevice_();
+			util::Result<void, KError> createLogicalDevice_();
 			void createComputeDescriptorSetLayout_();
 			void createComputePipeline_();
 			void createCommandPool_();
 			void createDescriptorPool_();
 			void createComputeDescriptorSets_();
 			void createComputeCommandBuffers_();
-			VkResult createSyncObjects_();
+			util::Result<void, KError> createSyncObjects_();
 			void createSurface_();
 			void recordComputeCommandBuffer_(VkCommandBuffer commandBuffer);
 			void createTextureSampler_();

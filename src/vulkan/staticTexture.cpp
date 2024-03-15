@@ -1,13 +1,14 @@
+#include <cmath>
+
+#include <vulkan/vulkan_core.h>
+#include <stb_image.h>
+
 #include "staticTexture.hpp"
 #include "graphics.hpp"
 #include "imgui_impl_vulkan.h"
-#include "vulkan/vulkan_core.h"
-#include <cmath>
-#include <stb_image.h>
-#include <stdexcept>
 
 namespace vulkan {
-	util::Result<StaticTexture *, errors::InvalidImageFile> StaticTexture::fromFile(
+	util::Result<StaticTexture *, KError> StaticTexture::fromFile(
 			const std::string &url)
 	{
 		auto result = new StaticTexture();
@@ -22,11 +23,11 @@ namespace vulkan {
 
 		auto imageSize = (VkDeviceSize) texWidth * texHeight * 4;
 
-		result->mipLevels_ = static_cast<uint32_t>(
+		result->_mipLevels = static_cast<uint32_t>(
 				std::floor(std::log2(std::max(texWidth, texHeight))));
 
 		if (!pixels) {
-			return errors::InvalidImageFile{url};
+			return KError::invalid_image_file(url);
 		}
 
 		auto stagingBuffer = VkBuffer{};
@@ -47,65 +48,65 @@ namespace vulkan {
 		Graphics::DEFAULT->createImage(
 				texWidth,
 				texHeight,
-				result->mipLevels_,
+				result->_mipLevels,
 				VK_FORMAT_R8G8B8A8_SRGB,
 				VK_IMAGE_TILING_OPTIMAL,
 				VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 					VK_IMAGE_USAGE_TRANSFER_DST_BIT |
 					VK_IMAGE_USAGE_SAMPLED_BIT,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-				result->texture_,
-				result->textureMemory_);
+				result->_texture,
+				result->_textureMemory);
 
 		Graphics::DEFAULT->transitionImageLayout(
-				result->texture_,
+				result->_texture,
 				VK_FORMAT_R8G8B8A8_SRGB,
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				result->mipLevels_);
+				result->_mipLevels);
 
 		Graphics::DEFAULT->copyBufferToImage(
 				stagingBuffer,
-				result->texture_,
+				result->_texture,
 				static_cast<uint32_t>(texWidth),
 				static_cast<uint32_t>(texHeight));
 
 		vkDestroyBuffer(Graphics::DEFAULT->device(), stagingBuffer, nullptr);
 		vkFreeMemory(Graphics::DEFAULT->device(), stagingBufferMemory, nullptr);
 
-		Graphics::DEFAULT->generateMipmaps(result->texture_,
+		Graphics::DEFAULT->generateMipmaps(result->_texture,
 				VK_FORMAT_R8G8B8A8_SRGB,
 				texWidth,
 				texHeight,
-				result->mipLevels_);
+				result->_mipLevels);
 
-		result->textureView_ = Graphics::DEFAULT->createImageView(
-				result->texture_,
-				VK_FORMAT_R8G8B8A8_SRGB,
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				result->mipLevels_);
+		auto image_view_info = ImageView::create_info(result->_texture);
+		image_view_info.subresourceRange.levelCount = result->_mipLevels;
+		auto image_view = ImageView::create(image_view_info);
+		RETURN_IF_ERR(image_view);
+		result->_textureView = std::move(image_view.value());
 
 		ImGui_ImplVulkan_AddTexture(
 				Graphics::DEFAULT->mainTextureSampler(),
-				result->textureView_,
+				result->_textureView.value(),
 				VK_IMAGE_LAYOUT_GENERAL);
 
 		return result;
 	}
 
 	StaticTexture::~StaticTexture() {
-		vkDestroyImage(Graphics::DEFAULT->device(), texture_, nullptr);
-		vkFreeMemory(Graphics::DEFAULT->device(), textureMemory_, nullptr);
-		vkDestroyImageView(Graphics::DEFAULT->device(), textureView_, nullptr);
+		vkDestroyImage(Graphics::DEFAULT->device(), _texture, nullptr);
+		vkFreeMemory(Graphics::DEFAULT->device(), _textureMemory, nullptr);
+		_textureView.~ImageView();
 
-		ImGui_ImplVulkan_RemoveTexture(imguiDescriptorSet_);
+		ImGui_ImplVulkan_RemoveTexture(_imguiDescriptorSet);
 	}
 
 	VkDescriptorSet StaticTexture::getDescriptorSet() const {
-		return imguiDescriptorSet_;
+		return _imguiDescriptorSet;
 	}
 
-	VkImageView StaticTexture::imageView() const {
-		return textureView_;
+	ImageView const &StaticTexture::imageView() const {
+		return _textureView;
 	}
 }

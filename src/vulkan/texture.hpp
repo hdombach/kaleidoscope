@@ -1,8 +1,10 @@
 #pragma once
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
+
 #include "../util/log.hpp"
-#include "vulkan/vulkan_core.h"
+#include "imageView.hpp"
 
 
 namespace vulkan {
@@ -14,7 +16,7 @@ namespace vulkan {
 		public:
 			virtual ~Texture() = default;
 			virtual VkDescriptorSet getDescriptorSet() const = 0;
-			virtual VkImageView imageView() const = 0;
+			virtual ImageView const &imageView() const = 0;
 
 			virtual bool isResizable() const {
 				return false;

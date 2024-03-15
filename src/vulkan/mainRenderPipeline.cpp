@@ -11,6 +11,7 @@
 #include "../util/log.hpp"
 #include "semaphore.hpp"
 #include "uniformBufferObject.hpp"
+#include "imageView.hpp"
 
 #include <vulkan/vulkan_core.h>
 #include <vulkan/vulkan.h>
@@ -95,8 +96,8 @@ namespace vulkan {
 		return resultDescriptorSets_[frameIndex_];
 	}
 
-	VkImageView MainRenderPipeline::imageView() const {
-		return resultImageViews_[frameIndex_];
+	ImageView const &MainRenderPipeline::imageView() const {
+		return _resultImageViews[frameIndex_];
 	}
 	VkRenderPass MainRenderPipeline::renderPass() const {
 		return renderPass_;
@@ -105,7 +106,7 @@ namespace vulkan {
 		return uniformBuffers_;
 	}
 
-	VkResult MainRenderPipeline::createSyncObjects_() {
+	util::Result<void, KError> MainRenderPipeline::createSyncObjects_() {
 		renderFinishedSemaphores_.resize(FRAMES_IN_FLIGHT);
 		inFlightFences_.resize(FRAMES_IN_FLIGHT);
 
@@ -118,7 +119,7 @@ namespace vulkan {
 			RETURN_IF_ERR(fence);
 			inFlightFences_[i] = std::move(fence.value());
 		}
-		return VK_SUCCESS;
+		return {};
 	}
 
 	void MainRenderPipeline::createCommandBuffers_() {
@@ -246,9 +247,9 @@ namespace vulkan {
 				1);
 	}
 
-	void MainRenderPipeline::createResultImages_() {
+	util::Result<void, KError> MainRenderPipeline::createResultImages_() {
 		resultImages_.resize(FRAMES_IN_FLIGHT);
-		resultImageViews_.resize(FRAMES_IN_FLIGHT);
+		_resultImageViews.resize(FRAMES_IN_FLIGHT);
 		resultImageMemory_.resize(FRAMES_IN_FLIGHT);
 		resultImageFramebuffer_.resize(FRAMES_IN_FLIGHT);
 		resultDescriptorSets_.resize(FRAMES_IN_FLIGHT);
@@ -264,11 +265,13 @@ namespace vulkan {
 					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 					resultImages_[i],
 					resultImageMemory_[i]);
-			resultImageViews_[i] = Graphics::DEFAULT->createImageView(
-					resultImages_[i], 
-					RESULT_IMAGE_FORMAT_, 
-					VK_IMAGE_ASPECT_COLOR_BIT, 
-					1);
+
+			auto image_view_info = ImageView::create_info(resultImages_[i]);
+			image_view_info.format = RESULT_IMAGE_FORMAT_;
+			auto image_view = ImageView::create(image_view_info);
+			RETURN_IF_ERR(image_view);
+			_resultImageViews[i] = std::move(image_view.value());
+
 			Graphics::DEFAULT->transitionImageLayout(
 					resultImages_[i], 
 					RESULT_IMAGE_FORMAT_, 
@@ -277,7 +280,7 @@ namespace vulkan {
 					1);
 
 			auto attachments = std::array<VkImageView, 2>{
-				resultImageViews_[i],
+				_resultImageViews[i].value(),
 				depthImageView_,
 			};
 
@@ -301,9 +304,11 @@ namespace vulkan {
 			}
 			resultDescriptorSets_[i] = ImGui_ImplVulkan_AddTexture(
 					Graphics::DEFAULT->mainTextureSampler(),
-					resultImageViews_[i],
+					_resultImageViews[i].value(),
 					VK_IMAGE_LAYOUT_GENERAL);
 		}
+
+		return {};
 	}
 
 	void MainRenderPipeline::recreateResultImages_() {
@@ -315,9 +320,7 @@ namespace vulkan {
 	}
 
 	void MainRenderPipeline::cleanupResultImages_() {
-		for (auto imageView : resultImageViews_) {
-			vkDestroyImageView(Graphics::DEFAULT->device(), imageView, nullptr);
-		}
+		_resultImageViews.clear();
 		for (auto image : resultImages_) {
 			vkDestroyImage(Graphics::DEFAULT->device(), image, nullptr);
 		}

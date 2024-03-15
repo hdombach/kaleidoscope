@@ -200,7 +200,7 @@ namespace vulkan {
 		createSyncObjects_();
 	}
 
-	void Graphics::createInstance_() {
+	util::Result<void, KError> Graphics::createInstance_() {
 		if (ENABLE_VALIDATION_LAYERS) {
 			if (checkValidationLayerSupport_()) {
 				std::cout << "Validation layer enabled" << std::endl;
@@ -242,8 +242,10 @@ namespace vulkan {
 
 		VkResult result = vkCreateInstance(&createInfo, nullptr, &instance_);
 		if (result != VK_SUCCESS) {
-			throw vulkan::Error(result);
+			return KError(result);
 		}
+
+		return {};
 	}
 
 	bool Graphics::checkValidationLayerSupport_() {
@@ -310,14 +312,15 @@ namespace vulkan {
 		extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 		return extensions;
 	}
-	void Graphics::setupDebugMessenger_() {
-		if (!ENABLE_VALIDATION_LAYERS) return;
+	util::Result<void, KError> Graphics::setupDebugMessenger_() {
+		if (!ENABLE_VALIDATION_LAYERS) return {};
 		auto createInfo = VkDebugUtilsMessengerCreateInfoEXT{};
 		populateDebugMessengerCreateInfo_(createInfo);
 		auto result = createDebugUtilsMessengerEXT(instance_, &createInfo, nullptr, &debugMessenger_);
 		if (result != VK_SUCCESS) {
-			throw vulkan::Error(result);
+			return KError(result);
 		}
+		return {};
 	}
 	void Graphics::populateDebugMessengerCreateInfo_(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
 		createInfo = {};
@@ -381,7 +384,7 @@ namespace vulkan {
 		}
 		return requiredExtensions.empty();
 	}
-	void Graphics::createLogicalDevice_() {
+	util::Result<void, KError> Graphics::createLogicalDevice_() {
 		auto indices = findQueueFamilies_(physicalDevice_);
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 		auto uniqueQueueFamilies = std::set<uint32_t>{indices.graphicsFamily.value(), indices.presentFamily.value()};
@@ -418,13 +421,14 @@ namespace vulkan {
 		}
 		auto result = vkCreateDevice(physicalDevice_, &createInfo, nullptr, &device_);
 		if (result != VK_SUCCESS) {
-			throw vulkan::Error(result);
+			throw KError(result);
 		}
 		//TODO: the pipeline objects should probably own graphics queue
 		vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 0, &graphicsQueue_);
 		//TODO: search specifically for a compute queue
 		vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 0, &computeQueue_);
 		vkGetDeviceQueue(device_, indices.presentFamily.value(), 0, &presentQueue_);
+		return {};
 	}
 
 	void Graphics::createComputePipeline_() {
@@ -548,7 +552,7 @@ namespace vulkan {
 
 		require(vkAllocateCommandBuffers(device_, &allocInfo, computeCommandBuffers_.data()));
 	}
-	VkResult Graphics::createSyncObjects_() {
+	util::Result<void, KError> Graphics::createSyncObjects_() {
 		computeFinishedSemaphores_.resize(FRAMES_IN_FLIGHT);
 		computeInFlightFences_.resize(FRAMES_IN_FLIGHT);
 
@@ -561,7 +565,8 @@ namespace vulkan {
 			RETURN_IF_ERR(fence);
 			computeInFlightFences_[i] = std::move(fence.value());
 		}
-		return VK_SUCCESS;
+
+		return {};
 	}
 
 	void Graphics::recordComputeCommandBuffer_(VkCommandBuffer commandBuffer) {

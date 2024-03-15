@@ -93,7 +93,7 @@ namespace vulkan {
 
 			auto imageInfo = VkDescriptorImageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			imageInfo.imageView = texture_->imageView();
+			imageInfo.imageView = texture_->imageView().value();
 			imageInfo.sampler = Graphics::DEFAULT->mainTextureSampler();
 
 			auto descriptorWrites = std::array<VkWriteDescriptorSet, 2>{};
