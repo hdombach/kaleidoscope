@@ -11,11 +11,11 @@ KError::KError(VkResult result):
 	_desc = string_VkResult(result);
 }
 
-std::string const &KError::desc() {
+std::string const &KError::desc() const {
 	return _desc;
 }
 
-std::string const &KError::content() {
+std::string const &KError::content() const {
 	return _content;
 }
 

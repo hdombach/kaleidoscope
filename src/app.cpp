@@ -10,6 +10,7 @@
 #include "./ui/window.hpp"
 #include <memory>
 #include <GLFW/glfw3.h>
+#include <stdexcept>
 
 App::App(std::string const &name) {
 	vulkan::Graphics::initDefault("Kaleidoscope");
@@ -26,8 +27,12 @@ App::App(std::string const &name) {
 	} else {
 		util::log_error(util::f(vikingRoom.error()));
 	}
-	window_ = std::make_unique<ui::Window>(*resourceManager_);
-	materialFactory_ = std::make_unique<vulkan::MaterialFactory>(window_->mainRendePipeline(), *descriptorPool_);
+	auto window = ui::Window::create(*resourceManager_);
+	if (!window.has_value()) {
+		throw std::runtime_error("Error when creating window: " + window.error().desc());
+	}
+	window_ = std::move(window.value());
+	materialFactory_ = std::make_unique<vulkan::MaterialFactory>(window_->main_render_pipeline(), *descriptorPool_);
 	resourceManager_->addMaterial("viking_room", materialFactory_->textureMaterial(resourceManager_->getTexture("viking_room")));
 }
 

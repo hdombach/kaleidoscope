@@ -1,30 +1,27 @@
+#include <memory>
+
+#include <stdexcept>
+#include <tiny_obj_loader.h>
+#include <vulkan/vulkan_core.h>
+#include <imgui.h>
+
 #include "window.hpp"
-#include "../vulkan/defs.hpp"
-#include "../util/format.hpp"
-#include "imgui.h"
-#include "imgui_impl_vulkan.h"
-#include "../util/log.hpp"
 #include "../vulkan/mainRenderPipeline.hpp"
 #include "../types/resourceManager.hpp"
 #include "textureView.hpp"
-#include "vulkan/vulkan_core.h"
-#include <memory>
-#include <tiny_obj_loader.h>
-#include <unordered_map>
-#include <vector>
 
 namespace ui {
-	Window::Window(types::ResourceManager &resourceManager):
-		mainRenderPipeline_(std::make_unique<vulkan::MainRenderPipeline>(resourceManager, VkExtent2D{300, 300})),
-		viewport_(*mainRenderPipeline_)
-	{}
-
+	util::Result<Window::Ptr, KError> Window::create(types::ResourceManager &resource_manager) {
+		auto render_pipeline = vulkan::MainRenderPipeline::create(resource_manager, {300, 300});
+		RETURN_IF_ERR(render_pipeline);
+		return Window::Ptr(new Window(std::move(render_pipeline.value())));
+	}
 	Window::~Window() {
-		mainRenderPipeline_.reset();
+		_main_render_pipeline.reset();
 	}
 
 	void Window::show() {
-		mainRenderPipeline_->submit();
+		_main_render_pipeline->submit();
 		auto imguiViewport = ImGui::GetMainViewport();
 		//ImGui::SetNextWindowPos(imguiViewport->WorkPos);
 		//ImGui::SetNextWindowSize(imguiViewport->WorkSize);
@@ -32,12 +29,17 @@ namespace ui {
 		ImGui::Begin("Hello World Example");
 		ImGui::Text("Hello World");
 
-		viewport_.show();
+		_viewport.show();
 
 		ImGui::End();
 	}
 
-	vulkan::MainRenderPipeline const &Window::mainRendePipeline() const {
-		return *mainRenderPipeline_;
+	vulkan::MainRenderPipeline const &Window::main_render_pipeline() const {
+		return *_main_render_pipeline;
 	}
+
+	Window::Window(vulkan::MainRenderPipeline::Ptr &&main_render_pipeline):
+		_main_render_pipeline(std::move(main_render_pipeline)),
+		_viewport(*_main_render_pipeline)
+	{}
 }

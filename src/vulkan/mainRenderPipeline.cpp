@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstring>
 #include <array>
+#include <memory>
 
 #include "mainRenderPipeline.hpp"
 #include "defs.hpp"
@@ -19,18 +20,27 @@
 #include <stb_image.h>
 
 namespace vulkan {
+	util::Result<MainRenderPipeline::Ptr, KError> MainRenderPipeline::create(
+			types::ResourceManager &resource_manager,
+			VkExtent2D size)
+	{
+		auto result = std::unique_ptr<MainRenderPipeline>(
+				new MainRenderPipeline(resource_manager, size));
+		RETURN_IF_ERR(result->createSyncObjects_());
+		result->createCommandBuffers_();
+		result->createRenderPass_();
+		result->createDepthResources_();
+		RETURN_IF_ERR(result->createResultImages_());
+		result->createUniformBuffers_();
+		return result;
+	}
+
 	MainRenderPipeline::MainRenderPipeline(
 			types::ResourceManager &resourceManager,
 			VkExtent2D size):
 		size_(size),
 		resourceManager_(resourceManager)
 	{
-		createSyncObjects_();
-		createCommandBuffers_();
-		createRenderPass_();
-		createDepthResources_();
-		createResultImages_();
-		createUniformBuffers_();
 	}
 
 	MainRenderPipeline::~MainRenderPipeline() {
@@ -105,6 +115,15 @@ namespace vulkan {
 	std::vector<VkBuffer> const &MainRenderPipeline::uniformBuffers() const {
 		return uniformBuffers_;
 	}
+
+	/*
+	MainRenderPipeline::MainRenderPipeline(
+			types::ResourceManager &resourceManager,
+			VkExtent2D size):
+		size_(size),
+		resourceManager_(resourceManager)
+	{}*/
+
 
 	util::Result<void, KError> MainRenderPipeline::createSyncObjects_() {
 		renderFinishedSemaphores_.resize(FRAMES_IN_FLIGHT);

@@ -1,23 +1,28 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 
 #include "../types/resourceManager.hpp"
 #include "semaphore.hpp"
 #include "fence.hpp"
-#include "vulkan/vulkan_core.h"
 #include "texture.hpp"
 #include "imageView.hpp"
+#include "../util/result.hpp"
 
 namespace vulkan {
 	class Graphics;
 
 	class MainRenderPipeline: public Texture  {
 		public:
-			MainRenderPipeline(types::ResourceManager &resourceManager, VkExtent2D size);
+			using Ptr = std::unique_ptr<MainRenderPipeline>;
+			static util::Result<Ptr, KError> create(
+					types::ResourceManager &resource_manager,
+					VkExtent2D size);
 			~MainRenderPipeline();
 			void submit();
 			void resize(glm::ivec2 size);
@@ -30,6 +35,8 @@ namespace vulkan {
 			std::vector<VkBuffer> const &uniformBuffers() const;
 
 		private:
+			MainRenderPipeline(types::ResourceManager &resourceManager, VkExtent2D size);
+
 			util::Result<void, KError> createSyncObjects_();
 			void createCommandBuffers_();
 			void createRenderPass_();

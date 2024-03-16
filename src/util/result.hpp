@@ -89,7 +89,7 @@ namespace util {
 					return;
 				}
 				Error const &error() const {
-					return std::get<Error>(*this);
+					return parent_t::value();
 				}
 
 			private:

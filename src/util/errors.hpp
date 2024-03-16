@@ -22,10 +22,10 @@ class KError {
 		KError(VkResult result);
 
 		/** @brief Long description that can be printed*/
-		virtual std::string const &desc();
+		virtual std::string const &desc() const;
 
 		/** @brief Detail like texture name or filename */
-		virtual std::string const &content();
+		virtual std::string const &content() const;
 
 		static KError texture_exists(std::string texture_name);
 		static KError invalid_image_file(std::string filename);
