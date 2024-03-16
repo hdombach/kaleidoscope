@@ -76,8 +76,8 @@ namespace vulkan {
 	VkQueue Graphics::presentQueue() const {
 		return presentQueue_;
 	}
-	VkImageView Graphics::computeImageView() const {
-		return computeResultImageView_;
+	ImageView const &Graphics::compute_image_view() const {
+		return _compute_result_image_view;
 	}
 	Graphics::SwapchainSupportDetails const &Graphics::swapchainSupportDetails() const {
 		return swapchainSupportDetails_;
@@ -143,14 +143,6 @@ namespace vulkan {
 			uint32_t mipLevels) const
 	{
 		generateMipmaps_(image, imageFormat, texWidth, texHeight, mipLevels);
-	}
-	VkImageView Graphics::createImageView(
-			VkImage image,
-			VkFormat format,
-			VkImageAspectFlags aspectFlags,
-			uint32_t mipLevels) const
-	{
-		return createImageView_(image, format, aspectFlags, mipLevels);
 	}
 	void Graphics::copyBuffer(
 			VkBuffer srcBuffer,
@@ -272,7 +264,7 @@ namespace vulkan {
 
 	void Graphics::cleanup_() {
 		vkDestroySampler(device_, textureSampler_, nullptr);
-		vkDestroyImageView(device_, computeResultImageView_, nullptr);
+		_compute_result_image_view.~ImageView();
 		vkDestroyImage(device_, computeResultImage_, nullptr);
 		vkFreeMemory(device_, computeResultMemory_, nullptr);
 
@@ -507,7 +499,7 @@ namespace vulkan {
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 			auto imageInfo = VkDescriptorImageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-			imageInfo.imageView = computeResultImageView_;
+			imageInfo.imageView = _compute_result_image_view.value();
 
 
 			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -623,11 +615,10 @@ namespace vulkan {
 				computeResultImage_,
 				computeResultMemory_);
 
-		computeResultImageView_ = createImageView_(
-				computeResultImage_,
-				imageFormat,
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				1);
+		auto image_view_info = ImageView::create_info(computeResultImage_);
+		auto image_view = ImageView::create(image_view_info, device_);
+		if (!image_view.has_value()) return; //TODO: better errors
+		_compute_result_image_view = std::move(image_view.value());
 		transitionImageLayout_(
 				computeResultImage_,
 				imageFormat,
@@ -978,28 +969,6 @@ namespace vulkan {
 				&region);
 
 		endSingleTimeCommands_(commandBuffer);
-	}
-	VkImageView Graphics::createImageView_(
-			VkImage image,
-			VkFormat format,
-			VkImageAspectFlags aspectFlags,
-			uint32_t mipLevels) const
-	{
-		auto viewInfo = VkImageViewCreateInfo{};
-		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		viewInfo.image = image;
-		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		viewInfo.format = format;
-		viewInfo.subresourceRange.aspectMask = aspectFlags;
-		viewInfo.subresourceRange.baseMipLevel = 0;
-		viewInfo.subresourceRange.levelCount = 1;
-		viewInfo.subresourceRange.baseArrayLayer = 0;
-		viewInfo.subresourceRange.layerCount = 1;
-		viewInfo.subresourceRange.levelCount = mipLevels;
-
-		VkImageView imageView;
-		require(vkCreateImageView(device_, &viewInfo, nullptr, &imageView));
-		return imageView;
 	}
 	VkFormat Graphics::findSupportedFormat_(
 			const std::vector<VkFormat>& candidates,

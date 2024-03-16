@@ -10,6 +10,7 @@
 
 #include "semaphore.hpp"
 #include "fence.hpp"
+#include "imageView.hpp"
 #include "../util/errors.hpp"
 
 namespace vulkan {
@@ -46,7 +47,7 @@ namespace vulkan {
 			VkCommandPool commandPool() const;
 			VkQueue graphicsQueue() const;
 			VkQueue presentQueue() const;
-			VkImageView computeImageView() const;
+			ImageView const &compute_image_view() const;
 			SwapchainSupportDetails const &swapchainSupportDetails() const;
 
 			VkFormat findSupportedFormat(
@@ -87,11 +88,6 @@ namespace vulkan {
 					VkFormat imageFormat,
 					int32_t texWidth,
 					int32_t texHeight,
-					uint32_t mipLevels) const;
-			VkImageView createImageView(
-					VkImage image,
-					VkFormat format,
-					VkImageAspectFlags aspectFlags,
 					uint32_t mipLevels) const;
 			void copyBuffer(
 					VkBuffer srcBuffer,
@@ -178,11 +174,6 @@ namespace vulkan {
 					VkImage image,
 					uint32_t width,
 					uint32_t height) const;
-			VkImageView createImageView_(
-					VkImage image,
-					VkFormat format,
-					VkImageAspectFlags aspectFlags,
-					uint32_t mipLevels) const;
 			VkFormat findSupportedFormat_(
 					const std::vector<VkFormat>& candidates,
 					VkImageTiling tiling,
@@ -223,7 +214,7 @@ namespace vulkan {
 			VkSampler textureSampler_;
 			VkDeviceMemory computeResultMemory_;
 			VkImage computeResultImage_;
-			VkImageView computeResultImageView_;
+			ImageView _compute_result_image_view;
 			std::vector<VkCommandBuffer> computeCommandBuffers_;
 			std::vector<Semaphore> computeFinishedSemaphores_;
 			std::vector<Fence> computeInFlightFences_;

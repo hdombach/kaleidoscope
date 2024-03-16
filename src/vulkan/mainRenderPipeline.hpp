@@ -55,7 +55,7 @@ namespace vulkan {
 
 			VkImage depthImage_;
 			VkDeviceMemory depthImageMemory_;
-			VkImageView depthImageView_;
+			ImageView _depth_image_view;
 			VkExtent2D size_;
 			const static VkFormat RESULT_IMAGE_FORMAT_ = VK_FORMAT_R8G8B8A8_SRGB;
 			std::vector<VkImage> resultImages_;

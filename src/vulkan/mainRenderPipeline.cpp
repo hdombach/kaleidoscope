@@ -237,7 +237,12 @@ namespace vulkan {
 				depthImage_,
 				depthImageMemory_);
 
-		depthImageView_ = Graphics::DEFAULT->createImageView(depthImage_, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+		auto depth_image_view_info = ImageView::create_info(depthImage_);
+		depth_image_view_info.format = depthFormat;
+		depth_image_view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		auto depth_image_view = ImageView::create(depth_image_view_info);
+		if (!depth_image_view.has_value()) return;
+		_depth_image_view = std::move(depth_image_view.value());
 
 		Graphics::DEFAULT->transitionImageLayout(
 				depthImage_,
@@ -281,7 +286,7 @@ namespace vulkan {
 
 			auto attachments = std::array<VkImageView, 2>{
 				_resultImageViews[i].value(),
-				depthImageView_,
+				_depth_image_view.value(),
 			};
 
 			auto framebufferInfo = VkFramebufferCreateInfo{};
@@ -335,7 +340,7 @@ namespace vulkan {
 	void MainRenderPipeline::cleanupDepthResources_() {
 		vkDestroyImage(Graphics::DEFAULT->device(), depthImage_, nullptr);
 		vkFreeMemory(Graphics::DEFAULT->device(), depthImageMemory_, nullptr);
-		vkDestroyImageView(Graphics::DEFAULT->device(), depthImageView_, nullptr);
+		_depth_image_view.~ImageView();
 	}
 
 	void MainRenderPipeline::recordCommandBuffer_(VkCommandBuffer commandBuffer) {

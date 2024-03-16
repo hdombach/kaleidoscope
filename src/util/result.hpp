@@ -3,6 +3,7 @@
 #include "format.hpp"
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <variant>
 namespace util {
 	/*
@@ -14,8 +15,12 @@ namespace util {
 				Result(Value value): parent_t(std::move(value)) {}
 				Result(Error error): parent_t(std::move(error)) {}
 
-				operator bool() const {
+				bool has_value() const {
 					return std::holds_alternative<Value>(*this);
+				}
+
+				operator bool() const {
+					return has_value();
 				}
 
 				Value &value() {
@@ -72,8 +77,12 @@ namespace util {
 				Result() = default;
 				Result(Error error): parent_t(error) {}
 
+				bool has_value() const {
+					return !parent_t::has_value();
+				}
+
 				operator bool() const {
-					return !*this->has_value;
+					return has_value();
 				}
 
 				void value() const {
@@ -87,6 +96,13 @@ namespace util {
 				using parent_t = std::optional<Error>;
 
 		};
+
+	template<typename Value, typename Error>
+		void require(Result<Value, Error> &result) {
+			if (!result.has_value()) {
+				throw std::runtime_error(std::to_string(result.error()));
+			}
+		}
 
 #define RETURN_IF_ERR(result) if (!result) return {result.error()};
 }
