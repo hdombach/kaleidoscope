@@ -13,7 +13,7 @@
 namespace ui {
 	util::Result<Window::Ptr, KError> Window::create(types::ResourceManager &resource_manager) {
 		auto render_pipeline = vulkan::MainRenderPipeline::create(resource_manager, {300, 300});
-		RETURN_IF_ERR(render_pipeline);
+		TRY(render_pipeline);
 		return Window::Ptr(new Window(std::move(render_pipeline.value())));
 	}
 	Window::~Window() {

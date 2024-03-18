@@ -31,7 +31,9 @@ namespace vulkan {
 	Graphics *Graphics::DEFAULT = nullptr;
 
 	void Graphics::initDefault(const char *name) {
-		DEFAULT = new Graphics(name);
+		DEFAULT = new Graphics();
+		DEFAULT->initWindow_();
+		DEFAULT->initVulkan_();
 	}
 
 	void Graphics::deleteDefault() {
@@ -81,6 +83,23 @@ namespace vulkan {
 	}
 	Graphics::SwapchainSupportDetails const &Graphics::swapchainSupportDetails() const {
 		return swapchainSupportDetails_;
+	}
+	util::Result<uint32_t, KError> Graphics::find_memory_type(
+			uint32_t type_filter,
+			VkMemoryPropertyFlags properties)
+	{
+		VkPhysicalDeviceMemoryProperties mem_properties;
+		vkGetPhysicalDeviceMemoryProperties(physicalDevice_, &mem_properties);
+
+		for (uint32_t i = 0; i < mem_properties.memoryTypeCount; i++) {
+			if ((type_filter & (1 << i))
+					&& (mem_properties.memoryTypes[i].propertyFlags) & properties)
+			{
+				return i;
+			}
+		}
+
+		return KError::invalid_mem_property();
 	}
 
 	VkFormat Graphics::findSupportedFormat(
@@ -158,10 +177,6 @@ namespace vulkan {
 		command(commandBuffer);
 		endSingleTimeCommands_(commandBuffer);
 	
-	}
-	Graphics::Graphics(const char *name) {
-		initWindow_();
-		initVulkan_();
 	}
 
 	void Graphics::initWindow_() {
@@ -265,8 +280,7 @@ namespace vulkan {
 	void Graphics::cleanup_() {
 		vkDestroySampler(device_, textureSampler_, nullptr);
 		_compute_result_image_view.~ImageView();
-		vkDestroyImage(device_, computeResultImage_, nullptr);
-		vkFreeMemory(device_, computeResultMemory_, nullptr);
+		_compute_result_image.~Image();
 
 		vkDestroyDescriptorSetLayout(device_, computeDescriptorSetLayout_, nullptr);
 		vkFreeDescriptorSets(device_, descriptorPool_, computeDescriptorSets_.size(), computeDescriptorSets_.data());
@@ -550,11 +564,11 @@ namespace vulkan {
 
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 			auto semaphore = Semaphore::create(device_);
-			RETURN_IF_ERR(semaphore);
+			TRY(semaphore);
 			computeFinishedSemaphores_[i] = std::move(semaphore.value());
 
 			auto fence = Fence::create(device_);
-			RETURN_IF_ERR(fence);
+			TRY(fence);
 			computeInFlightFences_[i] = std::move(fence.value());
 		}
 
@@ -602,29 +616,28 @@ namespace vulkan {
 		require(vkCreateSampler(device_, &samplerInfo, nullptr, &textureSampler_));
 	}
 
-	void Graphics::createComputeResultTexture_() {
-		VkFormat imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
-		createImage_(
-				100, //width
-				100, //height
-				1,
-				imageFormat,
-				VK_IMAGE_TILING_OPTIMAL,
-				VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-				computeResultImage_,
-				computeResultMemory_);
+	util::Result<void, KError> Graphics::createComputeResultTexture_() {
+		VkFormat image_format = VK_FORMAT_R8G8B8A8_SRGB;
+		auto compute_image_res = Image::create(
+				100,
+				100,
+				image_format,
+				VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+		TRY(compute_image_res);
+		_compute_result_image = std::move(compute_image_res.value());
 
-		auto image_view_info = ImageView::create_info(computeResultImage_);
+		auto image_view_info = ImageView::create_info(_compute_result_image.value());
 		auto image_view = ImageView::create(image_view_info, device_);
-		if (!image_view.has_value()) return; //TODO: better errors
+		TRY(image_view);
 		_compute_result_image_view = std::move(image_view.value());
 		transitionImageLayout_(
-				computeResultImage_,
-				imageFormat,
+				_compute_result_image.value(),
+				image_format,
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_GENERAL,
 				1);
+
+		return {};
 	}
 
 	

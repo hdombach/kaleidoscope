@@ -26,11 +26,11 @@ namespace vulkan {
 	{
 		auto result = std::unique_ptr<MainRenderPipeline>(
 				new MainRenderPipeline(resource_manager, size));
-		RETURN_IF_ERR(result->createSyncObjects_());
+		TRY(result->createSyncObjects_());
 		result->createCommandBuffers_();
 		result->createRenderPass_();
-		result->createDepthResources_();
-		RETURN_IF_ERR(result->createResultImages_());
+		TRY(result->_create_depth_resources());
+		TRY(result->createResultImages_());
 		result->createUniformBuffers_();
 		return result;
 	}
@@ -131,11 +131,11 @@ namespace vulkan {
 
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 			auto semaphore = Semaphore::create();
-			RETURN_IF_ERR(semaphore);
+			TRY(semaphore);
 			renderFinishedSemaphores_[i] = std::move(semaphore.value());
 
 			auto fence = Fence::create();
-			RETURN_IF_ERR(fence);
+			TRY(fence);
 			inFlightFences_[i] = std::move(fence.value());
 		}
 		return {};
@@ -243,64 +243,61 @@ namespace vulkan {
 		}
 	}
 
-	void MainRenderPipeline::createDepthResources_() {
-		auto depthFormat = findDepthFormat_();
-		Graphics::DEFAULT->createImage(
+	util::Result<void, KError> MainRenderPipeline::_create_depth_resources() {
+		auto depth_format = findDepthFormat_();
+
+		auto image_res = Image::create(
 				size_.width,
 				size_.height,
-				1,
-				depthFormat,
-				VK_IMAGE_TILING_OPTIMAL,
-				VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-				depthImage_,
-				depthImageMemory_);
+				depth_format,
+				VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-		auto depth_image_view_info = ImageView::create_info(depthImage_);
-		depth_image_view_info.format = depthFormat;
+		TRY(image_res);
+		_depth_image = std::move(image_res.value());
+
+		auto depth_image_view_info = ImageView::create_info(_depth_image.value());
+		depth_image_view_info.format = depth_format;
 		depth_image_view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 		auto depth_image_view = ImageView::create(depth_image_view_info);
-		if (!depth_image_view.has_value()) return;
+		TRY(depth_image_view);
 		_depth_image_view = std::move(depth_image_view.value());
 
 		Graphics::DEFAULT->transitionImageLayout(
-				depthImage_,
-				depthFormat,
+				_depth_image.value(),
+				depth_format,
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 				1);
+
+		return {};
 	}
 
 	util::Result<void, KError> MainRenderPipeline::createResultImages_() {
-		resultImages_.resize(FRAMES_IN_FLIGHT);
 		_resultImageViews.resize(FRAMES_IN_FLIGHT);
-		resultImageMemory_.resize(FRAMES_IN_FLIGHT);
 		resultImageFramebuffer_.resize(FRAMES_IN_FLIGHT);
 		resultDescriptorSets_.resize(FRAMES_IN_FLIGHT);
 
 		for (int i = 0; i < FRAMES_IN_FLIGHT; i++) {
-			Graphics::DEFAULT->createImage(
+			auto image_res = Image::create(
 					size_.width,
 					size_.height,
-					1,
 					RESULT_IMAGE_FORMAT_,
-					VK_IMAGE_TILING_OPTIMAL,
-					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-					resultImages_[i],
-					resultImageMemory_[i]);
+					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
 
-			auto image_view_info = ImageView::create_info(resultImages_[i]);
+			TRY(image_res);
+			_result_images.push_back(std::move(image_res.value()));
+
+			auto image_view_info = ImageView::create_info(_result_images[i].value());
 			image_view_info.format = RESULT_IMAGE_FORMAT_;
 			auto image_view = ImageView::create(image_view_info);
-			RETURN_IF_ERR(image_view);
+			TRY(image_view);
 			_resultImageViews[i] = std::move(image_view.value());
 
 			Graphics::DEFAULT->transitionImageLayout(
-					resultImages_[i], 
-					RESULT_IMAGE_FORMAT_, 
-					VK_IMAGE_LAYOUT_UNDEFINED, 
-					VK_IMAGE_LAYOUT_GENERAL, 
+					_result_images[i].value(),
+					RESULT_IMAGE_FORMAT_,
+					VK_IMAGE_LAYOUT_UNDEFINED,
+					VK_IMAGE_LAYOUT_GENERAL,
 					1);
 
 			auto attachments = std::array<VkImageView, 2>{
@@ -339,26 +336,20 @@ namespace vulkan {
 		Graphics::DEFAULT->waitIdle();
 		cleanupDepthResources_();
 		cleanupResultImages_();
-		createDepthResources_();
+		_create_depth_resources();
 		createResultImages_();
 	}
 
 	void MainRenderPipeline::cleanupResultImages_() {
 		_resultImageViews.clear();
-		for (auto image : resultImages_) {
-			vkDestroyImage(Graphics::DEFAULT->device(), image, nullptr);
-		}
-		for (auto memory : resultImageMemory_) {
-			vkFreeMemory(Graphics::DEFAULT->device(), memory, nullptr);
-		}
+		_result_images.clear();
 		for (auto framebuffer : resultImageFramebuffer_) {
 			vkDestroyFramebuffer(Graphics::DEFAULT->device(), framebuffer, nullptr);
 		}
 	}
 
 	void MainRenderPipeline::cleanupDepthResources_() {
-		vkDestroyImage(Graphics::DEFAULT->device(), depthImage_, nullptr);
-		vkFreeMemory(Graphics::DEFAULT->device(), depthImageMemory_, nullptr);
+		_depth_image.~Image();
 		_depth_image_view.~ImageView();
 	}
 

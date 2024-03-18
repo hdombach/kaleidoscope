@@ -12,6 +12,7 @@
 #include "fence.hpp"
 #include "texture.hpp"
 #include "imageView.hpp"
+#include "image.hpp"
 #include "../util/result.hpp"
 
 namespace vulkan {
@@ -41,7 +42,7 @@ namespace vulkan {
 			void createCommandBuffers_();
 			void createRenderPass_();
 			void createUniformBuffers_();
-			void createDepthResources_();
+			util::Result<void, KError> _create_depth_resources();
 			util::Result<void, KError> createResultImages_();
 			void recreateResultImages_();
 			void cleanupResultImages_();
@@ -60,14 +61,12 @@ namespace vulkan {
 			std::vector<Semaphore> renderFinishedSemaphores_;
 			std::vector<VkCommandBuffer> commandBuffers_;
 
-			VkImage depthImage_;
-			VkDeviceMemory depthImageMemory_;
+			Image _depth_image;
 			ImageView _depth_image_view;
 			VkExtent2D size_;
 			const static VkFormat RESULT_IMAGE_FORMAT_ = VK_FORMAT_R8G8B8A8_SRGB;
-			std::vector<VkImage> resultImages_;
+			std::vector<Image> _result_images;
 			std::vector<ImageView> _resultImageViews;
-			std::vector<VkDeviceMemory> resultImageMemory_;
 			std::vector<VkFramebuffer> resultImageFramebuffer_;
 			std::vector<VkDescriptorSet> resultDescriptorSets_;
 			int frameIndex_;

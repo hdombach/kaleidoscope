@@ -97,6 +97,32 @@ namespace util {
 
 		};
 
+	template<typename Value>
+		class Result<Value, void>: private std::optional<Value> {
+			public:
+				Result() = default;
+				Result(Value value): parent_t(value) {}
+
+				bool has_value() const {
+					return parent_t::has_value();
+				}
+
+				operator bool() const {
+					return has_value();
+				}
+
+				Value &value() const {
+					return parent_t::value();;
+				}
+				void const error() const {
+					return;
+				}
+
+			private:
+				using parent_t = std::optional<Value>;
+
+		};
+
 	template<typename Value, typename Error>
 		void require(Result<Value, Error> &result) {
 			if (!result.has_value()) {
@@ -104,5 +130,5 @@ namespace util {
 			}
 		}
 
-#define RETURN_IF_ERR(result) if (!result) return {result.error()};
+#define TRY(result) if (!result) return {result.error()};
 }

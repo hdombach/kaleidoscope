@@ -11,6 +11,7 @@
 #include "semaphore.hpp"
 #include "fence.hpp"
 #include "imageView.hpp"
+#include "image.hpp"
 #include "../util/errors.hpp"
 
 namespace vulkan {
@@ -49,6 +50,9 @@ namespace vulkan {
 			VkQueue presentQueue() const;
 			ImageView const &compute_image_view() const;
 			SwapchainSupportDetails const &swapchainSupportDetails() const;
+			util::Result<uint32_t, KError> find_memory_type(
+					uint32_t type_filter,
+					VkMemoryPropertyFlags properties);
 
 			VkFormat findSupportedFormat(
 					const std::vector<VkFormat>& candidates,
@@ -102,7 +106,7 @@ namespace vulkan {
 			};
 
 		private:
-			Graphics(const char *name);
+			Graphics() = default;
 			void initWindow_();
 			void initVulkan_();
 			util::Result<void, KError> createInstance_();
@@ -121,7 +125,7 @@ namespace vulkan {
 			void createSurface_();
 			void recordComputeCommandBuffer_(VkCommandBuffer commandBuffer);
 			void createTextureSampler_();
-			void createComputeResultTexture_();
+			util::Result<void, KError> createComputeResultTexture_();
 
 			bool checkValidationLayerSupport_();
 			void cleanup_();
@@ -212,8 +216,7 @@ namespace vulkan {
 			VkCommandPool commandPool_;
 			uint32_t mipLevels_;
 			VkSampler textureSampler_;
-			VkDeviceMemory computeResultMemory_;
-			VkImage computeResultImage_;
+			Image _compute_result_image;
 			ImageView _compute_result_image_view;
 			std::vector<VkCommandBuffer> computeCommandBuffers_;
 			std::vector<Semaphore> computeFinishedSemaphores_;

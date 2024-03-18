@@ -83,7 +83,7 @@ namespace vulkan {
 		auto image_view_info = ImageView::create_info(result->_texture);
 		image_view_info.subresourceRange.levelCount = result->_mipLevels;
 		auto image_view = ImageView::create(image_view_info);
-		RETURN_IF_ERR(image_view);
+		TRY(image_view);
 		result->_textureView = std::move(image_view.value());
 
 		ImGui_ImplVulkan_AddTexture(

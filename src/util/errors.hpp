@@ -15,6 +15,7 @@ class KError {
 			INVALID_MESH_FILE,
 			MESH_ALREADY_EXISTS,
 			MATERIAL_ALREADY_EXISTS,
+			INVALID_MEM_PROPERTY,
 			VK_ERROR,
 		};
 
@@ -32,6 +33,7 @@ class KError {
 		static KError invalid_mesh_file(std::string filename);
 		static KError mesh_already_exists(std::string mesh_name);
 		static KError material_already_exists(std::string material_name);
+		static KError invalid_mem_property();
 
 	private:
 		Type type;

@@ -53,3 +53,10 @@ KError KError::material_already_exists(std::string material_name) {
 			material_name,
 			"Material " + material_name + " already exists");
 }
+
+KError KError::invalid_mem_property() {
+	return KError(
+			INVALID_MEM_PROPERTY,
+			std::string(),
+			"Invalid memory property");
+}
