@@ -17,7 +17,7 @@ App::App(std::string const &name) {
 	descriptorPool_ = std::make_unique<vulkan::DescriptorPool>();
 	uiRenderPipeline_ = std::make_unique<vulkan::UIRenderPipeline>();
 	resourceManager_ = std::make_unique<types::ResourceManager>();
-	if (auto vikingRoom = vulkan::StaticTexture::fromFile("assets/viking_room.png")) {
+	if (auto vikingRoom = vulkan::StaticTexture::from_file("assets/viking_room.png")) {
 		resourceManager_->addTexture("viking_room", vikingRoom.value());
 	} else {
 		util::log_error("Could not load example texture viking_room.png");

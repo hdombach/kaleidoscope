@@ -15,10 +15,10 @@ namespace vulkan {
 	class Texture {
 		public:
 			virtual ~Texture() = default;
-			virtual VkDescriptorSet getDescriptorSet() const = 0;
-			virtual ImageView const &imageView() const = 0;
+			virtual VkDescriptorSet get_descriptor_set() const = 0;
+			virtual ImageView const &image_view() const = 0;
 
-			virtual bool isResizable() const {
+			virtual bool is_resizable() const {
 				return false;
 			}
 			virtual void resize(glm::ivec2 size) {

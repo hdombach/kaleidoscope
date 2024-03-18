@@ -8,7 +8,7 @@
 namespace types {
 	ResourceManager::ResourceManager() {
 		//Can't use defaultTexture_ for holder because of const issues
-		auto tempTexture = vulkan::StaticTexture::fromFile("assets/default.png");
+		auto tempTexture = vulkan::StaticTexture::from_file("assets/default.png");
 		addTexture("default", tempTexture.value());
 		defaultTexture_ = tempTexture.value();
 	}

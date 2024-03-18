@@ -5,22 +5,22 @@
 #include "../util/errors.hpp"
 #include "../util/result.hpp"
 #include "texture.hpp"
+#include "image.hpp"
 
 namespace vulkan {
 	class StaticTexture: public Texture {
 		public:
-			static util::Result<StaticTexture *, KError> fromFile(
+			static util::Result<StaticTexture *, KError> from_file(
 					std::string const &url);
 			~StaticTexture();
 
-			VkDescriptorSet getDescriptorSet() const;
-			ImageView const &imageView() const;
+			VkDescriptorSet get_descriptor_set() const override;
+			ImageView const &image_view() const override;
 		private:
 			StaticTexture() = default;
-			VkImage _texture;
-			VkDeviceMemory _textureMemory;
-			ImageView _textureView;
-			uint32_t _mipLevels;
-			VkDescriptorSet _imguiDescriptorSet;
+			Image _texture;
+			ImageView _texture_view;
+			uint32_t _mip_levels;
+			VkDescriptorSet _imgui_descriptor_set;
 	};
 }

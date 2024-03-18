@@ -66,16 +66,6 @@ namespace vulkan {
 					VkMemoryPropertyFlags properties,
 					VkBuffer& buffer,
 					VkDeviceMemory& bufferMemory) const;
-			void createImage(
-					uint32_t width,
-					uint32_t height,
-					uint32_t mipLevels,
-					VkFormat format,
-					VkImageTiling tiling,
-					VkImageUsageFlags usage,
-					VkMemoryPropertyFlags properties,
-					VkImage &image,
-					VkDeviceMemory &imageMemory) const;
 			void transitionImageLayout(
 					VkImage image,
 					VkFormat format,
@@ -155,16 +145,6 @@ namespace vulkan {
 					VkBuffer& buffer,
 					VkDeviceMemory& bufferMemory) const;
 			void copyBuffer_(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
-			void createImage_(
-					uint32_t width,
-					uint32_t height,
-					uint32_t mipLevels,
-					VkFormat format,
-					VkImageTiling tiling,
-					VkImageUsageFlags usage,
-					VkMemoryPropertyFlags properties,
-					VkImage &image,
-					VkDeviceMemory &imageMemory) const;
 			VkCommandBuffer beginSingleTimeCommands_() const;
 			void endSingleTimeCommands_(VkCommandBuffer commandBuffer) const;
 			void transitionImageLayout_(

@@ -94,7 +94,7 @@ namespace vulkan {
 		framebufferResized_ = true;
 		this->size_ = VkExtent2D{static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y)};
 	}
-	bool MainRenderPipeline::isResizable() const {
+	bool MainRenderPipeline::is_resizable() const {
 		return true;
 	}
 
@@ -102,11 +102,11 @@ namespace vulkan {
 		return size_;
 	}
 
-	VkDescriptorSet MainRenderPipeline::getDescriptorSet() const {
+	VkDescriptorSet MainRenderPipeline::get_descriptor_set() const {
 		return resultDescriptorSets_[frameIndex_];
 	}
 
-	ImageView const &MainRenderPipeline::imageView() const {
+	ImageView const &MainRenderPipeline::image_view() const {
 		return _resultImageViews[frameIndex_];
 	}
 	VkRenderPass MainRenderPipeline::renderPass() const {

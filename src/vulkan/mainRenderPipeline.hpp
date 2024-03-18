@@ -26,12 +26,12 @@ namespace vulkan {
 					VkExtent2D size);
 			~MainRenderPipeline();
 			void submit();
-			void resize(glm::ivec2 size);
-			bool isResizable() const;
+			void resize(glm::ivec2 size) override;
+			bool is_resizable() const override;
 
 			VkExtent2D getSize() const;
-			VkDescriptorSet getDescriptorSet() const;
-			ImageView const &imageView() const;
+			VkDescriptorSet get_descriptor_set() const override;
+			ImageView const &image_view() const override;
 			VkRenderPass renderPass() const;
 			std::vector<VkBuffer> const &uniformBuffers() const;
 
