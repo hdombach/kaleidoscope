@@ -145,7 +145,6 @@ namespace vulkan {
 		util::log_event(util::f("Min image count ", FRAMES_IN_FLIGHT));
 		init_info.MinImageCount = FRAMES_IN_FLIGHT;
 		init_info.ImageCount = FRAMES_IN_FLIGHT;
-		init_info.ImageCount = windowData_.ImageCount;
 		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
 		ImGui_ImplVulkan_Init(&init_info, windowData_.RenderPass);

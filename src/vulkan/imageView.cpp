@@ -46,7 +46,7 @@ namespace vulkan {
 
 	VkImageViewCreateInfo ImageView::create_info(VkImage &image) {
 		auto result = VkImageViewCreateInfo{};
-		result.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO;
+		result.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		result.image = image;
 		result.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		result.format = VK_FORMAT_R8G8B8A8_SRGB;
