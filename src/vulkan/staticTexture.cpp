@@ -81,11 +81,12 @@ namespace vulkan {
 				texHeight,
 				result->_mip_levels);
 
-		auto image_view_info = ImageView::create_info(result->_texture.value());
-		image_view_info.subresourceRange.levelCount = result->_mip_levels;
-		auto image_view = ImageView::create(image_view_info);
-		TRY(image_view);
-		result->_texture_view = std::move(image_view.value());
+		auto image_view_res = result->_texture.create_image_view_full(
+				VK_FORMAT_R8G8B8A8_SRGB,
+				VK_IMAGE_ASPECT_COLOR_BIT,
+				result->_mip_levels);
+		TRY(image_view_res);
+		result->_texture_view = std::move(image_view_res.value());
 
 		ImGui_ImplVulkan_AddTexture(
 				Graphics::DEFAULT->mainTextureSampler(),

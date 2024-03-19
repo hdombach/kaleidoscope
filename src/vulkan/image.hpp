@@ -6,6 +6,7 @@
 
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
+#include "imageView.hpp"
 
 namespace vulkan {
 	/**
@@ -42,6 +43,12 @@ namespace vulkan {
 
 			VkImage& operator*() { return value(); }
 			VkImage const& operator*() const { return value(); }
+
+			util::Result<ImageView, KError> create_image_view();
+			util::Result<ImageView, KError> create_image_view_full(
+					VkFormat format,
+					VkImageAspectFlagBits aspect,
+					uint32_t mip_levels);
 
 		private:
 			VkImage _image;

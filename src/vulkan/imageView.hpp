@@ -2,15 +2,17 @@
 
 #include <vulkan/vulkan.h>
 #include "../util/result.hpp"
+#include "../util/errors.hpp"
 
 namespace vulkan {
 	class ImageView {
 		public:
-			static util::Result<ImageView, VkResult> create(
-					VkImageViewCreateInfo info);
-			static util::Result<ImageView, VkResult> create(
-					VkImageViewCreateInfo info,
-					VkDevice const &device);
+			static util::Result<ImageView, KError> create(VkImage image);
+			static util::Result<ImageView, KError> create_full(
+					VkImage image,
+					VkFormat format,
+					VkImageAspectFlagBits aspect,
+					uint32_t mip_levels);
 
 			ImageView(): _imageView(nullptr) {}
 
@@ -20,8 +22,6 @@ namespace vulkan {
 			ImageView& operator=(ImageView&& other);
 
 			~ImageView();
-
-			static VkImageViewCreateInfo create_info(VkImage &image);
 
 			VkImageView& value();
 			VkImageView const& value() const;

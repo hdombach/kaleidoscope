@@ -130,4 +130,16 @@ namespace vulkan {
 	VkImage const& Image::value() const {
 		return _image;
 	}
+
+	util::Result<ImageView, KError> Image::create_image_view() {
+		return ImageView::create(_image);
+	}
+
+	util::Result<ImageView, KError> Image::create_image_view_full(
+			VkFormat format,
+			VkImageAspectFlagBits aspect,
+			uint32_t mip_levels)
+	{
+		return ImageView::create_full(_image, format, aspect, mip_levels);
+	}
 }

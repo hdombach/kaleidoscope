@@ -255,12 +255,12 @@ namespace vulkan {
 		TRY(image_res);
 		_depth_image = std::move(image_res.value());
 
-		auto depth_image_view_info = ImageView::create_info(_depth_image.value());
-		depth_image_view_info.format = depth_format;
-		depth_image_view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-		auto depth_image_view = ImageView::create(depth_image_view_info);
-		TRY(depth_image_view);
-		_depth_image_view = std::move(depth_image_view.value());
+		auto depth_image_view_res = _depth_image.create_image_view_full(
+				depth_format,
+				VK_IMAGE_ASPECT_DEPTH_BIT,
+				1);
+		TRY(depth_image_view_res);
+		_depth_image_view = std::move(depth_image_view_res.value());
 
 		Graphics::DEFAULT->transitionImageLayout(
 				_depth_image.value(),
@@ -287,11 +287,12 @@ namespace vulkan {
 			TRY(image_res);
 			_result_images.push_back(std::move(image_res.value()));
 
-			auto image_view_info = ImageView::create_info(_result_images[i].value());
-			image_view_info.format = RESULT_IMAGE_FORMAT_;
-			auto image_view = ImageView::create(image_view_info);
-			TRY(image_view);
-			_resultImageViews[i] = std::move(image_view.value());
+			auto image_view_res = _result_images[i].create_image_view_full(
+					RESULT_IMAGE_FORMAT_, 
+					VK_IMAGE_ASPECT_COLOR_BIT, 
+					1);
+			TRY(image_view_res);
+			_resultImageViews[i] = std::move(image_view_res.value());
 
 			Graphics::DEFAULT->transitionImageLayout(
 					_result_images[i].value(),

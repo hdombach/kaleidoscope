@@ -3,26 +3,43 @@
 #include "graphics.hpp"
 
 namespace vulkan {
-	util::Result<ImageView, VkResult> ImageView::create(VkImageViewCreateInfo info) {
-		return ImageView::create(info, Graphics::DEFAULT->device());
+	util::Result<ImageView, KError> ImageView::create(VkImage image) {
+		return create_full(
+				image,
+				VK_FORMAT_R8G8B8A8_SRGB,
+				VK_IMAGE_ASPECT_COLOR_BIT,
+				1);
 	}
 
-	util::Result<ImageView, VkResult> ImageView::create(
-			VkImageViewCreateInfo info,
-			VkDevice const &device)
+	util::Result<ImageView, KError> ImageView::create_full(
+			VkImage image,
+			VkFormat format,
+			VkImageAspectFlagBits aspect,
+			uint32_t mip_levels)
 	{
-		VkImageView imageView;
-		
+		auto create_info = VkImageViewCreateInfo{};
+		create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		create_info.image = image;
+		create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		create_info.format = format;
+		create_info.subresourceRange.aspectMask = aspect;
+		create_info.subresourceRange.baseMipLevel = 0;
+		create_info.subresourceRange.levelCount = 1;
+		create_info.subresourceRange.baseArrayLayer = 0;
+		create_info.subresourceRange.layerCount = 1;
+		create_info.subresourceRange.levelCount = mip_levels;
+
+		VkImageView image_view;
 		auto res = vkCreateImageView(
-				device,
-				&info,
+				Graphics::DEFAULT->device(),
+				&create_info,
 				nullptr,
-				&imageView);
+				&image_view);
 
 		if (res == VK_SUCCESS) {
-			return ImageView(imageView);
+			return ImageView(image_view);
 		} else {
-			return res;
+			return {res};
 		}
 	}
 
@@ -42,22 +59,6 @@ namespace vulkan {
 			vkDestroyImageView(Graphics::DEFAULT->device(), _imageView, nullptr);
 			_imageView = nullptr;
 		}
-	}
-
-	VkImageViewCreateInfo ImageView::create_info(VkImage &image) {
-		auto result = VkImageViewCreateInfo{};
-		result.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		result.image = image;
-		result.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		result.format = VK_FORMAT_R8G8B8A8_SRGB;
-		result.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		result.subresourceRange.baseMipLevel = 0;
-		result.subresourceRange.levelCount = 1;
-		result.subresourceRange.baseArrayLayer = 0;
-		result.subresourceRange.layerCount = 1;
-		result.subresourceRange.levelCount = 1;
-
-		return result;
 	}
 
 	VkImageView& ImageView::value() {

@@ -613,10 +613,9 @@ namespace vulkan {
 		TRY(compute_image_res);
 		_compute_result_image = std::move(compute_image_res.value());
 
-		auto image_view_info = ImageView::create_info(_compute_result_image.value());
-		auto image_view = ImageView::create(image_view_info, device_);
-		TRY(image_view);
-		_compute_result_image_view = std::move(image_view.value());
+		auto image_view_res = _compute_result_image.create_image_view();
+		TRY(image_view_res);
+		_compute_result_image_view = std::move(image_view_res.value());
 		transitionImageLayout_(
 				_compute_result_image.value(),
 				image_format,
