@@ -87,7 +87,7 @@ namespace vulkan {
 
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 			auto bufferInfo = VkDescriptorBufferInfo{};
-			bufferInfo.buffer = materialFactory.mainRenderPipeline().uniformBuffers()[i];
+			bufferInfo.buffer = materialFactory.mainRenderPipeline().uniform_buffers()[i];
 			bufferInfo.offset = 0;
 			bufferInfo.range = sizeof(UniformBufferObject);
 
@@ -266,7 +266,7 @@ namespace vulkan {
 		pipelineInfo.pColorBlendState = &colorBlending;
 		pipelineInfo.pDynamicState = &dynamicState;
 		pipelineInfo.layout = pipelineLayout_;
-		pipelineInfo.renderPass = materialFactory.mainRenderPipeline().renderPass();
+		pipelineInfo.renderPass = materialFactory.mainRenderPipeline().render_pass();
 		pipelineInfo.subpass = 0;
 		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 		pipelineInfo.basePipelineIndex = -1;
