@@ -8,6 +8,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "../types/resourceManager.hpp"
+#include "uniformBufferObject.hpp"
 #include "semaphore.hpp"
 #include "fence.hpp"
 #include "texture.hpp"
@@ -33,7 +34,7 @@ namespace vulkan {
 			VkDescriptorSet get_descriptor_set() const override;
 			ImageView const &image_view() const override;
 			VkRenderPass render_pass() const;
-			std::vector<VkBuffer> const &uniform_buffers() const;
+			std::vector<MappedUniformObject> const &uniform_buffers() const;
 
 		private:
 			MainRenderPipeline(types::ResourceManager &resource_manager, VkExtent2D size);
@@ -41,7 +42,6 @@ namespace vulkan {
 			util::Result<void, KError> _create_sync_objects();
 			void _create_command_buffers();
 			void _create_render_pass();
-			void _create_uniform_buffers();
 			util::Result<void, KError> _create_depth_resources();
 			util::Result<void, KError> _create_result_images();
 			void _recreate_result_images();
@@ -54,9 +54,7 @@ namespace vulkan {
 			VkFormat _find_depth_format();
 
 			VkRenderPass _render_pass;
-			std::vector<VkBuffer> _uniform_buffers;
-			std::vector<VkDeviceMemory> _uniform_buffers_memory;
-			std::vector<void*> _uniform_buffers_mapped;
+			std::vector<MappedUniformObject> _mapped_uniforms;
 			std::vector<Fence> _in_flight_fences;
 			std::vector<Semaphore> _render_finished_semaphores;
 			std::vector<VkCommandBuffer> _command_buffers;

@@ -87,7 +87,7 @@ namespace vulkan {
 
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 			auto bufferInfo = VkDescriptorBufferInfo{};
-			bufferInfo.buffer = materialFactory.mainRenderPipeline().uniform_buffers()[i];
+			bufferInfo.buffer = materialFactory.mainRenderPipeline().uniform_buffers()[i].buffer();
 			bufferInfo.offset = 0;
 			bufferInfo.range = sizeof(UniformBufferObject);
 

@@ -31,7 +31,12 @@ namespace vulkan {
 		result->_create_render_pass();
 		TRY(result->_create_depth_resources());
 		TRY(result->_create_result_images());
-		result->_create_uniform_buffers();
+
+		for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i) {
+			auto buffer_res = MappedUniformObject::create();
+			TRY(buffer_res);
+			result->_mapped_uniforms.push_back(std::move(buffer_res.value()));
+		}
 		return result;
 	}
 
@@ -48,13 +53,8 @@ namespace vulkan {
 
 		_cleanup_depth_resources();
 		_cleanup_result_images();
+		_mapped_uniforms.clear();
 		
-		for (auto uniform_buffer : _uniform_buffers) {
-			vkDestroyBuffer(Graphics::DEFAULT->device(), uniform_buffer, nullptr);
-		}
-		for (auto uniform_buffer_memory : _uniform_buffers_memory) {
-			vkFreeMemory(Graphics::DEFAULT->device(), uniform_buffer_memory, nullptr);
-		}
 		_in_flight_fences.clear();
 		_render_finished_semaphores.clear();
 
@@ -112,8 +112,8 @@ namespace vulkan {
 	VkRenderPass MainRenderPipeline::render_pass() const {
 		return _render_pass;
 	}
-	std::vector<VkBuffer> const &MainRenderPipeline::uniform_buffers() const {
-		return _uniform_buffers;
+	std::vector<MappedUniformObject> const &MainRenderPipeline::uniform_buffers() const {
+		return _mapped_uniforms;
 	}
 
 	/*
@@ -216,31 +216,6 @@ namespace vulkan {
 		render_pass_info.pDependencies = &dependency;
 
 		require(vkCreateRenderPass(Graphics::DEFAULT->device(), &render_pass_info, nullptr, &_render_pass));
-	}
-
-	void MainRenderPipeline::_create_uniform_buffers() {
-		auto buffer_size = VkDeviceSize(sizeof(UniformBufferObject));
-
-		_uniform_buffers.resize(FRAMES_IN_FLIGHT);
-		_uniform_buffers_memory.resize(FRAMES_IN_FLIGHT);
-		_uniform_buffers_mapped.resize(FRAMES_IN_FLIGHT);
-
-		for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i) {
-			Graphics::DEFAULT->createBuffer(
-					buffer_size,
-					VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-					_uniform_buffers[i],
-					_uniform_buffers_memory[i]);
-
-			require(vkMapMemory(
-						Graphics::DEFAULT->device(),
-						_uniform_buffers_memory[i],
-						0,
-						buffer_size,
-						0,
-						&_uniform_buffers_mapped[i]));
-		}
 	}
 
 	util::Result<void, KError> MainRenderPipeline::_create_depth_resources() {
@@ -432,8 +407,7 @@ namespace vulkan {
 		ubo.proj = glm::perspective(glm::radians(45.0f), _size.width / (float) _size.height, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;
 
-		memcpy(_uniform_buffers_mapped[currentImage], &ubo, sizeof(ubo));
-
+		_mapped_uniforms[currentImage].set_value(ubo);
 	}
 
 	VkFormat MainRenderPipeline::_find_depth_format() {
