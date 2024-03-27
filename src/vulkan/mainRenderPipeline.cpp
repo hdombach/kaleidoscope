@@ -29,8 +29,14 @@ namespace vulkan {
 		TRY(result->_create_sync_objects());
 		result->_create_command_buffers();
 		result->_create_render_pass();
-		TRY(result->_create_depth_resources());
+
+		auto render_pass_res = PreviewRenderPass::create(size);
+		TRY(render_pass_res);
+		result->_preview_render_pass = std::move(render_pass_res.value());
+
 		TRY(result->_create_result_images());
+
+
 
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i) {
 			auto buffer_res = MappedUniformObject::create();
@@ -51,9 +57,9 @@ namespace vulkan {
 	MainRenderPipeline::~MainRenderPipeline() {
 		util::log_memory("Deconstructing main render pipeline");
 
-		_cleanup_depth_resources();
 		_cleanup_result_images();
 		_mapped_uniforms.clear();
+		_preview_render_pass.~PreviewRenderPass();
 		
 		_in_flight_fences.clear();
 		_render_finished_semaphores.clear();
@@ -218,35 +224,6 @@ namespace vulkan {
 		require(vkCreateRenderPass(Graphics::DEFAULT->device(), &render_pass_info, nullptr, &_render_pass));
 	}
 
-	util::Result<void, KError> MainRenderPipeline::_create_depth_resources() {
-		auto depth_format = _find_depth_format();
-
-		auto image_res = Image::create(
-				_size.width,
-				_size.height,
-				depth_format,
-				VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
-
-		TRY(image_res);
-		_depth_image = std::move(image_res.value());
-
-		auto depth_image_view_res = _depth_image.create_image_view_full(
-				depth_format,
-				VK_IMAGE_ASPECT_DEPTH_BIT,
-				1);
-		TRY(depth_image_view_res);
-		_depth_image_view = std::move(depth_image_view_res.value());
-
-		Graphics::DEFAULT->transitionImageLayout(
-				_depth_image.value(),
-				depth_format,
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-				1);
-
-		return {};
-	}
-
 	util::Result<void, KError> MainRenderPipeline::_create_result_images() {
 		_result_image_views.resize(FRAMES_IN_FLIGHT);
 		_result_image_framebuffer.resize(FRAMES_IN_FLIGHT);
@@ -278,7 +255,7 @@ namespace vulkan {
 
 			auto attachments = std::array<VkImageView, 2>{
 				_result_image_views[i].value(),
-				_depth_image_view.value(),
+				_preview_render_pass.depth_image_view().value(),
 			};
 
 			auto framebuffer_info = VkFramebufferCreateInfo{};
@@ -310,9 +287,8 @@ namespace vulkan {
 
 	void MainRenderPipeline::_recreate_result_images() {
 		Graphics::DEFAULT->waitIdle();
-		_cleanup_depth_resources();
+		_preview_render_pass.resize(_size);
 		_cleanup_result_images();
-		_create_depth_resources();
 		_create_result_images();
 	}
 
@@ -322,11 +298,6 @@ namespace vulkan {
 		for (auto framebuffer : _result_image_framebuffer) {
 			vkDestroyFramebuffer(Graphics::DEFAULT->device(), framebuffer, nullptr);
 		}
-	}
-
-	void MainRenderPipeline::_cleanup_depth_resources() {
-		_depth_image.~Image();
-		_depth_image_view.~ImageView();
 	}
 
 	void MainRenderPipeline::_record_command_buffer(VkCommandBuffer commandBuffer) {

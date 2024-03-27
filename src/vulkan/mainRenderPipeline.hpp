@@ -8,6 +8,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "../types/resourceManager.hpp"
+#include "PreviewRenderPass.hpp"
 #include "uniformBufferObject.hpp"
 #include "semaphore.hpp"
 #include "fence.hpp"
@@ -42,25 +43,22 @@ namespace vulkan {
 			util::Result<void, KError> _create_sync_objects();
 			void _create_command_buffers();
 			void _create_render_pass();
-			util::Result<void, KError> _create_depth_resources();
 			util::Result<void, KError> _create_result_images();
 			void _recreate_result_images();
 			void _cleanup_result_images();
-			void _cleanup_depth_resources();
 
 			void _record_command_buffer(VkCommandBuffer commandBuffer);
 			void _update_uniform_buffer(uint32_t currentImage);
 
 			VkFormat _find_depth_format();
 
+			PreviewRenderPass _preview_render_pass;
 			VkRenderPass _render_pass;
 			std::vector<MappedUniformObject> _mapped_uniforms;
 			std::vector<Fence> _in_flight_fences;
 			std::vector<Semaphore> _render_finished_semaphores;
 			std::vector<VkCommandBuffer> _command_buffers;
 
-			Image _depth_image;
-			ImageView _depth_image_view;
 			VkExtent2D _size;
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
 			std::vector<Image> _result_images;
