@@ -1,9 +1,5 @@
 #include "app.hpp"
-#include "vulkan/graphics.hpp"
-#include <cstdint>
-#include <memory>
 #include <sys/types.h>
-#include <vector>
 #include <iostream>
 #define GLFW_INCLUDE_VULKAN
 

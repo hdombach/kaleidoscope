@@ -61,8 +61,6 @@ namespace vulkan {
 
 			VkExtent2D _size;
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
-			std::vector<Image> _result_images;
-			std::vector<ImageView> _result_image_views;
 			std::vector<VkFramebuffer> _result_image_framebuffer;
 			std::vector<VkDescriptorSet> _result_descriptor_sets;
 			int _frame_index;

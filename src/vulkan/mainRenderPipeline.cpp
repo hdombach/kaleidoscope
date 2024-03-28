@@ -59,7 +59,6 @@ namespace vulkan {
 
 		_cleanup_result_images();
 		_mapped_uniforms.clear();
-		_preview_render_pass.~PreviewRenderPass();
 		
 		_in_flight_fences.clear();
 		_render_finished_semaphores.clear();
@@ -113,7 +112,7 @@ namespace vulkan {
 	}
 
 	ImageView const &MainRenderPipeline::image_view() const {
-		return _result_image_views[_frame_index];
+		return _preview_render_pass.color_image_view(_frame_index);
 	}
 	VkRenderPass MainRenderPipeline::render_pass() const {
 		return _render_pass;
@@ -225,36 +224,12 @@ namespace vulkan {
 	}
 
 	util::Result<void, KError> MainRenderPipeline::_create_result_images() {
-		_result_image_views.resize(FRAMES_IN_FLIGHT);
 		_result_image_framebuffer.resize(FRAMES_IN_FLIGHT);
 		_result_descriptor_sets.resize(FRAMES_IN_FLIGHT);
 
 		for (int i = 0; i < FRAMES_IN_FLIGHT; i++) {
-			auto image_res = Image::create(
-					_size.width,
-					_size.height,
-					_RESULT_IMAGE_FORMAT,
-					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-
-			TRY(image_res);
-			_result_images.push_back(std::move(image_res.value()));
-
-			auto image_view_res = _result_images[i].create_image_view_full(
-					_RESULT_IMAGE_FORMAT, 
-					VK_IMAGE_ASPECT_COLOR_BIT, 
-					1);
-			TRY(image_view_res);
-			_result_image_views[i] = std::move(image_view_res.value());
-
-			Graphics::DEFAULT->transitionImageLayout(
-					_result_images[i].value(),
-					_RESULT_IMAGE_FORMAT,
-					VK_IMAGE_LAYOUT_UNDEFINED,
-					VK_IMAGE_LAYOUT_GENERAL,
-					1);
-
 			auto attachments = std::array<VkImageView, 2>{
-				_result_image_views[i].value(),
+				_preview_render_pass.color_image_view(i).value(),
 				_preview_render_pass.depth_image_view().value(),
 			};
 
@@ -278,7 +253,7 @@ namespace vulkan {
 			}
 			_result_descriptor_sets[i] = ImGui_ImplVulkan_AddTexture(
 					Graphics::DEFAULT->mainTextureSampler(),
-					_result_image_views[i].value(),
+					_preview_render_pass.color_image_view(i).value(),
 					VK_IMAGE_LAYOUT_GENERAL);
 		}
 
@@ -293,8 +268,6 @@ namespace vulkan {
 	}
 
 	void MainRenderPipeline::_cleanup_result_images() {
-		_result_image_views.clear();
-		_result_images.clear();
 		for (auto framebuffer : _result_image_framebuffer) {
 			vkDestroyFramebuffer(Graphics::DEFAULT->device(), framebuffer, nullptr);
 		}

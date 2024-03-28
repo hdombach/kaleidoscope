@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <vulkan/vulkan_core.h>
 
 #include "image.hpp"
@@ -19,7 +21,7 @@ namespace vulkan {
 			PreviewRenderPass& operator=(const PreviewRenderPass& other) = delete;
 			PreviewRenderPass& operator=(PreviewRenderPass &&other) = default;
 
-			~PreviewRenderPass() = default;
+			~PreviewRenderPass();
 
 			void resize(VkExtent2D new_size);
 			VkExtent2D size() const { return _size; }
@@ -30,10 +32,19 @@ namespace vulkan {
 			ImageView& depth_image_view() { return _depth_image_view; }
 			ImageView const& depth_image_view() const { return _depth_image_view; }
 
+			Image& color_image(int frame_index);
+			Image const& color_image(int frame_index) const;
+
+			ImageView& color_image_view(int frame_index);
+			ImageView const& color_image_view(int frame_index) const;
 		private:
 			VkExtent2D _size;
 			Image _depth_image;
 			ImageView _depth_image_view;
+			std::vector<Image> _color_images;
+			std::vector<ImageView> _color_image_views;
+
+			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
 
 			util::Result<void, KError> _create_images();
 			void _cleanup_images();
