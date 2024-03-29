@@ -41,7 +41,7 @@ namespace vulkan {
 
 	TextureMaterial::TextureMaterial(
 			MaterialFactory const &materialFactory,
-			Texture const *texture):
+			Texture *texture):
 		texture_(texture),
 		materialFactory_(materialFactory)
 	{

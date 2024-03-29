@@ -14,7 +14,7 @@ namespace vulkan {
 		return mainRenderPipeline_;
 	}
 
-	Material *MaterialFactory::textureMaterial(Texture const *texture) {
+	Material *MaterialFactory::textureMaterial(Texture *texture) {
 		return new TextureMaterial(*this, texture);
 	}
 

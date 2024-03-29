@@ -21,7 +21,7 @@ namespace vulkan {
 			MaterialFactory(MainRenderPipeline const &mainRenderPipeline, DescriptorPool const &descriptorPool);
 
 			MainRenderPipeline const &mainRenderPipeline() const;
-			Material *textureMaterial(Texture const *texture);
+			Material *textureMaterial(Texture *texture);
 			VkDescriptorPool descriptorPool() const;
 		private:
 			MainRenderPipeline const &mainRenderPipeline_;

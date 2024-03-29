@@ -103,11 +103,11 @@ namespace vulkan {
 		ImGui_ImplVulkan_RemoveTexture(_imgui_descriptor_set);
 	}
 
-	VkDescriptorSet StaticTexture::get_descriptor_set() const {
+	VkDescriptorSet StaticTexture::get_descriptor_set() {
 		return _imgui_descriptor_set;
 	}
 
-	ImageView const &StaticTexture::image_view() const {
+	ImageView const &StaticTexture::image_view() {
 		return _texture_view;
 	}
 }

@@ -30,13 +30,9 @@ namespace vulkan {
 		result->_create_command_buffers();
 		result->_create_render_pass();
 
-		auto render_pass_res = PreviewRenderPass::create(size);
+		auto render_pass_res = PreviewRenderPass::create(size, result->_render_pass);
 		TRY(render_pass_res);
 		result->_preview_render_pass = std::move(render_pass_res.value());
-
-		TRY(result->_create_result_images());
-
-
 
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i) {
 			auto buffer_res = MappedUniformObject::create();
@@ -57,7 +53,6 @@ namespace vulkan {
 	MainRenderPipeline::~MainRenderPipeline() {
 		util::log_memory("Deconstructing main render pipeline");
 
-		_cleanup_result_images();
 		_mapped_uniforms.clear();
 		
 		_in_flight_fences.clear();
@@ -107,11 +102,11 @@ namespace vulkan {
 		return _size;
 	}
 
-	VkDescriptorSet MainRenderPipeline::get_descriptor_set() const {
-		return _result_descriptor_sets[_frame_index];
+	VkDescriptorSet MainRenderPipeline::get_descriptor_set() {
+		return _preview_render_pass.imgui_descriptor_set(_frame_index);
 	}
 
-	ImageView const &MainRenderPipeline::image_view() const {
+	ImageView const &MainRenderPipeline::image_view() {
 		return _preview_render_pass.color_image_view(_frame_index);
 	}
 	VkRenderPass MainRenderPipeline::render_pass() const {
@@ -120,15 +115,6 @@ namespace vulkan {
 	std::vector<MappedUniformObject> const &MainRenderPipeline::uniform_buffers() const {
 		return _mapped_uniforms;
 	}
-
-	/*
-	MainRenderPipeline::MainRenderPipeline(
-			types::ResourceManager &resourceManager,
-			VkExtent2D size):
-		size_(size),
-		resourceManager_(resourceManager)
-	{}*/
-
 
 	util::Result<void, KError> MainRenderPipeline::_create_sync_objects() {
 		_render_finished_semaphores.resize(FRAMES_IN_FLIGHT);
@@ -223,54 +209,9 @@ namespace vulkan {
 		require(vkCreateRenderPass(Graphics::DEFAULT->device(), &render_pass_info, nullptr, &_render_pass));
 	}
 
-	util::Result<void, KError> MainRenderPipeline::_create_result_images() {
-		_result_image_framebuffer.resize(FRAMES_IN_FLIGHT);
-		_result_descriptor_sets.resize(FRAMES_IN_FLIGHT);
-
-		for (int i = 0; i < FRAMES_IN_FLIGHT; i++) {
-			auto attachments = std::array<VkImageView, 2>{
-				_preview_render_pass.color_image_view(i).value(),
-				_preview_render_pass.depth_image_view().value(),
-			};
-
-			auto framebuffer_info = VkFramebufferCreateInfo{};
-			framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebuffer_info.renderPass = _render_pass;
-			framebuffer_info.attachmentCount = attachments.size();
-			framebuffer_info.pAttachments = attachments.data();
-			framebuffer_info.width = _size.width;
-			framebuffer_info.height = _size.height;
-			framebuffer_info.layers = 1;
-
-			require(vkCreateFramebuffer(
-						Graphics::DEFAULT->device(),
-						&framebuffer_info,
-						nullptr,
-						&_result_image_framebuffer[i]));
-
-			if (_result_descriptor_sets[i]) {
-				ImGui_ImplVulkan_RemoveTexture(_result_descriptor_sets[i]);
-			}
-			_result_descriptor_sets[i] = ImGui_ImplVulkan_AddTexture(
-					Graphics::DEFAULT->mainTextureSampler(),
-					_preview_render_pass.color_image_view(i).value(),
-					VK_IMAGE_LAYOUT_GENERAL);
-		}
-
-		return {};
-	}
-
 	void MainRenderPipeline::_recreate_result_images() {
 		Graphics::DEFAULT->waitIdle();
 		_preview_render_pass.resize(_size);
-		_cleanup_result_images();
-		_create_result_images();
-	}
-
-	void MainRenderPipeline::_cleanup_result_images() {
-		for (auto framebuffer : _result_image_framebuffer) {
-			vkDestroyFramebuffer(Graphics::DEFAULT->device(), framebuffer, nullptr);
-		}
 	}
 
 	void MainRenderPipeline::_record_command_buffer(VkCommandBuffer commandBuffer) {
@@ -287,7 +228,7 @@ namespace vulkan {
 		auto render_pass_info = VkRenderPassBeginInfo{};
 		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		render_pass_info.renderPass = _render_pass;
-		render_pass_info.framebuffer = _result_image_framebuffer[_frame_index];
+		render_pass_info.framebuffer = _preview_render_pass.framebuffer(_frame_index);
 		render_pass_info.renderArea.offset = {0, 0};
 		render_pass_info.renderArea.extent = _size;
 

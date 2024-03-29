@@ -44,6 +44,13 @@ namespace types {
 		return defaultTexture_;
 	}
 
+	vulkan::Texture *ResourceManager::getTexture(const std::string &name) {
+		if (hasTexture(name)) {
+			return textures_.at(name);
+		}
+		return defaultTexture_;
+	}
+
 	vulkan::Texture const *ResourceManager::getTexture(const std::string &name) const {
 		if (hasTexture(name)) {
 			return textures_.at(name);

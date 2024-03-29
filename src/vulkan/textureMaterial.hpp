@@ -17,13 +17,13 @@ namespace vulkan {
 		protected:
 			friend MaterialFactory;
 
-			TextureMaterial(MaterialFactory const &materialFactory, Texture const *texture);
+			TextureMaterial(MaterialFactory const &materialFactory, Texture *texture);
 
 			void createDescriptorSetLayout_();
 			void createDescriptorSets_(MaterialFactory const &materialFactory);
 			void createPipeline_(MaterialFactory const &materialFactory);
 
-			Texture const *texture_; // does not own
+			Texture *texture_; // does not own
 			MaterialFactory const &materialFactory_;
 
 			VkPipelineLayout pipelineLayout_;

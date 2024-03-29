@@ -26,6 +26,7 @@ namespace types {
 					vulkan::Texture *texture);
 			vulkan::Texture *defaultTexture();
 			vulkan::Texture const *defaultTexture() const;
+			vulkan::Texture *getTexture(std::string const &name);
 			vulkan::Texture const *getTexture(std::string const &name) const;
 			bool hasTexture(std::string const &name) const;
 

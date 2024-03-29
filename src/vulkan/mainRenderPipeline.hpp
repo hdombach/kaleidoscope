@@ -14,7 +14,6 @@
 #include "fence.hpp"
 #include "texture.hpp"
 #include "imageView.hpp"
-#include "image.hpp"
 #include "../util/result.hpp"
 
 namespace vulkan {
@@ -32,8 +31,8 @@ namespace vulkan {
 			bool is_resizable() const override;
 
 			VkExtent2D get_size() const;
-			VkDescriptorSet get_descriptor_set() const override;
-			ImageView const &image_view() const override;
+			VkDescriptorSet get_descriptor_set() override;
+			ImageView const &image_view() override;
 			VkRenderPass render_pass() const;
 			std::vector<MappedUniformObject> const &uniform_buffers() const;
 
@@ -43,9 +42,7 @@ namespace vulkan {
 			util::Result<void, KError> _create_sync_objects();
 			void _create_command_buffers();
 			void _create_render_pass();
-			util::Result<void, KError> _create_result_images();
 			void _recreate_result_images();
-			void _cleanup_result_images();
 
 			void _record_command_buffer(VkCommandBuffer commandBuffer);
 			void _update_uniform_buffer(uint32_t currentImage);
@@ -61,8 +58,6 @@ namespace vulkan {
 
 			VkExtent2D _size;
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
-			std::vector<VkFramebuffer> _result_image_framebuffer;
-			std::vector<VkDescriptorSet> _result_descriptor_sets;
 			int _frame_index;
 
 			uint32_t _mip_levels;

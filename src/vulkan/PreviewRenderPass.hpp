@@ -12,7 +12,7 @@
 namespace vulkan {
 	class PreviewRenderPass {
 		public:
-			static util::Result<PreviewRenderPass, KError> create(VkExtent2D size);
+			static util::Result<PreviewRenderPass, KError> create(VkExtent2D size, VkRenderPass render_pass);
 
 			PreviewRenderPass() = default;
 
@@ -37,12 +37,19 @@ namespace vulkan {
 
 			ImageView& color_image_view(int frame_index);
 			ImageView const& color_image_view(int frame_index) const;
+
+			VkFramebuffer framebuffer(int frame_index);
+			VkDescriptorSet imgui_descriptor_set(int frame_index);
 		private:
 			VkExtent2D _size;
 			Image _depth_image;
 			ImageView _depth_image_view;
 			std::vector<Image> _color_images;
 			std::vector<ImageView> _color_image_views;
+			std::vector<VkFramebuffer> _framebuffers;
+			std::vector<VkDescriptorSet> _imgui_descriptor_sets;
+
+			VkRenderPass _render_pass; /* temporary */
 
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
 

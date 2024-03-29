@@ -60,3 +60,10 @@ KError KError::invalid_mem_property() {
 			std::string(),
 			"Invalid memory property");
 }
+
+KError KError::internal(std::string msg) {
+	return KError(
+			INTERNAL,
+			std::string(),
+			msg);
+}
