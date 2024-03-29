@@ -33,7 +33,7 @@ namespace vulkan {
 			VkExtent2D get_size() const;
 			VkDescriptorSet get_descriptor_set() override;
 			ImageView const &image_view() override;
-			VkRenderPass render_pass() const;
+			VkRenderPass render_pass();
 			std::vector<MappedUniformObject> const &uniform_buffers() const;
 
 		private:
@@ -41,7 +41,6 @@ namespace vulkan {
 
 			util::Result<void, KError> _create_sync_objects();
 			void _create_command_buffers();
-			void _create_render_pass();
 			void _recreate_result_images();
 
 			void _record_command_buffer(VkCommandBuffer commandBuffer);
@@ -50,7 +49,6 @@ namespace vulkan {
 			VkFormat _find_depth_format();
 
 			PreviewRenderPass _preview_render_pass;
-			VkRenderPass _render_pass;
 			std::vector<MappedUniformObject> _mapped_uniforms;
 			std::vector<Fence> _in_flight_fences;
 			std::vector<Semaphore> _render_finished_semaphores;
@@ -63,6 +61,6 @@ namespace vulkan {
 			uint32_t _mip_levels;
 			bool _framebuffer_resized;
 
-			types::ResourceManager const &_resource_manager;
+			types::ResourceManager &_resource_manager;
 	};
 }

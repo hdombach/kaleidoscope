@@ -5,12 +5,12 @@
 #include "vulkan/vulkan_core.h"
 
 namespace vulkan {
-	MaterialFactory::MaterialFactory(MainRenderPipeline const &mainRenderPipeline, DescriptorPool const &descriptorPool):
+	MaterialFactory::MaterialFactory(MainRenderPipeline &mainRenderPipeline, DescriptorPool const &descriptorPool):
 		mainRenderPipeline_(mainRenderPipeline),
 		descriptorPool_(descriptorPool)
 	{}
 
-	MainRenderPipeline const &MaterialFactory::mainRenderPipeline() const {
+	MainRenderPipeline &MaterialFactory::mainRenderPipeline() {
 		return mainRenderPipeline_;
 	}
 

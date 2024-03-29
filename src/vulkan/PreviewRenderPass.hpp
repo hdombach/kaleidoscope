@@ -12,14 +12,14 @@
 namespace vulkan {
 	class PreviewRenderPass {
 		public:
-			static util::Result<PreviewRenderPass, KError> create(VkExtent2D size, VkRenderPass render_pass);
+			static util::Result<PreviewRenderPass, KError> create(VkExtent2D size);
 
 			PreviewRenderPass() = default;
 
 			PreviewRenderPass(const PreviewRenderPass& other) = delete;
-			PreviewRenderPass(PreviewRenderPass &&other) = default;
+			PreviewRenderPass(PreviewRenderPass &&other);
 			PreviewRenderPass& operator=(const PreviewRenderPass& other) = delete;
-			PreviewRenderPass& operator=(PreviewRenderPass &&other) = default;
+			PreviewRenderPass& operator=(PreviewRenderPass &&other);
 
 			~PreviewRenderPass();
 
@@ -40,6 +40,8 @@ namespace vulkan {
 
 			VkFramebuffer framebuffer(int frame_index);
 			VkDescriptorSet imgui_descriptor_set(int frame_index);
+
+			VkRenderPass render_pass();
 		private:
 			VkExtent2D _size;
 			Image _depth_image;
@@ -49,12 +51,12 @@ namespace vulkan {
 			std::vector<VkFramebuffer> _framebuffers;
 			std::vector<VkDescriptorSet> _imgui_descriptor_sets;
 
-			VkRenderPass _render_pass; /* temporary */
+			VkRenderPass _render_pass;
 
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
 
 			util::Result<void, KError> _create_images();
 			void _cleanup_images();
-			VkFormat _depth_format();
+			static VkFormat _depth_format();
 	};
 }

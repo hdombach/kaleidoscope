@@ -1,6 +1,5 @@
 #pragma once
 
-#include "mainRenderPipeline.hpp"
 #include "material.hpp"
 #include "materialFactory.hpp"
 #include "texture.hpp"
@@ -17,11 +16,11 @@ namespace vulkan {
 		protected:
 			friend MaterialFactory;
 
-			TextureMaterial(MaterialFactory const &materialFactory, Texture *texture);
+			TextureMaterial(MaterialFactory &materialFactory, Texture *texture);
 
 			void createDescriptorSetLayout_();
-			void createDescriptorSets_(MaterialFactory const &materialFactory);
-			void createPipeline_(MaterialFactory const &materialFactory);
+			void createDescriptorSets_(MaterialFactory &materialFactory);
+			void createPipeline_(MaterialFactory &materialFactory);
 
 			Texture *texture_; // does not own
 			MaterialFactory const &materialFactory_;

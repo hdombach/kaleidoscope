@@ -34,6 +34,10 @@ namespace ui {
 		ImGui::End();
 	}
 
+	vulkan::MainRenderPipeline &Window::main_render_pipeline() {
+		return *_main_render_pipeline;
+	}
+
 	vulkan::MainRenderPipeline const &Window::main_render_pipeline() const {
 		return *_main_render_pipeline;
 	}

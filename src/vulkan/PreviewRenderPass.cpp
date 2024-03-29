@@ -10,14 +10,113 @@
 
 namespace vulkan {
 	util::Result<PreviewRenderPass, KError> PreviewRenderPass::create(
-			VkExtent2D size,
-			VkRenderPass render_pass)
+			VkExtent2D size)
 	{
 		auto result = PreviewRenderPass();
 		result._size = size;
-		result._render_pass = render_pass;
+
+		/* Create render pass */
+		auto color_attachment = VkAttachmentDescription{};
+		color_attachment.format = _RESULT_IMAGE_FORMAT;
+		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		color_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		auto color_attachment_ref = VkAttachmentReference{};
+		color_attachment_ref.attachment = 0;
+		color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		auto depth_attachment = VkAttachmentDescription{};
+		depth_attachment.format = _depth_format();
+		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		auto depth_attachment_ref = VkAttachmentReference{};
+		depth_attachment_ref.attachment = 1;
+		depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		auto subpass = VkSubpassDescription{};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &color_attachment_ref;
+		subpass.pDepthStencilAttachment = &depth_attachment_ref;
+
+		auto attachments = std::array<VkAttachmentDescription, 2>{
+			color_attachment,
+			depth_attachment,
+		};
+
+		auto render_pass_info = VkRenderPassCreateInfo{};
+		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		render_pass_info.attachmentCount = static_cast<uint32_t>(attachments.size());
+		render_pass_info.pAttachments = attachments.data();
+		render_pass_info.subpassCount = 1;
+		render_pass_info.pSubpasses = &subpass;
+
+		auto dependency = VkSubpassDependency{};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcAccessMask = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
+			VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
+			VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+		render_pass_info.dependencyCount = 1;
+		render_pass_info.pDependencies = &dependency;
+
+		auto res = vkCreateRenderPass(
+				Graphics::DEFAULT->device(),
+				&render_pass_info,
+				nullptr,
+				&result._render_pass);
+
+		if (res != VK_SUCCESS) {
+			return {res};
+		}
+
 		TRY(result._create_images());
 		return result;
+	}
+
+	PreviewRenderPass::PreviewRenderPass(PreviewRenderPass &&other) {
+		_size = other._size;
+		_depth_image = std::move(other._depth_image);
+		_depth_image_view = std::move(other._depth_image_view);
+		_color_images = std::move(other._color_images);
+		_color_image_views = std::move(other._color_image_views);
+		_framebuffers = std::move(other._framebuffers);
+		_imgui_descriptor_sets = std::move(other._imgui_descriptor_sets);
+
+		_render_pass = other._render_pass;
+		other._render_pass = nullptr;
+	}
+
+	PreviewRenderPass& PreviewRenderPass::operator=(PreviewRenderPass &&other) {
+		_size = other._size;
+		_depth_image = std::move(other._depth_image);
+		_depth_image_view = std::move(other._depth_image_view);
+		_color_images = std::move(other._color_images);
+		_color_image_views = std::move(other._color_image_views);
+		_framebuffers = std::move(other._framebuffers);
+		_imgui_descriptor_sets = std::move(other._imgui_descriptor_sets);
+
+		_render_pass = other._render_pass;
+		other._render_pass = nullptr;
+
+		return *this;
 	}
 
 	void PreviewRenderPass::resize(VkExtent2D new_size) {
@@ -31,8 +130,10 @@ namespace vulkan {
 	}
 
 	PreviewRenderPass::~PreviewRenderPass() {
-		util::log_memory("deleting preview render pass");
 		_cleanup_images();
+		if (_render_pass) {
+			vkDestroyRenderPass(Graphics::DEFAULT->device(), _render_pass, nullptr);
+		}
 	}
 
 	Image& PreviewRenderPass::color_image(int frame_index) {
@@ -57,6 +158,10 @@ namespace vulkan {
 
 	VkDescriptorSet PreviewRenderPass::imgui_descriptor_set(int frame_index) {
 		return _imgui_descriptor_sets[frame_index];
+	}
+
+	VkRenderPass PreviewRenderPass::render_pass() {
+		return _render_pass;
 	}
 
 	util::Result<void, KError> PreviewRenderPass::_create_images() {

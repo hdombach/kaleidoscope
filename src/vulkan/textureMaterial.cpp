@@ -7,8 +7,6 @@
 #include "shader.hpp"
 #include "uniformBufferObject.hpp"
 #include "vulkan/vulkan_core.h"
-#include <functional>
-#include <mutex>
 #include <vector>
 
 namespace vulkan {
@@ -40,7 +38,7 @@ namespace vulkan {
 	}
 
 	TextureMaterial::TextureMaterial(
-			MaterialFactory const &materialFactory,
+			MaterialFactory &materialFactory,
 			Texture *texture):
 		texture_(texture),
 		materialFactory_(materialFactory)
@@ -74,7 +72,7 @@ namespace vulkan {
 		require(vkCreateDescriptorSetLayout(Graphics::DEFAULT->device(), &layoutInfo, nullptr, &descriptorSetLayout_));
 	}
 
-	void TextureMaterial::createDescriptorSets_(MaterialFactory const &materialFactory) {
+	void TextureMaterial::createDescriptorSets_(MaterialFactory &materialFactory) {
 		auto layouts = std::vector<VkDescriptorSetLayout>(FRAMES_IN_FLIGHT, descriptorSetLayout_);
 		auto allocInfo = VkDescriptorSetAllocateInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -123,7 +121,7 @@ namespace vulkan {
 		}
 	}
 
-	void TextureMaterial::createPipeline_(MaterialFactory const &materialFactory) {
+	void TextureMaterial::createPipeline_(MaterialFactory &materialFactory) {
 		auto vertShader = vulkan::Shader::fromEnvFile("src/shaders/default_shader.vert.spv");
 		auto fragShader = vulkan::Shader::fromEnvFile("src/shaders/default_shader.frag.spv");
 

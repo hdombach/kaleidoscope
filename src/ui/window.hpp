@@ -17,6 +17,7 @@ namespace ui {
 			~Window();
 
 			void show();
+			vulkan::MainRenderPipeline &main_render_pipeline();
 			vulkan::MainRenderPipeline const &main_render_pipeline() const;
 		private:
 			Window(vulkan::MainRenderPipeline::Ptr &&main_render_pipeline);

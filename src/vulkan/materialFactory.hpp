@@ -18,13 +18,13 @@ namespace vulkan {
 	 */
 	class MaterialFactory {
 		public:
-			MaterialFactory(MainRenderPipeline const &mainRenderPipeline, DescriptorPool const &descriptorPool);
+			MaterialFactory(MainRenderPipeline &mainRenderPipeline, DescriptorPool const &descriptorPool);
 
-			MainRenderPipeline const &mainRenderPipeline() const;
+			MainRenderPipeline &mainRenderPipeline();
 			Material *textureMaterial(Texture *texture);
 			VkDescriptorPool descriptorPool() const;
 		private:
-			MainRenderPipeline const &mainRenderPipeline_;
+			MainRenderPipeline &mainRenderPipeline_;
 			DescriptorPool const &descriptorPool_;
 	};
 }
