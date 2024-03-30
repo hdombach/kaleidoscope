@@ -2,7 +2,7 @@
 #include "defs.hpp"
 #include "error.hpp"
 #include "graphics.hpp"
-#include "mainRenderPipeline.hpp"
+#include "PreviewRenderPass.hpp"
 #include "materialFactory.hpp"
 #include "shader.hpp"
 #include "uniformBufferObject.hpp"

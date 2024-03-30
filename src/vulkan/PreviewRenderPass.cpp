@@ -4,15 +4,19 @@
 
 #include "PreviewRenderPass.hpp"
 #include "defs.hpp"
+#include "error.hpp"
 #include "graphics.hpp"
 #include "../util/log.hpp"
 #include "imgui_impl_vulkan.h"
 
 namespace vulkan {
-	util::Result<PreviewRenderPass, KError> PreviewRenderPass::create(
+
+	/************************* PreviewRenderPassCore ****************************/
+
+	util::Result<PreviewRenderPassCore, KError> PreviewRenderPassCore::create(
 			VkExtent2D size)
 	{
-		auto result = PreviewRenderPass();
+		auto result = PreviewRenderPassCore();
 		result._size = size;
 
 		/* Create render pass */
@@ -91,7 +95,7 @@ namespace vulkan {
 		return result;
 	}
 
-	PreviewRenderPass::PreviewRenderPass(PreviewRenderPass &&other) {
+	PreviewRenderPassCore::PreviewRenderPassCore(PreviewRenderPassCore &&other) {
 		_size = other._size;
 		_depth_image = std::move(other._depth_image);
 		_depth_image_view = std::move(other._depth_image_view);
@@ -104,7 +108,7 @@ namespace vulkan {
 		other._render_pass = nullptr;
 	}
 
-	PreviewRenderPass& PreviewRenderPass::operator=(PreviewRenderPass &&other) {
+	PreviewRenderPassCore& PreviewRenderPassCore::operator=(PreviewRenderPassCore &&other) {
 		_size = other._size;
 		_depth_image = std::move(other._depth_image);
 		_depth_image_view = std::move(other._depth_image_view);
@@ -119,7 +123,7 @@ namespace vulkan {
 		return *this;
 	}
 
-	void PreviewRenderPass::resize(VkExtent2D new_size) {
+	void PreviewRenderPassCore::resize(VkExtent2D new_size) {
 		Graphics::DEFAULT->waitIdle();
 		_cleanup_images();
 		_size = new_size;
@@ -129,42 +133,42 @@ namespace vulkan {
 		}
 	}
 
-	PreviewRenderPass::~PreviewRenderPass() {
+	PreviewRenderPassCore::~PreviewRenderPassCore() {
 		_cleanup_images();
 		if (_render_pass) {
 			vkDestroyRenderPass(Graphics::DEFAULT->device(), _render_pass, nullptr);
 		}
 	}
 
-	Image& PreviewRenderPass::color_image(int frame_index) {
+	Image& PreviewRenderPassCore::color_image(int frame_index) {
 		return _color_images[frame_index];
 	}
 
-	Image const& PreviewRenderPass::color_image(int frame_index) const {
+	Image const& PreviewRenderPassCore::color_image(int frame_index) const {
 		return _color_images[frame_index];
 	}
 
-	ImageView& PreviewRenderPass::color_image_view(int frame_index) {
+	ImageView& PreviewRenderPassCore::color_image_view(int frame_index) {
 		return _color_image_views[frame_index];
 	}
 
-	ImageView const& PreviewRenderPass::color_image_view(int frame_index) const {
+	ImageView const& PreviewRenderPassCore::color_image_view(int frame_index) const {
 		return _color_image_views[frame_index];
 	}
 
-	VkFramebuffer PreviewRenderPass::framebuffer(int frame_index) {
+	VkFramebuffer PreviewRenderPassCore::framebuffer(int frame_index) {
 		return _framebuffers[frame_index];
 	}
 
-	VkDescriptorSet PreviewRenderPass::imgui_descriptor_set(int frame_index) {
+	VkDescriptorSet PreviewRenderPassCore::imgui_descriptor_set(int frame_index) {
 		return _imgui_descriptor_sets[frame_index];
 	}
 
-	VkRenderPass PreviewRenderPass::render_pass() {
+	VkRenderPass PreviewRenderPassCore::render_pass() {
 		return _render_pass;
 	}
 
-	util::Result<void, KError> PreviewRenderPass::_create_images() {
+	util::Result<void, KError> PreviewRenderPassCore::_create_images() {
 		/* create depth resource */
 		_cleanup_images();
 		{
@@ -259,7 +263,7 @@ namespace vulkan {
 		return {};
 	}
 
-	void PreviewRenderPass::_cleanup_images() {
+	void PreviewRenderPassCore::_cleanup_images() {
 		_depth_image.~Image();
 		_depth_image_view.~ImageView();
 		_color_image_views.clear();
@@ -276,10 +280,225 @@ namespace vulkan {
 		_imgui_descriptor_sets.clear();
 	}
 
-	VkFormat PreviewRenderPass::_depth_format() {
+	VkFormat PreviewRenderPassCore::_depth_format() {
 		return Graphics::DEFAULT->findSupportedFormat(
 				{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}, 
 				VK_IMAGE_TILING_OPTIMAL, 
 				VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT);
+	}
+
+	/************************ PreviewRenderPass *********************************/
+
+	util::Result<PreviewRenderPass::Ptr, KError> PreviewRenderPass::create(
+			types::ResourceManager &resource_manager,
+			VkExtent2D size)
+	{
+		auto result = std::unique_ptr<PreviewRenderPass>(
+				new PreviewRenderPass(resource_manager, size));
+		TRY(result->_create_sync_objects());
+		result->_create_command_buffers();
+
+		auto render_pass_res = PreviewRenderPassCore::create(size);
+		TRY(render_pass_res);
+		result->_preview_render_pass = std::move(render_pass_res.value());
+
+		for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i) {
+			auto buffer_res = MappedUniformObject::create();
+			TRY(buffer_res);
+			result->_mapped_uniforms.push_back(std::move(buffer_res.value()));
+		}
+		return result;
+	}
+
+	PreviewRenderPass::PreviewRenderPass(
+			types::ResourceManager &resourceManager, VkExtent2D size):
+		_resource_manager(resourceManager),
+		_size(size)
+	{
+	}
+
+	PreviewRenderPass::~PreviewRenderPass() {
+		util::log_memory("Deconstructing main render pipeline");
+
+		_mapped_uniforms.clear();
+		
+		_in_flight_fences.clear();
+		_render_finished_semaphores.clear();
+	}
+
+	void PreviewRenderPass::submit() {
+		require(_in_flight_fences[_frame_index].wait());
+		auto submit_info = VkSubmitInfo{};
+		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+		_update_uniform_buffer(_frame_index);
+
+		_in_flight_fences[_frame_index].reset();
+
+		vkResetCommandBuffer(_command_buffers[_frame_index], 0);
+
+		_record_command_buffer(_command_buffers[_frame_index]);
+
+		auto wait_stages = std::array<VkPipelineStageFlags, 2>{VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+		submit_info.pWaitDstStageMask = wait_stages.data();
+		submit_info.commandBufferCount = 1;
+		submit_info.pCommandBuffers = &_command_buffers[_frame_index];
+		//submitInfo.signalSemaphoreCount = 1;
+		//submitInfo.pSignalSemaphores = &renderFinishedSemaphores_[_frame_index];
+
+		require(vkQueueSubmit(Graphics::DEFAULT->graphicsQueue(), 1, &submit_info, *_in_flight_fences[_frame_index]));
+
+		_frame_index = (_frame_index + 1) % FRAMES_IN_FLIGHT;
+	}
+
+	void PreviewRenderPass::resize(glm::ivec2 size) {
+		_preview_render_pass.resize(VkExtent2D{
+				static_cast<uint32_t>(size.x),
+				static_cast<uint32_t>(size.y)});
+		submit();
+
+		/*
+		 * When resize, the entire queue in the frame buffer is cleared. This causes
+		 * flickering when resizing the window since there is nothing to display.
+		 * My temporary solution is to move back the frame index so that it is more
+		 * immediately shown. Still cuases slight flickering though.
+		 * True solution is to resize the images used not delete and create again.
+		 */
+		_frame_index--;
+		if (_frame_index < 0) {
+			_frame_index = FRAMES_IN_FLIGHT - 1;
+		}
+	}
+	bool PreviewRenderPass::is_resizable() const {
+		return true;
+	}
+
+	VkExtent2D PreviewRenderPass::size() const {
+		return _preview_render_pass.size();
+	}
+
+	VkDescriptorSet PreviewRenderPass::get_descriptor_set() {
+		return _preview_render_pass.imgui_descriptor_set(_frame_index);
+	}
+
+	ImageView const &PreviewRenderPass::image_view() {
+		return _preview_render_pass.color_image_view(_frame_index);
+	}
+	VkRenderPass PreviewRenderPass::render_pass() {
+		return _preview_render_pass.render_pass();
+	}
+	std::vector<MappedUniformObject> const &PreviewRenderPass::uniform_buffers() const {
+		return _mapped_uniforms;
+	}
+
+	util::Result<void, KError> PreviewRenderPass::_create_sync_objects() {
+		_render_finished_semaphores.resize(FRAMES_IN_FLIGHT);
+		_in_flight_fences.resize(FRAMES_IN_FLIGHT);
+
+		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
+			auto semaphore = Semaphore::create();
+			TRY(semaphore);
+			_render_finished_semaphores[i] = std::move(semaphore.value());
+
+			auto fence = Fence::create();
+			TRY(fence);
+			_in_flight_fences[i] = std::move(fence.value());
+		}
+		return {};
+	}
+
+	void PreviewRenderPass::_create_command_buffers() {
+		_command_buffers.resize(FRAMES_IN_FLIGHT);
+		auto alloc_info = VkCommandBufferAllocateInfo{};
+		alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		alloc_info.commandPool = Graphics::DEFAULT->commandPool();
+		alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		alloc_info.commandBufferCount = (uint32_t) _command_buffers.size();
+
+		require(vkAllocateCommandBuffers(Graphics::DEFAULT->device(), &alloc_info, _command_buffers.data()));
+	}
+
+
+	void PreviewRenderPass::_record_command_buffer(VkCommandBuffer commandBuffer) {
+		auto main_mesh = _resource_manager.getMesh("viking_room");
+		auto main_material = _resource_manager.getMaterial("viking_room");
+		auto size = _preview_render_pass.size();
+
+		auto begin_info = VkCommandBufferBeginInfo{};
+		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		begin_info.flags = 0;
+		begin_info.pInheritanceInfo = nullptr;
+
+		require(vkBeginCommandBuffer(commandBuffer, &begin_info));
+
+		auto render_pass_info = VkRenderPassBeginInfo{};
+		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		render_pass_info.renderPass = _preview_render_pass.render_pass();
+		render_pass_info.framebuffer = _preview_render_pass.framebuffer(_frame_index);
+		render_pass_info.renderArea.offset = {0, 0};
+		render_pass_info.renderArea.extent = size;
+
+		auto clear_values = std::array<VkClearValue, 2>{};
+		clear_values[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+		clear_values[1].depthStencil = {1.0f, 0};
+
+		render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
+		render_pass_info.pClearValues = clear_values.data();
+
+		vkCmdBeginRenderPass(commandBuffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, main_material->pipeline());
+
+		auto viewport = VkViewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(size.width);
+		viewport.height = static_cast<float>(size.height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+		auto scissor = VkRect2D{};
+		scissor.offset = {0, 0};
+		scissor.extent = size;
+		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+		VkBuffer vertex_buffers[] = {main_mesh->vertexBuffer()};
+		VkDeviceSize offsets[] = {0};
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertex_buffers, offsets);
+		vkCmdBindIndexBuffer(commandBuffer, main_mesh->indexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+		auto descriptor_sets = main_material->getDescriptorSet(_frame_index);
+
+		vkCmdBindDescriptorSets(
+				commandBuffer,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				main_material->pipelineLayout(),
+				0,
+				descriptor_sets.size(),
+				descriptor_sets.data(),
+				0,
+				nullptr);
+
+		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(main_mesh->indexCount()), 1, 0, 0, 0);
+
+		vkCmdEndRenderPass(commandBuffer);
+		require(vkEndCommandBuffer(commandBuffer));
+	}
+
+	void PreviewRenderPass::_update_uniform_buffer(uint32_t currentImage) {
+		static auto start_time = std::chrono::high_resolution_clock::now();
+		auto size = _preview_render_pass.size();
+
+		auto current_time = std::chrono::high_resolution_clock::now();
+		float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
+
+		UniformBufferObject ubo{};
+		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.proj = glm::perspective(glm::radians(45.0f), size.width / (float) size.height, 0.1f, 10.0f);
+		ubo.proj[1][1] *= -1;
+
+		_mapped_uniforms[currentImage].set_value(ubo);
 	}
 }

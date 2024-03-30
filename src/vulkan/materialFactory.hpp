@@ -1,12 +1,9 @@
 #pragma once
 
 #include "descriptorPool.hpp"
-#include "mainRenderPipeline.hpp"
+#include "PreviewRenderPass.hpp"
 #include "material.hpp"
-#include "shader.hpp"
 #include "texture.hpp"
-#include <string>
-#include <unordered_map>
 
 namespace vulkan {
 	/*
@@ -18,13 +15,13 @@ namespace vulkan {
 	 */
 	class MaterialFactory {
 		public:
-			MaterialFactory(MainRenderPipeline &mainRenderPipeline, DescriptorPool const &descriptorPool);
+			MaterialFactory(PreviewRenderPass &mainRenderPipeline, DescriptorPool const &descriptorPool);
 
-			MainRenderPipeline &mainRenderPipeline();
+			PreviewRenderPass &mainRenderPipeline();
 			Material *textureMaterial(Texture *texture);
 			VkDescriptorPool descriptorPool() const;
 		private:
-			MainRenderPipeline &mainRenderPipeline_;
+			PreviewRenderPass &mainRenderPipeline_;
 			DescriptorPool const &descriptorPool_;
 	};
 }

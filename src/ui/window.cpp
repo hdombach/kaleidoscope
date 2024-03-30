@@ -6,13 +6,13 @@
 #include <imgui.h>
 
 #include "window.hpp"
-#include "../vulkan/mainRenderPipeline.hpp"
+#include "../vulkan/PreviewRenderPass.hpp"
 #include "../types/resourceManager.hpp"
 #include "textureView.hpp"
 
 namespace ui {
 	util::Result<Window::Ptr, KError> Window::create(types::ResourceManager &resource_manager) {
-		auto render_pipeline = vulkan::MainRenderPipeline::create(resource_manager, {300, 300});
+		auto render_pipeline = vulkan::PreviewRenderPass::create(resource_manager, {300, 300});
 		TRY(render_pipeline);
 		return Window::Ptr(new Window(std::move(render_pipeline.value())));
 	}
@@ -34,15 +34,15 @@ namespace ui {
 		ImGui::End();
 	}
 
-	vulkan::MainRenderPipeline &Window::main_render_pipeline() {
+	vulkan::PreviewRenderPass &Window::main_render_pipeline() {
 		return *_main_render_pipeline;
 	}
 
-	vulkan::MainRenderPipeline const &Window::main_render_pipeline() const {
+	vulkan::PreviewRenderPass const &Window::main_render_pipeline() const {
 		return *_main_render_pipeline;
 	}
 
-	Window::Window(vulkan::MainRenderPipeline::Ptr &&main_render_pipeline):
+	Window::Window(vulkan::PreviewRenderPass::Ptr &&main_render_pipeline):
 		_main_render_pipeline(std::move(main_render_pipeline)),
 		_viewport(*_main_render_pipeline)
 	{}

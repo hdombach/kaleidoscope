@@ -2,7 +2,7 @@
 #include <memory>
 #include <vulkan/vulkan.h>
 
-#include "../vulkan/mainRenderPipeline.hpp"
+#include "../vulkan/PreviewRenderPass.hpp"
 #include "../types/resourceManager.hpp"
 #include "textureView.hpp"
 
@@ -17,12 +17,12 @@ namespace ui {
 			~Window();
 
 			void show();
-			vulkan::MainRenderPipeline &main_render_pipeline();
-			vulkan::MainRenderPipeline const &main_render_pipeline() const;
+			vulkan::PreviewRenderPass &main_render_pipeline();
+			vulkan::PreviewRenderPass const &main_render_pipeline() const;
 		private:
-			Window(vulkan::MainRenderPipeline::Ptr &&main_render_pipeline);
+			Window(vulkan::PreviewRenderPass::Ptr &&main_render_pipeline);
 
-			std::unique_ptr<vulkan::MainRenderPipeline> _main_render_pipeline;
+			std::unique_ptr<vulkan::PreviewRenderPass> _main_render_pipeline;
 			TextureView _viewport;
 	};
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include <vulkan/vulkan_core.h>
@@ -8,20 +9,23 @@
 #include "imageView.hpp"
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
+#include "texture.hpp"
+#include "../types/resourceManager.hpp"
+#include "uniformBufferObject.hpp"
 
 namespace vulkan {
-	class PreviewRenderPass {
+	class PreviewRenderPassCore {
 		public:
-			static util::Result<PreviewRenderPass, KError> create(VkExtent2D size);
+			static util::Result<PreviewRenderPassCore, KError> create(VkExtent2D size);
 
-			PreviewRenderPass() = default;
+			PreviewRenderPassCore() = default;
 
-			PreviewRenderPass(const PreviewRenderPass& other) = delete;
-			PreviewRenderPass(PreviewRenderPass &&other);
-			PreviewRenderPass& operator=(const PreviewRenderPass& other) = delete;
-			PreviewRenderPass& operator=(PreviewRenderPass &&other);
+			PreviewRenderPassCore(const PreviewRenderPassCore& other) = delete;
+			PreviewRenderPassCore(PreviewRenderPassCore &&other);
+			PreviewRenderPassCore& operator=(const PreviewRenderPassCore& other) = delete;
+			PreviewRenderPassCore& operator=(PreviewRenderPassCore &&other);
 
-			~PreviewRenderPass();
+			~PreviewRenderPassCore();
 
 			void resize(VkExtent2D new_size);
 			VkExtent2D size() const { return _size; }
@@ -58,5 +62,46 @@ namespace vulkan {
 			util::Result<void, KError> _create_images();
 			void _cleanup_images();
 			static VkFormat _depth_format();
+	};
+
+	class PreviewRenderPass: public Texture  {
+		public:
+			using Ptr = std::unique_ptr<PreviewRenderPass>;
+			static util::Result<Ptr, KError> create(
+					types::ResourceManager &resource_manager,
+					VkExtent2D size);
+			~PreviewRenderPass();
+			void submit();
+			void resize(glm::ivec2 size) override;
+			bool is_resizable() const override;
+
+			VkExtent2D size() const;
+			VkDescriptorSet get_descriptor_set() override;
+			ImageView const &image_view() override;
+			VkRenderPass render_pass();
+			std::vector<MappedUniformObject> const &uniform_buffers() const;
+
+		private:
+			PreviewRenderPass(types::ResourceManager &resource_manager, VkExtent2D size);
+
+			util::Result<void, KError> _create_sync_objects();
+			void _create_command_buffers();
+
+			void _record_command_buffer(VkCommandBuffer commandBuffer);
+			void _update_uniform_buffer(uint32_t currentImage);
+
+			PreviewRenderPassCore _preview_render_pass;
+			std::vector<MappedUniformObject> _mapped_uniforms;
+			std::vector<Fence> _in_flight_fences;
+			std::vector<Semaphore> _render_finished_semaphores;
+			std::vector<VkCommandBuffer> _command_buffers;
+
+			VkExtent2D _size;
+			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
+			int _frame_index;
+
+			uint32_t _mip_levels;
+
+			types::ResourceManager &_resource_manager;
 	};
 }
