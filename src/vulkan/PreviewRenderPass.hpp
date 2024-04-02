@@ -5,6 +5,7 @@
 
 #include <vulkan/vulkan_core.h>
 
+#include "descriptorPool.hpp"
 #include "image.hpp"
 #include "imageView.hpp"
 #include "../util/result.hpp"
@@ -80,7 +81,7 @@ namespace vulkan {
 			ImageView const &image_view() override;
 			VkRenderPass render_pass();
 			std::vector<MappedUniformObject> const &uniform_buffers() const;
-
+			DescriptorPool &descriptor_pool() { return _descriptor_pool; };
 		private:
 			PreviewRenderPass(types::ResourceManager &resource_manager, VkExtent2D size);
 
@@ -95,6 +96,7 @@ namespace vulkan {
 			std::vector<Fence> _in_flight_fences;
 			std::vector<Semaphore> _render_finished_semaphores;
 			std::vector<VkCommandBuffer> _command_buffers;
+			DescriptorPool _descriptor_pool;
 
 			VkExtent2D _size;
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;

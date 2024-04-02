@@ -35,6 +35,7 @@ namespace types {
 					vulkan::Mesh *mesh);
 			vulkan::Mesh *defaultMesh();
 			vulkan::Mesh const *defaultMesh() const;
+			vulkan::Mesh *getMesh(std::string const &name);
 			vulkan::Mesh const *getMesh(std::string const &name) const;
 			bool hasMesh(std::string const &name) const;
 
@@ -43,6 +44,7 @@ namespace types {
 					vulkan::Material *material);
 			vulkan::Material *defaultMaterial();
 			vulkan::Material const *defaultMaterial() const;
+			vulkan::Material *getMaterial(std::string const &name);
 			vulkan::Material const *getMaterial(std::string const &name) const;
 			bool hasMaterial(std::string const &name) const;
 

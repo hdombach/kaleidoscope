@@ -34,6 +34,7 @@ App::App(std::string const &name) {
 	window_ = std::move(window.value());
 	materialFactory_ = std::make_unique<vulkan::MaterialFactory>(window_->main_render_pipeline(), *descriptorPool_);
 	resourceManager_->addMaterial("viking_room", materialFactory_->textureMaterial(resourceManager_->getTexture("viking_room")));
+	resourceManager_->getMaterial("viking_room")->add_preview(window_->main_render_pipeline());
 }
 
 App::~App() {

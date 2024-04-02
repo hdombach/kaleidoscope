@@ -81,6 +81,13 @@ namespace types {
 		return defaultMesh_;
 	}
 
+	vulkan::Mesh *ResourceManager::getMesh(const std::string &name) {
+		if (hasMesh(name)) {
+			return meshes_.at(name);
+		}
+		return defaultMesh_;
+	}
+
 	vulkan::Mesh const *ResourceManager::getMesh(const std::string &name) const {
 		if (hasMesh(name)) {
 			return meshes_.at(name);
@@ -104,6 +111,13 @@ namespace types {
 	}
 
 	vulkan::Material const *ResourceManager::defaultMaterial() const {
+		return defaultMaterial_;
+	}
+
+	vulkan::Material *ResourceManager::getMaterial(const std::string &name) {
+		if (hasMaterial(name)) {
+			return materials_.at(name);
+		}
 		return defaultMaterial_;
 	}
 

@@ -447,7 +447,7 @@ namespace vulkan {
 
 		vkCmdBeginRenderPass(commandBuffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, main_material->pipeline());
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, main_material->preview_impl()->pipeline());
 
 		auto viewport = VkViewport{};
 		viewport.x = 0.0f;
@@ -468,15 +468,15 @@ namespace vulkan {
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertex_buffers, offsets);
 		vkCmdBindIndexBuffer(commandBuffer, main_mesh->indexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-		auto descriptor_sets = main_material->getDescriptorSet(_frame_index);
+		auto descriptor_set = main_material->preview_impl()->get_descriptor_set(_frame_index);
 
 		vkCmdBindDescriptorSets(
 				commandBuffer,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				main_material->pipelineLayout(),
+				main_material->preview_impl()->pipeline_layout(),
 				0,
-				descriptor_sets.size(),
-				descriptor_sets.data(),
+				1,
+				&descriptor_set,
 				0,
 				nullptr);
 

@@ -15,7 +15,7 @@ namespace vulkan {
 	}
 
 	Material *MaterialFactory::textureMaterial(Texture *texture) {
-		return new TextureMaterial(*this, texture);
+		return new TextureMaterial(texture);
 	}
 
 	VkDescriptorPool MaterialFactory::descriptorPool() const {
