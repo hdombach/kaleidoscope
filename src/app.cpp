@@ -1,16 +1,18 @@
+#include <memory>
+
+#include <GLFW/glfw3.h>
+
 #include "app.hpp"
 #include "./vulkan/descriptorPool.hpp"
 #include "./vulkan/graphics.hpp"
 #include "./util/log.hpp"
-#include "./vulkan/materialFactory.hpp"
 #include "./types/resourceManager.hpp"
 #include "./vulkan/staticMesh.hpp"
 #include "./vulkan/staticTexture.hpp"
 #include "./vulkan/uiRenderPipeline.hpp"
 #include "./ui/window.hpp"
-#include <memory>
-#include <GLFW/glfw3.h>
-#include <stdexcept>
+#include "vulkan/Scene.hpp"
+#include "vulkan/textureMaterial.hpp"
 
 App::App(std::string const &name) {
 	vulkan::Graphics::initDefault("Kaleidoscope");
@@ -27,18 +29,23 @@ App::App(std::string const &name) {
 	} else {
 		util::log_error(util::f(vikingRoom.error()));
 	}
-	auto window = ui::Window::create(*resourceManager_);
-	if (!window.has_value()) {
-		throw std::runtime_error("Error when creating window: " + window.error().desc());
+
+	resourceManager_->addMaterial("viking_room", new vulkan::TextureMaterial(resourceManager_->getTexture("viking_room")));
+
+	if (auto scene_res = vulkan::Scene::create(*resourceManager_)) {
+		_scene = std::unique_ptr<vulkan::Scene>(new vulkan::Scene(std::move(scene_res.value())));
+	} else {
+		util::log_error(util::f(scene_res.error()));
 	}
-	window_ = std::move(window.value());
-	materialFactory_ = std::make_unique<vulkan::MaterialFactory>(window_->main_render_pipeline(), *descriptorPool_);
-	resourceManager_->addMaterial("viking_room", materialFactory_->textureMaterial(resourceManager_->getTexture("viking_room")));
-	resourceManager_->getMaterial("viking_room")->add_preview(window_->main_render_pipeline());
+
+	_scene->add_node(vulkan::Node(*resourceManager_->getMesh("viking_room"), *resourceManager_->getMaterial("viking_room")));
+
+	window_ = std::unique_ptr<ui::Window>(new ui::Window(*_scene));
 }
 
 App::~App() {
 	resourceManager_.reset();
+	_scene.reset();
 	window_.reset();
 	uiRenderPipeline_.reset();
 	descriptorPool_.reset();

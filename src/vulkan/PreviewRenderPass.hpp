@@ -73,7 +73,7 @@ namespace vulkan {
 					VkExtent2D size);
 			~PreviewRenderPass();
 			void submit();
-			void resize(glm::ivec2 size) override;
+			void resize(VkExtent2D size) override;
 			bool is_resizable() const override;
 
 			VkExtent2D size() const;

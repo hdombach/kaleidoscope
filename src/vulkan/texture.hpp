@@ -21,7 +21,7 @@ namespace vulkan {
 			virtual bool is_resizable() const {
 				return false;
 			}
-			virtual void resize(glm::ivec2 size) {
+			virtual void resize(VkExtent2D size) {
 				util::log_error("Cannot resize texture that is not resizable");
 			}
 	};

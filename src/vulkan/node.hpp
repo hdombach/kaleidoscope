@@ -2,9 +2,6 @@
 
 #include "material.hpp"
 #include "mesh.hpp"
-#include "../util/result.hpp"
-#include "../util/errors.hpp"
-#include "PreviewRenderPass.hpp"
 
 namespace vulkan {
 	/**
@@ -26,17 +23,5 @@ namespace vulkan {
 		private:
 			Mesh &_mesh;
 			Material &_material;
-	};
-
-	/**
-	 * @brief A node used by Scene internally
-	 */
-	class NodeImpl: public Node {
-		public:
-			util::Result<NodeImpl, KError> create(
-					Node &node,
-					PreviewRenderPass &preview);
-
-
 	};
 }

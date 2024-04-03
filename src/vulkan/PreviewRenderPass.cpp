@@ -351,10 +351,8 @@ namespace vulkan {
 		_frame_index = (_frame_index + 1) % FRAMES_IN_FLIGHT;
 	}
 
-	void PreviewRenderPass::resize(glm::ivec2 size) {
-		_preview_render_pass.resize(VkExtent2D{
-				static_cast<uint32_t>(size.x),
-				static_cast<uint32_t>(size.y)});
+	void PreviewRenderPass::resize(VkExtent2D size) {
+		_preview_render_pass.resize(size);
 		submit();
 
 		/*
