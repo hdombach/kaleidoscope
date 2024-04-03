@@ -1,4 +1,4 @@
-#include "app.hpp"
+#include "App.hpp"
 #include <sys/types.h>
 #include <iostream>
 #define GLFW_INCLUDE_VULKAN
@@ -10,7 +10,7 @@ int main() {
 	auto app = App("Kaleidoscope");
 
 	try {
-		app.mainLoop();
+		app.main_loop();
 	} catch (const std::exception& e) {
 		std::cerr << "runtime exception: " << std::endl;
 		std::cerr << e.what() << std::endl;
