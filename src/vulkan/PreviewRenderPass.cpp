@@ -1,6 +1,9 @@
 #include <array>
 
 #include <vulkan/vulkan_core.h>
+#include <glm/fwd.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
 
 #include "PreviewRenderPass.hpp"
 #include "defs.hpp"
@@ -418,8 +421,8 @@ namespace vulkan {
 
 
 	void PreviewRenderPass::_record_command_buffer(VkCommandBuffer commandBuffer) {
-		auto main_mesh = _resource_manager.getMesh("viking_room");
-		auto main_material = _resource_manager.getMaterial("viking_room");
+		auto main_mesh = _resource_manager.get_mesh("viking_room");
+		auto main_material = _resource_manager.get_material("viking_room");
 		auto size = _preview_render_pass.size();
 
 		auto begin_info = VkCommandBufferBeginInfo{};

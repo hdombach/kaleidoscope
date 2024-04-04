@@ -1,6 +1,6 @@
 #pragma once
 
-#include "material.hpp"
+#include "Material.hpp"
 #include "texture.hpp"
 #include "vulkan/vulkan_core.h"
 #include <vector>

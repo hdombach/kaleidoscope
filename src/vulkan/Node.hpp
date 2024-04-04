@@ -1,7 +1,7 @@
 #pragma once
 
-#include "material.hpp"
-#include "mesh.hpp"
+#include "Material.hpp"
+#include "Mesh.hpp"
 
 namespace vulkan {
 	/**

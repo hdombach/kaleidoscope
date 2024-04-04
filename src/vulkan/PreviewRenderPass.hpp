@@ -11,7 +11,7 @@
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
 #include "texture.hpp"
-#include "../types/resourceManager.hpp"
+#include "../types/ResourceManager.hpp"
 #include "uniformBufferObject.hpp"
 
 namespace vulkan {

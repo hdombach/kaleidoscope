@@ -5,7 +5,7 @@
 #include "App.hpp"
 #include "./vulkan/graphics.hpp"
 #include "./util/log.hpp"
-#include "./types/resourceManager.hpp"
+#include "./types/ResourceManager.hpp"
 #include "./vulkan/staticMesh.hpp"
 #include "./vulkan/staticTexture.hpp"
 #include "./vulkan/uiRenderPipeline.hpp"
@@ -19,16 +19,16 @@ App::App(std::string const &name) {
 	_resource_manager = std::make_unique<types::ResourceManager>();
 
 	if (auto viking_room = vulkan::StaticTexture::from_file("assets/viking_room.png")) {
-		_resource_manager->addTexture("viking_room", viking_room.value());
+		_resource_manager->add_texture("viking_room", viking_room.value());
 	} else {
 		util::log_error("Could not load example texture viking_room.png");
 	}
 	if (auto viking_room = vulkan::StaticMesh::fromFile("assets/viking_room.obj")) {
-		_resource_manager->addMesh("viking_room", viking_room.value());
+		_resource_manager->add_mesh("viking_room", viking_room.value());
 	} else {
 		util::log_error(util::f(viking_room.error()));
 	}
-	_resource_manager->addMaterial("viking_room", new vulkan::TextureMaterial(_resource_manager->getTexture("viking_room")));
+	_resource_manager->add_material("viking_room", new vulkan::TextureMaterial(_resource_manager->get_texture("viking_room")));
 
 	if (auto scene = vulkan::Scene::create(*_resource_manager)) {
 		_scene = std::unique_ptr<vulkan::Scene>(new vulkan::Scene(std::move(scene.value())));
@@ -36,7 +36,7 @@ App::App(std::string const &name) {
 		util::log_error(util::f(scene.error()));
 	}
 
-	_scene->add_node(vulkan::Node(*_resource_manager->getMesh("viking_room"), *_resource_manager->getMaterial("viking_room")));
+	_scene->add_node(vulkan::Node(*_resource_manager->get_mesh("viking_room"), *_resource_manager->get_material("viking_room")));
 
 	_window = std::unique_ptr<ui::Window>(new ui::Window(*_scene));
 }

@@ -8,7 +8,7 @@
 #include "../util/errors.hpp"
 #include "PreviewRenderPass.hpp"
 #include "Node.hpp"
-#include "../types/resourceManager.hpp"
+#include "../types/ResourceManager.hpp"
 
 namespace vulkan {
 	/**

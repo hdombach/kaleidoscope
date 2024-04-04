@@ -1,14 +1,17 @@
+#include <array>
+#include <optional>
+#include <vector>
+
+#include <vulkan/vulkan_core.h>
+#include <glm/vector_relational.hpp>
+
 #include "textureMaterial.hpp"
 #include "defs.hpp"
 #include "graphics.hpp"
 #include "PreviewRenderPass.hpp"
 #include "shader.hpp"
 #include "uniformBufferObject.hpp"
-#include "vulkan/vulkan_core.h"
-#include <array>
-#include <glm/vector_relational.hpp>
-#include <optional>
-#include <vector>
+#include "vertex.hpp"
 
 namespace vulkan {
 	util::Result<TextureMaterialPrevImpl, KError> TextureMaterialPrevImpl::create(

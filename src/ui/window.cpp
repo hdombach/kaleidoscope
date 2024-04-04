@@ -1,13 +1,8 @@
-#include <memory>
-
-#include <stdexcept>
 #include <tiny_obj_loader.h>
 #include <vulkan/vulkan_core.h>
 #include <imgui.h>
 
 #include "window.hpp"
-#include "../vulkan/PreviewRenderPass.hpp"
-#include "../types/resourceManager.hpp"
 #include "textureView.hpp"
 
 namespace ui {
