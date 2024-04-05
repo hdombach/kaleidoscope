@@ -1,4 +1,6 @@
 #include <array>
+#include <vector>
+#include <functional>
 
 #include <vulkan/vulkan_core.h>
 #include <glm/fwd.hpp>
@@ -329,7 +331,7 @@ namespace vulkan {
 		_render_finished_semaphores.clear();
 	}
 
-	void PreviewRenderPass::submit() {
+	void PreviewRenderPass::submit(std::function<void(VkCommandBuffer)> render_callback) {
 		require(_in_flight_fences[_frame_index].wait());
 		auto submit_info = VkSubmitInfo{};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -338,9 +340,53 @@ namespace vulkan {
 
 		_in_flight_fences[_frame_index].reset();
 
-		vkResetCommandBuffer(_command_buffers[_frame_index], 0);
+		auto command_buffer = _command_buffers[_frame_index];
+		auto size = _preview_render_pass.size();
 
-		_record_command_buffer(_command_buffers[_frame_index]);
+		vkResetCommandBuffer(command_buffer, 0);
+
+		auto begin_info = VkCommandBufferBeginInfo{};
+		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		begin_info.flags = 0;
+		begin_info.pInheritanceInfo = nullptr;
+
+		require(vkBeginCommandBuffer(command_buffer, &begin_info));
+
+		auto render_pass_info = VkRenderPassBeginInfo{};
+		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		render_pass_info.renderPass = _preview_render_pass.render_pass();
+		render_pass_info.framebuffer = _preview_render_pass.framebuffer(_frame_index);
+		render_pass_info.renderArea.offset = {0, 0};
+		render_pass_info.renderArea.extent = size;
+
+		auto clear_values = std::array<VkClearValue, 2>{};
+		clear_values[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+		clear_values[1].depthStencil = {1.0f, 0};
+
+		render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
+		render_pass_info.pClearValues = clear_values.data();
+
+		vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+
+		auto viewport = VkViewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(size.width);
+		viewport.height = static_cast<float>(size.height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+
+		auto scissor = VkRect2D{};
+		scissor.offset = {0, 0};
+		scissor.extent = size;
+		vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+
+		render_callback(command_buffer);
+
+		vkCmdEndRenderPass(command_buffer);
+		require(vkEndCommandBuffer(command_buffer));
+
 
 		auto wait_stages = std::array<VkPipelineStageFlags, 2>{VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 		submit_info.pWaitDstStageMask = wait_stages.data();
@@ -356,7 +402,7 @@ namespace vulkan {
 
 	void PreviewRenderPass::resize(VkExtent2D size) {
 		_preview_render_pass.resize(size);
-		submit();
+		//submit(); TODO
 
 		/*
 		 * When resize, the entire queue in the frame buffer is cleared. This causes
@@ -420,7 +466,7 @@ namespace vulkan {
 	}
 
 
-	void PreviewRenderPass::_record_command_buffer(VkCommandBuffer commandBuffer) {
+	void PreviewRenderPass::_record_command_buffer(VkCommandBuffer command_buffer) {
 		auto main_mesh = _resource_manager.get_mesh("viking_room");
 		auto main_material = _resource_manager.get_material("viking_room");
 		auto size = _preview_render_pass.size();
@@ -430,7 +476,7 @@ namespace vulkan {
 		begin_info.flags = 0;
 		begin_info.pInheritanceInfo = nullptr;
 
-		require(vkBeginCommandBuffer(commandBuffer, &begin_info));
+		require(vkBeginCommandBuffer(command_buffer, &begin_info));
 
 		auto render_pass_info = VkRenderPassBeginInfo{};
 		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -446,9 +492,9 @@ namespace vulkan {
 		render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
 		render_pass_info.pClearValues = clear_values.data();
 
-		vkCmdBeginRenderPass(commandBuffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, main_material->preview_impl()->pipeline());
+		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, main_material->preview_impl()->pipeline());
 
 		auto viewport = VkViewport{};
 		viewport.x = 0.0f;
@@ -457,22 +503,22 @@ namespace vulkan {
 		viewport.height = static_cast<float>(size.height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+		vkCmdSetViewport(command_buffer, 0, 1, &viewport);
 
 		auto scissor = VkRect2D{};
 		scissor.offset = {0, 0};
 		scissor.extent = size;
-		vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+		vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
 		VkBuffer vertex_buffers[] = {main_mesh->vertexBuffer()};
 		VkDeviceSize offsets[] = {0};
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertex_buffers, offsets);
-		vkCmdBindIndexBuffer(commandBuffer, main_mesh->indexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
+		vkCmdBindIndexBuffer(command_buffer, main_mesh->indexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 		auto descriptor_set = main_material->preview_impl()->get_descriptor_set(_frame_index);
 
 		vkCmdBindDescriptorSets(
-				commandBuffer,
+				command_buffer,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				main_material->preview_impl()->pipeline_layout(),
 				0,
@@ -481,10 +527,10 @@ namespace vulkan {
 				0,
 				nullptr);
 
-		vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(main_mesh->indexCount()), 1, 0, 0, 0);
+		vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(main_mesh->indexCount()), 1, 0, 0, 0);
 
-		vkCmdEndRenderPass(commandBuffer);
-		require(vkEndCommandBuffer(commandBuffer));
+		vkCmdEndRenderPass(command_buffer);
+		require(vkEndCommandBuffer(command_buffer));
 	}
 
 	void PreviewRenderPass::_update_uniform_buffer(uint32_t currentImage) {

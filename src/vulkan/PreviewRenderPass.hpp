@@ -1,10 +1,12 @@
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <vector>
 
 #include <vulkan/vulkan_core.h>
 
+#include "Node.hpp"
 #include "descriptorPool.hpp"
 #include "image.hpp"
 #include "imageView.hpp"
@@ -72,7 +74,7 @@ namespace vulkan {
 					types::ResourceManager &resource_manager,
 					VkExtent2D size);
 			~PreviewRenderPass();
-			void submit();
+			void submit(std::function<void(VkCommandBuffer)> render_callback);
 			void resize(VkExtent2D size) override;
 			bool is_resizable() const override;
 
