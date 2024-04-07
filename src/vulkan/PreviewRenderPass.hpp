@@ -84,13 +84,13 @@ namespace vulkan {
 			VkRenderPass render_pass();
 			std::vector<MappedUniformObject> const &uniform_buffers() const;
 			DescriptorPool &descriptor_pool() { return _descriptor_pool; };
+			int frame_index() { return _frame_index; };
 		private:
 			PreviewRenderPass(types::ResourceManager &resource_manager, VkExtent2D size);
 
 			util::Result<void, KError> _create_sync_objects();
 			void _create_command_buffers();
 
-			void _record_command_buffer(VkCommandBuffer commandBuffer);
 			void _update_uniform_buffer(uint32_t currentImage);
 
 			PreviewRenderPassCore _preview_render_pass;

@@ -1,4 +1,8 @@
 #include <array>
+#include <chrono>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/ext/quaternion_transform.hpp>
+#include <glm/fwd.hpp>
 #include <optional>
 #include <vector>
 
@@ -74,8 +78,12 @@ namespace vulkan {
 		}
 
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
+			auto buffer_res = MappedUniformObject::create();
+			TRY(buffer_res);
+			result._mapped_uniforms.push_back(std::move(buffer_res.value()));
+
 			auto buffer_info = VkDescriptorBufferInfo{};
-			buffer_info.buffer = render_pass.uniform_buffers()[i].buffer();
+			buffer_info.buffer = result._mapped_uniforms[i].buffer();
 			buffer_info.offset = 0;
 			buffer_info.range = sizeof(UniformBufferObject);
 
@@ -296,6 +304,8 @@ namespace vulkan {
 
 		_descriptor_set_layout = other._descriptor_set_layout;
 		other._descriptor_set_layout = nullptr;
+
+		_mapped_uniforms = std::move(other._mapped_uniforms);
 	}
 
 	TextureMaterialPrevImpl& TextureMaterialPrevImpl::operator=(TextureMaterialPrevImpl&& other) {
@@ -311,6 +321,8 @@ namespace vulkan {
 
 		_descriptor_set_layout = other._descriptor_set_layout;
 		other._descriptor_set_layout = nullptr;
+
+		_mapped_uniforms = std::move(other._mapped_uniforms);
 	
 		return *this;
 	}
@@ -358,6 +370,25 @@ namespace vulkan {
 
 	VkDescriptorSet TextureMaterialPrevImpl::get_descriptor_set(uint32_t frame_index) {
 		return _descriptor_sets[frame_index];
+	}
+
+	void TextureMaterialPrevImpl::update_uniform(
+			uint32_t frame_index,
+			glm::vec3 position,
+			glm::vec2 viewport_size)
+	{
+		static auto start_time = std::chrono::high_resolution_clock::now();
+		auto current_time = std::chrono::high_resolution_clock::now();
+		auto time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
+
+		auto ubo = UniformBufferObject{};
+		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.model = glm::translate(ubo.model, position);
+		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.proj = glm::perspective(glm::radians(45.0f), viewport_size.x / (float) viewport_size.y, 0.1f, 10.0f);
+		ubo.proj[1][1] *= -1;
+
+		_mapped_uniforms[frame_index].set_value(ubo);
 	}
 
 	TextureMaterialPrevImpl::TextureMaterialPrevImpl(PreviewRenderPass &render_pass):

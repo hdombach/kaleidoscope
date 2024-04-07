@@ -31,30 +31,8 @@ namespace vulkan {
 
 	void Scene::render_preview() {
 		return _preview_render_pass->submit([this](VkCommandBuffer command_buffer){
-				for (auto node : _nodes) {
-					vkCmdBindPipeline(
-							command_buffer,
-							VK_PIPELINE_BIND_POINT_GRAPHICS,
-							node.material().preview_impl()->pipeline());
-
-					VkBuffer vertex_buffers[] = {node.mesh().vertexBuffer()};
-					VkDeviceSize offsets[] = {0};
-					vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
-					vkCmdBindIndexBuffer(command_buffer, node.mesh().indexBuffer(), 0, VK_INDEX_TYPE_UINT32);
-
-					auto descriptor_set = node.material().preview_impl()->get_descriptor_set(0); // TODO: use frame_index to get descriptor set
-
-					vkCmdBindDescriptorSets(
-							command_buffer,
-							VK_PIPELINE_BIND_POINT_GRAPHICS,
-							node.material().preview_impl()->pipeline_layout(),
-							0,
-							1,
-							&descriptor_set,
-							0,
-							nullptr);
-
-					vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(node.mesh().indexCount()), 1, 0, 0, 0);
+				for (auto &node : _nodes) {
+					node.render_preview(*_preview_render_pass, command_buffer);
 				}
 		});
 	}
@@ -67,7 +45,7 @@ namespace vulkan {
 		if (!node.material().preview_impl()) {
 			node.material().add_preview(*_preview_render_pass);
 		}
-		_nodes.push_back(node);
+		_nodes.push_back(std::move(node));
 		return {};
 	}
 }

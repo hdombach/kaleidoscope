@@ -28,7 +28,6 @@ App::App(std::string const &name) {
 	} else {
 		util::log_error(util::f(viking_room.error()));
 	}
-	_resource_manager->add_material("viking_room", new vulkan::TextureMaterial(_resource_manager->get_texture("viking_room")));
 
 	if (auto scene = vulkan::Scene::create(*_resource_manager)) {
 		_scene = std::unique_ptr<vulkan::Scene>(new vulkan::Scene(std::move(scene.value())));
@@ -36,7 +35,22 @@ App::App(std::string const &name) {
 		util::log_error(util::f(scene.error()));
 	}
 
-	_scene->add_node(vulkan::Node(*_resource_manager->get_mesh("viking_room"), *_resource_manager->get_material("viking_room")));
+	for (int i = 0; i < 10; i++) {
+		auto new_node = vulkan::Node(
+				*_resource_manager->get_mesh("viking_room"),
+				new vulkan::TextureMaterial(_resource_manager->get_texture("viking_room")));
+		new_node.set_position({i, 0, 0});
+		_scene->add_node(std::move(new_node));
+	}
+
+	{
+		auto new_node = vulkan::Node(
+				*_resource_manager->get_mesh("viking_room"),
+				new vulkan::TextureMaterial(_resource_manager->get_texture("viking_room")));
+		new_node.set_position({0, 2, 0});
+		_scene->add_node(std::move(new_node));
+	}
+
 
 	_window = std::unique_ptr<ui::Window>(new ui::Window(*_scene));
 }

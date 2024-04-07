@@ -1,13 +1,13 @@
 #pragma once
 
-#include "vulkan/vulkan_core.h"
+#include <array>
 #include <cstddef>
+
+#include "vulkan/vulkan_core.h"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
 #include <vulkan/vulkan.h>
-#include <vector>
-#include <array>
 
 namespace vulkan {
 	struct Vertex {

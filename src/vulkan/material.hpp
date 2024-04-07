@@ -1,5 +1,6 @@
 #pragma once
 
+#include <glm/fwd.hpp>
 #include <vulkan/vulkan.h>
 
 #include "../util/result.hpp"
@@ -30,5 +31,6 @@ namespace vulkan {
 			virtual VkPipelineLayout pipeline_layout() = 0;
 			virtual VkPipeline pipeline() = 0;
 			virtual VkDescriptorSet get_descriptor_set(uint32_t frame_index) = 0;
+			virtual void update_uniform(uint32_t frame_index, glm::vec3 position, glm::vec2 viewport_size) = 0;
 	};
 }

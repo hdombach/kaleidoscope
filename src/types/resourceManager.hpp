@@ -4,7 +4,6 @@
 #include <unordered_map>
 
 #include "../util/errors.hpp"
-#include "../vulkan/Material.hpp"
 #include "../vulkan/Mesh.hpp"
 #include "../util/result.hpp"
 #include "../vulkan/texture.hpp"
@@ -38,23 +37,11 @@ namespace types {
 			vulkan::Mesh const *get_mesh(std::string const &name) const;
 			bool has_mesh(std::string const &name) const;
 
-			util::Result<void, KError> add_material(
-					std::string const &name,
-					vulkan::Material *material);
-			vulkan::Material *default_material();
-			vulkan::Material const *default_material() const;
-			vulkan::Material *get_material(std::string const &name);
-			vulkan::Material const *get_material(std::string const &name) const;
-			bool has_material(std::string const &name) const;
-
 		private:
 			std::unordered_map<std::string, vulkan::Texture *> _textures;
 			vulkan::Texture *_default_texture;
 
 			std::unordered_map<std::string, vulkan::Mesh *> _meshes;
 			vulkan::Mesh *_default_mesh;
-
-			std::unordered_map<std::string, vulkan::Material *> _materials;
-			vulkan::Material *_default_material;
 	};
 }

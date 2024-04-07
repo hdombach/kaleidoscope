@@ -1,9 +1,11 @@
 #pragma once
 
+#include <vector>
+
 #include "Material.hpp"
 #include "texture.hpp"
+#include "uniformBufferObject.hpp"
 #include "vulkan/vulkan_core.h"
-#include <vector>
 
 namespace vulkan {
 	class TextureMaterialPrevImpl: public MaterialPreviewImpl {
@@ -22,6 +24,7 @@ namespace vulkan {
 			VkPipelineLayout pipeline_layout() override;
 			VkPipeline pipeline() override;
 			VkDescriptorSet get_descriptor_set(uint32_t frame_index) override;
+			void update_uniform(uint32_t frame_index, glm::vec3 position, glm::vec2 viewport_size) override;
 
 		private:
 			TextureMaterialPrevImpl(PreviewRenderPass &render_pass);
@@ -32,6 +35,7 @@ namespace vulkan {
 			VkPipeline _pipeline;
 			std::vector<VkDescriptorSet> _descriptor_sets;
 			VkDescriptorSetLayout _descriptor_set_layout;
+			std::vector<MappedUniformObject> _mapped_uniforms;
 
 			PreviewRenderPass &_render_pass;
 	};

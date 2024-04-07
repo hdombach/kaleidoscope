@@ -19,6 +19,11 @@ namespace vulkan {
 		public:
 			Scene(PreviewRenderPass::Ptr preview_render_pass);
 
+			Scene(const Scene& other) = delete;
+			Scene(Scene &&other) = default;
+			Scene& operator=(const Scene& other) = delete;
+			Scene& operator=(Scene&& other) = default;
+
 			static util::Result<Scene, KError> create(types::ResourceManager &resource_manager);
 
 			VkExtent2D size() const;

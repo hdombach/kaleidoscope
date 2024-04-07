@@ -20,9 +20,6 @@ namespace types {
 		for (auto mesh : _meshes) {
 			delete mesh.second;
 		}
-		for (auto material : _materials) {
-			delete material.second;
-		}
 	}
 
 	util::Result<void, KError> ResourceManager::add_texture(
@@ -97,38 +94,5 @@ namespace types {
 
 	bool ResourceManager::has_mesh(const std::string &name) const {
 		return _meshes.count(name);
-	}
-
-	util::Result<void, KError> ResourceManager::add_material(
-			const std::string &name,
-			vulkan::Material *material)
-	{
-		if (has_material(name)) {
-			return KError::material_already_exists(name);
-		}
-		_materials[name] = material;
-		return {};
-	}
-
-	vulkan::Material const *ResourceManager::default_material() const {
-		return _default_material;
-	}
-
-	vulkan::Material *ResourceManager::get_material(const std::string &name) {
-		if (has_material(name)) {
-			return _materials.at(name);
-		}
-		return _default_material;
-	}
-
-	vulkan::Material const *ResourceManager::get_material(const std::string &name) const {
-		if (has_material(name)) {
-			return _materials.at(name);
-		}
-		return _default_material;
-	}
-
-	bool ResourceManager::has_material(const std::string &name) const {
-		return _materials.count(name);
 	}
 }
