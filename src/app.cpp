@@ -12,6 +12,7 @@
 #include "./ui/window.hpp"
 #include "vulkan/Scene.hpp"
 #include "vulkan/textureMaterial.hpp"
+#include "vulkan/ColorMaterial.hpp"
 
 App::App(std::string const &name) {
 	vulkan::Graphics::initDefault("Kaleidoscope");
@@ -35,18 +36,18 @@ App::App(std::string const &name) {
 		util::log_error(util::f(scene.error()));
 	}
 
-	for (int i = 0; i < 10; i++) {
+	{
 		auto new_node = vulkan::Node(
 				*_resource_manager->get_mesh("viking_room"),
 				new vulkan::TextureMaterial(_resource_manager->get_texture("viking_room")));
-		new_node.set_position({i, 0, 0});
+		new_node.set_position({0, 0, 0});
 		_scene->add_node(std::move(new_node));
 	}
 
 	{
 		auto new_node = vulkan::Node(
 				*_resource_manager->get_mesh("viking_room"),
-				new vulkan::TextureMaterial(_resource_manager->get_texture("viking_room")));
+				new vulkan::ColorMaterial({0.8, 0.2, 0.2}));
 		new_node.set_position({0, 2, 0});
 		_scene->add_node(std::move(new_node));
 	}

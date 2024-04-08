@@ -1,29 +1,19 @@
 #include <array>
-#include <chrono>
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/ext/quaternion_transform.hpp>
-#include <glm/fwd.hpp>
-#include <optional>
-#include <vector>
 
 #include <vulkan/vulkan_core.h>
-#include <glm/vector_relational.hpp>
 
-#include "textureMaterial.hpp"
+#include "ColorMaterial.hpp"
 #include "defs.hpp"
-#include "graphics.hpp"
-#include "PreviewRenderPass.hpp"
 #include "shader.hpp"
-#include "uniformBufferObject.hpp"
 #include "vertex.hpp"
 
 namespace vulkan {
-	util::Result<TextureMaterialPrevImpl, KError> TextureMaterialPrevImpl::create(
+	util::Result<ColorMaterialPrevImpl, KError> ColorMaterialPrevImpl::create(
 			PreviewRenderPass &render_pass,
-			Texture *texture)
+			glm::vec3 color)
 	{
-		auto result = TextureMaterialPrevImpl(render_pass);
-		result._texture = texture;
+		auto result = ColorMaterialPrevImpl(render_pass);
+		result._color = color;
 
 		/* Create Descriptor Set Layout */
 		auto ubo_layout_binding = VkDescriptorSetLayoutBinding{};
@@ -33,25 +23,27 @@ namespace vulkan {
 		ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 		ubo_layout_binding.pImmutableSamplers = nullptr;
 
-		auto sampler_layout_binding = VkDescriptorSetLayoutBinding{};
-		sampler_layout_binding.binding = 1;
-		sampler_layout_binding.descriptorCount = 1;
-		sampler_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		sampler_layout_binding.pImmutableSamplers = nullptr;
-		sampler_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		auto color_layout_binding = VkDescriptorSetLayoutBinding{};
+		color_layout_binding.binding = 1;
+		color_layout_binding.descriptorCount = 1;
+		color_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		color_layout_binding.pImmutableSamplers = nullptr;
+		color_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		auto bindings = std::array<VkDescriptorSetLayoutBinding, 2>{
 			ubo_layout_binding,
-			sampler_layout_binding,
+			color_layout_binding,
 		};
+		
 		auto layout_info = VkDescriptorSetLayoutCreateInfo{};
 		layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 		layout_info.bindingCount = static_cast<uint32_t>(bindings.size());
 		layout_info.pBindings = bindings.data();
 
 		auto res = vkCreateDescriptorSetLayout(
-				Graphics::DEFAULT->device(), 
-				&layout_info, nullptr, 
+				Graphics::DEFAULT->device(),
+				&layout_info,
+				nullptr,
 				&result._descriptor_set_layout);
 		if (res != VK_SUCCESS) {
 			return {res};
@@ -76,6 +68,10 @@ namespace vulkan {
 			return {res};
 		}
 
+		auto color_buffer_res = ColorUniformObject::create();
+		TRY(color_buffer_res);
+		result._color_uniform = std::move(color_buffer_res.value());
+
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 			auto buffer_res = MappedUniformObject::create();
 			TRY(buffer_res);
@@ -86,10 +82,10 @@ namespace vulkan {
 			buffer_info.offset = 0;
 			buffer_info.range = sizeof(UniformBufferObject);
 
-			auto image_info = VkDescriptorImageInfo{};
-			image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			image_info.imageView = texture->image_view().value();
-			image_info.sampler = Graphics::DEFAULT->mainTextureSampler();
+			auto color_buffer_info = VkDescriptorBufferInfo{};
+			color_buffer_info.buffer = result._color_uniform.buffer();
+			color_buffer_info.offset = 0;
+			color_buffer_info.range = sizeof(glm::vec3);
 
 			auto descriptor_writes = std::array<VkWriteDescriptorSet, 2>();
 
@@ -105,15 +101,15 @@ namespace vulkan {
 			descriptor_writes[1].dstSet = result._descriptor_sets[i];
 			descriptor_writes[1].dstBinding = 1;
 			descriptor_writes[1].dstArrayElement = 0;
-			descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 			descriptor_writes[1].descriptorCount = 1;
-			descriptor_writes[1].pImageInfo = &image_info;
+			descriptor_writes[1].pBufferInfo = &color_buffer_info;
 
 			vkUpdateDescriptorSets(
 					Graphics::DEFAULT->device(), 
 					static_cast<uint32_t>(descriptor_writes.size()), 
 					descriptor_writes.data(), 
-					0,
+					0, 
 					nullptr);
 		}
 
@@ -121,7 +117,7 @@ namespace vulkan {
 		auto vert_shader = vulkan::Shader::fromEnvFile(
 				"src/shaders/default_shader.vert.spv");
 		auto frag_shader = vulkan::Shader::fromEnvFile(
-				"src/shaders/default_shader.frag.spv");
+				"src/shaders/color_shader.frag.spv");
 
 		auto shader_stages = std::array<VkPipelineShaderStageCreateInfo, 2>();
 
@@ -288,11 +284,9 @@ namespace vulkan {
 		return std::move(result);
 	}
 
-	TextureMaterialPrevImpl::TextureMaterialPrevImpl(TextureMaterialPrevImpl &&other):
-		vulkan::TextureMaterialPrevImpl(other._render_pass)
+	ColorMaterialPrevImpl::ColorMaterialPrevImpl(ColorMaterialPrevImpl &&other):
+		_render_pass(other._render_pass)
 	{
-		_texture = other._texture;
-
 		_pipeline_layout = other._pipeline_layout;
 		other._pipeline_layout = nullptr;
 
@@ -305,11 +299,14 @@ namespace vulkan {
 		other._descriptor_set_layout = nullptr;
 
 		_mapped_uniforms = std::move(other._mapped_uniforms);
+
+		_color_uniform = std::move(other._color_uniform);
+
+		_color = other._color;
 	}
 
-	TextureMaterialPrevImpl& TextureMaterialPrevImpl::operator=(TextureMaterialPrevImpl&& other) {
-			_texture = other._texture;
-
+	ColorMaterialPrevImpl& ColorMaterialPrevImpl::operator=(ColorMaterialPrevImpl&& other)
+	{
 		_pipeline_layout = other._pipeline_layout;
 		other._pipeline_layout = nullptr;
 
@@ -322,56 +319,64 @@ namespace vulkan {
 		other._descriptor_set_layout = nullptr;
 
 		_mapped_uniforms = std::move(other._mapped_uniforms);
+
+		_color_uniform = std::move(other._color_uniform);
+
+		_color = other._color;
+
+		//_render_pass = other._render_pass;
 
 		return *this;
 	}
 
-	TextureMaterialPrevImpl::~TextureMaterialPrevImpl() {
+	ColorMaterialPrevImpl::~ColorMaterialPrevImpl() {
 		if (_pipeline_layout) {
 			vkDestroyPipelineLayout(
-					Graphics::DEFAULT->device(),
-					_pipeline_layout,
+					Graphics::DEFAULT->device(), 
+					_pipeline_layout, 
 					nullptr);
 			_pipeline_layout = nullptr;
 		}
+
 		if (_pipeline) {
 			vkDestroyPipeline(
-					Graphics::DEFAULT->device(),
-					_pipeline,
+					Graphics::DEFAULT->device(), 
+					_pipeline, 
 					nullptr);
 			_pipeline = nullptr;
 		}
-		if (_descriptor_set_layout) {
-			vkDestroyDescriptorSetLayout(
-					Graphics::DEFAULT->device(),
-					_descriptor_set_layout,
-					nullptr);
-			_descriptor_set_layout = nullptr;
-		}
-		
+
 		if (_descriptor_sets.size() > 0) {
 			vkFreeDescriptorSets(
-					Graphics::DEFAULT->device(),
-					_render_pass.descriptor_pool().descriptorPool(),
-					_descriptor_sets.size(),
+					Graphics::DEFAULT->device(), 
+					_render_pass.descriptor_pool().descriptorPool(), 
+					_descriptor_sets.size(), 
 					_descriptor_sets.data());
 			_descriptor_sets.clear();
 		}
+
+		if (_descriptor_set_layout) {
+			vkDestroyDescriptorSetLayout(
+					Graphics::DEFAULT->device(), 
+					_descriptor_set_layout, 
+					nullptr);
+			_descriptor_set_layout = nullptr;
+		}
 	}
 
-	VkPipelineLayout TextureMaterialPrevImpl::pipeline_layout() {
+	VkPipelineLayout ColorMaterialPrevImpl::pipeline_layout() {
 		return _pipeline_layout;
 	}
 
-	VkPipeline TextureMaterialPrevImpl::pipeline() {
+	VkPipeline ColorMaterialPrevImpl::pipeline() {
 		return _pipeline;
 	}
 
-	VkDescriptorSet TextureMaterialPrevImpl::get_descriptor_set(uint32_t frame_index) {
+	VkDescriptorSet ColorMaterialPrevImpl::get_descriptor_set(uint32_t frame_index) {
 		return _descriptor_sets[frame_index];
 	}
 
-	void TextureMaterialPrevImpl::update_uniform(
+	void ColorMaterialPrevImpl::update_uniform(
 			uint32_t frame_index,
 			glm::vec3 position,
 			glm::vec2 viewport_size)
@@ -388,24 +393,25 @@ namespace vulkan {
 		ubo.proj[1][1] *= -1;
 
 		_mapped_uniforms[frame_index].set_value(ubo);
+
+		auto color = ColorBufferObject{_color};
+		color.color.y += 0.2 + sin(time * 10) * 0.2;
+		_color_uniform.set_value(color);
 	}
 
-	TextureMaterialPrevImpl::TextureMaterialPrevImpl(PreviewRenderPass &render_pass):
-		_texture(nullptr),
-		_pipeline_layout(nullptr),
-		_pipeline(nullptr),
-		_descriptor_set_layout(nullptr),
-		_render_pass(render_pass)
-	{}
 
-	TextureMaterial::TextureMaterial(Texture* texture):
-	_texture(texture)
-	{}
+	ColorMaterialPrevImpl::ColorMaterialPrevImpl(PreviewRenderPass &render_pass):
+	_render_pass(render_pass)
+	{ }
 
-	util::Result<void, KError> TextureMaterial::add_preview(
+	ColorMaterial::ColorMaterial(glm::vec3 color):
+		_color(color)
+	{ }
+
+	util::Result<void, KError> ColorMaterial::add_preview(
 			PreviewRenderPass &preview_render_pass)
 	{
-		auto res = TextureMaterialPrevImpl::create(preview_render_pass, _texture);
+		auto res = ColorMaterialPrevImpl::create(preview_render_pass, _color);
 		if (res) {
 			_preview_impl = std::move(res.value());
 			return {};
@@ -414,7 +420,7 @@ namespace vulkan {
 		}
 	}
 
-	MaterialPreviewImpl *TextureMaterial::preview_impl() {
+	ColorMaterialPrevImpl *ColorMaterial::preview_impl() {
 		if (_preview_impl) {
 			return &_preview_impl.value();
 		} else {
@@ -422,11 +428,12 @@ namespace vulkan {
 		}
 	}
 
-	MaterialPreviewImpl const *TextureMaterial::preview_impl() const {
+	ColorMaterialPrevImpl const *ColorMaterial::preview_impl() const {
 		if (_preview_impl) {
 			return &_preview_impl.value();
 		} else {
 			return nullptr;
 		}
 	}
+
 }
