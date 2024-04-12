@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "DescriptorSet.hpp"
 #include "Material.hpp"
 #include "texture.hpp"
 #include "uniformBufferObject.hpp"
@@ -33,8 +34,8 @@ namespace vulkan {
 			Texture *_texture;
 			VkPipelineLayout _pipeline_layout;
 			VkPipeline _pipeline;
-			std::vector<VkDescriptorSet> _descriptor_sets;
-			VkDescriptorSetLayout _descriptor_set_layout;
+
+			DescriptorSets _descriptor_sets;
 			std::vector<MappedUniformObject> _mapped_uniforms;
 
 			PreviewRenderPass &_render_pass;

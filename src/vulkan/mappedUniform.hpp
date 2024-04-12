@@ -12,6 +12,8 @@ namespace vulkan {
 	template<typename T>
 	class MappedUniform {
 		public:
+			using BufferObj = T;
+
 			MappedUniform():
 				_buffer(nullptr), _buffer_memory(nullptr), _uniform_buffer_mapped(nullptr)
 			{}

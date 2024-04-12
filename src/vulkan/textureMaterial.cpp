@@ -4,12 +4,14 @@
 #include <glm/ext/quaternion_transform.hpp>
 #include <glm/fwd.hpp>
 #include <optional>
+#include <utility>
 #include <vector>
 
 #include <vulkan/vulkan_core.h>
 #include <glm/vector_relational.hpp>
 
 #include "textureMaterial.hpp"
+#include "DescriptorSet.hpp"
 #include "defs.hpp"
 #include "graphics.hpp"
 #include "PreviewRenderPass.hpp"
@@ -25,97 +27,30 @@ namespace vulkan {
 		auto result = TextureMaterialPrevImpl(render_pass);
 		result._texture = texture;
 
-		/* Create Descriptor Set Layout */
-		auto ubo_layout_binding = VkDescriptorSetLayoutBinding{};
-		ubo_layout_binding.binding = 0;
-		ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		ubo_layout_binding.descriptorCount = 1;
-		ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		ubo_layout_binding.pImmutableSamplers = nullptr;
-
-		auto sampler_layout_binding = VkDescriptorSetLayoutBinding{};
-		sampler_layout_binding.binding = 1;
-		sampler_layout_binding.descriptorCount = 1;
-		sampler_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		sampler_layout_binding.pImmutableSamplers = nullptr;
-		sampler_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		auto bindings = std::array<VkDescriptorSetLayoutBinding, 2>{
-			ubo_layout_binding,
-			sampler_layout_binding,
-		};
-		auto layout_info = VkDescriptorSetLayoutCreateInfo{};
-		layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layout_info.bindingCount = static_cast<uint32_t>(bindings.size());
-		layout_info.pBindings = bindings.data();
-
-		auto res = vkCreateDescriptorSetLayout(
-				Graphics::DEFAULT->device(), 
-				&layout_info, nullptr, 
-				&result._descriptor_set_layout);
-		if (res != VK_SUCCESS) {
-			return {res};
-		}
-
-		/* Set up descriptor sets */
-		auto layouts = std::vector<VkDescriptorSetLayout>(
-				FRAMES_IN_FLIGHT,
-				result._descriptor_set_layout);
-		auto alloc_info = VkDescriptorSetAllocateInfo{};
-		alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		alloc_info.descriptorPool = render_pass.descriptor_pool().descriptorPool();
-		alloc_info.descriptorSetCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT);
-		alloc_info.pSetLayouts = layouts.data();
-
-		result._descriptor_sets.resize(FRAMES_IN_FLIGHT);
-		res = vkAllocateDescriptorSets(
-				Graphics::DEFAULT->device(), 
-				&alloc_info, 
-				result._descriptor_sets.data());
-		if (res != VK_SUCCESS) {
-			return {res};
-		}
-
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 			auto buffer_res = MappedUniformObject::create();
 			TRY(buffer_res);
 			result._mapped_uniforms.push_back(std::move(buffer_res.value()));
-
-			auto buffer_info = VkDescriptorBufferInfo{};
-			buffer_info.buffer = result._mapped_uniforms[i].buffer();
-			buffer_info.offset = 0;
-			buffer_info.range = sizeof(UniformBufferObject);
-
-			auto image_info = VkDescriptorImageInfo{};
-			image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			image_info.imageView = texture->image_view().value();
-			image_info.sampler = Graphics::DEFAULT->mainTextureSampler();
-
-			auto descriptor_writes = std::array<VkWriteDescriptorSet, 2>();
-
-			descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptor_writes[0].dstSet = result._descriptor_sets[i];
-			descriptor_writes[0].dstBinding = 0;
-			descriptor_writes[0].dstArrayElement = 0;
-			descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptor_writes[0].descriptorCount = 1;
-			descriptor_writes[0].pBufferInfo = &buffer_info;
-
-			descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptor_writes[1].dstSet = result._descriptor_sets[i];
-			descriptor_writes[1].dstBinding = 1;
-			descriptor_writes[1].dstArrayElement = 0;
-			descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptor_writes[1].descriptorCount = 1;
-			descriptor_writes[1].pImageInfo = &image_info;
-
-			vkUpdateDescriptorSets(
-					Graphics::DEFAULT->device(), 
-					static_cast<uint32_t>(descriptor_writes.size()), 
-					descriptor_writes.data(), 
-					0,
-					nullptr);
 		}
+
+		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
+
+		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
+					0, 
+					VK_SHADER_STAGE_VERTEX_BIT, 
+					result._mapped_uniforms));
+		descriptor_templates.push_back(DescriptorSetTemplate::create_image(
+					1,
+					VK_SHADER_STAGE_FRAGMENT_BIT,
+					texture->image_view()));
+
+		auto descriptor_sets = DescriptorSets::create(
+				descriptor_templates,
+				FRAMES_IN_FLIGHT,
+				render_pass.descriptor_pool());
+
+		TRY(descriptor_sets);
+		result._descriptor_sets = std::move(descriptor_sets.value());
 
 		/* Create pipeline */
 		auto vert_shader = vulkan::Shader::fromEnvFile(
@@ -230,11 +165,11 @@ namespace vulkan {
 		auto pipeline_layout_info = VkPipelineLayoutCreateInfo{};
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipeline_layout_info.setLayoutCount = 1;
-		pipeline_layout_info.pSetLayouts = &result._descriptor_set_layout;
+		pipeline_layout_info.pSetLayouts = result._descriptor_sets.layout_ptr();
 		pipeline_layout_info.pushConstantRangeCount = 0;
 		pipeline_layout_info.pPushConstantRanges = nullptr;
 
-		res = vkCreatePipelineLayout(
+		auto res = vkCreatePipelineLayout(
 				Graphics::DEFAULT->device(),
 				&pipeline_layout_info,
 				nullptr,
@@ -301,9 +236,6 @@ namespace vulkan {
 
 		_descriptor_sets = std::move(other._descriptor_sets);
 
-		_descriptor_set_layout = other._descriptor_set_layout;
-		other._descriptor_set_layout = nullptr;
-
 		_mapped_uniforms = std::move(other._mapped_uniforms);
 	}
 
@@ -317,9 +249,6 @@ namespace vulkan {
 		other._pipeline = nullptr;
 
 		_descriptor_sets = std::move(other._descriptor_sets);
-
-		_descriptor_set_layout = other._descriptor_set_layout;
-		other._descriptor_set_layout = nullptr;
 
 		_mapped_uniforms = std::move(other._mapped_uniforms);
 
@@ -341,22 +270,6 @@ namespace vulkan {
 					nullptr);
 			_pipeline = nullptr;
 		}
-		if (_descriptor_set_layout) {
-			vkDestroyDescriptorSetLayout(
-					Graphics::DEFAULT->device(),
-					_descriptor_set_layout,
-					nullptr);
-			_descriptor_set_layout = nullptr;
-		}
-		
-		if (_descriptor_sets.size() > 0) {
-			vkFreeDescriptorSets(
-					Graphics::DEFAULT->device(),
-					_render_pass.descriptor_pool().descriptorPool(),
-					_descriptor_sets.size(),
-					_descriptor_sets.data());
-			_descriptor_sets.clear();
-		}
 	}
 
 	VkPipelineLayout TextureMaterialPrevImpl::pipeline_layout() {
@@ -368,7 +281,7 @@ namespace vulkan {
 	}
 
 	VkDescriptorSet TextureMaterialPrevImpl::get_descriptor_set(uint32_t frame_index) {
-		return _descriptor_sets[frame_index];
+		return _descriptor_sets.descriptor_set(frame_index);
 	}
 
 	void TextureMaterialPrevImpl::update_uniform(
@@ -394,8 +307,8 @@ namespace vulkan {
 		_texture(nullptr),
 		_pipeline_layout(nullptr),
 		_pipeline(nullptr),
-		_descriptor_set_layout(nullptr),
-		_render_pass(render_pass)
+		_render_pass(render_pass),
+		_descriptor_sets(render_pass.descriptor_pool())
 	{}
 
 	TextureMaterial::TextureMaterial(Texture* texture):
