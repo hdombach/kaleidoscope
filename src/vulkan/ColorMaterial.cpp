@@ -12,106 +12,36 @@ namespace vulkan {
 			PreviewRenderPass &render_pass,
 			glm::vec3 color)
 	{
-		auto result = ColorMaterialPrevImpl(render_pass);
+		auto result = ColorMaterialPrevImpl(render_pass.descriptor_pool());
 		result._color = color;
-
-		/* Create Descriptor Set Layout */
-		auto ubo_layout_binding = VkDescriptorSetLayoutBinding{};
-		ubo_layout_binding.binding = 0;
-		ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		ubo_layout_binding.descriptorCount = 1;
-		ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		ubo_layout_binding.pImmutableSamplers = nullptr;
-
-		auto color_layout_binding = VkDescriptorSetLayoutBinding{};
-		color_layout_binding.binding = 1;
-		color_layout_binding.descriptorCount = 1;
-		color_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		color_layout_binding.pImmutableSamplers = nullptr;
-		color_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-		auto bindings = std::array<VkDescriptorSetLayoutBinding, 2>{
-			ubo_layout_binding,
-			color_layout_binding,
-		};
-		
-		auto layout_info = VkDescriptorSetLayoutCreateInfo{};
-		layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layout_info.bindingCount = static_cast<uint32_t>(bindings.size());
-		layout_info.pBindings = bindings.data();
-
-		auto res = vkCreateDescriptorSetLayout(
-				Graphics::DEFAULT->device(),
-				&layout_info,
-				nullptr,
-				&result._descriptor_set_layout);
-		if (res != VK_SUCCESS) {
-			return {res};
-		}
-
-		/* Set up descriptor sets */
-		auto layouts = std::vector<VkDescriptorSetLayout>(
-				FRAMES_IN_FLIGHT,
-				result._descriptor_set_layout);
-		auto alloc_info = VkDescriptorSetAllocateInfo{};
-		alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		alloc_info.descriptorPool = render_pass.descriptor_pool().descriptorPool();
-		alloc_info.descriptorSetCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT);
-		alloc_info.pSetLayouts = layouts.data();
-
-		result._descriptor_sets.resize(FRAMES_IN_FLIGHT);
-		res = vkAllocateDescriptorSets(
-				Graphics::DEFAULT->device(), 
-				&alloc_info, 
-				result._descriptor_sets.data());
-		if (res != VK_SUCCESS) {
-			return {res};
-		}
-
-		auto color_buffer_res = ColorUniformObject::create();
-		TRY(color_buffer_res);
-		result._color_uniform = std::move(color_buffer_res.value());
 
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
 			auto buffer_res = MappedUniformObject::create();
 			TRY(buffer_res);
 			result._mapped_uniforms.push_back(std::move(buffer_res.value()));
-
-			auto buffer_info = VkDescriptorBufferInfo{};
-			buffer_info.buffer = result._mapped_uniforms[i].buffer();
-			buffer_info.offset = 0;
-			buffer_info.range = sizeof(UniformBufferObject);
-
-			auto color_buffer_info = VkDescriptorBufferInfo{};
-			color_buffer_info.buffer = result._color_uniform.buffer();
-			color_buffer_info.offset = 0;
-			color_buffer_info.range = sizeof(glm::vec3);
-
-			auto descriptor_writes = std::array<VkWriteDescriptorSet, 2>();
-
-			descriptor_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptor_writes[0].dstSet = result._descriptor_sets[i];
-			descriptor_writes[0].dstBinding = 0;
-			descriptor_writes[0].dstArrayElement = 0;
-			descriptor_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptor_writes[0].descriptorCount = 1;
-			descriptor_writes[0].pBufferInfo = &buffer_info;
-
-			descriptor_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptor_writes[1].dstSet = result._descriptor_sets[i];
-			descriptor_writes[1].dstBinding = 1;
-			descriptor_writes[1].dstArrayElement = 0;
-			descriptor_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			descriptor_writes[1].descriptorCount = 1;
-			descriptor_writes[1].pBufferInfo = &color_buffer_info;
-
-			vkUpdateDescriptorSets(
-					Graphics::DEFAULT->device(), 
-					static_cast<uint32_t>(descriptor_writes.size()), 
-					descriptor_writes.data(), 
-					0, 
-					nullptr);
 		}
+		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
+			auto color_buf_res = ColorUniformObject::create();
+			TRY(color_buf_res);
+			result._color_uniforms.push_back(std::move(color_buf_res.value()));
+		}
+
+		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
+
+		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
+					0,
+					VK_SHADER_STAGE_VERTEX_BIT,
+					result._mapped_uniforms));
+		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
+					1, VK_SHADER_STAGE_FRAGMENT_BIT,
+					result._color_uniforms));
+
+		auto descriptor_sets = DescriptorSets::create(
+				descriptor_templates,
+				FRAMES_IN_FLIGHT,
+				render_pass.descriptor_pool());
+		TRY(descriptor_sets);
+		result._descriptor_sets = std::move(descriptor_sets.value());
 
 		/* Create pipeline */
 		auto vert_shader = vulkan::Shader::fromEnvFile(
@@ -226,11 +156,11 @@ namespace vulkan {
 		auto pipeline_layout_info = VkPipelineLayoutCreateInfo{};
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipeline_layout_info.setLayoutCount = 1;
-		pipeline_layout_info.pSetLayouts = &result._descriptor_set_layout;
+		pipeline_layout_info.pSetLayouts = result._descriptor_sets.layout_ptr();
 		pipeline_layout_info.pushConstantRangeCount = 0;
 		pipeline_layout_info.pPushConstantRanges = nullptr;
 
-		res = vkCreatePipelineLayout(
+		auto res = vkCreatePipelineLayout(
 				Graphics::DEFAULT->device(),
 				&pipeline_layout_info,
 				nullptr,
@@ -285,7 +215,7 @@ namespace vulkan {
 	}
 
 	ColorMaterialPrevImpl::ColorMaterialPrevImpl(ColorMaterialPrevImpl &&other):
-		_render_pass(other._render_pass)
+		ColorMaterialPrevImpl(other._descriptor_sets.descriptor_pool())
 	{
 		_pipeline_layout = other._pipeline_layout;
 		other._pipeline_layout = nullptr;
@@ -295,12 +225,9 @@ namespace vulkan {
 
 		_descriptor_sets = std::move(other._descriptor_sets);
 
-		_descriptor_set_layout = other._descriptor_set_layout;
-		other._descriptor_set_layout = nullptr;
-
 		_mapped_uniforms = std::move(other._mapped_uniforms);
 
-		_color_uniform = std::move(other._color_uniform);
+		_color_uniforms = std::move(other._color_uniforms);
 
 		_color = other._color;
 	}
@@ -315,16 +242,11 @@ namespace vulkan {
 
 		_descriptor_sets = std::move(other._descriptor_sets);
 
-		_descriptor_set_layout = other._descriptor_set_layout;
-		other._descriptor_set_layout = nullptr;
-
 		_mapped_uniforms = std::move(other._mapped_uniforms);
 
-		_color_uniform = std::move(other._color_uniform);
+		_color_uniforms = std::move(other._color_uniforms);
 
 		_color = other._color;
-
-		//_render_pass = other._render_pass;
 
 		return *this;
 	}
@@ -345,23 +267,6 @@ namespace vulkan {
 					nullptr);
 			_pipeline = nullptr;
 		}
-
-		if (_descriptor_sets.size() > 0) {
-			vkFreeDescriptorSets(
-					Graphics::DEFAULT->device(), 
-					_render_pass.descriptor_pool().descriptorPool(), 
-					_descriptor_sets.size(), 
-					_descriptor_sets.data());
-			_descriptor_sets.clear();
-		}
-
-		if (_descriptor_set_layout) {
-			vkDestroyDescriptorSetLayout(
-					Graphics::DEFAULT->device(), 
-					_descriptor_set_layout, 
-					nullptr);
-			_descriptor_set_layout = nullptr;
-		}
 	}
 
 	VkPipelineLayout ColorMaterialPrevImpl::pipeline_layout() {
@@ -373,7 +278,7 @@ namespace vulkan {
 	}
 
 	VkDescriptorSet ColorMaterialPrevImpl::get_descriptor_set(uint32_t frame_index) {
-		return _descriptor_sets[frame_index];
+		return _descriptor_sets.descriptor_set(frame_index);
 	}
 
 	void ColorMaterialPrevImpl::update_uniform(
@@ -396,12 +301,12 @@ namespace vulkan {
 
 		auto color = ColorBufferObject{_color};
 		color.color.y += 0.2 + sin(time * 10) * 0.2;
-		_color_uniform.set_value(color);
+		_color_uniforms[frame_index].set_value(color);
 	}
 
 
-	ColorMaterialPrevImpl::ColorMaterialPrevImpl(PreviewRenderPass &render_pass):
-	_render_pass(render_pass)
+	ColorMaterialPrevImpl::ColorMaterialPrevImpl(DescriptorPool &descriptor_pool):
+		_descriptor_sets(descriptor_pool)
 	{ }
 
 	ColorMaterial::ColorMaterial(glm::vec3 color):

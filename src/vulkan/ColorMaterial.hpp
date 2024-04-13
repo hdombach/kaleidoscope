@@ -7,6 +7,7 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan_core.h>
 
+#include "DescriptorSet.hpp"
 #include "Material.hpp"
 #include "PreviewRenderPass.hpp"
 #include "mappedUniform.hpp"
@@ -40,16 +41,14 @@ namespace vulkan {
 					glm::vec2 viewport_size) override;
 
 		private:
-			ColorMaterialPrevImpl(PreviewRenderPass &render_pass);
+			ColorMaterialPrevImpl(DescriptorPool &descriptor_pool);
 
 			VkPipelineLayout _pipeline_layout;
 			VkPipeline _pipeline;
-			std::vector<VkDescriptorSet> _descriptor_sets;
-			VkDescriptorSetLayout _descriptor_set_layout;
+			DescriptorSets _descriptor_sets;
 			std::vector<MappedUniformObject> _mapped_uniforms;
-			ColorUniformObject _color_uniform;
+			std::vector<ColorUniformObject> _color_uniforms;
 			glm::vec3 _color;
-			PreviewRenderPass &_render_pass;
 	};
 
 	class ColorMaterial: public Material {
