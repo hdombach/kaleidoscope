@@ -1,7 +1,7 @@
 #pragma once
 
 #include "./types/ResourceManager.hpp"
-#include "./vulkan/uiRenderPipeline.hpp"
+#include "./vulkan/UIRenderPipeline.hpp"
 #include "./ui/window.hpp"
 #include "vulkan/Scene.hpp"
 

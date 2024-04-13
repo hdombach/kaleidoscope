@@ -10,7 +10,7 @@
 #include "DescriptorSet.hpp"
 #include "Material.hpp"
 #include "PreviewRenderPass.hpp"
-#include "mappedUniform.hpp"
+#include "MappedUniform.hpp"
 
 namespace vulkan {
 	class ColorMaterialPrevImpl: public MaterialPreviewImpl {

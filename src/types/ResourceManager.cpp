@@ -2,8 +2,8 @@
 #include "../util/errors.hpp"
 #include "../vulkan/Mesh.hpp"
 #include "../util/result.hpp"
-#include "../vulkan/staticTexture.hpp"
-#include "../vulkan/texture.hpp"
+#include "../vulkan/StaticTexture.hpp"
+#include "../vulkan/Texture.hpp"
 
 namespace types {
 	ResourceManager::ResourceManager() {

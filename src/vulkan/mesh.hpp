@@ -6,8 +6,8 @@ namespace vulkan {
 	class Mesh {
 		public:
 			virtual ~Mesh() = default;
-			virtual VkBuffer vertexBuffer() const = 0;
-			virtual VkBuffer indexBuffer() const = 0;
-			virtual uint32_t indexCount() const = 0;
+			virtual VkBuffer vertex_buffer() const = 0;
+			virtual VkBuffer index_buffer() const = 0;
+			virtual uint32_t index_count() const = 0;
 	};
 }

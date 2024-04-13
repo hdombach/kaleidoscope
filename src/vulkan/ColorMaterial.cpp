@@ -1,11 +1,10 @@
-#include <array>
-
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
 #include <vulkan/vulkan_core.h>
 
 #include "ColorMaterial.hpp"
 #include "defs.hpp"
-#include "shader.hpp"
-#include "vertex.hpp"
+#include "Shader.hpp"
 
 namespace vulkan {
 	util::Result<ColorMaterialPrevImpl, KError> ColorMaterialPrevImpl::create(
@@ -44,9 +43,9 @@ namespace vulkan {
 		result._descriptor_sets = std::move(descriptor_sets.value());
 
 		/* Create pipeline */
-		auto vert_shader = vulkan::Shader::fromEnvFile(
+		auto vert_shader = vulkan::Shader::from_env_file(
 				"src/shaders/default_shader.vert.spv");
-		auto frag_shader = vulkan::Shader::fromEnvFile(
+		auto frag_shader = vulkan::Shader::from_env_file(
 				"src/shaders/color_shader.frag.spv");
 
 		auto res = _create_pipeline(

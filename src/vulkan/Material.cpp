@@ -2,7 +2,7 @@
 
 #include "Material.hpp"
 #include "PreviewRenderPass.hpp"
-#include "vertex.hpp"
+#include "Vertex.hpp"
 #include "graphics.hpp"
 #include "../util/result.hpp"
 
@@ -19,12 +19,12 @@ namespace vulkan {
 
 		shader_stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shader_stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-		shader_stages[0].module = vertex_shader.shaderModule();
+		shader_stages[0].module = vertex_shader.shader_module();
 		shader_stages[0].pName = "main";
 
 		shader_stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		shader_stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		shader_stages[1].module = fragment_shader.shaderModule();
+		shader_stages[1].module = fragment_shader.shader_module();
 		shader_stages[1].pName = "main";
 
 		auto vertex_input_info = VkPipelineVertexInputStateCreateInfo{};

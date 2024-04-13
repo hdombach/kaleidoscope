@@ -6,15 +6,14 @@
 
 #include <vulkan/vulkan_core.h>
 
-#include "Node.hpp"
-#include "descriptorPool.hpp"
-#include "image.hpp"
-#include "imageView.hpp"
+#include "DescriptorPool.hpp"
+#include "Image.hpp"
+#include "ImageView.hpp"
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
-#include "texture.hpp"
+#include "Texture.hpp"
 #include "../types/ResourceManager.hpp"
-#include "uniformBufferObject.hpp"
+#include "UniformBufferObject.hpp"
 
 namespace vulkan {
 	class PreviewRenderPassCore {

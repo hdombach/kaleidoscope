@@ -5,7 +5,7 @@
 
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
-#include "shader.hpp"
+#include "Shader.hpp"
 
 namespace vulkan {
 	class MaterialPreviewImpl;

@@ -6,8 +6,8 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
-#include "mappedUniform.hpp"
-#include "descriptorPool.hpp"
+#include "MappedUniform.hpp"
+#include "DescriptorPool.hpp"
 
 namespace vulkan {
 	class DescriptorSetTemplate {

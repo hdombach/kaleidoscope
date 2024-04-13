@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../vulkan/texture.hpp"
+#include "../vulkan/Texture.hpp"
 #include <imgui.h>
 namespace ui {
 	class TextureView {

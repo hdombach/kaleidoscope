@@ -1,9 +1,8 @@
-#include "textureView.hpp"
-#include "../util/format.hpp"
-#include "../util/log.hpp"
-#include "../vulkan/texture.hpp"
 #include <glm/fwd.hpp>
 #include <imgui.h>
+
+#include "textureView.hpp"
+#include "../vulkan/Texture.hpp"
 
 namespace ui {
 	TextureView::TextureView(vulkan::Texture &texture): texture_(texture) {}

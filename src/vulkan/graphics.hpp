@@ -8,10 +8,10 @@
 #include <vulkan/vulkan_core.h>
 #include <GLFW/glfw3.h>
 
-#include "semaphore.hpp"
-#include "fence.hpp"
-#include "imageView.hpp"
-#include "image.hpp"
+#include "Semaphore.hpp"
+#include "Fence.hpp"
+#include "ImageView.hpp"
+#include "Image.hpp"
 #include "../util/errors.hpp"
 
 namespace vulkan {

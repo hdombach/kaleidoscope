@@ -71,7 +71,7 @@ namespace vulkan {
 
 		auto alloc_info = VkDescriptorSetAllocateInfo{};
 		alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		alloc_info.descriptorPool = descriptor_pool.descriptorPool();
+		alloc_info.descriptorPool = descriptor_pool.descriptor_pool();
 		alloc_info.descriptorSetCount = static_cast<uint32_t>(frame_count);
 		alloc_info.pSetLayouts = layout_binding_vec.data();
 
@@ -167,7 +167,7 @@ namespace vulkan {
 		if (_descriptor_sets.size() > 0) {
 			vkFreeDescriptorSets(
 					Graphics::DEFAULT->device(), 
-					_descriptor_pool.get().descriptorPool(), 
+					_descriptor_pool.get().descriptor_pool(), 
 					_descriptor_sets.size(), 
 					_descriptor_sets.data());
 			_descriptor_sets.clear();

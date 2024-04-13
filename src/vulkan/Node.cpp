@@ -28,10 +28,10 @@ namespace vulkan {
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				_material->preview_impl()->pipeline());
 
-		VkBuffer vertex_buffers[] = {_mesh.vertexBuffer()};
+		VkBuffer vertex_buffers[] = {_mesh.vertex_buffer()};
 		VkDeviceSize offsets[] = {0};
 		vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
-		vkCmdBindIndexBuffer(command_buffer, _mesh.indexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(command_buffer, _mesh.index_buffer(), 0, VK_INDEX_TYPE_UINT32);
 
 		auto descriptor_set = _material->preview_impl()->get_descriptor_set(preview_render_pass.frame_index());
 
@@ -45,6 +45,6 @@ namespace vulkan {
 				0,
 				nullptr);
 
-		vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(_mesh.indexCount()), 1, 0, 0, 0);
+		vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(_mesh.index_count()), 1, 0, 0, 0);
 	}
 }

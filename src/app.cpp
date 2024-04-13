@@ -6,12 +6,12 @@
 #include "./vulkan/graphics.hpp"
 #include "./util/log.hpp"
 #include "./types/ResourceManager.hpp"
-#include "./vulkan/staticMesh.hpp"
-#include "./vulkan/staticTexture.hpp"
-#include "./vulkan/uiRenderPipeline.hpp"
+#include "./vulkan/StaticMesh.hpp"
+#include "./vulkan/StaticTexture.hpp"
+#include "./vulkan/UIRenderPipeline.hpp"
 #include "./ui/window.hpp"
 #include "vulkan/Scene.hpp"
-#include "vulkan/textureMaterial.hpp"
+#include "vulkan/TextureMaterial.hpp"
 #include "vulkan/ColorMaterial.hpp"
 
 App::App(std::string const &name) {
@@ -24,7 +24,7 @@ App::App(std::string const &name) {
 	} else {
 		util::log_error("Could not load example texture viking_room.png");
 	}
-	if (auto viking_room = vulkan::StaticMesh::fromFile("assets/viking_room.obj")) {
+	if (auto viking_room = vulkan::StaticMesh::from_file("assets/viking_room.obj")) {
 		_resource_manager->add_mesh("viking_room", viking_room.value());
 	} else {
 		util::log_error(util::f(viking_room.error()));
