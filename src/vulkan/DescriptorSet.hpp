@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include <functional>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
@@ -74,11 +75,12 @@ namespace vulkan {
 			VkDescriptorSet descriptor_set(uint32_t frame_index);
 			VkDescriptorSetLayout layout();
 			VkDescriptorSetLayout *layout_ptr();
+			DescriptorPool &descriptor_pool();
 
 			DescriptorSets(DescriptorPool &descriptor_pool);
 		private:
 			std::vector<VkDescriptorSet> _descriptor_sets;
 			VkDescriptorSetLayout _descriptor_set_layout;
-			DescriptorPool &_descriptor_pool;
+			std::reference_wrapper<DescriptorPool> _descriptor_pool;
 	};
 }

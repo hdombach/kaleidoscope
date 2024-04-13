@@ -28,7 +28,7 @@ namespace vulkan {
 			void update_uniform(uint32_t frame_index, glm::vec3 position, glm::vec2 viewport_size) override;
 
 		private:
-			TextureMaterialPrevImpl(PreviewRenderPass &render_pass);
+			TextureMaterialPrevImpl(DescriptorPool &descriptor_pool);
 			
 			/* A reference */
 			Texture *_texture;
@@ -37,8 +37,6 @@ namespace vulkan {
 
 			DescriptorSets _descriptor_sets;
 			std::vector<MappedUniformObject> _mapped_uniforms;
-
-			PreviewRenderPass &_render_pass;
 	};
 
 

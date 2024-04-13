@@ -24,7 +24,7 @@ namespace vulkan {
 			PreviewRenderPass &render_pass,
 			Texture *texture)
 	{
-		auto result = TextureMaterialPrevImpl(render_pass);
+		auto result = TextureMaterialPrevImpl(render_pass.descriptor_pool());
 		result._texture = texture;
 
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
@@ -224,7 +224,7 @@ namespace vulkan {
 	}
 
 	TextureMaterialPrevImpl::TextureMaterialPrevImpl(TextureMaterialPrevImpl &&other):
-		vulkan::TextureMaterialPrevImpl(other._render_pass)
+		vulkan::TextureMaterialPrevImpl(other._descriptor_sets.descriptor_pool())
 	{
 		_texture = other._texture;
 
@@ -303,12 +303,11 @@ namespace vulkan {
 		_mapped_uniforms[frame_index].set_value(ubo);
 	}
 
-	TextureMaterialPrevImpl::TextureMaterialPrevImpl(PreviewRenderPass &render_pass):
+	TextureMaterialPrevImpl::TextureMaterialPrevImpl(DescriptorPool &descriptor_pool):
 		_texture(nullptr),
 		_pipeline_layout(nullptr),
 		_pipeline(nullptr),
-		_render_pass(render_pass),
-		_descriptor_sets(render_pass.descriptor_pool())
+		_descriptor_sets(descriptor_pool)
 	{}
 
 	TextureMaterial::TextureMaterial(Texture* texture):

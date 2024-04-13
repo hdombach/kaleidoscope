@@ -140,6 +140,8 @@ namespace vulkan {
 
 		_descriptor_set_layout = other._descriptor_set_layout;
 		other._descriptor_set_layout = nullptr;
+
+		_descriptor_pool = other._descriptor_pool;
 	}
 
 	DescriptorSets& DescriptorSets::operator=(DescriptorSets &&other) {
@@ -165,7 +167,7 @@ namespace vulkan {
 		if (_descriptor_sets.size() > 0) {
 			vkFreeDescriptorSets(
 					Graphics::DEFAULT->device(), 
-					_descriptor_pool.descriptorPool(), 
+					_descriptor_pool.get().descriptorPool(), 
 					_descriptor_sets.size(), 
 					_descriptor_sets.data());
 			_descriptor_sets.clear();
@@ -182,6 +184,10 @@ namespace vulkan {
 
 	VkDescriptorSetLayout *DescriptorSets::layout_ptr() {
 		return &_descriptor_set_layout;
+	}
+
+	DescriptorPool &DescriptorSets::descriptor_pool() {
+		return _descriptor_pool;
 	}
 
 	DescriptorSets::DescriptorSets(DescriptorPool &descriptor_pool):
