@@ -5,6 +5,7 @@
 
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
+#include "shader.hpp"
 
 namespace vulkan {
 	class MaterialPreviewImpl;
@@ -32,5 +33,23 @@ namespace vulkan {
 			virtual VkPipeline pipeline() = 0;
 			virtual VkDescriptorSet get_descriptor_set(uint32_t frame_index) = 0;
 			virtual void update_uniform(uint32_t frame_index, glm::vec3 position, glm::vec2 viewport_size) = 0;
+
+		protected:
+
+			/**
+			 * @param[in] vertex_shader
+			 * @param[in] fragment_shader
+			 * @param[in] descriptor_set_layout
+			 * @param[out] pipeline
+			 * @param[out] pipeline_layout
+			 */
+			static util::Result<void, KError> _create_pipeline(
+					Shader &vertex_shader,
+					Shader &fragment_shader,
+					PreviewRenderPass &render_pass,
+					VkDescriptorSetLayout *descriptor_set_layout,
+					VkPipeline *pipeline,
+					VkPipelineLayout *pipeline_layout);
+
 	};
 }
