@@ -360,7 +360,7 @@ namespace vulkan {
 			swapchainSupportDetails_ = querySwapChainSupport_(device);
 			swapChainAdequate = !swapchainSupportDetails_.formats.empty() && !swapchainSupportDetails_.presentModes.empty();
 		} else {
-			util::log_error("Extensions are not supported");
+			LOG_ERROR << "Extensions are not supported" << std::endl;
 		}
 		VkPhysicalDeviceFeatures supportedFeatures;
 		vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
@@ -962,7 +962,7 @@ namespace vulkan {
 				imageFormat,
 				&formatProperties);
 		if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
-			util::log_fatal_error("Texture image format does not support linear blitting!");
+			LOG_FATAL_ERROR << "Texture image format does not support linear blitting" << std::endl;
 		}
 
 		auto commandBuffer = beginSingleTimeCommands_();

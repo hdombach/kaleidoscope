@@ -134,7 +134,7 @@ namespace vulkan {
 		_size = new_size;
 		auto res = _create_images();
 		if (!res) {
-			util::log_error(res.error().desc());
+			LOG_ERROR << res.error().desc() << std::endl;
 		}
 	}
 
@@ -323,7 +323,7 @@ namespace vulkan {
 	}
 
 	PreviewRenderPass::~PreviewRenderPass() {
-		util::log_memory("Deconstructing main render pipeline");
+		LOG_MEMORY << "Deconstructing main render pipeline" << std::endl;
 
 		_mapped_uniforms.clear();
 		

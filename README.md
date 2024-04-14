@@ -14,7 +14,8 @@ cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug
 cmake --build build
 ```
 
-
+# Compiling
+Or you can just use `setup.sh`
 
 
 # Overview

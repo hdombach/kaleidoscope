@@ -1,4 +1,5 @@
 #include <memory>
+#include <filesystem>
 
 #include <GLFW/glfw3.h>
 
@@ -13,27 +14,28 @@
 #include "vulkan/Scene.hpp"
 #include "vulkan/TextureMaterial.hpp"
 #include "vulkan/ColorMaterial.hpp"
+#include "util/file.hpp"
 
 App::App(std::string const &name) {
 	vulkan::Graphics::initDefault("Kaleidoscope");
 	_ui_render_pipeline = std::make_unique<vulkan::UIRenderPipeline>();
 	_resource_manager = std::make_unique<types::ResourceManager>();
 
-	if (auto viking_room = vulkan::StaticTexture::from_file("assets/viking_room.png")) {
+	if (auto viking_room = vulkan::StaticTexture::from_file(util::env_file_path("assets/viking_room.png"))) {
 		_resource_manager->add_texture("viking_room", viking_room.value());
 	} else {
-		util::log_error("Could not load example texture viking_room.png");
+		LOG_ERROR << "Could not load example texture viking_room.png" << std::endl;
 	}
 	if (auto viking_room = vulkan::StaticMesh::from_file("assets/viking_room.obj")) {
 		_resource_manager->add_mesh("viking_room", viking_room.value());
 	} else {
-		util::log_error(util::f(viking_room.error()));
+		LOG_ERROR << viking_room.error().desc() << std::endl;
 	}
 
 	if (auto scene = vulkan::Scene::create(*_resource_manager)) {
 		_scene = std::unique_ptr<vulkan::Scene>(new vulkan::Scene(std::move(scene.value())));
 	} else {
-		util::log_error(util::f(scene.error()));
+		LOG_ERROR << scene.error().desc() << std::endl;
 	}
 
 	{
@@ -77,3 +79,19 @@ void App::main_loop() {
 
 	vulkan::Graphics::DEFAULT->waitIdle();
 }
+
+std::string &App::prog_path() {
+	return _prog_path;
+}
+
+std::string &App::working_path() {
+	return _working_path;
+}
+
+void App::set_prog_path(std::string path) {
+	_prog_path = path;
+	_working_path = std::filesystem::path(_prog_path).parent_path();
+}
+
+std::string App::_prog_path;
+std::string App::_working_path;

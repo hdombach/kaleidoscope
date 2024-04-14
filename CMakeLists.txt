@@ -79,6 +79,9 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 	target_compile_options(kaleidoscope PUBLIC -g -O0)
 endif()
 
+file(MAKE_DIRECTORY "build")
+file(CREATE_LINK "../assets" "build/assets" SYMBOLIC)
+
 message(STATUS "printing libraries")
 message(STATUS glfw)
 

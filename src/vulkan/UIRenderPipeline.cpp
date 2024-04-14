@@ -1,17 +1,20 @@
+#include <array>
+#include <cstdint>
+#include <functional>
+
+#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
+#include <imgui.h>
+
 #include "UIRenderPipeline.hpp"
 #include "defs.hpp"
 #include "error.hpp"
-#include "../util/format.hpp"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
 #include "../util/log.hpp"
-#include "vulkan/vulkan_core.h"
-#include <cstdint>
-#include <functional>
-#include <vulkan/vulkan.h>
 #include "graphics.hpp"
-#include <array>
-#include <imgui.h>
+#include "../App.hpp"
+#include "../util/file.hpp"
 
 //https://github.com/ocornut/imgui/blob/master/examples/example_glfw_vulkan/main.cpp
 
@@ -123,7 +126,8 @@ namespace vulkan {
 		_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 		_io->ConfigFlags |= ImGuiConfigFlags_DockingEnable; //Allows imgui windows to be combined
 		_io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // allows imgui windows to be dragged outisde of main window
-		_io->Fonts->AddFontFromFileTTF("assets/Helvetica.ttc", 14);
+		LOG_DEBUG << "Font path is " << App::working_path() << "/assets/Helvetica.ttc" << std::endl;
+		_io->Fonts->AddFontFromFileTTF(util::env_file_path("/../assets/Helvetica.ttc").c_str(), 14);
 
 		ImGui::StyleColorsDark();
 
@@ -141,7 +145,7 @@ namespace vulkan {
 		init_info.Queue = Graphics::DEFAULT->graphicsQueue();
 		init_info.DescriptorPool = _descriptor_pool;
 		init_info.Subpass = 0;
-		util::log_event(util::f("Min image count ", FRAMES_IN_FLIGHT));
+		LOG_EVENT << "Min image count: " << FRAMES_IN_FLIGHT << std::endl;
 		init_info.MinImageCount = FRAMES_IN_FLIGHT;
 		init_info.ImageCount = FRAMES_IN_FLIGHT;
 		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
@@ -164,7 +168,7 @@ namespace vulkan {
 				Graphics::DEFAULT->surface(),
 				&res);
 		if (res != VK_TRUE) {
-			util::log_error("No WSI support on physical device 0");
+			LOG_ERROR << "No WSI support on physical device 0" << std::endl;
 		}
 
     const VkFormat requestSurfaceImageFormat[] = {

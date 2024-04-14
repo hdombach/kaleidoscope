@@ -1,15 +1,43 @@
-#include "file.hpp"
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <ostream>
 #include <sstream>
-#include <stdexcept>
 #include <string>
 #include <sstream>
 
+#include "file.hpp"
+#include "../App.hpp"
+
 namespace util {
+
+	std::string env_file_path(std::string filename) {
+		const char * envPathValue = std::getenv(ENV_PATH);
+		if (envPathValue == nullptr) {
+			envPathValue = "~";
+		}
+		std::stringstream envPathIterator;
+		envPathIterator << envPathValue;
+		std::string path;
+		while(std::getline(envPathIterator, path, ':')) {
+			std::string full_path = path + "/" + filename;
+
+			if (std::filesystem::exists(full_path)) {
+				return full_path;
+			}
+		}
+
+		{
+			auto full_path = std::filesystem::path(App::prog_path()).parent_path();
+			full_path += "/" + filename;
+
+			if (std::filesystem::exists(full_path)) {
+				return full_path;
+			}
+		}
+		throw std::runtime_error("Could not find file " + filename);
+	}
 
 	std::string readFile(std::ifstream &file) {
 		std::string result;
@@ -24,26 +52,7 @@ namespace util {
 	}
 
 	std::string readEnvFile(std::string filename) {
-		const char * envPathValue = std::getenv(ENV_PATH);
-		if (envPathValue == nullptr) {
-			envPathValue = "~";
-		}
-		std::stringstream envPathIterator;
-		envPathIterator << envPathValue;
-		std::string path;
-		while(std::getline(envPathIterator, path, ':')) {
-			std::string full_path = path + "/" + filename;
-			std::ifstream file(full_path);
-
-			if (!file.is_open()) {
-				continue;
-			}
-
-			auto result = readFile(file);
-			file.close();
-			return result;
-		}
-		throw std::runtime_error("Could not find file " + path);
+		return readFile(env_file_path(filename));
 	}
 
 	std::string readFile(std::filesystem::path path) {
