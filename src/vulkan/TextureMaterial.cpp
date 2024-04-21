@@ -153,7 +153,7 @@ namespace vulkan {
 		_texture(nullptr),
 		_pipeline_layout(nullptr),
 		_pipeline(nullptr),
-		_descriptor_sets(descriptor_pool)
+		_descriptor_sets()
 	{}
 
 	TextureMaterial::TextureMaterial(Texture* texture):

@@ -5,7 +5,9 @@
 #include <array>
 
 namespace vulkan {
-	DescriptorPool::DescriptorPool() {
+	DescriptorPool DescriptorPool::create() {
+		auto result = DescriptorPool();
+
 		auto poolSizes = std::array<VkDescriptorPoolSize, 3>{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSizes[0].descriptorCount = 100;
@@ -25,14 +27,37 @@ namespace vulkan {
 					Graphics::DEFAULT->device(),
 					&poolInfo,
 					nullptr,
-					&_descriptor_pool));
+					&result._descriptor_pool));
+
+		return result;
+	}
+
+	DescriptorPool::DescriptorPool():
+		_descriptor_pool(nullptr)
+	{ }
+
+	DescriptorPool::DescriptorPool(DescriptorPool &&other) {
+		_descriptor_pool = other._descriptor_pool;
+		other._descriptor_pool = nullptr;
+	}
+
+	DescriptorPool& DescriptorPool::operator=(DescriptorPool&& other) {
+		this->~DescriptorPool();
+
+		_descriptor_pool = other._descriptor_pool;
+		other._descriptor_pool = nullptr;
+
+		return *this;
 	}
 
 	DescriptorPool::~DescriptorPool() {
-		vkDestroyDescriptorPool(
-				Graphics::DEFAULT->device(),
-				_descriptor_pool,
-				nullptr);
+		if (_descriptor_pool) {
+			vkDestroyDescriptorPool(
+					Graphics::DEFAULT->device(),
+					_descriptor_pool,
+					nullptr);
+			_descriptor_pool = nullptr;
+		}
 	}
 
 	VkDescriptorPool const &DescriptorPool::descriptor_pool() const {

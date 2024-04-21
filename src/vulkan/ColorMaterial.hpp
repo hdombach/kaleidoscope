@@ -29,6 +29,7 @@ namespace vulkan {
 			ColorMaterialPrevImpl(ColorMaterialPrevImpl &&other);
 			ColorMaterialPrevImpl& operator=(const ColorMaterialPrevImpl& other) = delete;
 			ColorMaterialPrevImpl& operator=(ColorMaterialPrevImpl&& other);
+			ColorMaterialPrevImpl() = default;
 
 			~ColorMaterialPrevImpl() override;
 
@@ -41,8 +42,6 @@ namespace vulkan {
 					glm::vec2 viewport_size) override;
 
 		private:
-			ColorMaterialPrevImpl(DescriptorPool &descriptor_pool);
-
 			VkPipelineLayout _pipeline_layout;
 			VkPipeline _pipeline;
 			DescriptorSets _descriptor_sets;

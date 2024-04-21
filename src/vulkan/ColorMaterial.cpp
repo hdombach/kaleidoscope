@@ -11,7 +11,7 @@ namespace vulkan {
 			PreviewRenderPass &render_pass,
 			glm::vec3 color)
 	{
-		auto result = ColorMaterialPrevImpl(render_pass.descriptor_pool());
+		auto result = ColorMaterialPrevImpl();
 		result._color = color;
 
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
@@ -62,7 +62,7 @@ namespace vulkan {
 	}
 
 	ColorMaterialPrevImpl::ColorMaterialPrevImpl(ColorMaterialPrevImpl &&other):
-		ColorMaterialPrevImpl(other._descriptor_sets.descriptor_pool())
+		ColorMaterialPrevImpl()
 	{
 		_pipeline_layout = other._pipeline_layout;
 		other._pipeline_layout = nullptr;
@@ -151,10 +151,6 @@ namespace vulkan {
 		_color_uniforms[frame_index].set_value(color);
 	}
 
-
-	ColorMaterialPrevImpl::ColorMaterialPrevImpl(DescriptorPool &descriptor_pool):
-		_descriptor_sets(descriptor_pool)
-	{ }
 
 	ColorMaterial::ColorMaterial(glm::vec3 color):
 		_color(color)

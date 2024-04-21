@@ -302,6 +302,7 @@ namespace vulkan {
 				new PreviewRenderPass(resource_manager, size));
 		TRY(result->_create_sync_objects());
 		result->_create_command_buffers();
+		result->_descriptor_pool = DescriptorPool::create();
 
 		auto render_pass_res = PreviewRenderPassCore::create(size);
 		TRY(render_pass_res);

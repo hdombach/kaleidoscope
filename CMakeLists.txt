@@ -80,7 +80,7 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 endif()
 
 file(MAKE_DIRECTORY "build")
-file(CREATE_LINK "../assets" "build/assets" SYMBOLIC)
+file(CREATE_LINK "../assets" "${CMAKE_BINARY_DIR}/assets" SYMBOLIC)
 
 message(STATUS "printing libraries")
 message(STATUS glfw)

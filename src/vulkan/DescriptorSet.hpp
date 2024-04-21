@@ -2,7 +2,6 @@
 
 #include <cstdint>
 
-#include <functional>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
@@ -69,6 +68,7 @@ namespace vulkan {
 			DescriptorSets(DescriptorSets &&other);
 			DescriptorSets& operator=(const DescriptorSets& other) = delete;
 			DescriptorSets& operator=(DescriptorSets&& other);
+			DescriptorSets();
 
 			~DescriptorSets();
 
@@ -76,11 +76,9 @@ namespace vulkan {
 			VkDescriptorSetLayout layout();
 			VkDescriptorSetLayout *layout_ptr();
 			DescriptorPool &descriptor_pool();
-
-			DescriptorSets(DescriptorPool &descriptor_pool);
 		private:
 			std::vector<VkDescriptorSet> _descriptor_sets;
 			VkDescriptorSetLayout _descriptor_set_layout;
-			std::reference_wrapper<DescriptorPool> _descriptor_pool;
+			DescriptorPool *_descriptor_pool;
 	};
 }

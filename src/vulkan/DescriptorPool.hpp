@@ -5,7 +5,15 @@
 namespace vulkan {
 	class DescriptorPool {
 		public:
+			static DescriptorPool create();
+
 			DescriptorPool();
+
+			DescriptorPool(const DescriptorPool& other) = delete;
+			DescriptorPool(DescriptorPool &&other);
+			DescriptorPool& operator=(const DescriptorPool& other) = delete;
+			DescriptorPool& operator=(DescriptorPool&& other);
+
 			~DescriptorPool();
 
 			VkDescriptorPool const &descriptor_pool() const;

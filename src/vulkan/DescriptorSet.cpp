@@ -43,7 +43,8 @@ namespace vulkan {
 			uint32_t frame_count,
 			DescriptorPool &descriptor_pool)
 	{
-		auto result = DescriptorSets(descriptor_pool);
+		auto result = DescriptorSets();
+		result._descriptor_pool = &descriptor_pool;
 
 		auto layout_bindings = std::vector<VkDescriptorSetLayoutBinding>();
 		for (auto templ : templates) {
@@ -155,6 +156,12 @@ namespace vulkan {
 		return *this;
 	}
 
+	DescriptorSets::DescriptorSets():
+		_descriptor_pool(),
+		_descriptor_sets(),
+		_descriptor_set_layout(nullptr)
+	{ }
+
 	DescriptorSets::~DescriptorSets() {
 		if (_descriptor_set_layout) {
 			vkDestroyDescriptorSetLayout(
@@ -167,7 +174,7 @@ namespace vulkan {
 		if (_descriptor_sets.size() > 0) {
 			vkFreeDescriptorSets(
 					Graphics::DEFAULT->device(), 
-					_descriptor_pool.get().descriptor_pool(), 
+					_descriptor_pool->descriptor_pool(), 
 					_descriptor_sets.size(), 
 					_descriptor_sets.data());
 			_descriptor_sets.clear();
@@ -187,12 +194,6 @@ namespace vulkan {
 	}
 
 	DescriptorPool &DescriptorSets::descriptor_pool() {
-		return _descriptor_pool;
+		return *_descriptor_pool;
 	}
-
-	DescriptorSets::DescriptorSets(DescriptorPool &descriptor_pool):
-		_descriptor_sets(),
-		_descriptor_set_layout(nullptr),
-		_descriptor_pool(descriptor_pool)
-	{}
 }
