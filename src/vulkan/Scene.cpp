@@ -11,14 +11,18 @@ namespace vulkan {
 	util::Result<Scene, KError> Scene::create(
 			types::ResourceManager &resource_manager)
 	{
+		auto raytrace_render_pass = RaytraceRenderPass::create({300, 300});
+		TRY(raytrace_render_pass);
+
 		auto render_pass_res = PreviewRenderPass::create(
 				resource_manager,
 				{300, 300});
 		if (!render_pass_res) {
 			return render_pass_res.error();
-		} else {
-			return Scene(std::move(render_pass_res.value()));
 		}
+		auto scene = Scene(std::move(render_pass_res.value()));
+		scene._raytrace_render_pass = std::move(raytrace_render_pass.value());
+		return scene;
 	}
 
 	VkExtent2D Scene::size() const {
@@ -30,15 +34,17 @@ namespace vulkan {
 	}
 
 	void Scene::render_preview() {
-		return _preview_render_pass->submit([this](VkCommandBuffer command_buffer){
+		/*return _preview_render_pass->submit([this](VkCommandBuffer command_buffer){
 				for (auto &node : _nodes) {
 					node.render_preview(*_preview_render_pass, command_buffer);
 				}
-		});
+		});*/
+		_raytrace_render_pass->submit();
 	}
 
 	Texture& Scene::preview_texture() {
-		return *_preview_render_pass;
+		return *_raytrace_render_pass;
+		//return *_preview_render_pass;
 	}
 
 	util::Result<void, KError> Scene::add_node(Node node) {

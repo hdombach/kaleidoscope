@@ -34,6 +34,11 @@ namespace vulkan {
 					VkShaderStageFlags stage_flags,
 					ImageView const &image_view);
 
+			static DescriptorSetTemplate create_image_target(
+					uint32_t binding,
+					VkShaderStageFlags stage_flags,
+					ImageView const &image_view);
+
 			VkDescriptorSetLayoutBinding layout_binding() const { return _layout_binding; }
 			std::vector<VkBuffer> const &buffers() const { return _buffers; }
 			unsigned long buffer_range() const { return _buffer_range; }

@@ -7,6 +7,7 @@
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
 #include "PreviewRenderPass.hpp"
+#include "RaytraceRenderPass.hpp"
 #include "Node.hpp"
 #include "../types/ResourceManager.hpp"
 
@@ -37,6 +38,7 @@ namespace vulkan {
 
 		private:
 			PreviewRenderPass::Ptr _preview_render_pass;
+			RaytraceRenderPass::Ptr _raytrace_render_pass;
 
 			std::vector<Node> _nodes;
 	};

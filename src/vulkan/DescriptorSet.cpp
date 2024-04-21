@@ -19,6 +19,24 @@ namespace vulkan {
 		return result;
 	}
 
+	DescriptorSetTemplate DescriptorSetTemplate::create_image_target(
+			uint32_t binding,
+			VkShaderStageFlags stage_flags,
+			ImageView const &image_view)
+	{
+		auto result = DescriptorSetTemplate{};
+		result._layout_binding.binding = binding;
+		result._layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		result._layout_binding.descriptorCount = 1;
+		result._layout_binding.stageFlags = stage_flags;
+		result._layout_binding.pImmutableSamplers = nullptr;
+
+		result._image_view = image_view.value();
+
+		return result;
+	}
+
+
 	DescriptorSetTemplate DescriptorSetTemplate::_create_uniform_impl(
 			uint32_t binding,
 			VkShaderStageFlags stage_flags,
@@ -115,6 +133,12 @@ namespace vulkan {
 				} else if (descriptor_write.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
 					auto image_info = write_buffer_infos[write_i].image_info;
 					image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+					image_info.imageView = templ.image_view();
+					image_info.sampler = Graphics::DEFAULT->mainTextureSampler();
+					descriptor_write.pImageInfo = &image_info;
+				} else if (descriptor_write.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
+					auto image_info = write_buffer_infos[write_i].image_info;
+					image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 					image_info.imageView = templ.image_view();
 					image_info.sampler = Graphics::DEFAULT->mainTextureSampler();
 					descriptor_write.pImageInfo = &image_info;
