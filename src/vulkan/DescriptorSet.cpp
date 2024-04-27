@@ -134,13 +134,13 @@ namespace vulkan {
 					auto image_info = write_buffer_infos[write_i].image_info;
 					image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 					image_info.imageView = templ.image_view();
-					image_info.sampler = Graphics::DEFAULT->mainTextureSampler();
+					image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
 					descriptor_write.pImageInfo = &image_info;
 				} else if (descriptor_write.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
 					auto image_info = write_buffer_infos[write_i].image_info;
 					image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 					image_info.imageView = templ.image_view();
-					image_info.sampler = Graphics::DEFAULT->mainTextureSampler();
+					image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
 					descriptor_write.pImageInfo = &image_info;
 				}
 				descriptor_writes.push_back(descriptor_write);

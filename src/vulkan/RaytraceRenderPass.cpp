@@ -33,7 +33,7 @@ namespace vulkan {
 		TRY(image);
 		result->_result_image = std::move(image.value());
 
-		Graphics::DEFAULT->transitionImageLayout(
+		Graphics::DEFAULT->transition_image_layout(
 				result->_result_image.value(),
 				VK_FORMAT_R8G8B8A8_SRGB,
 				VK_IMAGE_LAYOUT_UNDEFINED,
@@ -63,7 +63,7 @@ namespace vulkan {
 		result->_descriptor_set = std::move(descriptor_sets.value());
 
 		result->_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
-				Graphics::DEFAULT->mainTextureSampler(), 
+				Graphics::DEFAULT->main_texture_sampler(), 
 				result->_result_image_view.value(), 
 				VK_IMAGE_LAYOUT_GENERAL);
 		
@@ -103,7 +103,7 @@ namespace vulkan {
 
 		auto command_info = VkCommandBufferAllocateInfo{};
 		command_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		command_info.commandPool = Graphics::DEFAULT->commandPool();
+		command_info.commandPool = Graphics::DEFAULT->command_pool();
 		command_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		command_info.commandBufferCount = 1;
 
@@ -226,7 +226,7 @@ namespace vulkan {
 		submit_info.signalSemaphoreCount = 0;
 		submit_info.pSignalSemaphores = nullptr;
 
-		auto res = vkQueueSubmit(Graphics::DEFAULT->graphicsQueue(), 1, &submit_info, *_pass_fence);
+		auto res = vkQueueSubmit(Graphics::DEFAULT->graphics_queue(), 1, &submit_info, *_pass_fence);
 		if (res != VK_SUCCESS) {
 			LOG_ERROR << "Problem submitting queue" << std::endl;
 		}

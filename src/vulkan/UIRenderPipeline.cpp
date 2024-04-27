@@ -47,10 +47,10 @@ namespace vulkan {
 				ImGui_ImplVulkan_SetMinImageCount(vulkan::FRAMES_IN_FLIGHT);
 				ImGui_ImplVulkanH_CreateOrResizeWindow(
 						Graphics::DEFAULT->instance(),
-						Graphics::DEFAULT->physicalDevice(),
+						Graphics::DEFAULT->physical_device(),
 						Graphics::DEFAULT->device(),
 						&_window_data,
-						Graphics::DEFAULT->findQueueFamilies().graphicsFamily.value(),
+						Graphics::DEFAULT->find_queue_families().graphics_family.value(),
 						nullptr,
 						width,
 						height,
@@ -139,10 +139,10 @@ namespace vulkan {
 		ImGui_ImplGlfw_InitForVulkan(Graphics::DEFAULT->window(), true);
 		auto init_info = ImGui_ImplVulkan_InitInfo{};
 		init_info.Instance = Graphics::DEFAULT->instance();
-		init_info.PhysicalDevice = Graphics::DEFAULT->physicalDevice();
+		init_info.PhysicalDevice = Graphics::DEFAULT->physical_device();
 		init_info.Device = Graphics::DEFAULT->device();
-		init_info.QueueFamily = Graphics::DEFAULT->findQueueFamilies().graphicsFamily.value();
-		init_info.Queue = Graphics::DEFAULT->graphicsQueue();
+		init_info.QueueFamily = Graphics::DEFAULT->find_queue_families().graphics_family.value();
+		init_info.Queue = Graphics::DEFAULT->graphics_queue();
 		init_info.DescriptorPool = _descriptor_pool;
 		init_info.Subpass = 0;
 		LOG_EVENT << "Min image count: " << FRAMES_IN_FLIGHT << std::endl;
@@ -152,7 +152,7 @@ namespace vulkan {
 
 		ImGui_ImplVulkan_Init(&init_info, _window_data.RenderPass);
 
-		Graphics::DEFAULT->executeSingleTimeCommand([&](VkCommandBuffer commandBuffer) {
+		Graphics::DEFAULT->execute_single_time_command([&](VkCommandBuffer commandBuffer) {
 				ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
 		});
 		ImGui_ImplVulkan_DestroyFontUploadObjects();
@@ -163,8 +163,8 @@ namespace vulkan {
 
 		VkBool32 res;
 		vkGetPhysicalDeviceSurfaceSupportKHR(
-				Graphics::DEFAULT->physicalDevice(),
-				Graphics::DEFAULT->findQueueFamilies().graphicsFamily.value(),
+				Graphics::DEFAULT->physical_device(),
+				Graphics::DEFAULT->find_queue_families().graphics_family.value(),
 				Graphics::DEFAULT->surface(),
 				&res);
 		if (res != VK_TRUE) {
@@ -178,7 +178,7 @@ namespace vulkan {
 
 
 		_window_data.SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(
-				Graphics::DEFAULT->physicalDevice(),
+				Graphics::DEFAULT->physical_device(),
 				_window_data.Surface,
 				requestSurfaceImageFormat,
 				(size_t)IM_ARRAYSIZE(requestSurfaceImageFormat),
@@ -187,17 +187,17 @@ namespace vulkan {
 		VkPresentModeKHR present_modes[] = { VK_PRESENT_MODE_FIFO_KHR };
 
 		_window_data.PresentMode = ImGui_ImplVulkanH_SelectPresentMode(
-				Graphics::DEFAULT->physicalDevice(),
+				Graphics::DEFAULT->physical_device(),
 				_window_data.Surface,
 				present_modes,
 				IM_ARRAYSIZE(present_modes));
 
 		ImGui_ImplVulkanH_CreateOrResizeWindow(
 				Graphics::DEFAULT->instance(),
-				Graphics::DEFAULT->physicalDevice(),
+				Graphics::DEFAULT->physical_device(),
 				Graphics::DEFAULT->device(),
 				&_window_data,
-				Graphics::DEFAULT->findQueueFamilies().graphicsFamily.value(),
+				Graphics::DEFAULT->find_queue_families().graphics_family.value(),
 				nullptr,
 				width,
 				height,
@@ -268,7 +268,7 @@ namespace vulkan {
 
 		require(vkEndCommandBuffer(frame->CommandBuffer));
 		require(vkQueueSubmit(
-					Graphics::DEFAULT->graphicsQueue(),
+					Graphics::DEFAULT->graphics_queue(),
 					1,
 					&submitInfo,
 					frame->Fence));
@@ -289,7 +289,7 @@ namespace vulkan {
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = &_window_data.Swapchain;
 		presentInfo.pImageIndices = &_window_data.FrameIndex;
-		VkResult err = vkQueuePresentKHR(Graphics::DEFAULT->graphicsQueue(), &presentInfo);
+		VkResult err = vkQueuePresentKHR(Graphics::DEFAULT->graphics_queue(), &presentInfo);
 		if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) {
 			_swapchain_rebuild = true;
 			return;

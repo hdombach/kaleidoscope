@@ -58,7 +58,7 @@ namespace vulkan {
 
 		VkBuffer staginBuffer;
 		VkDeviceMemory staginBufferMemory;
-		Graphics::DEFAULT->createBuffer(
+		Graphics::DEFAULT->create_buffer(
 				bufferSize,
 				VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
@@ -76,21 +76,21 @@ namespace vulkan {
 		memcpy(data, vertices.data(), (size_t) bufferSize);
 		vkUnmapMemory(Graphics::DEFAULT->device(), staginBufferMemory);
 
-		Graphics::DEFAULT->createBuffer(
+		Graphics::DEFAULT->create_buffer(
 				bufferSize, 
 				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
 				result->_vertex_buffer, 
 				result->_vertex_buffer_memory);
 
-		Graphics::DEFAULT->copyBuffer(staginBuffer, result->_vertex_buffer, bufferSize);
+		Graphics::DEFAULT->copy_buffer(staginBuffer, result->_vertex_buffer, bufferSize);
 
 		vkDestroyBuffer(Graphics::DEFAULT->device(), staginBuffer, nullptr);
 		vkFreeMemory(Graphics::DEFAULT->device(), staginBufferMemory, nullptr);
 
 		bufferSize = sizeof(indices[0]) * indices.size();
 
-		Graphics::DEFAULT->createBuffer(
+		Graphics::DEFAULT->create_buffer(
 				bufferSize, 
 				VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
@@ -107,14 +107,14 @@ namespace vulkan {
 		memcpy(data, indices.data(), (size_t) bufferSize);
 		vkUnmapMemory(Graphics::DEFAULT->device(), staginBufferMemory);
 
-		Graphics::DEFAULT->createBuffer(
+		Graphics::DEFAULT->create_buffer(
 				bufferSize, 
 				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
 				result->_index_buffer, 
 				result->_index_buffer_memory);
 
-		Graphics::DEFAULT->copyBuffer(staginBuffer, result->_index_buffer, bufferSize);
+		Graphics::DEFAULT->copy_buffer(staginBuffer, result->_index_buffer, bufferSize);
 
 		vkDestroyBuffer(Graphics::DEFAULT->device(), staginBuffer, nullptr);
 		vkFreeMemory(Graphics::DEFAULT->device(), staginBufferMemory, nullptr);

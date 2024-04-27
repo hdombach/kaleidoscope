@@ -18,11 +18,11 @@ namespace vulkan {
 	class Semaphore;
 
 	struct QueueFamilyIndices {
-		std::optional<uint32_t> graphicsFamily;
-		std::optional<uint32_t> presentFamily;
+		std::optional<uint32_t> graphics_family;
+		std::optional<uint32_t> present_family;
 
 		bool isComplete() {
-			return graphicsFamily.has_value() && presentFamily.has_value();
+			return graphics_family.has_value() && present_family.has_value();
 		}
 	};
 
@@ -31,180 +31,191 @@ namespace vulkan {
 			struct SwapchainSupportDetails;
 
 			static Graphics *DEFAULT;
-			static void initDefault(const char *name);
-			static void deleteDefault();
+			static void init_default(const char *name);
+			static void delete_default();
 
 			~Graphics();
 
-			void waitIdle() const;
+			void wait_idle() const;
 			GLFWwindow * window();
 
 			VkSurfaceKHR const &surface() const;
-			VkPhysicalDevice const &physicalDevice() const;
+			VkPhysicalDevice const &physical_device() const;
 			VkDevice const &device() const;
 			VkInstance const &instance() const;
-			VkSampler mainTextureSampler() const;
+			VkSampler main_texture_sampler() const;
 			GLFWwindow* window() const;
-			VkCommandPool commandPool() const;
-			VkQueue graphicsQueue() const;
-			VkQueue presentQueue() const;
+			VkCommandPool command_pool() const;
+			VkQueue graphics_queue() const;
+			VkQueue present_queue() const;
 			ImageView const &compute_image_view() const;
-			SwapchainSupportDetails const &swapchainSupportDetails() const;
+			SwapchainSupportDetails const &swapchain_support_details() const;
 			util::Result<uint32_t, KError> find_memory_type(
 					uint32_t type_filter,
 					VkMemoryPropertyFlags properties);
 
-			VkFormat findSupportedFormat(
+			VkFormat find_supported_format(
 					const std::vector<VkFormat>& candidates,
 					VkImageTiling tiling,
 					VkFormatFeatureFlags features) const;
-			VkShaderModule createShaderModule(std::string const &code) const;
-			QueueFamilyIndices findQueueFamilies() const;
-			void createBuffer(
+			VkShaderModule create_shader_module(std::string const &code) const;
+			QueueFamilyIndices find_queue_families() const;
+			void create_buffer(
 					VkDeviceSize size,
 					VkBufferUsageFlags usage,
 					VkMemoryPropertyFlags properties,
 					VkBuffer& buffer,
-					VkDeviceMemory& bufferMemory) const;
-			void transitionImageLayout(
+					VkDeviceMemory& buffer_memory) const;
+			void transition_image_layout(
 					VkImage image,
 					VkFormat format,
-					VkImageLayout oldLayout,
-					VkImageLayout newLayout,
+					VkImageLayout old_layout,
+					VkImageLayout new_layout,
 					uint32_t mipLevels) const;
-			void copyBufferToImage(
+			void copy_buffer_to_image(
 					VkBuffer buffer,
 					VkImage image,
 					uint32_t width,
 					uint32_t height) const;
-			void generateMipmaps(
+			void generate_mipmaps(
 					VkImage image,
-					VkFormat imageFormat,
-					int32_t texWidth,
-					int32_t texHeight,
-					uint32_t mipLevels) const;
-			void copyBuffer(
-					VkBuffer srcBuffer,
-					VkBuffer dstBuffer,
+					VkFormat image_format,
+					int32_t tex_width,
+					int32_t tex_height,
+					uint32_t mip_levels) const;
+			void copy_buffer(
+					VkBuffer src_buffer,
+					VkBuffer dst_buffer,
 					VkDeviceSize size) const;
-			void executeSingleTimeCommand(std::function<void(VkCommandBuffer)>) const;
+			void execute_single_time_command(std::function<void(VkCommandBuffer)>) const;
 
 			struct SwapchainSupportDetails {
 				VkSurfaceCapabilitiesKHR capabilities;
 				std::vector<VkSurfaceFormatKHR> formats;
-				std::vector<VkPresentModeKHR> presentModes;
+				std::vector<VkPresentModeKHR> present_modes;
 			};
 
 		private:
 			Graphics() = default;
-			void initWindow_();
-			void initVulkan_();
-			util::Result<void, KError> createInstance_();
-			util::Result<void, KError> setupDebugMessenger_();
-			void pickPhysicalDevice_();
-			bool isDeviceSuitable_(VkPhysicalDevice device);
-			bool checkDeviceExtensionSupport_(VkPhysicalDevice device);
-			util::Result<void, KError> createLogicalDevice_();
-			void createComputeDescriptorSetLayout_();
-			void createComputePipeline_();
-			void createCommandPool_();
-			void createDescriptorPool_();
-			void createComputeDescriptorSets_();
-			void createComputeCommandBuffers_();
-			util::Result<void, KError> createSyncObjects_();
-			void createSurface_();
-			void recordComputeCommandBuffer_(VkCommandBuffer commandBuffer);
-			void createTextureSampler_();
-			util::Result<void, KError> createComputeResultTexture_();
+			void _init_window();
+			void _init_vulkan();
+			util::Result<void, KError> _create_instance();
+			util::Result<void, KError> _setup_debug_messenger();
+			void _pick_physical_device();
+			bool _is_device_suitable(VkPhysicalDevice device);
+			bool _check_device_extension_support(VkPhysicalDevice device);
+			util::Result<void, KError> _create_logical_device();
+			void _create_compute_descriptor_set_layout();
+			void _create_compute_pipeline();
+			void _create_command_pool();
+			void _create_descriptor_pool();
+			void _create_compute_descriptor_sets();
+			void _create_compute_command_buffers();
+			util::Result<void, KError> _create_sync_objects();
+			void _create_surface();
+			void _record_compute_command_buffer(VkCommandBuffer commandBuffer);
+			void _create_texture_sampler();
+			util::Result<void, KError> _create_compute_result_texture();
 
-			bool checkValidationLayerSupport_();
-			void cleanup_();
+			bool _check_validation_layer_support();
+			void _cleanup();
 
-			VkResult createDebugUtilsMessengerEXT(
+			VkResult _create_debug_utils_messenger_EXT(
 					VkInstance instance,
-					const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-					const VkAllocationCallbacks* pAllocator,
-					VkDebugUtilsMessengerEXT* pDebugMessenger);
-			void destroyDebugUtilsMessengerEXT_(
+					const VkDebugUtilsMessengerCreateInfoEXT* p_create_info,
+					const VkAllocationCallbacks* p_allocater,
+					VkDebugUtilsMessengerEXT* p_debug_messenger);
+			void _destroy_debug_utils_messenger_EXT(
 					VkInstance instance,
-					VkDebugUtilsMessengerEXT debugMessenger,
-					const VkAllocationCallbacks* pAllocator);
-			static void framebufferResizeCallback_(GLFWwindow* window, int width, int height);
-			std::vector<const char*> getRequiredExtensions_();
-			void populateDebugMessengerCreateInfo_(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-			QueueFamilyIndices findQueueFamilies_(VkPhysicalDevice device) const;
-			SwapchainSupportDetails querySwapChainSupport_(VkPhysicalDevice device);
-			VkSurfaceFormatKHR chooseSwapSurfaceFormat_(const std::vector<VkSurfaceFormatKHR>& availableFormats);
-			VkPresentModeKHR chooseSwapPresentMode_(const std::vector<VkPresentModeKHR>& availablePresentModes);
-			VkShaderModule createShaderModule_(const std::string& code) const;
-			uint32_t findMemoryType_(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
-			void createBuffer_(
+					VkDebugUtilsMessengerEXT debug_messenger,
+					const VkAllocationCallbacks* p_allocator);
+			static void _framebuffer_resize_callback(
+					GLFWwindow* window,
+					 int width,
+					 int height);
+			std::vector<const char*> _get_required_extensions();
+			void _populate_debug_messenger_create_info(
+					VkDebugUtilsMessengerCreateInfoEXT& create_info);
+			QueueFamilyIndices _find_queue_families(VkPhysicalDevice device) const;
+			SwapchainSupportDetails _query_swap_chain_support(VkPhysicalDevice device);
+			VkSurfaceFormatKHR _choose_swap_surface_format(
+					const std::vector<VkSurfaceFormatKHR>& available_formats);
+			VkPresentModeKHR _choose_swap_present_mode(
+					const std::vector<VkPresentModeKHR>& available_present_modes);
+			VkShaderModule _create_shader_module(const std::string& code) const;
+			uint32_t _find_memory_type(
+					uint32_t type_filter,
+					VkMemoryPropertyFlags properties) const;
+			void _create_buffer(
 					VkDeviceSize size,
 					VkBufferUsageFlags usage,
 					VkMemoryPropertyFlags properties,
 					VkBuffer& buffer,
-					VkDeviceMemory& bufferMemory) const;
-			void copyBuffer_(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) const;
-			VkCommandBuffer beginSingleTimeCommands_() const;
-			void endSingleTimeCommands_(VkCommandBuffer commandBuffer) const;
-			void transitionImageLayout_(
+					VkDeviceMemory& buffer_memory) const;
+			void _copy_buffer(
+					VkBuffer src_buffer,
+					VkBuffer dst_buffer,
+					VkDeviceSize size) const;
+			VkCommandBuffer _begin_single_time_commands() const;
+			void _end_single_time_commands(VkCommandBuffer command_buffer) const;
+			void _transition_image_layout(
 					VkImage image,
 					VkFormat format,
-					VkImageLayout oldLayout,
-					VkImageLayout newLayout,
-					uint32_t mipLevels) const;
-			void copyBufferToImage_(
+					VkImageLayout old_layout,
+					VkImageLayout new_layout,
+					uint32_t mip_levels) const;
+			void _copy_buffer_to_image(
 					VkBuffer buffer,
 					VkImage image,
 					uint32_t width,
 					uint32_t height) const;
-			VkFormat findSupportedFormat_(
+			VkFormat _find_supported_format(
 					const std::vector<VkFormat>& candidates,
 					VkImageTiling tiling,
 					VkFormatFeatureFlags features) const;
-			VkFormat findDepthFormat_();
-			bool hasStencilComponent_(VkFormat format) const;
-			void generateMipmaps_(
+			VkFormat _find_depth_format();
+			bool _has_stencil_component(VkFormat format) const;
+			void _generate_mipmaps(
 					VkImage image,
-					VkFormat imageFormat,
-					int32_t texWidth,
-					int32_t texHeight,
-					uint32_t mipLevels) const;
+					VkFormat image_format,
+					int32_t tex_width,
+					int32_t tex_height,
+					uint32_t mip_levels) const;
 
-			static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-				VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-				VkDebugUtilsMessageTypeFlagsEXT messageTypeata,
-				const VkDebugUtilsMessengerCallbackDataEXT * pCallbackData,
-				void* pUserData);
+			static VKAPI_ATTR VkBool32 VKAPI_CALL _debug_callback(
+				VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+				VkDebugUtilsMessageTypeFlagsEXT message_typedata,
+				const VkDebugUtilsMessengerCallbackDataEXT * p_callback_data,
+				void* p_user_data);
 
 
-			const char *name_;
-			GLFWwindow* window_;
-			VkInstance instance_;
-			VkDebugUtilsMessengerEXT debugMessenger_;
-			VkPhysicalDevice physicalDevice_;
-			VkDevice device_;
-			VkQueue graphicsQueue_;
-			VkQueue presentQueue_;
-			VkQueue computeQueue_;
-			VkSurfaceKHR surface_;
-			VkDescriptorSetLayout computeDescriptorSetLayout_;
-			VkDescriptorPool descriptorPool_;
-			std::vector<VkDescriptorSet> computeDescriptorSets_;
-			VkPipelineLayout computePipelineLayout_;
-			VkPipeline computePipeline_;
-			VkCommandPool commandPool_;
-			uint32_t mipLevels_;
-			VkSampler textureSampler_;
+			const char *_name;
+			GLFWwindow* _window;
+			VkInstance _instance;
+			VkDebugUtilsMessengerEXT _debug_messenger;
+			VkPhysicalDevice _physical_device;
+			VkDevice _device;
+			VkQueue _graphics_queue;
+			VkQueue _present_queue;
+			VkQueue _compute_queue;
+			VkSurfaceKHR _surface;
+			VkDescriptorSetLayout _compute_descriptor_set_layout;
+			VkDescriptorPool _descriptor_pool;
+			std::vector<VkDescriptorSet> _compute_descriptor_sets;
+			VkPipelineLayout _compute_pipeline_layout;
+			VkPipeline _compute_pipeline;
+			VkCommandPool _command_pool;
+			uint32_t _mip_levels;
+			VkSampler _texture_sampler;
 			Image _compute_result_image;
 			ImageView _compute_result_image_view;
-			std::vector<VkCommandBuffer> computeCommandBuffers_;
-			std::vector<Semaphore> computeFinishedSemaphores_;
-			std::vector<Fence> computeInFlightFences_;
-			SwapchainSupportDetails swapchainSupportDetails_;
+			std::vector<VkCommandBuffer> _compute_command_buffers;
+			std::vector<Semaphore> _compute_finished_semaphores;
+			std::vector<Fence> _compute_in_flight_fences;
+			SwapchainSupportDetails _swapchain_support_details;
 
 			//imgui stuff
-			bool framebufferResized_ = false;
-			uint32_t currentFrame_ = 0;
+			bool _framebuffer_resized = false;
+			uint32_t _current_frame = 0;
 	};
 }

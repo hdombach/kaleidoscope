@@ -129,7 +129,7 @@ namespace vulkan {
 	}
 
 	void PreviewRenderPassCore::resize(VkExtent2D new_size) {
-		Graphics::DEFAULT->waitIdle();
+		Graphics::DEFAULT->wait_idle();
 		_cleanup_images();
 		_size = new_size;
 		auto res = _create_images();
@@ -192,7 +192,7 @@ namespace vulkan {
 			TRY(image_view_res);
 			_depth_image_view = std::move(image_view_res.value());
 
-			Graphics::DEFAULT->transitionImageLayout(
+			Graphics::DEFAULT->transition_image_layout(
 					_depth_image.value(),
 					_depth_format(),
 					VK_IMAGE_LAYOUT_UNDEFINED,
@@ -230,7 +230,7 @@ namespace vulkan {
 			TRY(image_view_res);
 			_color_image_views.push_back(std::move(image_view_res.value()));
 
-			Graphics::DEFAULT->transitionImageLayout(
+			Graphics::DEFAULT->transition_image_layout(
 					_color_images[i].value(),
 					_RESULT_IMAGE_FORMAT,
 					VK_IMAGE_LAYOUT_UNDEFINED,
@@ -259,7 +259,7 @@ namespace vulkan {
 					&_framebuffers[i]);
 
 			_imgui_descriptor_sets.push_back(ImGui_ImplVulkan_AddTexture(
-					Graphics::DEFAULT->mainTextureSampler(),
+					Graphics::DEFAULT->main_texture_sampler(),
 					_color_image_views[i].value(),
 					VK_IMAGE_LAYOUT_GENERAL));
 		}
@@ -286,7 +286,7 @@ namespace vulkan {
 	}
 
 	VkFormat PreviewRenderPassCore::_depth_format() {
-		return Graphics::DEFAULT->findSupportedFormat(
+		return Graphics::DEFAULT->find_supported_format(
 				{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}, 
 				VK_IMAGE_TILING_OPTIMAL, 
 				VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT);
@@ -396,7 +396,7 @@ namespace vulkan {
 		//submitInfo.signalSemaphoreCount = 1;
 		//submitInfo.pSignalSemaphores = &renderFinishedSemaphores_[_frame_index];
 
-		require(vkQueueSubmit(Graphics::DEFAULT->graphicsQueue(), 1, &submit_info, *_in_flight_fences[_frame_index]));
+		require(vkQueueSubmit(Graphics::DEFAULT->graphics_queue(), 1, &submit_info, *_in_flight_fences[_frame_index]));
 
 		_frame_index = (_frame_index + 1) % FRAMES_IN_FLIGHT;
 	}
@@ -459,7 +459,7 @@ namespace vulkan {
 		_command_buffers.resize(FRAMES_IN_FLIGHT);
 		auto alloc_info = VkCommandBufferAllocateInfo{};
 		alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		alloc_info.commandPool = Graphics::DEFAULT->commandPool();
+		alloc_info.commandPool = Graphics::DEFAULT->command_pool();
 		alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		alloc_info.commandBufferCount = (uint32_t) _command_buffers.size();
 

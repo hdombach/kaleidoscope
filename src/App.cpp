@@ -17,7 +17,7 @@
 #include "util/file.hpp"
 
 App::App(std::string const &name) {
-	vulkan::Graphics::initDefault("Kaleidoscope");
+	vulkan::Graphics::init_default("Kaleidoscope");
 	_ui_render_pipeline = std::make_unique<vulkan::UIRenderPipeline>();
 	_resource_manager = std::make_unique<types::ResourceManager>();
 
@@ -63,7 +63,7 @@ App::~App() {
 	_scene.reset();
 	_window.reset();
 	_ui_render_pipeline.reset();
-	vulkan::Graphics::deleteDefault();
+	vulkan::Graphics::delete_default();
 	glfwTerminate();
 }
 
@@ -77,7 +77,7 @@ void App::main_loop() {
 		});
 	}
 
-	vulkan::Graphics::DEFAULT->waitIdle();
+	vulkan::Graphics::DEFAULT->wait_idle();
 }
 
 std::string &App::prog_path() {

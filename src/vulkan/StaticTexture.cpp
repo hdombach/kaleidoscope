@@ -32,7 +32,7 @@ namespace vulkan {
 
 		auto staging_buffer = VkBuffer{};
 		auto staging_buffer_memory = VkDeviceMemory{};
-		Graphics::DEFAULT->createBuffer(
+		Graphics::DEFAULT->create_buffer(
 				image_size,
 				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
@@ -59,14 +59,14 @@ namespace vulkan {
 		TRY(texture_res);
 		result->_texture = std::move(texture_res.value());
 
-		Graphics::DEFAULT->transitionImageLayout(
+		Graphics::DEFAULT->transition_image_layout(
 				result->_texture.value(),
 				VK_FORMAT_R8G8B8A8_SRGB,
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				result->_mip_levels);
 
-		Graphics::DEFAULT->copyBufferToImage(
+		Graphics::DEFAULT->copy_buffer_to_image(
 				staging_buffer,
 				result->_texture.value(),
 				static_cast<uint32_t>(tex_width),
@@ -75,7 +75,7 @@ namespace vulkan {
 		vkDestroyBuffer(Graphics::DEFAULT->device(), staging_buffer, nullptr);
 		vkFreeMemory(Graphics::DEFAULT->device(), staging_buffer_memory, nullptr);
 
-		Graphics::DEFAULT->generateMipmaps(result->_texture.value(),
+		Graphics::DEFAULT->generate_mipmaps(result->_texture.value(),
 				VK_FORMAT_R8G8B8A8_SRGB,
 				tex_width,
 				texHeight,
@@ -89,7 +89,7 @@ namespace vulkan {
 		result->_texture_view = std::move(image_view_res.value());
 
 		ImGui_ImplVulkan_AddTexture(
-				Graphics::DEFAULT->mainTextureSampler(),
+				Graphics::DEFAULT->main_texture_sampler(),
 				result->_texture_view.value(),
 				VK_IMAGE_LAYOUT_GENERAL);
 
