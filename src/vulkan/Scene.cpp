@@ -34,17 +34,22 @@ namespace vulkan {
 	}
 
 	void Scene::render_preview() {
-		/*return _preview_render_pass->submit([this](VkCommandBuffer command_buffer){
+		_preview_render_pass->submit([this](VkCommandBuffer command_buffer){
 				for (auto &node : _nodes) {
 					node.render_preview(*_preview_render_pass, command_buffer);
 				}
-		});*/
+		});
+	}
+
+	void Scene::render_raytrace() {
 		_raytrace_render_pass->submit();
 	}
 
 	Texture& Scene::preview_texture() {
+		return *_preview_render_pass;
+	}
+	Texture& Scene::raytrace_texture() {
 		return *_raytrace_render_pass;
-		//return *_preview_render_pass;
 	}
 
 	util::Result<void, KError> Scene::add_node(Node node) {

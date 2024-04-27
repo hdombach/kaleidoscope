@@ -31,7 +31,10 @@ namespace vulkan {
 			void resize(VkExtent2D new_size);
 
 			void render_preview();
+			void render_raytrace();
 			Texture& preview_texture();
+			Texture& raytrace_texture();
+
 
 			util::Result<void, KError> add_node(Node node);
 			//TODO: removing, identifiying node
