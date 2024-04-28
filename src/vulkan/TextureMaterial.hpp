@@ -5,13 +5,18 @@
 #include <vulkan/vulkan_core.h>
 
 #include "DescriptorSet.hpp"
+#include "MappedUniform.hpp"
 #include "Material.hpp"
 #include "Texture.hpp"
-#include "UniformBufferObject.hpp"
 
 namespace vulkan {
 	class TextureMaterialPrevImpl: public MaterialPreviewImpl {
 		public:
+			struct UniformBuffer {
+				alignas(16) glm::mat4 object_transformation;
+			};
+			using MappedUniform = MappedUniform<UniformBuffer>;
+
 			static util::Result<TextureMaterialPrevImpl, KError> create(
 					PreviewRenderPass &render_pass,
 					Texture *texture);
@@ -37,7 +42,7 @@ namespace vulkan {
 			VkPipeline _pipeline;
 
 			DescriptorSets _descriptor_sets;
-			std::vector<MappedUniformObject> _mapped_uniforms;
+			std::vector<MappedUniform> _mapped_uniforms;
 	};
 
 

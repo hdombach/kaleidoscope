@@ -16,7 +16,6 @@
 #include "graphics.hpp"
 #include "PreviewRenderPass.hpp"
 #include "Shader.hpp"
-#include "UniformBufferObject.hpp"
 
 namespace vulkan {
 	util::Result<TextureMaterialPrevImpl, KError> TextureMaterialPrevImpl::create(
@@ -27,7 +26,7 @@ namespace vulkan {
 		result._texture = texture;
 
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-			auto buffer_res = MappedUniformObject::create();
+			auto buffer_res = MappedUniform::create();
 			TRY(buffer_res);
 			result._mapped_uniforms.push_back(std::move(buffer_res.value()));
 		}
@@ -139,14 +138,23 @@ namespace vulkan {
 		auto current_time = std::chrono::high_resolution_clock::now();
 		auto time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 
-		auto ubo = UniformBufferObject{};
-		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.model = glm::translate(ubo.model, position);
-		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.proj = glm::perspective(glm::radians(45.0f), viewport_size.x / (float) viewport_size.y, 0.1f, 10.0f);
-		ubo.proj[1][1] *= -1;
+		auto model_mat = glm::rotate(glm::mat4(1.0f), time * glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		model_mat = glm::translate(model_mat, position);
+		auto view_mat = glm::lookAt(
+				glm::vec3(2.0f, 2.0f, 2.0f),
+				glm::vec3(0.0f, 0.0f, 0.0f),
+				glm::vec3(0.0f, 0.0f, 1.0f));
+		auto proj_mat = glm::perspective(
+				glm::radians(45.0f),
+				viewport_size.x / (float) viewport_size.y,
+				0.1f,
+				10.0f);
+		proj_mat[1][1] *= -1;
 
-		_mapped_uniforms[frame_index].set_value(ubo);
+		auto uniform_buffer = UniformBuffer{};
+		uniform_buffer.object_transformation = proj_mat * view_mat * model_mat;
+
+		_mapped_uniforms[frame_index].set_value(uniform_buffer);
 	}
 
 	TextureMaterialPrevImpl::TextureMaterialPrevImpl(DescriptorPool &descriptor_pool):

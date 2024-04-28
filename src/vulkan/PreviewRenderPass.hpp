@@ -7,6 +7,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "DescriptorPool.hpp"
+#include "DescriptorSet.hpp"
 #include "Image.hpp"
 #include "ImageView.hpp"
 #include "../util/result.hpp"
@@ -56,6 +57,7 @@ namespace vulkan {
 			std::vector<ImageView> _color_image_views;
 			std::vector<VkFramebuffer> _framebuffers;
 			std::vector<VkDescriptorSet> _imgui_descriptor_sets;
+			DescriptorSets _descriptor_sets;
 
 			VkRenderPass _render_pass;
 
@@ -81,7 +83,7 @@ namespace vulkan {
 			VkDescriptorSet get_descriptor_set() override;
 			ImageView const &image_view() override;
 			VkRenderPass render_pass();
-			std::vector<MappedUniformObject> const &uniform_buffers() const;
+			std::vector<MappedGlobalUniform> const &uniform_buffers() const;
 			DescriptorPool &descriptor_pool() { return _descriptor_pool; };
 			int frame_index() { return _frame_index; };
 		private:
@@ -93,7 +95,7 @@ namespace vulkan {
 			void _update_uniform_buffer(uint32_t currentImage);
 
 			PreviewRenderPassCore _preview_render_pass;
-			std::vector<MappedUniformObject> _mapped_uniforms;
+			std::vector<MappedGlobalUniform> _mapped_uniforms;
 			std::vector<Fence> _in_flight_fences;
 			std::vector<Semaphore> _render_finished_semaphores;
 			std::vector<VkCommandBuffer> _command_buffers;

@@ -7,11 +7,9 @@
 #include "MappedUniform.hpp"
 
 namespace vulkan {
-	struct UniformBufferObject {
-		alignas(16) glm::mat4 model;
-		alignas(16) glm::mat4 view;
-		alignas(16) glm::mat4 proj;
+	struct GlobalUniformBuffer {
+		alignas(16) glm::mat4 camera_transformation;
 	};
 
-	using MappedUniformObject = MappedUniform<UniformBufferObject>;
+	using MappedGlobalUniform = MappedUniform<GlobalUniformBuffer>;
 }

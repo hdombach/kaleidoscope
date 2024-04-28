@@ -309,7 +309,7 @@ namespace vulkan {
 		result->_preview_render_pass = std::move(render_pass_res.value());
 
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i) {
-			auto buffer_res = MappedUniformObject::create();
+			auto buffer_res = MappedGlobalUniform::create();
 			TRY(buffer_res);
 			result->_mapped_uniforms.push_back(std::move(buffer_res.value()));
 		}
@@ -435,7 +435,7 @@ namespace vulkan {
 	VkRenderPass PreviewRenderPass::render_pass() {
 		return _preview_render_pass.render_pass();
 	}
-	std::vector<MappedUniformObject> const &PreviewRenderPass::uniform_buffers() const {
+	std::vector<MappedGlobalUniform> const &PreviewRenderPass::uniform_buffers() const {
 		return _mapped_uniforms;
 	}
 
@@ -473,12 +473,20 @@ namespace vulkan {
 		auto current_time = std::chrono::high_resolution_clock::now();
 		float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 
-		UniformBufferObject ubo{};
-		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.proj = glm::perspective(glm::radians(45.0f), size.width / (float) size.height, 0.1f, 10.0f);
-		ubo.proj[1][1] *= -1;
+		auto model_mat = glm::rotate(glm::mat4(1.0f), time * glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		auto view_mat = glm::lookAt(
+				glm::vec3(2.0f, 2.0f, 2.0f),
+				glm::vec3(0.0f, 0.0f, 0.0f),
+				glm::vec3(0.0f, 0.0f, 1.0f));
+		auto proj_mat = glm::perspective(
+				glm::radians(45.0f),
+				size.width / (float) size.height,
+				0.1f,
+				10.0f);
+		proj_mat[1][1] *= -1;
 
-		_mapped_uniforms[currentImage].set_value(ubo);
+		auto uniform_buffer = GlobalUniformBuffer{};
+		uniform_buffer.camera_transformation = proj_mat * view_mat * model_mat;
+		_mapped_uniforms[currentImage].set_value(uniform_buffer);
 	}
 }

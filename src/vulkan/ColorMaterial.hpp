@@ -15,11 +15,12 @@
 namespace vulkan {
 	class ColorMaterialPrevImpl: public MaterialPreviewImpl {
 		public:
-			struct ColorBufferObject {
+			struct UniformBuffer {
+				alignas(16) glm::mat4 object_transformation;
 				alignas(16) glm::vec3 color;
 			};
 
-			using ColorUniformObject = MappedUniform<ColorBufferObject>;
+			using MappedUniform = MappedUniform<UniformBuffer>;
 
 			static util::Result<ColorMaterialPrevImpl, KError> create(
 					PreviewRenderPass &render_pass,
@@ -45,8 +46,7 @@ namespace vulkan {
 			VkPipelineLayout _pipeline_layout;
 			VkPipeline _pipeline;
 			DescriptorSets _descriptor_sets;
-			std::vector<MappedUniformObject> _mapped_uniforms;
-			std::vector<ColorUniformObject> _color_uniforms;
+			std::vector<MappedUniform> _mapped_uniforms;
 			glm::vec3 _color;
 	};
 
