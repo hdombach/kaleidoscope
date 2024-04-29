@@ -17,57 +17,6 @@
 #include "UniformBufferObject.hpp"
 
 namespace vulkan {
-	class PreviewRenderPassCore {
-		public:
-			static util::Result<PreviewRenderPassCore, KError> create(VkExtent2D size);
-
-			PreviewRenderPassCore() = default;
-
-			PreviewRenderPassCore(const PreviewRenderPassCore& other) = delete;
-			PreviewRenderPassCore(PreviewRenderPassCore &&other);
-			PreviewRenderPassCore& operator=(const PreviewRenderPassCore& other) = delete;
-			PreviewRenderPassCore& operator=(PreviewRenderPassCore &&other);
-
-			~PreviewRenderPassCore();
-
-			void resize(VkExtent2D new_size);
-			VkExtent2D size() const { return _size; }
-
-			Image& depth_image() { return _depth_image; }
-			Image const& depth_image() const { return _depth_image; }
-
-			ImageView& depth_image_view() { return _depth_image_view; }
-			ImageView const& depth_image_view() const { return _depth_image_view; }
-
-			Image& color_image(int frame_index);
-			Image const& color_image(int frame_index) const;
-
-			ImageView& color_image_view(int frame_index);
-			ImageView const& color_image_view(int frame_index) const;
-
-			VkFramebuffer framebuffer(int frame_index);
-			VkDescriptorSet imgui_descriptor_set(int frame_index);
-
-			VkRenderPass render_pass();
-		private:
-			VkExtent2D _size;
-			Image _depth_image;
-			ImageView _depth_image_view;
-			std::vector<Image> _color_images;
-			std::vector<ImageView> _color_image_views;
-			std::vector<VkFramebuffer> _framebuffers;
-			std::vector<VkDescriptorSet> _imgui_descriptor_sets;
-			DescriptorSets _descriptor_sets;
-
-			VkRenderPass _render_pass;
-
-			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
-
-			util::Result<void, KError> _create_images();
-			void _cleanup_images();
-			static VkFormat _depth_format();
-	};
-
 	class PreviewRenderPass: public Texture  {
 		public:
 			using Ptr = std::unique_ptr<PreviewRenderPass>;
@@ -91,20 +40,28 @@ namespace vulkan {
 
 			util::Result<void, KError> _create_sync_objects();
 			void _create_command_buffers();
+			util::Result<void, KError> _create_images();
+			void _cleanup_images();
+			static VkFormat _depth_format();
 
 			void _update_uniform_buffer(uint32_t currentImage);
 
-			PreviewRenderPassCore _preview_render_pass;
+			VkExtent2D _size;
+			Image _depth_image;
+			ImageView _depth_image_view;
+			std::vector<Image> _color_images;
+			std::vector<ImageView> _color_image_views;
+			std::vector<VkFramebuffer> _framebuffers;
+			std::vector<VkDescriptorSet> _imgui_descriptor_sets;
+			DescriptorSets _descriptor_sets;
+			VkRenderPass _render_pass;
 			std::vector<MappedGlobalUniform> _mapped_uniforms;
 			std::vector<Fence> _in_flight_fences;
 			std::vector<Semaphore> _render_finished_semaphores;
 			std::vector<VkCommandBuffer> _command_buffers;
 			DescriptorPool _descriptor_pool;
-
-			VkExtent2D _size;
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
 			int _frame_index;
-
 			uint32_t _mip_levels;
 
 			types::ResourceManager &_resource_manager;

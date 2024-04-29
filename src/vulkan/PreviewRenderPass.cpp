@@ -15,14 +15,17 @@
 #include "imgui_impl_vulkan.h"
 
 namespace vulkan {
+	/************************ PreviewRenderPass *********************************/
 
-	/************************* PreviewRenderPassCore ****************************/
-
-	util::Result<PreviewRenderPassCore, KError> PreviewRenderPassCore::create(
+	util::Result<PreviewRenderPass::Ptr, KError> PreviewRenderPass::create(
+			types::ResourceManager &resource_manager,
 			VkExtent2D size)
 	{
-		auto result = PreviewRenderPassCore();
-		result._size = size;
+		auto result = std::unique_ptr<PreviewRenderPass>(
+				new PreviewRenderPass(resource_manager, size));
+		TRY(result->_create_sync_objects());
+		result->_create_command_buffers();
+		result->_descriptor_pool = DescriptorPool::create();
 
 		/* Create render pass */
 		auto color_attachment = VkAttachmentDescription{};
@@ -90,92 +93,186 @@ namespace vulkan {
 				Graphics::DEFAULT->device(),
 				&render_pass_info,
 				nullptr,
-				&result._render_pass);
+				&result->_render_pass);
 
 		if (res != VK_SUCCESS) {
 			return {res};
 		}
 
-		TRY(result._create_images());
+		TRY(result->_create_images());
+
+		for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i) {
+			auto buffer_res = MappedGlobalUniform::create();
+			TRY(buffer_res);
+			result->_mapped_uniforms.push_back(std::move(buffer_res.value()));
+		}
 		return result;
 	}
 
-	PreviewRenderPassCore::PreviewRenderPassCore(PreviewRenderPassCore &&other) {
-		_size = other._size;
-		_depth_image = std::move(other._depth_image);
-		_depth_image_view = std::move(other._depth_image_view);
-		_color_images = std::move(other._color_images);
-		_color_image_views = std::move(other._color_image_views);
-		_framebuffers = std::move(other._framebuffers);
-		_imgui_descriptor_sets = std::move(other._imgui_descriptor_sets);
-
-		_render_pass = other._render_pass;
-		other._render_pass = nullptr;
+	PreviewRenderPass::PreviewRenderPass(
+			types::ResourceManager &resourceManager, VkExtent2D size):
+		_resource_manager(resourceManager),
+		_size(size)
+	{
 	}
 
-	PreviewRenderPassCore& PreviewRenderPassCore::operator=(PreviewRenderPassCore &&other) {
-		_size = other._size;
-		_depth_image = std::move(other._depth_image);
-		_depth_image_view = std::move(other._depth_image_view);
-		_color_images = std::move(other._color_images);
-		_color_image_views = std::move(other._color_image_views);
-		_framebuffers = std::move(other._framebuffers);
-		_imgui_descriptor_sets = std::move(other._imgui_descriptor_sets);
+	PreviewRenderPass::~PreviewRenderPass() {
+		LOG_MEMORY << "Deconstructing main render pipeline" << std::endl;
 
-		_render_pass = other._render_pass;
-		other._render_pass = nullptr;
+		_cleanup_images();
+		if (_render_pass) {
+			vkDestroyRenderPass(Graphics::DEFAULT->device(), _render_pass, nullptr);
+			_render_pass = nullptr;
+		}
 
-		return *this;
+		_mapped_uniforms.clear();
+		
+		_in_flight_fences.clear();
+		_render_finished_semaphores.clear();
 	}
 
-	void PreviewRenderPassCore::resize(VkExtent2D new_size) {
+	void PreviewRenderPass::submit(std::function<void(VkCommandBuffer)> render_callback) {
+		require(_in_flight_fences[_frame_index].wait());
+		auto submit_info = VkSubmitInfo{};
+		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+		_update_uniform_buffer(_frame_index);
+
+		_in_flight_fences[_frame_index].reset();
+
+		auto command_buffer = _command_buffers[_frame_index];
+
+		vkResetCommandBuffer(command_buffer, 0);
+
+		auto begin_info = VkCommandBufferBeginInfo{};
+		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		begin_info.flags = 0;
+		begin_info.pInheritanceInfo = nullptr;
+
+		require(vkBeginCommandBuffer(command_buffer, &begin_info));
+
+		auto render_pass_info = VkRenderPassBeginInfo{};
+		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		render_pass_info.renderPass = _render_pass;
+		render_pass_info.framebuffer = _framebuffers[_frame_index];
+		render_pass_info.renderArea.offset = {0, 0};
+		render_pass_info.renderArea.extent = _size;
+
+		auto clear_values = std::array<VkClearValue, 2>{};
+		clear_values[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+		clear_values[1].depthStencil = {1.0f, 0};
+
+		render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
+		render_pass_info.pClearValues = clear_values.data();
+
+		vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+
+		auto viewport = VkViewport{};
+		viewport.x = 0.0f;
+		viewport.y = 0.0f;
+		viewport.width = static_cast<float>(_size.width);
+		viewport.height = static_cast<float>(_size.height);
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+
+		auto scissor = VkRect2D{};
+		scissor.offset = {0, 0};
+		scissor.extent = _size;
+		vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+
+		render_callback(command_buffer);
+
+		vkCmdEndRenderPass(command_buffer);
+		require(vkEndCommandBuffer(command_buffer));
+
+
+		auto wait_stages = std::array<VkPipelineStageFlags, 2>{VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+		submit_info.pWaitDstStageMask = wait_stages.data();
+		submit_info.commandBufferCount = 1;
+		submit_info.pCommandBuffers = &_command_buffers[_frame_index];
+		//submitInfo.signalSemaphoreCount = 1;
+		//submitInfo.pSignalSemaphores = &renderFinishedSemaphores_[_frame_index];
+
+		require(vkQueueSubmit(Graphics::DEFAULT->graphics_queue(), 1, &submit_info, *_in_flight_fences[_frame_index]));
+
+		_frame_index = (_frame_index + 1) % FRAMES_IN_FLIGHT;
+	}
+
+	void PreviewRenderPass::resize(VkExtent2D size) {
 		Graphics::DEFAULT->wait_idle();
 		_cleanup_images();
-		_size = new_size;
+		_size = size;
 		auto res = _create_images();
 		if (!res) {
 			LOG_ERROR << res.error().desc() << std::endl;
 		}
-	}
+		//submit(); TODO
 
-	PreviewRenderPassCore::~PreviewRenderPassCore() {
-		_cleanup_images();
-		if (_render_pass) {
-			vkDestroyRenderPass(Graphics::DEFAULT->device(), _render_pass, nullptr);
+		/*
+		 * When resize, the entire queue in the frame buffer is cleared. This causes
+		 * flickering when resizing the window since there is nothing to display.
+		 * My temporary solution is to move back the frame index so that it is more
+		 * immediately shown. Still cuases slight flickering though.
+		 * True solution is to resize the images used not delete and create again.
+		 */
+		_frame_index--;
+		if (_frame_index < 0) {
+			_frame_index = FRAMES_IN_FLIGHT - 1;
 		}
 	}
-
-	Image& PreviewRenderPassCore::color_image(int frame_index) {
-		return _color_images[frame_index];
+	bool PreviewRenderPass::is_resizable() const {
+		return true;
 	}
 
-	Image const& PreviewRenderPassCore::color_image(int frame_index) const {
-		return _color_images[frame_index];
+	VkExtent2D PreviewRenderPass::size() const {
+		return _size;
 	}
 
-	ImageView& PreviewRenderPassCore::color_image_view(int frame_index) {
-		return _color_image_views[frame_index];
+	VkDescriptorSet PreviewRenderPass::get_descriptor_set() {
+		return _imgui_descriptor_sets[_frame_index];
 	}
 
-	ImageView const& PreviewRenderPassCore::color_image_view(int frame_index) const {
-		return _color_image_views[frame_index];
+	ImageView const &PreviewRenderPass::image_view() {
+		return _color_image_views[_frame_index];
 	}
-
-	VkFramebuffer PreviewRenderPassCore::framebuffer(int frame_index) {
-		return _framebuffers[frame_index];
-	}
-
-	VkDescriptorSet PreviewRenderPassCore::imgui_descriptor_set(int frame_index) {
-		return _imgui_descriptor_sets[frame_index];
-	}
-
-	VkRenderPass PreviewRenderPassCore::render_pass() {
+	VkRenderPass PreviewRenderPass::render_pass() {
 		return _render_pass;
 	}
+	std::vector<MappedGlobalUniform> const &PreviewRenderPass::uniform_buffers() const {
+		return _mapped_uniforms;
+	}
 
-	util::Result<void, KError> PreviewRenderPassCore::_create_images() {
-		/* create depth resource */
+	util::Result<void, KError> PreviewRenderPass::_create_sync_objects() {
+		_render_finished_semaphores.resize(FRAMES_IN_FLIGHT);
+		_in_flight_fences.resize(FRAMES_IN_FLIGHT);
+
+		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
+			auto semaphore = Semaphore::create();
+			TRY(semaphore);
+			_render_finished_semaphores[i] = std::move(semaphore.value());
+
+			auto fence = Fence::create();
+			TRY(fence);
+			_in_flight_fences[i] = std::move(fence.value());
+		}
+		return {};
+	}
+
+	void PreviewRenderPass::_create_command_buffers() {
+		_command_buffers.resize(FRAMES_IN_FLIGHT);
+		auto alloc_info = VkCommandBufferAllocateInfo{};
+		alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		alloc_info.commandPool = Graphics::DEFAULT->command_pool();
+		alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		alloc_info.commandBufferCount = (uint32_t) _command_buffers.size();
+
+		require(vkAllocateCommandBuffers(Graphics::DEFAULT->device(), &alloc_info, _command_buffers.data()));
+	}
+
+	util::Result<void, KError> PreviewRenderPass::_create_images() {
 		_cleanup_images();
+		/* create depth resources */
 		{
 			auto image_res = Image::create(
 					_size.width,
@@ -268,7 +365,7 @@ namespace vulkan {
 		return {};
 	}
 
-	void PreviewRenderPassCore::_cleanup_images() {
+	void PreviewRenderPass::_cleanup_images() {
 		_depth_image.~Image();
 		_depth_image_view.~ImageView();
 		_color_image_views.clear();
@@ -285,190 +382,15 @@ namespace vulkan {
 		_imgui_descriptor_sets.clear();
 	}
 
-	VkFormat PreviewRenderPassCore::_depth_format() {
+	VkFormat PreviewRenderPass::_depth_format() {
 		return Graphics::DEFAULT->find_supported_format(
 				{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}, 
 				VK_IMAGE_TILING_OPTIMAL, 
 				VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT);
 	}
 
-	/************************ PreviewRenderPass *********************************/
-
-	util::Result<PreviewRenderPass::Ptr, KError> PreviewRenderPass::create(
-			types::ResourceManager &resource_manager,
-			VkExtent2D size)
-	{
-		auto result = std::unique_ptr<PreviewRenderPass>(
-				new PreviewRenderPass(resource_manager, size));
-		TRY(result->_create_sync_objects());
-		result->_create_command_buffers();
-		result->_descriptor_pool = DescriptorPool::create();
-
-		auto render_pass_res = PreviewRenderPassCore::create(size);
-		TRY(render_pass_res);
-		result->_preview_render_pass = std::move(render_pass_res.value());
-
-		for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i) {
-			auto buffer_res = MappedGlobalUniform::create();
-			TRY(buffer_res);
-			result->_mapped_uniforms.push_back(std::move(buffer_res.value()));
-		}
-		return result;
-	}
-
-	PreviewRenderPass::PreviewRenderPass(
-			types::ResourceManager &resourceManager, VkExtent2D size):
-		_resource_manager(resourceManager),
-		_size(size)
-	{
-	}
-
-	PreviewRenderPass::~PreviewRenderPass() {
-		LOG_MEMORY << "Deconstructing main render pipeline" << std::endl;
-
-		_mapped_uniforms.clear();
-		
-		_in_flight_fences.clear();
-		_render_finished_semaphores.clear();
-	}
-
-	void PreviewRenderPass::submit(std::function<void(VkCommandBuffer)> render_callback) {
-		require(_in_flight_fences[_frame_index].wait());
-		auto submit_info = VkSubmitInfo{};
-		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-
-		_update_uniform_buffer(_frame_index);
-
-		_in_flight_fences[_frame_index].reset();
-
-		auto command_buffer = _command_buffers[_frame_index];
-		auto size = _preview_render_pass.size();
-
-		vkResetCommandBuffer(command_buffer, 0);
-
-		auto begin_info = VkCommandBufferBeginInfo{};
-		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		begin_info.flags = 0;
-		begin_info.pInheritanceInfo = nullptr;
-
-		require(vkBeginCommandBuffer(command_buffer, &begin_info));
-
-		auto render_pass_info = VkRenderPassBeginInfo{};
-		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		render_pass_info.renderPass = _preview_render_pass.render_pass();
-		render_pass_info.framebuffer = _preview_render_pass.framebuffer(_frame_index);
-		render_pass_info.renderArea.offset = {0, 0};
-		render_pass_info.renderArea.extent = size;
-
-		auto clear_values = std::array<VkClearValue, 2>{};
-		clear_values[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-		clear_values[1].depthStencil = {1.0f, 0};
-
-		render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
-		render_pass_info.pClearValues = clear_values.data();
-
-		vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-
-		auto viewport = VkViewport{};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = static_cast<float>(size.width);
-		viewport.height = static_cast<float>(size.height);
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(command_buffer, 0, 1, &viewport);
-
-		auto scissor = VkRect2D{};
-		scissor.offset = {0, 0};
-		scissor.extent = size;
-		vkCmdSetScissor(command_buffer, 0, 1, &scissor);
-
-		render_callback(command_buffer);
-
-		vkCmdEndRenderPass(command_buffer);
-		require(vkEndCommandBuffer(command_buffer));
-
-
-		auto wait_stages = std::array<VkPipelineStageFlags, 2>{VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-		submit_info.pWaitDstStageMask = wait_stages.data();
-		submit_info.commandBufferCount = 1;
-		submit_info.pCommandBuffers = &_command_buffers[_frame_index];
-		//submitInfo.signalSemaphoreCount = 1;
-		//submitInfo.pSignalSemaphores = &renderFinishedSemaphores_[_frame_index];
-
-		require(vkQueueSubmit(Graphics::DEFAULT->graphics_queue(), 1, &submit_info, *_in_flight_fences[_frame_index]));
-
-		_frame_index = (_frame_index + 1) % FRAMES_IN_FLIGHT;
-	}
-
-	void PreviewRenderPass::resize(VkExtent2D size) {
-		_preview_render_pass.resize(size);
-		//submit(); TODO
-
-		/*
-		 * When resize, the entire queue in the frame buffer is cleared. This causes
-		 * flickering when resizing the window since there is nothing to display.
-		 * My temporary solution is to move back the frame index so that it is more
-		 * immediately shown. Still cuases slight flickering though.
-		 * True solution is to resize the images used not delete and create again.
-		 */
-		_frame_index--;
-		if (_frame_index < 0) {
-			_frame_index = FRAMES_IN_FLIGHT - 1;
-		}
-	}
-	bool PreviewRenderPass::is_resizable() const {
-		return true;
-	}
-
-	VkExtent2D PreviewRenderPass::size() const {
-		return _preview_render_pass.size();
-	}
-
-	VkDescriptorSet PreviewRenderPass::get_descriptor_set() {
-		return _preview_render_pass.imgui_descriptor_set(_frame_index);
-	}
-
-	ImageView const &PreviewRenderPass::image_view() {
-		return _preview_render_pass.color_image_view(_frame_index);
-	}
-	VkRenderPass PreviewRenderPass::render_pass() {
-		return _preview_render_pass.render_pass();
-	}
-	std::vector<MappedGlobalUniform> const &PreviewRenderPass::uniform_buffers() const {
-		return _mapped_uniforms;
-	}
-
-	util::Result<void, KError> PreviewRenderPass::_create_sync_objects() {
-		_render_finished_semaphores.resize(FRAMES_IN_FLIGHT);
-		_in_flight_fences.resize(FRAMES_IN_FLIGHT);
-
-		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-			auto semaphore = Semaphore::create();
-			TRY(semaphore);
-			_render_finished_semaphores[i] = std::move(semaphore.value());
-
-			auto fence = Fence::create();
-			TRY(fence);
-			_in_flight_fences[i] = std::move(fence.value());
-		}
-		return {};
-	}
-
-	void PreviewRenderPass::_create_command_buffers() {
-		_command_buffers.resize(FRAMES_IN_FLIGHT);
-		auto alloc_info = VkCommandBufferAllocateInfo{};
-		alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		alloc_info.commandPool = Graphics::DEFAULT->command_pool();
-		alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		alloc_info.commandBufferCount = (uint32_t) _command_buffers.size();
-
-		require(vkAllocateCommandBuffers(Graphics::DEFAULT->device(), &alloc_info, _command_buffers.data()));
-	}
-
 	void PreviewRenderPass::_update_uniform_buffer(uint32_t currentImage) {
 		static auto start_time = std::chrono::high_resolution_clock::now();
-		auto size = _preview_render_pass.size();
 
 		auto current_time = std::chrono::high_resolution_clock::now();
 		float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
@@ -480,7 +402,7 @@ namespace vulkan {
 				glm::vec3(0.0f, 0.0f, 1.0f));
 		auto proj_mat = glm::perspective(
 				glm::radians(45.0f),
-				size.width / (float) size.height,
+				_size.width / (float) _size.height,
 				0.1f,
 				10.0f);
 		proj_mat[1][1] *= -1;
