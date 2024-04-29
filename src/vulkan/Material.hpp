@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include <glm/fwd.hpp>
 #include <vulkan/vulkan.h>
 
@@ -47,9 +48,8 @@ namespace vulkan {
 					Shader &vertex_shader,
 					Shader &fragment_shader,
 					PreviewRenderPass &render_pass,
-					VkDescriptorSetLayout *descriptor_set_layout,
+					std::vector<VkDescriptorSetLayout> &descriptor_set_layouts,
 					VkPipeline *pipeline,
 					VkPipelineLayout *pipeline_layout);
-
 	};
 }

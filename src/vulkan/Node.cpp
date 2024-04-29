@@ -1,3 +1,4 @@
+#include <array>
 #include <glm/fwd.hpp>
 #include <vulkan/vulkan_core.h>
 
@@ -33,15 +34,18 @@ namespace vulkan {
 		vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
 		vkCmdBindIndexBuffer(command_buffer, _mesh.index_buffer(), 0, VK_INDEX_TYPE_UINT32);
 
-		auto descriptor_set = _material->preview_impl()->get_descriptor_set(preview_render_pass.frame_index());
+		auto descriptor_sets = std::array<VkDescriptorSet, 2>{
+			preview_render_pass.global_descriptor_set(preview_render_pass.frame_index()),	
+			_material->preview_impl()->get_descriptor_set(preview_render_pass.frame_index()),
+		};
 
 		vkCmdBindDescriptorSets(
-				command_buffer,
-				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				command_buffer, 
+				VK_PIPELINE_BIND_POINT_GRAPHICS, 
 				_material->preview_impl()->pipeline_layout(),
 				0,
-				1,
-				&descriptor_set,
+				descriptor_sets.size(),
+				descriptor_sets.data(),
 				0,
 				nullptr);
 

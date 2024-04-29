@@ -76,6 +76,7 @@ namespace vulkan {
 			DescriptorSets();
 
 			~DescriptorSets();
+			void clear();
 
 			VkDescriptorSet descriptor_set(uint32_t frame_index);
 			VkDescriptorSetLayout layout();

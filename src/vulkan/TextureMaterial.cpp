@@ -56,11 +56,15 @@ namespace vulkan {
 		auto frag_shader = vulkan::Shader::from_env_file(
 				"src/shaders/default_shader.frag.spv");
 
+		auto descriptor_layouts = std::vector<VkDescriptorSetLayout>{
+			render_pass.global_descriptor_set_layout(),
+			result._descriptor_sets.layout(),
+		};
 		auto res = _create_pipeline(
 				vert_shader, 
 				frag_shader, 
 				render_pass, 
-				result._descriptor_sets.layout_ptr(), 
+				descriptor_layouts, 
 				&result._pipeline, 
 				&result._pipeline_layout);
 		TRY(res);
@@ -138,21 +142,10 @@ namespace vulkan {
 		auto current_time = std::chrono::high_resolution_clock::now();
 		auto time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 
-		auto model_mat = glm::rotate(glm::mat4(1.0f), time * glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		model_mat = glm::translate(model_mat, position);
-		auto view_mat = glm::lookAt(
-				glm::vec3(2.0f, 2.0f, 2.0f),
-				glm::vec3(0.0f, 0.0f, 0.0f),
-				glm::vec3(0.0f, 0.0f, 1.0f));
-		auto proj_mat = glm::perspective(
-				glm::radians(45.0f),
-				viewport_size.x / (float) viewport_size.y,
-				0.1f,
-				10.0f);
-		proj_mat[1][1] *= -1;
+		auto model_mat = glm::translate(glm::mat4(1.0), position + glm::vec3(0, 0, 0.2) * sin(time * 5));
 
 		auto uniform_buffer = UniformBuffer{};
-		uniform_buffer.object_transformation = proj_mat * view_mat * model_mat;
+		uniform_buffer.object_transformation = model_mat;
 
 		_mapped_uniforms[frame_index].set_value(uniform_buffer);
 	}

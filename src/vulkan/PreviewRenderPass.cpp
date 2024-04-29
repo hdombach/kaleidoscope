@@ -101,11 +101,26 @@ namespace vulkan {
 
 		TRY(result->_create_images());
 
+		/* create descriptor sets */
 		for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i) {
 			auto buffer_res = MappedGlobalUniform::create();
 			TRY(buffer_res);
 			result->_mapped_uniforms.push_back(std::move(buffer_res.value()));
 		}
+
+		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
+		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
+					0, 
+					VK_SHADER_STAGE_VERTEX_BIT, 
+					result->_mapped_uniforms));
+
+		auto descriptor_sets = DescriptorSets::create(
+				descriptor_templates, 
+				FRAMES_IN_FLIGHT, 
+				result->_descriptor_pool);
+		TRY(descriptor_sets);
+		result->_descriptor_sets = std::move(descriptor_sets.value());
+
 		return result;
 	}
 
@@ -120,6 +135,7 @@ namespace vulkan {
 		LOG_MEMORY << "Deconstructing main render pipeline" << std::endl;
 
 		_cleanup_images();
+		_descriptor_sets.clear();
 		if (_render_pass) {
 			vkDestroyRenderPass(Graphics::DEFAULT->device(), _render_pass, nullptr);
 			_render_pass = nullptr;

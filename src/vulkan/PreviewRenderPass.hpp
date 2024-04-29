@@ -35,6 +35,9 @@ namespace vulkan {
 			std::vector<MappedGlobalUniform> const &uniform_buffers() const;
 			DescriptorPool &descriptor_pool() { return _descriptor_pool; };
 			int frame_index() { return _frame_index; };
+			VkDescriptorSetLayout global_descriptor_set_layout() { return _descriptor_sets.layout(); }
+			VkDescriptorSet global_descriptor_set(int frame_index) { return _descriptor_sets.descriptor_set(frame_index); }
+
 		private:
 			PreviewRenderPass(types::ResourceManager &resource_manager, VkExtent2D size);
 

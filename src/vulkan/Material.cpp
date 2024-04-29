@@ -11,7 +11,7 @@ namespace vulkan {
 			Shader &vertex_shader,
 			Shader &fragment_shader,
 			PreviewRenderPass &render_pass,
-			VkDescriptorSetLayout *descriptor_set_layout,
+			std::vector<VkDescriptorSetLayout> &descriptor_set_layouts,
 			VkPipeline *pipeline,
 			VkPipelineLayout *pipeline_layout)
 	{
@@ -121,8 +121,8 @@ namespace vulkan {
 
 		auto pipeline_layout_info = VkPipelineLayoutCreateInfo{};
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipeline_layout_info.setLayoutCount = 1;
-		pipeline_layout_info.pSetLayouts = descriptor_set_layout;
+		pipeline_layout_info.setLayoutCount = descriptor_set_layouts.size();
+		pipeline_layout_info.pSetLayouts = descriptor_set_layouts.data();
 		pipeline_layout_info.pushConstantRangeCount = 0;
 		pipeline_layout_info.pPushConstantRanges = nullptr;
 

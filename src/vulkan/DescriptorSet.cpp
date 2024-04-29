@@ -187,6 +187,10 @@ namespace vulkan {
 	{ }
 
 	DescriptorSets::~DescriptorSets() {
+		clear();
+	}
+
+	void DescriptorSets::clear() {
 		if (_descriptor_set_layout) {
 			vkDestroyDescriptorSetLayout(
 					Graphics::DEFAULT->device(), 
