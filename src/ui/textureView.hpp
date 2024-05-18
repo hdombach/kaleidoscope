@@ -6,10 +6,11 @@ namespace ui {
 	class TextureView {
 		public:
 			TextureView(vulkan::Texture &texture);
-			void show();
+			inline void show() { show(_texture); }
+			static void show(vulkan::Texture &texture);
 
 		private:
-			vulkan::Texture &texture_;
-			ImVec2 size_;
+			vulkan::Texture &_texture;
+			ImVec2 _size;
 	};
 }

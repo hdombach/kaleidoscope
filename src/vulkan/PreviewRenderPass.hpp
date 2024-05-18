@@ -32,7 +32,7 @@ namespace vulkan {
 			VkDescriptorSet get_descriptor_set() override;
 			ImageView const &image_view() override;
 			VkRenderPass render_pass();
-			std::vector<MappedGlobalUniform> const &uniform_buffers() const;
+			MappedGlobalUniform &current_uniform_buffer();
 			DescriptorPool &descriptor_pool() { return _descriptor_pool; };
 			int frame_index() { return _frame_index; };
 			VkDescriptorSetLayout global_descriptor_set_layout() { return _descriptor_sets.layout(); }
@@ -46,8 +46,6 @@ namespace vulkan {
 			util::Result<void, KError> _create_images();
 			void _cleanup_images();
 			static VkFormat _depth_format();
-
-			void _update_uniform_buffer(uint32_t currentImage);
 
 			VkExtent2D _size;
 			Image _depth_image;

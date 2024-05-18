@@ -152,8 +152,6 @@ namespace vulkan {
 		auto submit_info = VkSubmitInfo{};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-		_update_uniform_buffer(_frame_index);
-
 		_in_flight_fences[_frame_index].reset();
 
 		auto command_buffer = _command_buffers[_frame_index];
@@ -216,6 +214,7 @@ namespace vulkan {
 	}
 
 	void PreviewRenderPass::resize(VkExtent2D size) {
+		if (size.width == _size.width && size.height == _size.height) return;
 		Graphics::DEFAULT->wait_idle();
 		_cleanup_images();
 		_size = size;
@@ -255,8 +254,8 @@ namespace vulkan {
 	VkRenderPass PreviewRenderPass::render_pass() {
 		return _render_pass;
 	}
-	std::vector<MappedGlobalUniform> const &PreviewRenderPass::uniform_buffers() const {
-		return _mapped_uniforms;
+	MappedGlobalUniform &PreviewRenderPass::current_uniform_buffer() {
+		return _mapped_uniforms[_frame_index];
 	}
 
 	util::Result<void, KError> PreviewRenderPass::_create_sync_objects() {
@@ -403,28 +402,5 @@ namespace vulkan {
 				{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}, 
 				VK_IMAGE_TILING_OPTIMAL, 
 				VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT);
-	}
-
-	void PreviewRenderPass::_update_uniform_buffer(uint32_t currentImage) {
-		static auto start_time = std::chrono::high_resolution_clock::now();
-
-		auto current_time = std::chrono::high_resolution_clock::now();
-		float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
-
-		auto model_mat = glm::rotate(glm::mat4(1.0f), time * glm::radians(10.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		auto view_mat = glm::lookAt(
-				glm::vec3(2.0f, 2.0f, 2.0f),
-				glm::vec3(0.0f, 0.0f, 0.0f),
-				glm::vec3(0.0f, 0.0f, 1.0f));
-		auto proj_mat = glm::perspective(
-				glm::radians(45.0f),
-				_size.width / (float) _size.height,
-				0.1f,
-				10.0f);
-		proj_mat[1][1] *= -1;
-
-		auto uniform_buffer = GlobalUniformBuffer{};
-		uniform_buffer.camera_transformation = proj_mat * view_mat * model_mat;
-		_mapped_uniforms[currentImage].set_value(uniform_buffer);
 	}
 }

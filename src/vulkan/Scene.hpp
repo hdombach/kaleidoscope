@@ -10,13 +10,14 @@
 #include "RaytraceRenderPass.hpp"
 #include "Node.hpp"
 #include "../types/ResourceManager.hpp"
+#include "../types/Camera.hpp"
 
 namespace vulkan {
 	/**
 	 * @brief The primary collection of nodes. Can render as a preview or final,
 	 * raytraced image
 	 */
-	class Scene {
+	class Scene: public Texture {
 		public:
 			Scene(PreviewRenderPass::Ptr preview_render_pass);
 
@@ -27,14 +28,19 @@ namespace vulkan {
 
 			static util::Result<Scene, KError> create(types::ResourceManager &resource_manager);
 
-			VkExtent2D size() const;
-			void resize(VkExtent2D new_size);
+			VkDescriptorSet get_descriptor_set() override;
+			ImageView const &image_view() override;
 
+			VkExtent2D size() const;
+			bool is_resizable() const override { return true; }
+			void resize(VkExtent2D new_size) override;
+
+			void set_is_preview(bool is_preview);
 			void render_preview();
 			void render_raytrace();
-			Texture& preview_texture();
-			Texture& raytrace_texture();
 
+			types::Camera& camera() { return _camera; }
+			types::Camera const& camera() const;
 
 			util::Result<void, KError> add_node(Node node);
 			//TODO: removing, identifiying node
@@ -44,5 +50,9 @@ namespace vulkan {
 			RaytraceRenderPass::Ptr _raytrace_render_pass;
 
 			std::vector<Node> _nodes;
+			types::Camera _camera;
+
+			Texture& _cur_texture();
+			bool _is_preview;
 	};
 }

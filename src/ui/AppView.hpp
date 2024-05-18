@@ -13,8 +13,7 @@ namespace ui {
 
 		private:
 			App &_app;
-			TextureView _preview_viewport;
-			TextureView _raytrace_viewport;
+			TextureView _scene_viewport;
 
 			bool _showing_preview;
 

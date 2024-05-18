@@ -2,6 +2,7 @@
 
 #include "Scene.hpp"
 #include "PreviewRenderPass.hpp"
+#include "UniformBufferObject.hpp"
 
 namespace vulkan {
 	Scene::Scene(PreviewRenderPass::Ptr preview_render_pass):
@@ -22,7 +23,16 @@ namespace vulkan {
 		}
 		auto scene = Scene(std::move(render_pass_res.value()));
 		scene._raytrace_render_pass = std::move(raytrace_render_pass.value());
+		scene._is_preview = true;
 		return scene;
+	}
+
+	VkDescriptorSet Scene::get_descriptor_set() {
+		return _cur_texture().get_descriptor_set();
+	}
+
+	ImageView const &Scene::image_view() {
+		return _cur_texture().image_view();
 	}
 
 	VkExtent2D Scene::size() const {
@@ -31,10 +41,21 @@ namespace vulkan {
 
 	void Scene::resize(VkExtent2D new_size) {
 		_preview_render_pass->resize(new_size);
+		_camera.width = new_size.width;
+		_camera.height = new_size.height;
+	}
+
+	void Scene::set_is_preview(bool is_preview) {
+		_is_preview = is_preview;
 	}
 
 	void Scene::render_preview() {
-		_preview_render_pass->submit([this](VkCommandBuffer command_buffer){
+		auto final_mat = camera().gen_mat();
+
+		_preview_render_pass->submit([this, final_mat](VkCommandBuffer command_buffer){
+				auto uniform_buffer = GlobalUniformBuffer{};
+				uniform_buffer.camera_transformation = final_mat;
+				_preview_render_pass->current_uniform_buffer().set_value(uniform_buffer);
 				for (auto &node : _nodes) {
 					node.render_preview(*_preview_render_pass, command_buffer);
 				}
@@ -45,18 +66,19 @@ namespace vulkan {
 		_raytrace_render_pass->submit();
 	}
 
-	Texture& Scene::preview_texture() {
-		return *_preview_render_pass;
-	}
-	Texture& Scene::raytrace_texture() {
-		return *_raytrace_render_pass;
-	}
-
 	util::Result<void, KError> Scene::add_node(Node node) {
 		if (!node.material().preview_impl()) {
 			node.material().add_preview(*_preview_render_pass);
 		}
 		_nodes.push_back(std::move(node));
 		return {};
+	}
+
+	Texture& Scene::_cur_texture() {
+		if (_is_preview) {
+			return *_preview_render_pass;
+		} else {
+			return *_raytrace_render_pass;
+		}
 	}
 }
