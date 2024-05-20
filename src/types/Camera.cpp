@@ -12,7 +12,7 @@
 namespace types {
 	Camera::Camera() {
 		position = glm::vec3(0, -1, 0);
-		rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		rotation = glm::angleAxis(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 		width = 100;
 		height = 100;
 		fovy = 45;
@@ -22,11 +22,13 @@ namespace types {
 
 	glm::mat4 Camera::gen_mat() {
 		auto result = glm::mat4(1.0);
-		result *= glm::perspective(
+		auto perspective = glm::perspective(
 				glm::radians(fovy), 
 				width / (float) height, 
 				z_near, 
 				z_far);
+		perspective[1][1] *= -1;
+		result *= perspective;
 		result *= glm::toMat4(rotation);
 		result = glm::translate(result, position);
 		return result;

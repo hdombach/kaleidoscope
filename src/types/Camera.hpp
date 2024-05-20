@@ -21,7 +21,7 @@ namespace types {
 
 			void rotate_drag(float deltax, float deltay);
 			void rotate_drag(glm::vec2 delta) {
-				rotate_drag(delta.x, delta.y);
+				rotate_drag(delta.x, -delta.y);
 			}
 	};
 }
