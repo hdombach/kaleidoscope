@@ -1,6 +1,7 @@
 #pragma once
 
 #include "textureView.hpp"
+#include <glm/fwd.hpp>
 
 class App;
 namespace ui {
@@ -16,6 +17,8 @@ namespace ui {
 			TextureView _scene_viewport;
 
 			bool _showing_preview;
+			glm::vec2 _previous_mouse_pos;
 
+			static glm::vec3 _get_camera_movement();
 	};
 }

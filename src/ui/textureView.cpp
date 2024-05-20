@@ -16,6 +16,11 @@ namespace ui {
 			});
 		}
 
-		ImGui::Image(texture.get_descriptor_set(), widget_size);
+		ImGui::ImageButton(
+				texture.get_descriptor_set(),
+				widget_size,
+				ImVec2(0, 0),
+				ImVec2(1, 1),
+				0);
 	}
 }
