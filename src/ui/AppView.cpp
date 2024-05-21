@@ -1,4 +1,5 @@
 #include "AppView.hpp"
+#include "CameraView.hpp"
 #include "../App.hpp"
 #include <glm/fwd.hpp>
 #include <imgui.h>
@@ -30,6 +31,7 @@ namespace ui {
 
 		ImGui::Begin("Settings");
 		ImGui::Checkbox("Showing preview", &_showing_preview);
+		CameraView::show(_app.scene().camera());
 		ImGui::End();
 
 		_app.scene().set_is_preview(_showing_preview);
