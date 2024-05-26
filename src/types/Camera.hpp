@@ -4,6 +4,9 @@
 #include <glm/fwd.hpp>
 #include <glm/glm.hpp>
 #include <glm/ext/quaternion_float.hpp>
+#include <glm/trigonometric.hpp>
+
+#include "../util/math.hpp"
 
 namespace types {
 	class Camera {
@@ -32,6 +35,22 @@ namespace types {
 				this->position.x = position[0];
 				this->position.y = position[1];
 				this->position.z = position[2];
+			}
+
+			inline std::array<float, 3> get_euler_rotation() {
+				auto q = util::quaternion_to_euler(rotation);
+				return std::array<float, 3>{
+					glm::degrees(q.x),
+					glm::degrees(q.y),
+					glm::degrees(q.z)
+				};
+			};
+			inline void set_euler_rotation(std::array<float, 3> &r) {
+				this->rotation = util::euler_to_quaterniion({
+						glm::radians(r[0]),
+						glm::radians(r[1]),
+						glm::radians(r[2])
+				});
 			}
 	};
 }
