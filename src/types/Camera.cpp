@@ -20,7 +20,7 @@ namespace types {
 		z_far = 10.0f;
 	}
 
-	glm::mat4 Camera::gen_mat() {
+	glm::mat4 Camera::gen_raster_mat() {
 		auto result = glm::mat4(1.0);
 		auto perspective = glm::perspective(
 				glm::radians(fovy), 
@@ -29,9 +29,17 @@ namespace types {
 				z_far);
 		perspective[1][1] *= -1;
 		result *= perspective;
-		result *= glm::toMat4(rotation);
-		result = glm::translate(result, position);
+		result *= gen_rotate_mat();
+		result *= gen_translate_mat();
 		return result;
+	}
+
+	glm::mat4 Camera::gen_rotate_mat() {
+		return glm::toMat4(rotation);
+	}
+
+	glm::mat4 Camera::gen_translate_mat() {
+		return glm::translate(glm::mat4(1.0), position);
 	}
 
 	void Camera::rotate_drag(float deltax, float deltay) {

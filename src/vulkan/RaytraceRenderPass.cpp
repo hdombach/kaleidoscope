@@ -1,5 +1,6 @@
 #include "RaytraceRenderPass.hpp"
 #include "Shader.hpp"
+#include "defs.hpp"
 #include "imgui_impl_vulkan.h"
 #include <memory>
 #include <vulkan/vulkan_core.h>
@@ -48,12 +49,21 @@ namespace vulkan {
 		TRY(image_view);
 		result->_result_image_view = std::move(image_view.value());
 
+		auto buffer_res = MappedComputeUniform::create();
+		TRY(buffer_res);
+		result->_mapped_uniform = std::move(buffer_res.value());
+
 		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
 
 		descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
 					0,
 					VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
 					result->_result_image_view));
+
+		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
+				1, 
+				VK_SHADER_STAGE_COMPUTE_BIT, 
+				result->_mapped_uniform));
 
 		auto descriptor_sets = DescriptorSets::create(
 				descriptor_templates, 
@@ -230,5 +240,9 @@ namespace vulkan {
 		if (res != VK_SUCCESS) {
 			LOG_ERROR << "Problem submitting queue" << std::endl;
 		}
+	}
+
+	MappedComputeUniform &RaytraceRenderPass::current_uniform_buffer() {
+		return _mapped_uniform;
 	}
 }

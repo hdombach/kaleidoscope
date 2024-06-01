@@ -50,7 +50,7 @@ namespace vulkan {
 	}
 
 	void Scene::render_preview() {
-		auto final_mat = camera().gen_mat();
+		auto final_mat = camera().gen_raster_mat();
 
 		_preview_render_pass->submit([this, final_mat](VkCommandBuffer command_buffer){
 				auto uniform_buffer = GlobalUniformBuffer{};
@@ -63,6 +63,10 @@ namespace vulkan {
 	}
 
 	void Scene::render_raytrace() {
+		auto uniform_buffer = ComputeUniformBuffer{};
+		uniform_buffer.camera_rotation = camera().gen_rotate_mat();
+		uniform_buffer.camera_translation = glm::vec4(camera().position, 0.0);
+		_raytrace_render_pass->current_uniform_buffer().set_value(uniform_buffer);
 		_raytrace_render_pass->submit();
 	}
 

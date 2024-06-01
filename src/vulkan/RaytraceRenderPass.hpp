@@ -5,6 +5,7 @@
 #include "ImageView.hpp"
 #include "Semaphore.hpp"
 #include "Texture.hpp"
+#include "UniformBufferObject.hpp"
 #include <memory>
 
 namespace vulkan {
@@ -24,6 +25,7 @@ namespace vulkan {
 			VkDescriptorSet get_descriptor_set() override;
 			ImageView const &image_view() override;
 			void submit();
+			MappedComputeUniform &current_uniform_buffer();
 
 		private:
 			VkExtent2D _size;
@@ -37,5 +39,6 @@ namespace vulkan {
 			VkPipelineLayout _pipeline_layout;
 			VkPipeline _pipeline;
 			VkCommandBuffer _command_buffer;
+			MappedComputeUniform _mapped_uniform;
 	};
 }

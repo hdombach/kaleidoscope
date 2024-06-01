@@ -13,7 +13,9 @@ namespace types {
 		public:
 			Camera();
 
-			glm::mat4 gen_mat();
+			glm::mat4 gen_raster_mat();
+			glm::mat4 gen_rotate_mat();
+			glm::mat4 gen_translate_mat();
 
 			glm::vec3 position;
 			glm::quat rotation;
