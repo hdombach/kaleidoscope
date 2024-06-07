@@ -12,7 +12,9 @@ namespace vulkan {
 	class StaticMesh: public Mesh {
 		public:
 			static util::Result<StaticMesh *, KError> from_file(std::string const &url);
+			static StaticMesh *create_square();
 			static StaticMesh *from_vertices(std::vector<Vertex> const &vertices, std::vector<uint32_t> const &indices);
+			static StaticMesh *from_vertices(std::vector<Vertex> const &vertices);
 
 			~StaticMesh();
 

@@ -32,6 +32,7 @@ App::Ptr App::create(std::string const &name) {
 	} else {
 		LOG_ERROR << viking_room.error().desc() << std::endl;
 	}
+	result->_resource_manager->add_mesh("square", vulkan::StaticMesh::create_square());
 
 	if (auto scene = vulkan::Scene::create(*(result->_resource_manager))) {
 		result->_scene = std::unique_ptr<vulkan::Scene>(new vulkan::Scene(std::move(scene.value())));
@@ -41,7 +42,7 @@ App::Ptr App::create(std::string const &name) {
 
 	{
 		auto new_node = vulkan::Node(
-				*(result->_resource_manager)->get_mesh("viking_room"),
+				*(result->_resource_manager)->get_mesh("square"),
 				new vulkan::TextureMaterial(result->_resource_manager->get_texture("viking_room")));
 		new_node.set_position({0, 0, 0});
 		result->_scene->add_node(std::move(new_node));
@@ -49,7 +50,7 @@ App::Ptr App::create(std::string const &name) {
 
 	{
 		auto new_node = vulkan::Node(
-				*(result->_resource_manager)->get_mesh("viking_room"),
+				*(result->_resource_manager)->get_mesh("square"),
 				new vulkan::ColorMaterial({0.8, 0.2, 0.2}));
 		new_node.set_position({0, 2, 0});
 		result->_scene->add_node(std::move(new_node));

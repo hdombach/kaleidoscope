@@ -1,8 +1,11 @@
-#include "StaticMesh.hpp"
 #include <tiny_obj_loader.h>
+#include <vector>
 #include <unordered_map>
+
+#include "StaticMesh.hpp"
 #include "graphics.hpp"
 #include "vulkan/vulkan_core.h"
+#include "../util/log.hpp"
 
 namespace vulkan {
 	util::Result<StaticMesh *, KError> StaticMesh::from_file(
@@ -30,7 +33,7 @@ namespace vulkan {
 					attrib.vertices[3 * index.vertex_index + 1],
 					attrib.vertices[3 * index.vertex_index + 2],
 				};
-				vertex.texCoord = {
+				vertex.tex_coord = {
 					attrib.texcoords[2 * index.texcoord_index + 0],
 					1.0 - attrib.texcoords[2 * index.texcoord_index + 1],
 				};
@@ -45,6 +48,21 @@ namespace vulkan {
 			}
 		}
 
+		return from_vertices(vertices, indices);
+	}
+
+	StaticMesh *StaticMesh::create_square() {
+		auto vertices = std::vector<Vertex>{
+			{{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0}},
+			{{0.0, 0.0, 1.0}, {0.0, 0.0, 0.0}, {0.0, 1.0}},
+			{{1.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {1.0, 0.0}},
+			{{1.0, 0.0, 1.0}, {0.0, 0.0, 0.0}, {1.0, 1.0}},
+		};
+
+		auto indices = std::vector<uint32_t>{
+			1, 0, 2,
+			1, 2, 3,
+		};
 		return from_vertices(vertices, indices);
 	}
 
@@ -78,7 +96,9 @@ namespace vulkan {
 
 		Graphics::DEFAULT->create_buffer(
 				result->_vertex_buffer_range, 
-				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+				VK_BUFFER_USAGE_TRANSFER_DST_BIT
+					| VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
+					| VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
 				result->_vertex_buffer, 
 				result->_vertex_buffer_memory);
@@ -112,7 +132,9 @@ namespace vulkan {
 
 		Graphics::DEFAULT->create_buffer(
 				result->_index_buffer_range, 
-				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 
+				VK_BUFFER_USAGE_TRANSFER_DST_BIT
+					| VK_BUFFER_USAGE_INDEX_BUFFER_BIT
+					| VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
 				result->_index_buffer, 
 				result->_index_buffer_memory);
@@ -125,6 +147,20 @@ namespace vulkan {
 		result->_index_count = indices.size();
 
 		return result;
+	}
+
+	StaticMesh *StaticMesh::from_vertices(std::vector<Vertex> const &vertices) {
+		auto vertices_result = std::vector<vulkan::Vertex>();
+		auto indices_result = std::vector<uint32_t>();
+		auto unique_vertices = std::unordered_map<vulkan::Vertex, uint32_t>();
+		for (auto &vertex : vertices) {
+			if (unique_vertices.count(vertex) == 0) {
+				unique_vertices[vertex] = static_cast<uint32_t>(vertices.size());
+				vertices_result.push_back(vertex);
+			}
+			indices_result.push_back(unique_vertices[vertex]);
+		}
+		return from_vertices(vertices_result, indices_result);
 	}
 
 	StaticMesh::~StaticMesh() {
