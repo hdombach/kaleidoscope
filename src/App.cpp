@@ -27,7 +27,7 @@ App::Ptr App::create(std::string const &name) {
 	} else {
 		LOG_ERROR << "Could not load example texture viking_room.png" << std::endl;
 	}
-	if (auto viking_room = vulkan::StaticMesh::from_file("assets/viking_room.obj")) {
+	if (auto viking_room = vulkan::StaticMesh::from_file(util::env_file_path("assets/viking_room.obj"))) {
 		result->_resource_manager->add_mesh("viking_room", viking_room.value());
 	} else {
 		LOG_ERROR << viking_room.error().desc() << std::endl;

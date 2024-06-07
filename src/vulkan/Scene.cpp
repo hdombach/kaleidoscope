@@ -67,7 +67,7 @@ namespace vulkan {
 		uniform_buffer.camera_rotation = camera().gen_rotate_mat();
 		uniform_buffer.camera_translation = glm::vec4(camera().position, 0.0);
 		_raytrace_render_pass->current_uniform_buffer().set_value(uniform_buffer);
-		_raytrace_render_pass->submit();
+		_raytrace_render_pass->submit(_nodes[0]);
 	}
 
 	util::Result<void, KError> Scene::add_node(Node node) {

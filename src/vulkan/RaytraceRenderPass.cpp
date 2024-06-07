@@ -1,4 +1,5 @@
 #include "RaytraceRenderPass.hpp"
+#include "Node.hpp"
 #include "Shader.hpp"
 #include "defs.hpp"
 #include "imgui_impl_vulkan.h"
@@ -53,71 +54,17 @@ namespace vulkan {
 		TRY(buffer_res);
 		result->_mapped_uniform = std::move(buffer_res.value());
 
-		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
-
-		descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
-					0,
-					VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
-					result->_result_image_view));
-
-		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
-				1, 
-				VK_SHADER_STAGE_COMPUTE_BIT, 
-				result->_mapped_uniform));
-
-		auto descriptor_sets = DescriptorSets::create(
-				descriptor_templates, 
-				1, 
-				result->_descriptor_pool);
-		TRY(descriptor_sets);
-		result->_descriptor_set = std::move(descriptor_sets.value());
-
 		result->_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
 				Graphics::DEFAULT->main_texture_sampler(), 
 				result->_result_image_view.value(), 
 				VK_IMAGE_LAYOUT_GENERAL);
-		
-		auto compute_shader = Shader::from_env_file("src/shaders/default_shader.comp.spv");
-
-		auto compute_shader_stage_info = VkPipelineShaderStageCreateInfo{};
-		compute_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		compute_shader_stage_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		compute_shader_stage_info.module = compute_shader.shader_module();
-		compute_shader_stage_info.pName = "main";
-
-		auto pipeline_layout_info = VkPipelineLayoutCreateInfo{};
-		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipeline_layout_info.setLayoutCount = 1;
-		pipeline_layout_info.pSetLayouts = result->_descriptor_set.layout_ptr();
-
-		auto res = vkCreatePipelineLayout(Graphics::DEFAULT->device(), &pipeline_layout_info, nullptr, &result->_pipeline_layout);
-		if (res != VK_SUCCESS) {
-			return {res};
-		}
-
-		auto pipeline_info = VkComputePipelineCreateInfo{};
-		pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-		pipeline_info.layout = result->_pipeline_layout;
-		pipeline_info.stage = compute_shader_stage_info;
-
-		res = vkCreateComputePipelines(
-				Graphics::DEFAULT->device(),
-				VK_NULL_HANDLE,
-				1,
-				&pipeline_info,
-				nullptr,
-				&result->_pipeline);
-		if (res != VK_SUCCESS) {
-			return {res};
-		}
-
 		auto command_info = VkCommandBufferAllocateInfo{};
 		command_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		command_info.commandPool = Graphics::DEFAULT->command_pool();
 		command_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		command_info.commandBufferCount = 1;
 
-		res = vkAllocateCommandBuffers(
+		auto res = vkAllocateCommandBuffers(
 				Graphics::DEFAULT->device(),
 				&command_info,
 				&result->_command_buffer);
@@ -200,7 +147,11 @@ namespace vulkan {
 		return _result_image_view;
 	}
 
-	void RaytraceRenderPass::submit() {
+	void RaytraceRenderPass::submit(Node &node) {
+		if (_descriptor_set.is_cleared()) {
+			_create_descriptor_sets(node);
+		}
+
 		auto submit_info = VkSubmitInfo{};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -244,5 +195,75 @@ namespace vulkan {
 
 	MappedComputeUniform &RaytraceRenderPass::current_uniform_buffer() {
 		return _mapped_uniform;
+	}
+
+	util::Result<void, KError> RaytraceRenderPass::_create_descriptor_sets(Node &node) {
+		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
+
+		descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
+					0, 
+					VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+					_result_image_view));
+
+		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
+					1,
+					VK_SHADER_STAGE_COMPUTE_BIT,
+					_mapped_uniform));
+
+		descriptor_templates.push_back(DescriptorSetTemplate::create_storage_buffer(
+					2, 
+					VK_SHADER_STAGE_COMPUTE_BIT, 
+					node.mesh().vertex_buffer(), 
+					node.mesh().vertex_buffer_range()));
+
+		descriptor_templates.push_back(DescriptorSetTemplate::create_storage_buffer(
+					3, 
+					VK_SHADER_STAGE_COMPUTE_BIT, 
+					node.mesh().index_buffer(), 
+					node.mesh().index_buffer_range()));
+
+		auto descriptor_sets = DescriptorSets::create(
+				descriptor_templates,
+				1,
+				_descriptor_pool);
+
+		TRY(descriptor_sets);
+		_descriptor_set = std::move(descriptor_sets.value());
+
+		auto compute_shader = Shader::from_env_file("src/shaders/default_shader.comp.spv");
+
+		auto compute_shader_stage_info = VkPipelineShaderStageCreateInfo{};
+		compute_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		compute_shader_stage_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		compute_shader_stage_info.module = compute_shader.shader_module();
+		compute_shader_stage_info.pName = "main";
+
+		auto pipeline_layout_info = VkPipelineLayoutCreateInfo{};
+		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipeline_layout_info.setLayoutCount = 1;
+		pipeline_layout_info.pSetLayouts = _descriptor_set.layout_ptr();
+
+		auto res = vkCreatePipelineLayout(Graphics::DEFAULT->device(), &pipeline_layout_info, nullptr, &_pipeline_layout);
+		if (res != VK_SUCCESS) {
+			return {res};
+		}
+
+		auto pipeline_info = VkComputePipelineCreateInfo{};
+		pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipeline_info.layout = _pipeline_layout;
+		pipeline_info.stage = compute_shader_stage_info;
+
+		res = vkCreateComputePipelines(
+				Graphics::DEFAULT->device(),
+				VK_NULL_HANDLE,
+				1,
+				&pipeline_info,
+				nullptr,
+				&_pipeline);
+		if (res != VK_SUCCESS) {
+			return {res};
+		}
+
+		return {};
 	}
 }

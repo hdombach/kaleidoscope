@@ -36,6 +36,24 @@ namespace vulkan {
 		return result;
 	}
 
+	DescriptorSetTemplate DescriptorSetTemplate::create_storage_buffer(
+			uint32_t binding,
+			VkShaderStageFlags stage_flags,
+			VkBuffer buffer,
+			size_t range)
+	{
+		auto result = DescriptorSetTemplate{};
+		result._layout_binding.binding = binding;
+		result._layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		result._layout_binding.descriptorCount = 1;
+		result._layout_binding.stageFlags = stage_flags;
+		result._layout_binding.pImmutableSamplers = nullptr;
+
+		result._buffers = std::vector<VkBuffer>{buffer};
+		result._buffer_range = range;
+
+		return result;
+	}
 
 	DescriptorSetTemplate DescriptorSetTemplate::_create_uniform_impl(
 			uint32_t binding,
@@ -142,6 +160,12 @@ namespace vulkan {
 					image_info.imageView = templ.image_view();
 					image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
 					descriptor_write.pImageInfo = &image_info;
+				} else if (descriptor_write.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+					auto buffer_info = write_buffer_infos[write_i].buffer_info;
+					buffer_info.buffer = templ.buffers()[frame];
+					buffer_info.offset = 0;
+					buffer_info.range = templ.buffer_range();
+					descriptor_write.pBufferInfo = &buffer_info;
 				}
 				descriptor_writes.push_back(descriptor_write);
 				write_i++;
@@ -181,7 +205,7 @@ namespace vulkan {
 	}
 
 	DescriptorSets::DescriptorSets():
-		_descriptor_pool(),
+		_descriptor_pool(nullptr),
 		_descriptor_sets(),
 		_descriptor_set_layout(nullptr)
 	{ }
@@ -223,5 +247,9 @@ namespace vulkan {
 
 	DescriptorPool &DescriptorSets::descriptor_pool() {
 		return *_descriptor_pool;
+	}
+
+	bool DescriptorSets::is_cleared() {
+		return _descriptor_pool == nullptr;
 	}
 }

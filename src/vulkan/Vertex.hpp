@@ -10,6 +10,7 @@
 #include <vulkan/vulkan.h>
 
 namespace vulkan {
+	#pragma pack(push, 1)
 	struct Vertex {
 		glm::vec3 pos;
 		glm::vec3 color;
@@ -48,6 +49,8 @@ namespace vulkan {
 			return attributeDescriptions;
 		}
 	};
+	#pragma pack(pop, 1)
+
 }
 
 namespace std {

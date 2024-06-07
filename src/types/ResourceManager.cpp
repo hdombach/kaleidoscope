@@ -4,11 +4,12 @@
 #include "../util/result.hpp"
 #include "../vulkan/StaticTexture.hpp"
 #include "../vulkan/Texture.hpp"
+#include "../util/file.hpp"
 
 namespace types {
 	ResourceManager::ResourceManager() {
 		//Can't use defaultTexture_ for holder because of const issues
-		auto temp_texture = vulkan::StaticTexture::from_file("assets/default.png");
+		auto temp_texture = vulkan::StaticTexture::from_file(util::env_file_path("assets/default.png"));
 		add_texture("default", temp_texture.value());
 		_default_texture = temp_texture.value();
 	}

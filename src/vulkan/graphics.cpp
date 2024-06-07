@@ -185,7 +185,7 @@ namespace vulkan {
 		_create_logical_device();
 		_create_command_pool();
 		_create_compute_descriptor_set_layout();
-		_create_compute_pipeline();
+		//_create_compute_pipeline();
 		_create_texture_sampler();
 		_create_compute_result_texture();
 		_create_descriptor_pool();

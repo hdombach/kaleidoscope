@@ -6,6 +6,7 @@
 #include "Semaphore.hpp"
 #include "Texture.hpp"
 #include "UniformBufferObject.hpp"
+#include "Node.hpp"
 #include <memory>
 
 namespace vulkan {
@@ -24,7 +25,7 @@ namespace vulkan {
 
 			VkDescriptorSet get_descriptor_set() override;
 			ImageView const &image_view() override;
-			void submit();
+			void submit(Node &node);
 			MappedComputeUniform &current_uniform_buffer();
 
 		private:
@@ -40,5 +41,7 @@ namespace vulkan {
 			VkPipeline _pipeline;
 			VkCommandBuffer _command_buffer;
 			MappedComputeUniform _mapped_uniform;
+
+			util::Result<void, KError> _create_descriptor_sets(Node &node);
 	};
 }

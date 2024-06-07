@@ -19,6 +19,8 @@ namespace vulkan {
 			VkBuffer vertex_buffer() const;
 			VkBuffer index_buffer() const;
 			uint32_t index_count() const;
+			VkDeviceSize vertex_buffer_range() const;
+			VkDeviceSize index_buffer_range() const;
 
 		private:
 			StaticMesh() = default;
@@ -28,6 +30,7 @@ namespace vulkan {
 			VkBuffer _index_buffer;
 			VkDeviceMemory _index_buffer_memory;
 			uint32_t _index_count;
-
+			VkDeviceSize _vertex_buffer_range;
+			VkDeviceSize _index_buffer_range;
 	};
 }

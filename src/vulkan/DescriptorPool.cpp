@@ -8,13 +8,15 @@ namespace vulkan {
 	DescriptorPool DescriptorPool::create() {
 		auto result = DescriptorPool();
 
-		auto poolSizes = std::array<VkDescriptorPoolSize, 3>{};
+		auto poolSizes = std::array<VkDescriptorPoolSize, 4>{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSizes[0].descriptorCount = 100;
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		poolSizes[1].descriptorCount = 100;
 		poolSizes[2].type = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		poolSizes[2].descriptorCount = 100;
+		poolSizes[3].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		poolSizes[3].descriptorCount = 100;
 
 		auto poolInfo = VkDescriptorPoolCreateInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

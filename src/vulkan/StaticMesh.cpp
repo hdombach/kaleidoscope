@@ -54,12 +54,12 @@ namespace vulkan {
 	{
 		auto result = new StaticMesh();
 
-		auto bufferSize = VkDeviceSize(sizeof(vertices[0]) * vertices.size());
+		result->_vertex_buffer_range = VkDeviceSize(sizeof(vertices[0]) * vertices.size());
 
 		VkBuffer staginBuffer;
 		VkDeviceMemory staginBufferMemory;
 		Graphics::DEFAULT->create_buffer(
-				bufferSize,
+				result->_vertex_buffer_range,
 				VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
 				staginBuffer, 
@@ -70,28 +70,31 @@ namespace vulkan {
 				Graphics::DEFAULT->device(),
 				staginBufferMemory,
 				0,
-				bufferSize,
+				result->_vertex_buffer_range,
 				0,
 				&data);
-		memcpy(data, vertices.data(), (size_t) bufferSize);
+		memcpy(data, vertices.data(), (size_t) result->_vertex_buffer_range);
 		vkUnmapMemory(Graphics::DEFAULT->device(), staginBufferMemory);
 
 		Graphics::DEFAULT->create_buffer(
-				bufferSize, 
+				result->_vertex_buffer_range, 
 				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
 				result->_vertex_buffer, 
 				result->_vertex_buffer_memory);
 
-		Graphics::DEFAULT->copy_buffer(staginBuffer, result->_vertex_buffer, bufferSize);
+		Graphics::DEFAULT->copy_buffer(
+				staginBuffer,
+				result->_vertex_buffer,
+				result->_vertex_buffer_range);
 
 		vkDestroyBuffer(Graphics::DEFAULT->device(), staginBuffer, nullptr);
 		vkFreeMemory(Graphics::DEFAULT->device(), staginBufferMemory, nullptr);
 
-		bufferSize = sizeof(indices[0]) * indices.size();
+		result->_index_buffer_range = sizeof(indices[0]) * indices.size();
 
 		Graphics::DEFAULT->create_buffer(
-				bufferSize, 
+				result->_index_buffer_range, 
 				VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
 				staginBuffer, 
@@ -101,20 +104,20 @@ namespace vulkan {
 				Graphics::DEFAULT->device(),
 				staginBufferMemory,
 				0,
-				bufferSize,
+				result->_index_buffer_range,
 				0,
 				&data);
-		memcpy(data, indices.data(), (size_t) bufferSize);
+		memcpy(data, indices.data(), (size_t) result->_index_buffer_range);
 		vkUnmapMemory(Graphics::DEFAULT->device(), staginBufferMemory);
 
 		Graphics::DEFAULT->create_buffer(
-				bufferSize, 
+				result->_index_buffer_range, 
 				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
 				result->_index_buffer, 
 				result->_index_buffer_memory);
 
-		Graphics::DEFAULT->copy_buffer(staginBuffer, result->_index_buffer, bufferSize);
+		Graphics::DEFAULT->copy_buffer(staginBuffer, result->_index_buffer, result->_index_buffer_range);
 
 		vkDestroyBuffer(Graphics::DEFAULT->device(), staginBuffer, nullptr);
 		vkFreeMemory(Graphics::DEFAULT->device(), staginBufferMemory, nullptr);
@@ -139,5 +142,11 @@ namespace vulkan {
 	}
 	uint32_t StaticMesh::index_count() const {
 		return _index_count;
+	}
+	VkDeviceSize StaticMesh::vertex_buffer_range() const {
+		return _vertex_buffer_range;
+	}
+	VkDeviceSize StaticMesh::index_buffer_range() const {
+		return _index_buffer_range;
 	}
 }
