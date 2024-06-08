@@ -97,8 +97,8 @@ namespace vulkan {
 	}
 
 	StaticTexture::~StaticTexture() {
-		_texture.~Image();
-		_texture_view.~ImageView();
+		_texture.destroy();
+		_texture_view.destroy();
 
 		ImGui_ImplVulkan_RemoveTexture(_imgui_descriptor_set);
 	}

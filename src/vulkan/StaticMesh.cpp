@@ -163,11 +163,27 @@ namespace vulkan {
 		return from_vertices(vertices_result, indices_result);
 	}
 
+	void StaticMesh::destroy() {
+		if (_vertex_buffer) {
+			vkDestroyBuffer(Graphics::DEFAULT->device(), _vertex_buffer, nullptr);
+			_vertex_buffer = nullptr;
+		}
+		if (_vertex_buffer_memory) {
+			vkFreeMemory(Graphics::DEFAULT->device(), _vertex_buffer_memory, nullptr);
+			_vertex_buffer_memory = nullptr;
+		}
+		if (_index_buffer) {
+			vkDestroyBuffer(Graphics::DEFAULT->device(), _index_buffer, nullptr);
+			_index_buffer = nullptr;
+		}
+		if (_index_buffer_memory) {
+			vkFreeMemory(Graphics::DEFAULT->device(), _index_buffer_memory, nullptr);
+			_index_buffer_memory = nullptr;
+		}
+	}
+
 	StaticMesh::~StaticMesh() {
-		vkDestroyBuffer(Graphics::DEFAULT->device(), _vertex_buffer, nullptr);
-		vkFreeMemory(Graphics::DEFAULT->device(), _vertex_buffer_memory, nullptr);
-		vkDestroyBuffer(Graphics::DEFAULT->device(), _index_buffer, nullptr);
-		vkFreeMemory(Graphics::DEFAULT->device(), _index_buffer_memory, nullptr);
+		destroy();
 	}
 
 	VkBuffer StaticMesh::vertex_buffer() const {

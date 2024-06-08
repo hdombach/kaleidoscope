@@ -16,6 +16,7 @@ namespace vulkan {
 			static StaticMesh *from_vertices(std::vector<Vertex> const &vertices, std::vector<uint32_t> const &indices);
 			static StaticMesh *from_vertices(std::vector<Vertex> const &vertices);
 
+			void destroy();
 			~StaticMesh();
 
 			VkBuffer vertex_buffer() const;

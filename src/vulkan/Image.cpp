@@ -111,7 +111,7 @@ namespace vulkan {
 		return *this;
 	}
 
-	Image::~Image() {
+	void Image::destroy() {
 		if (_image) {
 			vkDestroyImage(Graphics::DEFAULT->device(), _image, nullptr);
 			_image = nullptr;
@@ -121,6 +121,10 @@ namespace vulkan {
 			vkFreeMemory(Graphics::DEFAULT->device(), _image_memory, nullptr);
 			_image_memory = nullptr;
 		}
+	}
+
+	Image::~Image() {
+		destroy();
 	}
 
 	VkImage& Image::value() {

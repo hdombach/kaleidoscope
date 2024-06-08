@@ -381,8 +381,8 @@ namespace vulkan {
 	}
 
 	void PreviewRenderPass::_cleanup_images() {
-		_depth_image.~Image();
-		_depth_image_view.~ImageView();
+		_depth_image.destroy();
+		_depth_image_view.destroy();
 		_color_image_views.clear();
 		_color_images.clear();
 

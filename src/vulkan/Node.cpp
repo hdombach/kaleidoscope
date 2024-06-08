@@ -17,6 +17,11 @@ namespace vulkan {
 			PreviewRenderPass &preview_render_pass,
 			VkCommandBuffer command_buffer)
 	{
+		if (!_material->preview_impl()) {
+			LOG_WARNING << "preview pipeline doesn't exist for material" << std::endl;
+			return;
+		}
+
 		auto size = glm::vec2{
 			preview_render_pass.size().width,
 			preview_render_pass.size().height};

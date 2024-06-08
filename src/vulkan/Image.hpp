@@ -36,6 +36,7 @@ namespace vulkan {
 			Image& operator=(const Image& other) = delete;
 			Image& operator=(Image &&other);
 
+			void destroy();
 			~Image();
 
 			VkImage& value();

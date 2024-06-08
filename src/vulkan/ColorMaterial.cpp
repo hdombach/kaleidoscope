@@ -92,6 +92,8 @@ namespace vulkan {
 	}
 
 	ColorMaterialPrevImpl::~ColorMaterialPrevImpl() {
+		_mapped_uniforms.clear();
+		_descriptor_sets.clear();
 		if (_pipeline_layout) {
 			vkDestroyPipelineLayout(
 					Graphics::DEFAULT->device(), 

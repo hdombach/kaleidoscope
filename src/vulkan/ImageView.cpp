@@ -54,11 +54,15 @@ namespace vulkan {
 		return *this;
 	}
 
-	ImageView::~ImageView() {
+	void ImageView::destroy() {
 		if (_image_view) {
 			vkDestroyImageView(Graphics::DEFAULT->device(), _image_view, nullptr);
 			_image_view = nullptr;
 		}
+	}
+
+	ImageView::~ImageView() {
+		destroy();
 	}
 
 	VkImageView& ImageView::value() {

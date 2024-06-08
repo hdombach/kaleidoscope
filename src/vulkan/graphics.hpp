@@ -96,7 +96,7 @@ namespace vulkan {
 			};
 
 		private:
-			Graphics() = default;
+			Graphics();
 			void _init_window();
 			void _init_vulkan();
 			util::Result<void, KError> _create_instance();
@@ -118,7 +118,7 @@ namespace vulkan {
 			util::Result<void, KError> _create_compute_result_texture();
 
 			bool _check_validation_layer_support();
-			void _cleanup();
+			void _destroy();
 
 			VkResult _create_debug_utils_messenger_EXT(
 					VkInstance instance,

@@ -21,6 +21,7 @@ namespace vulkan {
 			ImageView& operator=(const ImageView& other) = delete;
 			ImageView& operator=(ImageView&& other);
 
+			void destroy();
 			~ImageView();
 
 			VkImageView& value();

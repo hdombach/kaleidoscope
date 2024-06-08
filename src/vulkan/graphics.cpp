@@ -41,7 +41,7 @@ namespace vulkan {
 	}
 
 	Graphics::~Graphics() {
-		_cleanup();
+		_destroy();
 	}
 
 	void Graphics::wait_idle() const {
@@ -166,6 +166,32 @@ namespace vulkan {
 	
 	}
 
+	Graphics::Graphics():
+		_name(nullptr),
+		_window(nullptr),
+		_instance(nullptr),
+		_debug_messenger(nullptr),
+		_physical_device(nullptr),
+		_device(nullptr),
+		_graphics_queue(nullptr),
+		_present_queue(nullptr),
+		_compute_queue(nullptr),
+		_surface(nullptr),
+		_compute_descriptor_set_layout(nullptr),
+		_descriptor_pool(nullptr),
+		_compute_descriptor_sets(),
+		_compute_pipeline_layout(nullptr),
+		_compute_pipeline(nullptr),
+		_command_pool(nullptr),
+		_mip_levels(0),
+		_texture_sampler(nullptr),
+		_compute_result_image_view(),
+		_compute_command_buffers(),
+		_compute_finished_semaphores(),
+		_compute_in_flight_fences(),
+		_swapchain_support_details()
+	{}
+
 	void Graphics::_init_window() {
 		glfwInit();
 
@@ -264,33 +290,62 @@ namespace vulkan {
 		return true;
 	}
 
-	void Graphics::_cleanup() {
-		vkDestroySampler(_device, _texture_sampler, nullptr);
-		_compute_result_image_view.~ImageView();
-		_compute_result_image.~Image();
+	void Graphics::_destroy() {
+		if (_texture_sampler) {
+			vkDestroySampler(_device, _texture_sampler, nullptr);
+			_texture_sampler = nullptr;
+		}
 
-		vkDestroyDescriptorSetLayout(_device, _compute_descriptor_set_layout, nullptr);
+		_compute_result_image_view.destroy();
+		_compute_result_image.destroy();
+
+		if (_compute_descriptor_set_layout) {
+			vkDestroyDescriptorSetLayout(_device, _compute_descriptor_set_layout, nullptr);
+			_compute_descriptor_set_layout = nullptr;
+		}
+
 		vkFreeDescriptorSets(_device, _descriptor_pool, _compute_descriptor_sets.size(), _compute_descriptor_sets.data());
+		_compute_descriptor_sets.clear();
 
-		vkDestroyDescriptorPool(_device, _descriptor_pool, nullptr);
+		if (_descriptor_pool) {
+			vkDestroyDescriptorPool(_device, _descriptor_pool, nullptr);
+			_descriptor_pool = nullptr;
+		}
 
-		vkDestroyPipeline(_device, _compute_pipeline, nullptr);
-		vkDestroyPipelineLayout(_device, _compute_pipeline_layout, nullptr);
+		if (_compute_pipeline) {
+			vkDestroyPipeline(_device, _compute_pipeline, nullptr);
+			_compute_pipeline = nullptr;
+		}
+
+		if (_compute_pipeline_layout) {
+			vkDestroyPipelineLayout(_device, _compute_pipeline_layout, nullptr);
+			_compute_pipeline_layout = nullptr;
+		}
 
 		_compute_in_flight_fences.clear();
 		_compute_finished_semaphores.clear();
 
-		vkDestroyCommandPool(_device, _command_pool, nullptr);
+		if (_command_pool) {
+			vkDestroyCommandPool(_device, _command_pool, nullptr);
+			_command_pool = nullptr;
+		}
 
-		vkDestroyDevice(_device, nullptr);
+		if (_device) {
+			vkDestroyDevice(_device, nullptr);
+			_device = nullptr;
+		}
 
 		if (ENABLE_VALIDATION_LAYERS) {
 			_destroy_debug_utils_messenger_EXT(_instance, _debug_messenger, nullptr);
+			_debug_messenger = nullptr;
 		}
 
 		vkDestroyInstance(_instance, nullptr);
+		_instance = nullptr;
 
 		glfwDestroyWindow(_window);
+		_window = nullptr;
+
 		glfwTerminate();
 	}
 
@@ -756,6 +811,7 @@ namespace vulkan {
 
 		auto allocInfo = VkMemoryAllocateInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.pNext = nullptr;
 		allocInfo.allocationSize = memRequirements.size;
 		allocInfo.memoryTypeIndex = _find_memory_type(memRequirements.memoryTypeBits, properties);
 
