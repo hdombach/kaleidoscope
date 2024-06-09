@@ -331,6 +331,7 @@ namespace vulkan {
 		}
 
 		if (_device) {
+			LOG_MEMORY << "destroying device " << _device << std::endl;
 			vkDestroyDevice(_device, nullptr);
 			_device = nullptr;
 		}
@@ -471,6 +472,7 @@ namespace vulkan {
 		if (result != VK_SUCCESS) {
 			throw KError(result);
 		}
+		LOG_MEMORY << "Created device " << _device << std::endl;
 		//TODO: the pipeline objects should probably own graphics queue
 		vkGetDeviceQueue(_device, indices.graphics_family.value(), 0, &_graphics_queue);
 		//TODO: search specifically for a compute queue

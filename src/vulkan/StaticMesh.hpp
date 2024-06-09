@@ -16,6 +16,11 @@ namespace vulkan {
 			static StaticMesh *from_vertices(std::vector<Vertex> const &vertices, std::vector<uint32_t> const &indices);
 			static StaticMesh *from_vertices(std::vector<Vertex> const &vertices);
 
+			StaticMesh(const StaticMesh& other) = delete;
+			StaticMesh(StaticMesh &&other);
+			StaticMesh& operator=(const StaticMesh& other) = delete;
+			StaticMesh& operator=(StaticMesh&& other);
+
 			void destroy();
 			~StaticMesh();
 

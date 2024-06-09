@@ -163,6 +163,38 @@ namespace vulkan {
 		return from_vertices(vertices_result, indices_result);
 	}
 
+	StaticMesh::StaticMesh(StaticMesh &&other) {
+		_vertex_buffer = other._vertex_buffer;
+		other._vertex_buffer = nullptr;
+
+		_vertex_buffer_memory = other._vertex_buffer_memory;
+		other._vertex_buffer_memory = nullptr;
+
+		_index_buffer = other._index_buffer;
+		other._index_buffer = nullptr;
+
+		_index_buffer_memory = other._index_buffer_memory;
+		other._index_buffer_memory = nullptr;
+	}
+
+	StaticMesh& StaticMesh::operator=(StaticMesh&& other) {
+		destroy();
+
+		_vertex_buffer = other._vertex_buffer;
+		other._vertex_buffer = nullptr;
+
+		_vertex_buffer_memory = other._vertex_buffer_memory;
+		other._vertex_buffer_memory = nullptr;
+
+		_index_buffer = other._index_buffer;
+		other._index_buffer = nullptr;
+
+		_index_buffer_memory = other._index_buffer_memory;
+		other._index_buffer_memory = nullptr;
+
+		return *this;
+	}
+
 	void StaticMesh::destroy() {
 		if (_vertex_buffer) {
 			vkDestroyBuffer(Graphics::DEFAULT->device(), _vertex_buffer, nullptr);

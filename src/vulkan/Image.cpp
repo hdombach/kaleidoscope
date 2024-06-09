@@ -2,6 +2,7 @@
 
 #include "Image.hpp"
 #include "graphics.hpp"
+#include "../util/log.hpp"
 
 namespace vulkan {
 	util::Result<Image, KError> Image::create(
@@ -56,6 +57,8 @@ namespace vulkan {
 		if (res != VK_SUCCESS) {
 			return KError(res);
 		}
+
+		LOG_MEMORY << "created image " << result._image << std::endl;
 
 		VkMemoryRequirements mem_requirements;
 		vkGetImageMemoryRequirements(
@@ -113,11 +116,13 @@ namespace vulkan {
 
 	void Image::destroy() {
 		if (_image) {
+			LOG_MEMORY << "destroying image " << _image << std::endl;
 			vkDestroyImage(Graphics::DEFAULT->device(), _image, nullptr);
 			_image = nullptr;
 		}
 
 		if (_image_memory) {
+			LOG_MEMORY << "freeing image memory " << _image_memory << std::endl;
 			vkFreeMemory(Graphics::DEFAULT->device(), _image_memory, nullptr);
 			_image_memory = nullptr;
 		}
