@@ -18,7 +18,7 @@ namespace ui {
 
 		ImGui::Begin("Viewport");
 
-		ImGui::Text("offset: %f, %f", mouse_offset.x, mouse_offset.y);
+		ImGui::Text("offsett: %f, %f", mouse_offset.x, mouse_offset.y);
 		_scene_viewport.show();
 		if (ImGui::IsItemHovered()) {
 			auto &camera = _app.scene().camera();

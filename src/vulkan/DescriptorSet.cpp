@@ -1,6 +1,8 @@
 #include "DescriptorSet.hpp"
 #include <vulkan/vulkan_core.h>
 
+#include "../util/log.hpp"
+
 namespace vulkan {
 	DescriptorSetTemplate DescriptorSetTemplate::create_image(
 			uint32_t binding,
@@ -149,19 +151,19 @@ namespace vulkan {
 					buffer_info.range = templ.buffer_range();
 					descriptor_write.pBufferInfo = &buffer_info;
 				} else if (descriptor_write.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-					auto image_info = write_buffer_infos[write_i].image_info;
+					auto &image_info = write_buffer_infos[write_i].image_info;
 					image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 					image_info.imageView = templ.image_view();
 					image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
 					descriptor_write.pImageInfo = &image_info;
 				} else if (descriptor_write.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
-					auto image_info = write_buffer_infos[write_i].image_info;
+					auto &image_info = write_buffer_infos[write_i].image_info;
 					image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 					image_info.imageView = templ.image_view();
 					image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
 					descriptor_write.pImageInfo = &image_info;
 				} else if (descriptor_write.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-					auto buffer_info = write_buffer_infos[write_i].buffer_info;
+					auto &buffer_info = write_buffer_infos[write_i].buffer_info;
 					buffer_info.buffer = templ.buffers()[frame];
 					buffer_info.offset = 0;
 					buffer_info.range = templ.buffer_range();

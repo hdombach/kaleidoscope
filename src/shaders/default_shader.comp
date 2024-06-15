@@ -13,10 +13,10 @@ struct Vertex {
 		vec2 texCoord;
 };
 
-layout(std140, binding = 2) readonly buffer vertex_buffer {
+layout(binding = 2) readonly buffer vertex_buffer {
 	Vertex vertices[];
 };
-layout(std140, binding = 3) readonly buffer index_buffer {
+layout(binding = 3) readonly buffer index_buffer {
 	uint indices[];
 };
 

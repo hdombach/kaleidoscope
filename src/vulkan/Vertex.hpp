@@ -10,11 +10,12 @@
 #include <vulkan/vulkan.h>
 
 namespace vulkan {
-	#pragma pack(push, 1)
 	struct Vertex {
-		glm::vec3 pos;
-		glm::vec3 color;
-		glm::vec2 tex_coord;
+		alignas(4) glm::vec3 pos;
+		alignas(4) glm::vec3 color;
+		alignas(4) char padding[8];
+		alignas(4) glm::vec2 tex_coord;
+		alignas(4) char padding2[8];
 
 		Vertex() = default;
 
@@ -62,8 +63,7 @@ namespace vulkan {
 
 			return attribute_descriptions;
 		}
-	};
-	#pragma pack(pop, 1)
+	} __attribute__((packed));
 
 }
 
