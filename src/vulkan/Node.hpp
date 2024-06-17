@@ -18,7 +18,7 @@ namespace vulkan {
 				_position(0, 0, 0)
 			{}
 
-			Node(Mesh &mesh, Material *material):
+			Node(Mesh const &mesh, Material *material):
 				_mesh(mesh),
 				_material(material),
 				_position(0, 0, 0)
@@ -29,7 +29,6 @@ namespace vulkan {
 			Node& operator=(const Node& other) = delete;
 			Node& operator=(Node&& other) = delete;
 
-			Mesh &mesh() { return _mesh; }
 			Mesh const &mesh() const { return _mesh; }
 
 			Material &material() { return *_material; }
@@ -43,7 +42,7 @@ namespace vulkan {
 					VkCommandBuffer command_buffer);
 
 		private:
-			Mesh &_mesh;
+			Mesh const &_mesh;
 			std::unique_ptr<Material> _material;
 
 			glm::vec3 _position;

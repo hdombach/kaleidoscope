@@ -24,7 +24,7 @@ class App {
 
 	private:
 		App() = default;
-		std::unique_ptr<vulkan::Scene> _scene;
+		vulkan::Scene::Ptr _scene;
 		std::unique_ptr<vulkan::UIRenderPipeline> _ui_render_pipeline;
 		std::unique_ptr<types::ResourceManager> _resource_manager;
 		std::unique_ptr<ui::AppView> _app_view;

@@ -5,10 +5,10 @@
 #include "StaticMesh.hpp"
 #include "graphics.hpp"
 #include "vulkan/vulkan_core.h"
-#include "../util/log.hpp"
 
 namespace vulkan {
 	util::Result<StaticMesh *, KError> StaticMesh::from_file(
+			uint32_t id,
 			const std::string &url)
 	{
 		tinyobj::attrib_t attrib;
@@ -48,12 +48,15 @@ namespace vulkan {
 			}
 		}
 
-		return from_vertices(vertices, indices);
+		return from_vertices(id, vertices, indices);
 	}
 
-	StaticMesh *StaticMesh::create_square() {
+	StaticMesh *StaticMesh::create_square(uint32_t id) {
 		auto vertices = std::vector<Vertex>{
+			{{0.0, 0.2, 1.0}, {0.0, 0.0, 0.0}, {0.0, 1.0}},
 			{{0.0, 0.1, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0}},
+			{{1.0, 0.3, 0.0}, {0.0, 0.0, 0.0}, {1.0, 0.0}},
+
 			{{0.0, 0.2, 1.0}, {0.0, 0.0, 0.0}, {0.0, 1.0}},
 			{{1.0, 0.3, 0.0}, {0.0, 0.0, 0.0}, {1.0, 0.0}},
 			{{1.0, 0.4, 1.0}, {0.0, 0.0, 0.0}, {1.0, 1.0}},
@@ -63,16 +66,19 @@ namespace vulkan {
 			1, 0, 2,
 			1, 2, 3,
 		};
-		return from_vertices(vertices, indices);
+		return from_vertices(id, vertices, indices);
 	}
 
 	StaticMesh *StaticMesh::from_vertices(
+			uint32_t id,
 			const std::vector<Vertex> &vertices,
 			const std::vector<uint32_t> &indices)
 	{
 		auto result = new StaticMesh();
 
-		result->_vertex_buffer_range = VkDeviceSize(sizeof(vertices[0]) * vertices.size());
+		result->_id = id;
+		result->_vertices = vertices;
+		result->_vertex_buffer_range = VkDeviceSize(sizeof(result->_vertices[0]) * result->_vertices.size());
 
 		VkBuffer staginBuffer;
 		VkDeviceMemory staginBufferMemory;
@@ -91,7 +97,7 @@ namespace vulkan {
 				result->_vertex_buffer_range,
 				0,
 				&data);
-		memcpy(data, vertices.data(), (size_t) result->_vertex_buffer_range);
+		memcpy(data, result->_vertices.data(), (size_t) result->_vertex_buffer_range);
 		vkUnmapMemory(Graphics::DEFAULT->device(), staginBufferMemory);
 
 		Graphics::DEFAULT->create_buffer(
@@ -149,7 +155,10 @@ namespace vulkan {
 		return result;
 	}
 
-	StaticMesh *StaticMesh::from_vertices(std::vector<Vertex> const &vertices) {
+	StaticMesh *StaticMesh::from_vertices(
+			uint32_t id,
+			std::vector<Vertex> const &vertices)
+	{
 		auto vertices_result = std::vector<vulkan::Vertex>();
 		auto indices_result = std::vector<uint32_t>();
 		auto unique_vertices = std::unordered_map<vulkan::Vertex, uint32_t>();
@@ -160,7 +169,7 @@ namespace vulkan {
 			}
 			indices_result.push_back(unique_vertices[vertex]);
 		}
-		return from_vertices(vertices_result, indices_result);
+		return from_vertices(id, vertices_result, indices_result);
 	}
 
 	StaticMesh::StaticMesh(StaticMesh &&other) {
@@ -216,6 +225,22 @@ namespace vulkan {
 
 	StaticMesh::~StaticMesh() {
 		destroy();
+	}
+
+	Mesh::const_iterator StaticMesh::begin() const {
+		return _vertices.data();
+	}
+
+	Mesh::const_iterator StaticMesh::end() const {
+		return _vertices.data() + _vertices.size();
+	}
+
+	uint32_t StaticMesh::id() const {
+		return _id;
+	}
+
+	size_t StaticMesh::size() const {
+		return _vertices.size();
 	}
 
 	VkBuffer StaticMesh::vertex_buffer() const {

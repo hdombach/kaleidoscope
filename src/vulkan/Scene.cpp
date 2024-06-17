@@ -5,25 +5,25 @@
 #include "UniformBufferObject.hpp"
 
 namespace vulkan {
-	Scene::Scene(PreviewRenderPass::Ptr preview_render_pass):
-		_preview_render_pass(std::move(preview_render_pass))
-	{ }
-
-	util::Result<Scene, KError> Scene::create(
+	util::Result<Scene::Ptr, KError> Scene::create(
 			types::ResourceManager &resource_manager)
 	{
+		auto scene = Scene::Ptr(new Scene());
+
 		auto raytrace_render_pass = RaytraceRenderPass::create({300, 300});
 		TRY(raytrace_render_pass);
 
 		auto render_pass_res = PreviewRenderPass::create(
-				resource_manager,
+				*scene,
 				{300, 300});
 		if (!render_pass_res) {
 			return render_pass_res.error();
 		}
-		auto scene = Scene(std::move(render_pass_res.value()));
-		scene._raytrace_render_pass = std::move(raytrace_render_pass.value());
-		scene._is_preview = true;
+		scene->_resource_manager = &resource_manager;
+		scene->_preview_render_pass = std::move(render_pass_res.value());
+		scene->_raytrace_render_pass = std::move(raytrace_render_pass.value());
+		scene->_is_preview = true;
+		resource_manager.add_mesh_observer(scene->_preview_render_pass.get());
 		return scene;
 	}
 
@@ -50,7 +50,8 @@ namespace vulkan {
 	}
 
 	void Scene::render_preview() {
-		auto final_mat = camera().gen_raster_mat();
+		_preview_render_pass->render(_nodes, camera());
+		/*auto final_mat = camera().gen_raster_mat();
 
 		_preview_render_pass->submit([this, final_mat](VkCommandBuffer command_buffer){
 				auto uniform_buffer = GlobalUniformBuffer{};
@@ -59,7 +60,7 @@ namespace vulkan {
 				for (auto &node : _nodes) {
 					node.render_preview(*_preview_render_pass, command_buffer);
 				}
-		});
+		});*/
 	}
 
 	void Scene::render_raytrace() {
@@ -76,6 +77,10 @@ namespace vulkan {
 		}
 		_nodes.push_back(std::move(node));
 		return {};
+	}
+
+	types::ResourceManager &Scene::resource_manager() {
+		return *_resource_manager;
 	}
 
 	Texture& Scene::_cur_texture() {

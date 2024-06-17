@@ -10,20 +10,24 @@
 #include "DescriptorSet.hpp"
 #include "Image.hpp"
 #include "ImageView.hpp"
+#include "Texture.hpp"
+#include "UniformBufferObject.hpp"
+#include "PreviewRenderPassMesh.hpp"
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
-#include "Texture.hpp"
-#include "../types/ResourceManager.hpp"
-#include "UniformBufferObject.hpp"
+#include "../util/Observer.hpp"
+#include "../types/Camera.hpp"
 
 namespace vulkan {
-	class PreviewRenderPass: public Texture  {
+	class Node;
+	class PreviewRenderPass: public Texture, public util::Observer {
 		public:
 			using Ptr = std::unique_ptr<PreviewRenderPass>;
 			static util::Result<Ptr, KError> create(
-					types::ResourceManager &resource_manager,
+					Scene &scene,
 					VkExtent2D size);
 			~PreviewRenderPass();
+			void render(std::vector<Node> &nodes, types::Camera &camera);
 			void submit(std::function<void(VkCommandBuffer)> render_callback);
 			void resize(VkExtent2D size) override;
 			bool is_resizable() const override;
@@ -38,14 +42,20 @@ namespace vulkan {
 			VkDescriptorSetLayout global_descriptor_set_layout() { return _descriptor_sets.layout(); }
 			VkDescriptorSet global_descriptor_set(int frame_index) { return _descriptor_sets.descriptor_set(frame_index); }
 
+			void obs_create(uint32_t id) override;
+			void obs_update(uint32_t id) override;
+			void obs_remove(uint32_t id) override;
+
 		private:
-			PreviewRenderPass(types::ResourceManager &resource_manager, VkExtent2D size);
+			PreviewRenderPass(Scene &scene, VkExtent2D size);
 
 			util::Result<void, KError> _create_sync_objects();
 			void _create_command_buffers();
 			util::Result<void, KError> _create_images();
 			void _cleanup_images();
 			static VkFormat _depth_format();
+
+			std::vector<PreviewRenderPassMesh> _meshes;
 
 			VkExtent2D _size;
 			Image _depth_image;
@@ -65,6 +75,6 @@ namespace vulkan {
 			int _frame_index;
 			uint32_t _mip_levels;
 
-			types::ResourceManager &_resource_manager;
+			Scene *_scene;
 	};
 }

@@ -1,12 +1,17 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <vector>
+#include <list>
 
 #include "../util/errors.hpp"
-#include "../vulkan/Mesh.hpp"
 #include "../util/result.hpp"
+#include "../util/Observer.hpp"
+#include "../vulkan/Mesh.hpp"
 #include "../vulkan/Texture.hpp"
+#include "../vulkan/Vertex.hpp"
 
 
 namespace types {
@@ -19,29 +24,52 @@ namespace types {
 			ResourceManager();
 			~ResourceManager();
 	
-			util::Result<void, KError> add_texture(
+			util::Result<uint32_t, KError> add_texture(
 					std::string const &name,
 					vulkan::Texture *texture);
+
 			vulkan::Texture *default_texture();
 			vulkan::Texture const *default_texture() const;
 			vulkan::Texture *get_texture(std::string const &name);
 			vulkan::Texture const *get_texture(std::string const &name) const;
 			bool has_texture(std::string const &name) const;
 
-			util::Result<void, KError> add_mesh(
+			util::Result<uint32_t, KError> add_mesh_from_file(
 					std::string const &name,
-					vulkan::Mesh *mesh);
+					std::string const &url);
+			util::Result<uint32_t, KError> add_mesh_square(
+					std::string const &name);
+			util::Result<uint32_t, KError> add_mesh_from_vertices(
+					std::string const &name,
+					std::vector<vulkan::Vertex> const &vertices);
+			util::Result<uint32_t, KError> add_mesh_from_vertices(
+					std::string const &name,
+					std::vector<vulkan::Vertex> const &vertices,
+					std::vector<uint32_t> const &indices);
+
 			vulkan::Mesh *default_mesh();
 			vulkan::Mesh const *default_mesh() const;
-			vulkan::Mesh *get_mesh(std::string const &name);
+			vulkan::Mesh *update_mesh(std::string const &name);
 			vulkan::Mesh const *get_mesh(std::string const &name) const;
+			vulkan::Mesh const *get_mesh(uint32_t id) const;
 			bool has_mesh(std::string const &name) const;
 
-		private:
-			std::unordered_map<std::string, vulkan::Texture *> _textures;
-			vulkan::Texture *_default_texture;
+			util::Result<void, KError> add_mesh_observer(util::Observer *observer);
+			util::Result<void, KError> rem_mesh_observer(util::Observer *observer);
 
-			std::unordered_map<std::string, vulkan::Mesh *> _meshes;
-			vulkan::Mesh *_default_mesh;
+		private:
+			util::Result<uint32_t, KError> _add_mesh(
+					std::string const &name,
+					vulkan::Mesh *mesh);
+			uint32_t _get_mesh_id();
+
+			std::unordered_map<std::string, uint32_t> _texture_map;
+			std::vector<vulkan::Texture *> _textures;
+			uint32_t _default_texture;
+
+			std::unordered_map<std::string, uint32_t> _mesh_map;
+			std::vector<vulkan::Mesh *> _meshes;
+			uint32_t _default_mesh;
+			std::list<util::Observer *> _mesh_observers;
 	};
 }
