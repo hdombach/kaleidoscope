@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "Material.hpp"
-#include "Mesh.hpp"
+#include "../types/Mesh.hpp"
 
 namespace vulkan {
 	/**
@@ -12,13 +12,13 @@ namespace vulkan {
 	 */
 	class Node {
 		public:
-			Node(Mesh &mesh, std::unique_ptr<Material> &&material):
+			Node(types::Mesh &mesh, std::unique_ptr<Material> &&material):
 				_mesh(mesh),
 				_material(std::move(material)),
 				_position(0, 0, 0)
 			{}
 
-			Node(Mesh const &mesh, Material *material):
+			Node(types::Mesh const &mesh, Material *material):
 				_mesh(mesh),
 				_material(material),
 				_position(0, 0, 0)
@@ -29,7 +29,7 @@ namespace vulkan {
 			Node& operator=(const Node& other) = delete;
 			Node& operator=(Node&& other) = delete;
 
-			Mesh const &mesh() const { return _mesh; }
+			types::Mesh const &mesh() const { return _mesh; }
 
 			Material &material() { return *_material; }
 			Material const &material() const { return *_material; }
@@ -42,7 +42,7 @@ namespace vulkan {
 					VkCommandBuffer command_buffer);
 
 		private:
-			Mesh const &_mesh;
+			types::Mesh const &_mesh;
 			std::unique_ptr<Material> _material;
 
 			glm::vec3 _position;

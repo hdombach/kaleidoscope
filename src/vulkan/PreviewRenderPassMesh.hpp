@@ -4,7 +4,7 @@
 
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
-#include "Mesh.hpp"
+#include "../types/Mesh.hpp"
 
 namespace vulkan {
 	class Scene;
@@ -13,7 +13,7 @@ namespace vulkan {
 		public:
 			PreviewRenderPassMesh();
 
-			static util::Result<PreviewRenderPassMesh, KError> create(Scene &scene, const Mesh *mesh);
+			static util::Result<PreviewRenderPassMesh, KError> create(Scene &scene, const types::Mesh *mesh);
 
 			PreviewRenderPassMesh(const PreviewRenderPassMesh& other) = delete;
 			PreviewRenderPassMesh(PreviewRenderPassMesh &&other);
@@ -33,7 +33,7 @@ namespace vulkan {
 			void destroy();
 			~PreviewRenderPassMesh();
 		private:
-			const Mesh *_mesh;
+			const types::Mesh *_mesh;
 			uint32_t _id;
 
 			VkBuffer _vertex_buffer;

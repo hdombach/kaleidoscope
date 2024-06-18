@@ -9,7 +9,7 @@
 #include "../util/errors.hpp"
 #include "../util/result.hpp"
 #include "../util/Observer.hpp"
-#include "../vulkan/Mesh.hpp"
+#include "../types/Mesh.hpp"
 #include "../vulkan/Texture.hpp"
 #include "../vulkan/Vertex.hpp"
 
@@ -47,11 +47,11 @@ namespace types {
 					std::vector<vulkan::Vertex> const &vertices,
 					std::vector<uint32_t> const &indices);
 
-			vulkan::Mesh *default_mesh();
-			vulkan::Mesh const *default_mesh() const;
-			vulkan::Mesh *update_mesh(std::string const &name);
-			vulkan::Mesh const *get_mesh(std::string const &name) const;
-			vulkan::Mesh const *get_mesh(uint32_t id) const;
+			Mesh *default_mesh();
+			Mesh const *default_mesh() const;
+			Mesh *update_mesh(std::string const &name);
+			Mesh const *get_mesh(std::string const &name) const;
+			Mesh const *get_mesh(uint32_t id) const;
 			bool has_mesh(std::string const &name) const;
 
 			util::Result<void, KError> add_mesh_observer(util::Observer *observer);
@@ -60,7 +60,7 @@ namespace types {
 		private:
 			util::Result<uint32_t, KError> _add_mesh(
 					std::string const &name,
-					vulkan::Mesh *mesh);
+					Mesh *mesh);
 			uint32_t _get_mesh_id();
 
 			std::unordered_map<std::string, uint32_t> _texture_map;
@@ -68,7 +68,7 @@ namespace types {
 			uint32_t _default_texture;
 
 			std::unordered_map<std::string, uint32_t> _mesh_map;
-			std::vector<vulkan::Mesh *> _meshes;
+			std::vector<Mesh *> _meshes;
 			uint32_t _default_mesh;
 			std::list<util::Observer *> _mesh_observers;
 	};

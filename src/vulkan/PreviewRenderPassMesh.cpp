@@ -7,7 +7,7 @@
 namespace vulkan {
 	util::Result<PreviewRenderPassMesh, KError> PreviewRenderPassMesh::create(
 			Scene &scene,
-			const Mesh *mesh)
+			const types::Mesh *mesh)
 	{
 		auto vertices = std::vector<vulkan::Vertex>();
 		auto indices = std::vector<uint32_t>();

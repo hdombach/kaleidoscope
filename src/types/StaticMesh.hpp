@@ -6,17 +6,17 @@
 
 #include "../util/errors.hpp"
 #include "../util/result.hpp"
-#include "../vulkan/Mesh.hpp"
-#include "Vertex.hpp"
+#include "../types/Mesh.hpp"
+#include "../vulkan/Vertex.hpp"
 
 
-namespace vulkan {
+namespace types {
 	class StaticMesh: public Mesh {
 		public:
 			static util::Result<StaticMesh *, KError> from_file(uint32_t id, std::string const &url);
 			static StaticMesh *create_square(uint32_t id);
-			static StaticMesh *from_vertices(uint32_t id, std::vector<Vertex> const &vertices, std::vector<uint32_t> const &indices);
-			static StaticMesh *from_vertices(uint32_t id, std::vector<Vertex> const &vertices);
+			static StaticMesh *from_vertices(uint32_t id, std::vector<vulkan::Vertex> const &vertices, std::vector<uint32_t> const &indices);
+			static StaticMesh *from_vertices(uint32_t id, std::vector<vulkan::Vertex> const &vertices);
 
 			StaticMesh(const StaticMesh& other) = delete;
 			StaticMesh(StaticMesh &&other);
@@ -40,7 +40,7 @@ namespace vulkan {
 		private:
 			StaticMesh() = default;
 
-			std::vector<Vertex> _vertices;
+			std::vector<vulkan::Vertex> _vertices;
 			uint32_t _id;
 
 			VkBuffer _vertex_buffer;

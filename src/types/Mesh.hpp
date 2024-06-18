@@ -1,12 +1,13 @@
 #pragma once
 
-#include "Vertex.hpp"
 #include <vulkan/vulkan.h>
 
-namespace vulkan {
+#include "../vulkan/Vertex.hpp"
+
+namespace types {
 	class Mesh {
 		public:
-			using const_iterator = const Vertex*;
+			using const_iterator = const vulkan::Vertex*;
 
 			virtual ~Mesh() = default;
 			virtual const_iterator begin() const = 0;

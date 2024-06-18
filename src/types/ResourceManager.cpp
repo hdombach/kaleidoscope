@@ -7,10 +7,11 @@
 #include "../util/Util.hpp"
 #include "../util/log.hpp"
 
-#include "../vulkan/Mesh.hpp"
 #include "../vulkan/StaticTexture.hpp"
-#include "../vulkan/StaticMesh.hpp"
 #include "../vulkan/Texture.hpp"
+
+#include "../types/StaticMesh.hpp"
+#include "../types/Mesh.hpp"
 
 #include "ResourceManager.hpp"
 
@@ -77,7 +78,7 @@ namespace types {
 			std::string const &name,
 			std::string const &url)
 	{
-		auto res = vulkan::StaticMesh::from_file(_get_mesh_id(), url);
+		auto res = StaticMesh::from_file(_get_mesh_id(), url);
 		TRY(res);
 		return _add_mesh(name, res.value());
 	}
@@ -85,14 +86,14 @@ namespace types {
 	util::Result<uint32_t, KError> ResourceManager::add_mesh_square(
 			std::string const &name)
 	{
-		return _add_mesh(name, vulkan::StaticMesh::create_square(_get_mesh_id()));
+		return _add_mesh(name, StaticMesh::create_square(_get_mesh_id()));
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_mesh_from_vertices(
 			std::string const &name,
 			std::vector<vulkan::Vertex> const &vertices)
 	{
-		return _add_mesh(name, vulkan::StaticMesh::from_vertices(
+		return _add_mesh(name, StaticMesh::from_vertices(
 					_get_mesh_id(),
 					vertices));
 	}
@@ -102,21 +103,21 @@ namespace types {
 			std::vector<vulkan::Vertex> const &vertices,
 			std::vector<uint32_t> const &indices)
 	{
-		return _add_mesh(name, vulkan::StaticMesh::from_vertices(
+		return _add_mesh(name, StaticMesh::from_vertices(
 					_get_mesh_id(),
 					vertices,
 					indices));
 	}
 
-	vulkan::Mesh *ResourceManager::default_mesh() {
+	Mesh *ResourceManager::default_mesh() {
 		return _meshes[_default_mesh];
 	}
 
-	vulkan::Mesh const *ResourceManager::default_mesh() const {
+	Mesh const *ResourceManager::default_mesh() const {
 		return _meshes[_default_mesh];
 	}
 
-	vulkan::Mesh *ResourceManager::update_mesh(const std::string &name) {
+	Mesh *ResourceManager::update_mesh(const std::string &name) {
 		//TODO: update mshes
 		if (has_mesh(name)) {
 			return _meshes[_mesh_map.at(name)];
@@ -124,14 +125,14 @@ namespace types {
 		return default_mesh();
 	}
 
-	vulkan::Mesh const *ResourceManager::get_mesh(const std::string &name) const {
+	Mesh const *ResourceManager::get_mesh(const std::string &name) const {
 		if (has_mesh(name)) {
 			return _meshes[_mesh_map.at(name)];
 		}
 		return default_mesh();
 	}
 
-	vulkan::Mesh const *ResourceManager::get_mesh(uint32_t id) const {
+	Mesh const *ResourceManager::get_mesh(uint32_t id) const {
 		return _meshes[id];
 	}
 
@@ -163,7 +164,7 @@ namespace types {
 
 	util::Result<uint32_t, KError> ResourceManager::_add_mesh(
 			const std::string &name,
-			vulkan::Mesh *mesh)
+			Mesh *mesh)
 	{
 		if (_mesh_map.count(name)) {
 			return KError::mesh_already_exists(name);
