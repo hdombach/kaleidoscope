@@ -28,7 +28,6 @@ namespace vulkan {
 					VkExtent2D size);
 			~PreviewRenderPass();
 			void render(std::vector<Node> &nodes, types::Camera &camera);
-			void submit(std::function<void(VkCommandBuffer)> render_callback);
 			void resize(VkExtent2D size) override;
 			bool is_resizable() const override;
 

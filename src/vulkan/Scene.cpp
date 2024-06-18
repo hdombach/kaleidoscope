@@ -51,16 +51,6 @@ namespace vulkan {
 
 	void Scene::render_preview() {
 		_preview_render_pass->render(_nodes, camera());
-		/*auto final_mat = camera().gen_raster_mat();
-
-		_preview_render_pass->submit([this, final_mat](VkCommandBuffer command_buffer){
-				auto uniform_buffer = GlobalUniformBuffer{};
-				uniform_buffer.camera_transformation = final_mat;
-				_preview_render_pass->current_uniform_buffer().set_value(uniform_buffer);
-				for (auto &node : _nodes) {
-					node.render_preview(*_preview_render_pass, command_buffer);
-				}
-		});*/
 	}
 
 	void Scene::render_raytrace() {
