@@ -16,6 +16,7 @@
 #include "graphics.hpp"
 #include "PreviewRenderPass.hpp"
 #include "Shader.hpp"
+#include "../util/file.hpp"
 
 namespace vulkan {
 	util::Result<TextureMaterialPrevImpl, KError> TextureMaterialPrevImpl::create(
@@ -53,8 +54,11 @@ namespace vulkan {
 		/* Create pipeline */
 		auto vert_shader = vulkan::Shader::from_env_file(
 				"src/shaders/default_shader.vert.spv");
-		auto frag_shader = vulkan::Shader::from_env_file(
-				"src/shaders/default_shader.frag.spv");
+		auto frag_shader = vulkan::Shader::from_source_code(
+				util::readEnvFile("assets/default_shader.frag"));
+		TRY(frag_shader);
+		/*auto frag_shader = vulkan::Shader::from_env_file(
+				"src/shaders/default_shader.frag.spv");*/
 
 		auto descriptor_layouts = std::vector<VkDescriptorSetLayout>{
 			render_pass.global_descriptor_set_layout(),
@@ -62,7 +66,7 @@ namespace vulkan {
 		};
 		auto res = _create_pipeline(
 				vert_shader, 
-				frag_shader, 
+				frag_shader.value(), 
 				render_pass, 
 				descriptor_layouts, 
 				&result._pipeline, 

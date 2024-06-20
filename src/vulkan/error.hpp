@@ -5,7 +5,6 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <vulkan/vk_enum_string_helper.h>
 
 namespace vulkan {
 	class VulkanError: public std::runtime_error {
@@ -15,7 +14,7 @@ namespace vulkan {
 		private:
 			static std::string create_msg(VkResult result) {
 				std::stringstream ss;
-				ss << "Vulkan runtime error " << string_VkResult(result) << std::endl;
+				ss << "Vulkan runtime error " << result << std::endl;
 				return ss.str();
 			}
 

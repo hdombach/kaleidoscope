@@ -1,5 +1,4 @@
 #include "errors.hpp"
-#include <vulkan/vk_enum_string_helper.h>
 
 KError::KError(Type type, std::string content, std::string desc):
 	_desc(desc), _content(content), _vk_error(VK_ERROR_UNKNOWN)
@@ -8,7 +7,7 @@ KError::KError(Type type, std::string content, std::string desc):
 KError::KError(VkResult result):
 	_vk_error(result)
 {
-	_desc = string_VkResult(result);
+	_desc = std::string("VkResult: ") + std::to_string(result);
 }
 
 std::string const &KError::desc() const {
@@ -59,6 +58,13 @@ KError KError::invalid_mem_property() {
 			INVALID_MEM_PROPERTY,
 			std::string(),
 			"Invalid memory property");
+}
+
+KError KError::shader_compile_error(std::string msg) {
+	return KError(
+			SHADER_COMPILER_ERROR,
+			msg,
+			"Shader compile error");
 }
 
 KError KError::internal(std::string msg) {

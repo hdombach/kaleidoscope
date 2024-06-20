@@ -12,6 +12,7 @@ class MainRecipe(ConanFile):
         self.requires("glm/cci.20230113")
         self.requires("imgui/cci.20230105+1.89.2.docking")
         self.requires("vulkan-headers/1.3.268.0")
+        self.requires("shaderc/2023.6")
 
 
     def generate(self):
