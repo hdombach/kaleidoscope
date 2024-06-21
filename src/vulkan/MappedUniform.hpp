@@ -7,21 +7,22 @@
 #include "../util/result.hpp"
 
 namespace vulkan {
-	template<typename T>
-	class MappedUniform {
+	class Uniform {
 		public:
-			using BufferObj = T;
-
-			MappedUniform():
-				_buffer(nullptr), _buffer_memory(nullptr), _uniform_buffer_mapped(nullptr)
+			Uniform():
+				_buffer(nullptr),
+				_buffer_memory(nullptr),
+				_uniform_buffer_mapped(nullptr),
+				_buffer_s(0)
 			{}
 
-			static util::Result<MappedUniform<T>, KError> create() {
-				auto result = MappedUniform();
-				auto buffer_size = VkDeviceSize(sizeof(T));
+			static util::Result<Uniform, KError> create(size_t buffer_s) {
+				auto result = Uniform();
+				
+				result._buffer_s = buffer_s;
 
 				Graphics::DEFAULT->create_buffer(
-						buffer_size, 
+						result._buffer_s, 
 						VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
 						VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
 						result._buffer, 
@@ -31,7 +32,7 @@ namespace vulkan {
 						Graphics::DEFAULT->device(), 
 						result._buffer_memory, 
 						0, 
-						buffer_size, 
+						result._buffer_s, 
 						0, 
 						(void **) &result._uniform_buffer_mapped);
 
@@ -42,38 +43,34 @@ namespace vulkan {
 				}
 			}
 
-			MappedUniform(const MappedUniform& other) = delete;
-			MappedUniform(MappedUniform &&other) {
+			Uniform(const Uniform& other) = delete;
+			Uniform(Uniform &&other) {
 				_buffer = other._buffer;
 				_buffer_memory = other._buffer_memory;
 				_uniform_buffer_mapped = other._uniform_buffer_mapped;
+				_buffer_s = other._buffer_s;
 
 				other._buffer = nullptr;
 				other._buffer_memory = nullptr;
 				other._uniform_buffer_mapped = nullptr;
 			}
+			Uniform& operator=(const Uniform& other) = delete;
+			Uniform& operator=(Uniform &&other) {
+				destroy();
 
-			MappedUniform& operator=(const MappedUniform& other) = delete;
-			MappedUniform& operator=(MappedUniform &&other) {
 				_buffer = other._buffer;
 				_buffer_memory = other._buffer_memory;
 				_uniform_buffer_mapped = other._uniform_buffer_mapped;
+				_buffer_s = other._buffer_s;
 
 				other._buffer = nullptr;
 				other._buffer_memory = nullptr;
 				other._uniform_buffer_mapped = nullptr;
-				
+
 				return *this;
 			}
 
-			VkBuffer& buffer() {
-				return _buffer;
-			}
-			VkBuffer const& buffer() const {
-				return _buffer;
-			}
-
-			~MappedUniform() {
+			void destroy() {
 				if (_buffer) {
 					vkDestroyBuffer(Graphics::DEFAULT->device(), _buffer, nullptr);
 					_buffer = nullptr;
@@ -86,20 +83,63 @@ namespace vulkan {
 				}
 			}
 
+			~Uniform() {
+				destroy();
+			}
+
+			VkBuffer& buffer() {
+				return _buffer;
+			}
+			VkBuffer const& buffer() const {
+				return _buffer;
+			}
 			bool has_value() {
 				return _uniform_buffer_mapped != nullptr;
 			}
-			T value() const {
-				return *_uniform_buffer_mapped;
+			void const *raw_value() const {
+				return _uniform_buffer_mapped;
 			}
-			void set_value(T const &buffer) {
-				*_uniform_buffer_mapped = buffer;
+			void *raw_value() {
+				return _uniform_buffer_mapped;
 			}
 
-		private:
-
+		protected:
+			size_t _buffer_s;
 			VkBuffer _buffer;
 			VkDeviceMemory _buffer_memory;
-			T *_uniform_buffer_mapped;
+			void *_uniform_buffer_mapped;
+	};
+
+	template<typename T>
+	class MappedUniform: public Uniform {
+		public:
+			using BufferObj = T;
+
+			MappedUniform(): Uniform() {}
+
+			MappedUniform(Uniform &&uniform):
+				Uniform(std::move(uniform))
+			{ }
+
+			static util::Result<MappedUniform<T>, KError> create() {
+				if (auto res = Uniform::create(sizeof(T))) 
+					return {std::move(res.value())};
+				else
+					return res.error();
+			}
+
+			VkBuffer& buffer() {
+				return _buffer;
+			}
+			VkBuffer const& buffer() const {
+				return _buffer;
+			}
+
+			T value() const {
+				return *(T *) _uniform_buffer_mapped;
+			}
+			void set_value(T const &buffer) {
+				*(T *) _uniform_buffer_mapped = buffer;
+			}
 	};
 }
