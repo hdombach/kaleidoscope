@@ -8,6 +8,7 @@
 #include "MappedUniform.hpp"
 #include "Material.hpp"
 #include "Texture.hpp"
+#include "VType.hpp"
 
 namespace vulkan {
 	class TextureMaterialPrevImpl: public MaterialPreviewImpl {
@@ -48,9 +49,13 @@ namespace vulkan {
 
 	class TextureMaterial: public Material {
 		public:
+			struct UniformBuffer {
+				alignas(16) glm::mat4 object_transformation;
+			};
+
 			using PreviewImpl = TextureMaterialPrevImpl;
 
-			TextureMaterial(Texture* texture);
+			TextureMaterial(uint32_t id, Texture* texture);
 
 			~TextureMaterial() override = default;
 
@@ -58,6 +63,9 @@ namespace vulkan {
 			TextureMaterial(TextureMaterial &&other) = default;
 			TextureMaterial& operator=(const TextureMaterial& other) = delete;
 			TextureMaterial& operator=(TextureMaterial&& other) = default;
+
+			std::vector<types::ShaderResource> const &resources() const override { return _resources; }
+			uint32_t id() const override { return _id; }
 
 			util::Result<void, KError> add_preview(
 					PreviewRenderPass &preview_render_pass) override;
@@ -67,6 +75,11 @@ namespace vulkan {
 
 		private:
 			Texture *_texture;
+			uint32_t _id;
+
+			std::vector<types::ShaderResource> _resources;
+
+			VType<UniformBuffer> _uniform;
 
 			std::optional<TextureMaterialPrevImpl> _preview_impl;
 	};

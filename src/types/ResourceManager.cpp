@@ -9,6 +9,7 @@
 
 #include "../vulkan/StaticTexture.hpp"
 #include "../vulkan/Texture.hpp"
+#include "../vulkan/TextureMaterial.hpp"
 
 #include "../types/StaticMesh.hpp"
 #include "../types/Mesh.hpp"
@@ -109,6 +110,15 @@ namespace types {
 					indices));
 	}
 
+	util::Result<uint32_t, KError> ResourceManager::add_texture_material(
+			std::string const &name,
+			vulkan::Texture *texture)
+	{
+		return _add_material(name, new vulkan::TextureMaterial(
+					_get_material_id(),
+					texture));
+	}
+
 	Mesh *ResourceManager::default_mesh() {
 		return _meshes[_default_mesh];
 	}
@@ -162,6 +172,28 @@ namespace types {
 		return {};
 	}
 
+	util::Result<void, KError> ResourceManager::add_material_observer(util::Observer *observer) {
+		if (util::contains(_material_observers, observer)) {
+			return KError::internal("Material observer already exists");
+		}
+		_material_observers.push_back(observer);
+		for (auto &material : _materials) {
+			observer->obs_create(material->id());
+		}
+		return {};
+	}
+
+	util::Result<void, KError> ResourceManager::rem_material_observer(util::Observer *observer) {
+		if (util::contains(_material_observers, observer)) {
+			return KError::internal("Material observer does not exist");
+		}
+		std::ignore = std::remove(
+				_material_observers.begin(),
+				_material_observers.end(),
+				observer);
+		return {};
+	}
+
 	util::Result<uint32_t, KError> ResourceManager::_add_mesh(
 			const std::string &name,
 			Mesh *mesh)
@@ -177,7 +209,26 @@ namespace types {
 		return {mesh->id()};
 	}
 
+	util::Result<uint32_t, KError> ResourceManager::_add_material(
+			const std::string &name,
+			vulkan::Material *material)
+	{
+		if (_material_map.count(name)) {
+			return KError::material_already_exists(name);
+		}
+		_materials.push_back(material);
+		_material_map[name] = material->id();
+		for (auto &material_observer: _material_observers) {
+			material_observer->obs_create(material->id());
+		}
+		return {material->id()};
+	}
+
 	uint32_t ResourceManager::_get_mesh_id() {
 		return _meshes.size();
+	}
+
+	uint32_t ResourceManager::_get_material_id() {
+		return _materials.size();
 	}
 }

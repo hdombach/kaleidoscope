@@ -144,9 +144,20 @@ namespace vulkan {
 	}
 
 
-	ColorMaterial::ColorMaterial(glm::vec3 color):
+	ColorMaterial::ColorMaterial(uint32_t id, glm::vec3 color):
+		_id(id),
 		_color(color)
-	{ }
+	{
+		_resources.push_back(types::ShaderResource::create_uniform("uniform_buffer", _uniform));
+	}
+
+	std::vector<types::ShaderResource> const &ColorMaterial::resources() const {
+		return _resources;
+	}	
+
+	uint32_t ColorMaterial::id() const {
+		return _id;
+	}
 
 	util::Result<void, KError> ColorMaterial::add_preview(
 			PreviewRenderPass &preview_render_pass)

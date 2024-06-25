@@ -6,6 +6,7 @@
 
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
+#include "../types/ShaderResource.hpp"
 #include "Shader.hpp"
 
 namespace vulkan {
@@ -17,6 +18,9 @@ namespace vulkan {
 			using PreviewImpl = MaterialPreviewImpl;
 
 			virtual ~Material() = default;
+
+			virtual std::vector<types::ShaderResource> const &resources() const = 0;
+			virtual uint32_t id() const = 0;
 
 			/** @brief Adds the preview renderpass specific implimentation */
 			virtual util::Result<void, KError> add_preview(

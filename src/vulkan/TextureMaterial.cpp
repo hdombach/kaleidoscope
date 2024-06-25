@@ -161,9 +161,12 @@ namespace vulkan {
 		_descriptor_sets()
 	{}
 
-	TextureMaterial::TextureMaterial(Texture* texture):
-	_texture(texture)
-	{}
+	TextureMaterial::TextureMaterial(uint32_t id, Texture* texture):
+	_texture(texture), _id(id)
+	{
+		_resources.push_back(types::ShaderResource::create_uniform("object_uniform", _uniform));
+		_resources.push_back(types::ShaderResource::create_image("texSampler", texture->image_view()));
+	}
 
 	util::Result<void, KError> TextureMaterial::add_preview(
 			PreviewRenderPass &preview_render_pass)

@@ -13,16 +13,41 @@
 #include "Texture.hpp"
 #include "UniformBufferObject.hpp"
 #include "PreviewRenderPassMesh.hpp"
+#include "PreviewRenderPassMaterial.hpp"
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
 #include "../util/Observer.hpp"
 #include "../types/Camera.hpp"
+#include "../types/ShaderResource.hpp"
 
 namespace vulkan {
 	class Node;
-	class PreviewRenderPass: public Texture, public util::Observer {
+	class PreviewRenderPass: public Texture {
 		public:
 			using Ptr = std::unique_ptr<PreviewRenderPass>;
+
+			class MeshObserver: public util::Observer {
+				public:
+					MeshObserver() = default;
+					MeshObserver(PreviewRenderPass &render_pass);
+					void obs_create(uint32_t id) override;
+					void obs_update(uint32_t id) override;
+					void obs_remove(uint32_t id) override;
+				private:
+					PreviewRenderPass *_render_pass;
+			};
+
+			class MaterialObserver: public util::Observer {
+				public:
+					MaterialObserver() = default;
+					MaterialObserver(PreviewRenderPass &render_pass);
+					void obs_create(uint32_t id) override;
+					void obs_update(uint32_t id) override;
+					void obs_remove(uint32_t id) override;
+				private:
+					PreviewRenderPass *_render_pass;
+			};
+
 			static util::Result<Ptr, KError> create(
 					Scene &scene,
 					VkExtent2D size);
@@ -41,9 +66,17 @@ namespace vulkan {
 			VkDescriptorSetLayout global_descriptor_set_layout() { return _descriptor_sets.layout(); }
 			VkDescriptorSet global_descriptor_set(int frame_index) { return _descriptor_sets.descriptor_set(frame_index); }
 
-			void obs_create(uint32_t id) override;
-			void obs_update(uint32_t id) override;
-			void obs_remove(uint32_t id) override;
+			MaterialObserver &material_observer() { return _material_observer; }
+			MeshObserver &mesh_observer() { return _mesh_observer; }
+
+		private:
+			void mesh_create(uint32_t id);
+			void mesh_update(uint32_t id);
+			void mesh_remove(uint32_t id);
+
+			void material_create(uint32_t id);
+			void material_update(uint32_t id);
+			void material_remove(uint32_t id);
 
 		private:
 			PreviewRenderPass(Scene &scene, VkExtent2D size);
@@ -55,6 +88,9 @@ namespace vulkan {
 			static VkFormat _depth_format();
 
 			std::vector<PreviewRenderPassMesh> _meshes;
+			std::vector<PreviewRenderPassMaterial> _materials;
+			MeshObserver _mesh_observer;
+			MaterialObserver _material_observer;
 
 			VkExtent2D _size;
 			Image _depth_image;

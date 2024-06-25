@@ -52,11 +52,19 @@ namespace vulkan {
 
 	class ColorMaterial: public Material {
 		public:
+			struct UniformBuffer {
+				alignas(16) glm::mat4 object_transformation;
+				alignas(16) glm::vec3 color;
+			};
+
 			using PreviewImpl = ColorMaterialPrevImpl;
 
-			ColorMaterial(glm::vec3 color);
+			ColorMaterial(uint32_t id, glm::vec3 color);
 
 			~ColorMaterial() override = default;
+
+			std::vector<types::ShaderResource> const &resources() const override;
+			uint32_t id() const override;
 
 			ColorMaterial(const ColorMaterial& other) = delete;
 			ColorMaterial(ColorMaterial &&other) = default;
@@ -70,7 +78,14 @@ namespace vulkan {
 			ColorMaterialPrevImpl const *preview_impl() const override;
 
 		private:
+			uint32_t _id;
+
 			glm::vec3 _color;
+
+			std::vector<types::ShaderResource> _resources;
+
+			VType<UniformBuffer> _uniform;
+
 			std::optional<ColorMaterialPrevImpl> _preview_impl;
 	};
 }

@@ -8,6 +8,7 @@
 #include <glm/ext/matrix_transform.hpp>
 
 #include "PreviewRenderPass.hpp"
+#include "PreviewRenderPassMaterial.hpp"
 #include "Scene.hpp"
 #include "defs.hpp"
 #include "error.hpp"
@@ -16,6 +17,39 @@
 #include "imgui_impl_vulkan.h"
 
 namespace vulkan {
+	/************************ Observers *********************************/
+	PreviewRenderPass::MeshObserver::MeshObserver(PreviewRenderPass &render_pass):
+		_render_pass(&render_pass)
+	{}
+
+	void PreviewRenderPass::MeshObserver::obs_create(uint32_t id) {
+		_render_pass->mesh_create(id);
+	}
+
+	void PreviewRenderPass::MeshObserver::obs_update(uint32_t id) {
+		_render_pass->mesh_update(id);
+	}
+
+	void PreviewRenderPass::MeshObserver::obs_remove(uint32_t id) {
+		_render_pass->mesh_remove(id);
+	}
+
+	PreviewRenderPass::MaterialObserver::MaterialObserver(PreviewRenderPass &render_pass):
+		_render_pass(&render_pass)
+	{}
+
+	void PreviewRenderPass::MaterialObserver::obs_create(uint32_t id) {
+		_render_pass->material_create(id);
+	}
+
+	void PreviewRenderPass::MaterialObserver::obs_update(uint32_t id) {
+		_render_pass->material_update(id);
+	}
+
+	void PreviewRenderPass::MaterialObserver::obs_remove(uint32_t id) {
+		_render_pass->material_remove(id);
+	}
+
 	/************************ PreviewRenderPass *********************************/
 
 	util::Result<PreviewRenderPass::Ptr, KError> PreviewRenderPass::create(
@@ -121,6 +155,9 @@ namespace vulkan {
 				result->_descriptor_pool);
 		TRY(descriptor_sets);
 		result->_descriptor_sets = std::move(descriptor_sets.value());
+
+		result->_mesh_observer = MeshObserver(*result);
+		result->_material_observer = MaterialObserver(*result);
 
 		return result;
 	}
@@ -300,7 +337,7 @@ namespace vulkan {
 		return _mapped_uniforms[_frame_index];
 	}
 
-	void PreviewRenderPass::obs_create(uint32_t id) {
+	void PreviewRenderPass::mesh_create(uint32_t id) {
 		LOG_DEBUG << "Creating preview mesh" << std::endl;
 		while (id + 1 > _meshes.size()) {
 			_meshes.push_back(PreviewRenderPassMesh());
@@ -312,10 +349,27 @@ namespace vulkan {
 		}
 	}
 
-	void PreviewRenderPass::obs_update(uint32_t id) { }
+	void PreviewRenderPass::mesh_update(uint32_t id) { }
 
-	void PreviewRenderPass::obs_remove(uint32_t id) {
+	void PreviewRenderPass::mesh_remove(uint32_t id) {
 		_meshes[id].destroy();
+	}
+
+	void PreviewRenderPass::material_create(uint32_t id) {
+		while (id + 1 > _materials.size()) {
+			_materials.push_back(PreviewRenderPassMaterial());
+		}
+		//if (auto material = PreviewRenderPassMaterial::create(*_scene, *this, _scene->resource_manager().get_material(id))) {
+		//	_materials[id] = std::move(material.value());
+		//} else {
+		//	LOG_ERROR << "Couldn't create preview material: " << material.error().desc() << std::endl;
+		//}
+	}
+
+	void PreviewRenderPass::material_update(uint32_t id) { }
+
+	void PreviewRenderPass::material_remove(uint32_t id) {
+		_materials[id].destroy();
 	}
 
 	util::Result<void, KError> PreviewRenderPass::_create_sync_objects() {

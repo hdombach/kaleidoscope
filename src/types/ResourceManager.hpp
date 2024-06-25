@@ -12,6 +12,7 @@
 #include "../types/Mesh.hpp"
 #include "../vulkan/Texture.hpp"
 #include "../vulkan/Vertex.hpp"
+#include "../vulkan/Material.hpp"
 
 
 namespace types {
@@ -47,6 +48,10 @@ namespace types {
 					std::vector<vulkan::Vertex> const &vertices,
 					std::vector<uint32_t> const &indices);
 
+			util::Result<uint32_t, KError> add_texture_material(
+					std::string const &name,
+					vulkan::Texture *texture);
+
 			Mesh *default_mesh();
 			Mesh const *default_mesh() const;
 			Mesh *update_mesh(std::string const &name);
@@ -57,11 +62,18 @@ namespace types {
 			util::Result<void, KError> add_mesh_observer(util::Observer *observer);
 			util::Result<void, KError> rem_mesh_observer(util::Observer *observer);
 
+			util::Result<void, KError> add_material_observer(util::Observer *observer);
+			util::Result<void, KError> rem_material_observer(util::Observer *observer);
+
 		private:
 			util::Result<uint32_t, KError> _add_mesh(
 					std::string const &name,
 					Mesh *mesh);
+			util::Result<uint32_t, KError> _add_material(
+					std::string const &name,
+					vulkan::Material *material);
 			uint32_t _get_mesh_id();
+			uint32_t _get_material_id();
 
 			std::unordered_map<std::string, uint32_t> _texture_map;
 			std::vector<vulkan::Texture *> _textures;
@@ -69,7 +81,10 @@ namespace types {
 
 			std::unordered_map<std::string, uint32_t> _mesh_map;
 			std::vector<Mesh *> _meshes;
+			std::unordered_map<std::string, uint32_t> _material_map;
+			std::vector<vulkan::Material *> _materials;
 			uint32_t _default_mesh;
 			std::list<util::Observer *> _mesh_observers;
+			std::list<util::Observer *> _material_observers;
 	};
 }

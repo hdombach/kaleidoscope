@@ -44,6 +44,19 @@ namespace vulkan {
 						sizeof(BufferObj));
 			}
 
+			static DescriptorSetTemplate create_uniform(
+					uint32_t binding,
+					VkShaderStageFlags stage_flags,
+					Uniform &uniform)
+			{
+				auto buffers = std::vector<VkBuffer>{uniform.buffer()};
+				return _create_uniform_impl(
+						binding,
+						stage_flags,
+						std::move(buffers),
+						uniform.size());
+			}
+
 			static DescriptorSetTemplate create_image(
 					uint32_t binding,
 					VkShaderStageFlags stage_flags,

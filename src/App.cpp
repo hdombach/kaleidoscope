@@ -50,7 +50,7 @@ App::Ptr App::create(std::string const &name) {
 	{
 		auto new_node = vulkan::Node(
 				*(result->_resource_manager)->get_mesh("square"),
-				new vulkan::TextureMaterial(result->_resource_manager->get_texture("viking_room")));
+				new vulkan::TextureMaterial(0, result->_resource_manager->get_texture("viking_room")));
 		new_node.set_position({0, 0, 0});
 		result->_scene->add_node(std::move(new_node));
 	}
@@ -58,7 +58,7 @@ App::Ptr App::create(std::string const &name) {
 	{
 		auto new_node = vulkan::Node(
 				*(result->_resource_manager)->get_mesh("square"),
-				new vulkan::ColorMaterial({0.8, 0.2, 0.2}));
+				new vulkan::ColorMaterial(0, {0.8, 0.2, 0.2}));
 		new_node.set_position({0, 2, 0});
 		result->_scene->add_node(std::move(new_node));
 	}

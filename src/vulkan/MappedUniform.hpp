@@ -102,6 +102,9 @@ namespace vulkan {
 			void *raw_value() {
 				return _uniform_buffer_mapped;
 			}
+			size_t size() {
+				return _buffer_s;
+			}
 
 		protected:
 			size_t _buffer_s;

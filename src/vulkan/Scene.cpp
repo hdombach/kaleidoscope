@@ -23,7 +23,8 @@ namespace vulkan {
 		scene->_preview_render_pass = std::move(render_pass_res.value());
 		scene->_raytrace_render_pass = std::move(raytrace_render_pass.value());
 		scene->_is_preview = true;
-		resource_manager.add_mesh_observer(scene->_preview_render_pass.get());
+		resource_manager.add_mesh_observer(&scene->_preview_render_pass->mesh_observer());
+		resource_manager.add_material_observer(&scene->_preview_render_pass->material_observer());
 		return scene;
 	}
 
