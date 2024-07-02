@@ -15,7 +15,7 @@ namespace vulkan {
 		public:
 			struct UniformBuffer {
 				alignas(16) glm::mat4 object_transformation;
-			};
+			} __attribute__((packed));
 			using MappedUniform = MappedUniform<UniformBuffer>;
 
 			static util::Result<TextureMaterialPrevImpl, KError> create(

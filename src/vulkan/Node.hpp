@@ -12,13 +12,7 @@ namespace vulkan {
 	 */
 	class Node {
 		public:
-			Node(types::Mesh &mesh, std::unique_ptr<Material> &&material):
-				_mesh(mesh),
-				_material(std::move(material)),
-				_position(0, 0, 0)
-			{}
-
-			Node(types::Mesh const &mesh, Material *material):
+			Node(types::Mesh const &mesh, Material const &material):
 				_mesh(mesh),
 				_material(material),
 				_position(0, 0, 0)
@@ -31,8 +25,7 @@ namespace vulkan {
 
 			types::Mesh const &mesh() const { return _mesh; }
 
-			Material &material() { return *_material; }
-			Material const &material() const { return *_material; }
+			Material const &material() const { return _material; }
 
 			glm::vec3 position() const { return _position; };
 			void set_position(glm::vec3 position) { _position = position; };
@@ -43,7 +36,7 @@ namespace vulkan {
 
 		private:
 			types::Mesh const &_mesh;
-			std::unique_ptr<Material> _material;
+			vulkan::Material const &_material;
 
 			glm::vec3 _position;
 	};

@@ -239,17 +239,18 @@ namespace vulkan {
 
 
 		for (auto &node : nodes) {
+			auto &mesh = _meshes[node.mesh().id()];
+			auto &material = _materials[node.material().id()];
+
 			auto size = glm::vec2{_size.width, _size.height};
-			node.material().preview_impl()->update_uniform(
+			/*node.material().preview_impl()->update_uniform(
 					_frame_index, 
 					node.position(), 
-					size);
+					size);*/
 			vkCmdBindPipeline(
 					command_buffer, 
 					VK_PIPELINE_BIND_POINT_GRAPHICS, 
-					node.material().preview_impl()->pipeline());
-
-			auto &mesh = _meshes[node.mesh().id()];
+					material.pipeline());
 
 			VkBuffer vertex_buffers[] = {mesh.vertex_buffer()};
 			VkDeviceSize offsets[] = {0};
@@ -257,14 +258,14 @@ namespace vulkan {
 			vkCmdBindIndexBuffer(command_buffer, mesh.index_buffer(), 0, VK_INDEX_TYPE_UINT32);
 
 			auto descriptor_sets = std::array<VkDescriptorSet, 2>{
-				global_descriptor_set(_frame_index),	
-				node.material().preview_impl()->get_descriptor_set(_frame_index),
+				global_descriptor_set(_frame_index),
+				material.get_descriptor_set(),
 			};
 
 			vkCmdBindDescriptorSets(
 					command_buffer, 
 					VK_PIPELINE_BIND_POINT_GRAPHICS, 
-					node.material().preview_impl()->pipeline_layout(),
+					material.pipeline_layout(),
 					0,
 					descriptor_sets.size(),
 					descriptor_sets.data(),
@@ -359,11 +360,11 @@ namespace vulkan {
 		while (id + 1 > _materials.size()) {
 			_materials.push_back(PreviewRenderPassMaterial());
 		}
-		//if (auto material = PreviewRenderPassMaterial::create(*_scene, *this, _scene->resource_manager().get_material(id))) {
-		//	_materials[id] = std::move(material.value());
-		//} else {
-		//	LOG_ERROR << "Couldn't create preview material: " << material.error().desc() << std::endl;
-		//}
+		if (auto material = PreviewRenderPassMaterial::create(*_scene, *this, _scene->resource_manager().get_material(id))) {
+			_materials[id] = std::move(material.value());
+		} else {
+			LOG_ERROR << "Couldn't create preview material: " << material.error().desc() << std::endl;
+		}
 	}
 
 	void PreviewRenderPass::material_update(uint32_t id) { }

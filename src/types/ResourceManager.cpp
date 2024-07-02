@@ -110,15 +110,6 @@ namespace types {
 					indices));
 	}
 
-	util::Result<uint32_t, KError> ResourceManager::add_texture_material(
-			std::string const &name,
-			vulkan::Texture *texture)
-	{
-		return _add_material(name, new vulkan::TextureMaterial(
-					_get_material_id(),
-					texture));
-	}
-
 	Mesh *ResourceManager::default_mesh() {
 		return _meshes[_default_mesh];
 	}
@@ -170,6 +161,33 @@ namespace types {
 				_mesh_observers.end(),
 				observer);
 		return {};
+	}
+
+	util::Result<uint32_t, KError> ResourceManager::add_texture_material(
+			std::string const &name,
+			vulkan::Texture *texture)
+	{
+		return _add_material(name, new vulkan::TextureMaterial(
+					_get_material_id(),
+					texture));
+	}
+
+	vulkan::Material const *ResourceManager::get_material(std::string const &name) const {
+		if (has_material(name)) {
+			return get_material(_material_map.at(name));
+		}
+		return nullptr;
+	}
+
+	vulkan::Material const *ResourceManager::get_material(uint32_t id) const {
+		if (id >= 0 && id < _materials.size()) {
+			return _materials[id];
+		}
+		return nullptr;
+	}
+
+	bool ResourceManager::has_material(std::string const &name) const {
+		return _material_map.count(name) > 0;
 	}
 
 	util::Result<void, KError> ResourceManager::add_material_observer(util::Observer *observer) {

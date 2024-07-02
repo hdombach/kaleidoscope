@@ -29,6 +29,10 @@ namespace vulkan {
 
 			uint32_t id() const;
 
+			VkPipeline pipeline() { return _pipeline; }
+			VkPipelineLayout pipeline_layout() { return _pipeline_layout; }
+			VkDescriptorSet get_descriptor_set() { return _descriptor_sets.descriptor_set(0); }
+
 		private:
 			const vulkan::Material *_material;
 			std::vector<Uniform> _objects;

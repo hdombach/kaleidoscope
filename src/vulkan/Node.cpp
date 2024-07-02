@@ -13,11 +13,11 @@ namespace vulkan {
 		_position(other._position)
 	{ }
 
-	void Node::render_preview(
+	/*void Node::render_preview(
 			PreviewRenderPass &preview_render_pass,
 			VkCommandBuffer command_buffer)
 	{
-		if (!_material->preview_impl()) {
+		if (!_material.preview_impl()) {
 			LOG_WARNING << "preview pipeline doesn't exist for material" << std::endl;
 			return;
 		}
@@ -55,5 +55,5 @@ namespace vulkan {
 				nullptr);
 
 		vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(_mesh.index_count()), 1, 0, 0, 0);
-	}
+	}*/
 }

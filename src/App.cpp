@@ -41,6 +41,15 @@ App::Ptr App::create(std::string const &name) {
 		}
 	}
 
+	{
+		auto res = result->_resource_manager->add_texture_material(
+				"viking_room",
+				result->_resource_manager->get_texture("viking_room"));
+		if (!res) {
+			LOG_ERROR << res.error().desc() << std::endl;
+		}
+	}
+
 	if (auto scene = vulkan::Scene::create(*(result->_resource_manager))) {
 		result->_scene = std::move(scene.value());
 	} else {
@@ -50,18 +59,18 @@ App::Ptr App::create(std::string const &name) {
 	{
 		auto new_node = vulkan::Node(
 				*(result->_resource_manager)->get_mesh("square"),
-				new vulkan::TextureMaterial(0, result->_resource_manager->get_texture("viking_room")));
+				*result->_resource_manager->get_material("viking_room"));
 		new_node.set_position({0, 0, 0});
 		result->_scene->add_node(std::move(new_node));
 	}
 
-	{
+	/*{
 		auto new_node = vulkan::Node(
 				*(result->_resource_manager)->get_mesh("square"),
 				new vulkan::ColorMaterial(0, {0.8, 0.2, 0.2}));
 		new_node.set_position({0, 2, 0});
 		result->_scene->add_node(std::move(new_node));
-	}
+	}*/
 
 	result->_app_view = std::unique_ptr<ui::AppView>(new ui::AppView(*result));
 

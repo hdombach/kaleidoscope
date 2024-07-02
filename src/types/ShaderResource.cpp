@@ -9,6 +9,7 @@ namespace types {
 			const vulkan::ImageView &image_view)
 	{
 		auto result = ShaderResource(name);
+		result._type = Type::ImageT;
 		result._image_view = &image_view;
 		return result;
 	}
@@ -18,6 +19,7 @@ namespace types {
 			const vulkan::ImageView &image_view)
 	{
 		auto result = ShaderResource(name);
+		result._type = Type::ImageTargetT;
 		result._image_view = &image_view;
 		return result;
 	}
@@ -28,6 +30,7 @@ namespace types {
 				std::vector<vulkan::VType<T>> &buffer)
 		{
 			auto result = ShaderResource(name);
+			result._type = Type::StorageBufferT;
 			result._objects = buffer[0].get();
 			result._object_size = sizeof(T);
 			result._object_count = buffer.size();

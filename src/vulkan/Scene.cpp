@@ -63,9 +63,9 @@ namespace vulkan {
 	}
 
 	util::Result<void, KError> Scene::add_node(Node node) {
-		if (!node.material().preview_impl()) {
-			node.material().add_preview(*_preview_render_pass);
-		}
+		//if (!node.material().preview_impl()) {
+		//	node.material().add_preview(*_preview_render_pass);
+		//}
 		_nodes.push_back(std::move(node));
 		return {};
 	}

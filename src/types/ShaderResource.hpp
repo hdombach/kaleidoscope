@@ -19,6 +19,7 @@ namespace types {
 			template<typename T>
 				static ShaderResource create_uniform(std::string name, vulkan::VType<T> &type) {
 					auto result = ShaderResource(name);
+					result._type = Type::UniformT;
 					result._objects = type.get();
 					result._object_size = sizeof(T);
 					result._object_count = 1;

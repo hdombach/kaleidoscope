@@ -55,7 +55,7 @@ namespace vulkan {
 			struct UniformBuffer {
 				alignas(16) glm::mat4 object_transformation;
 				alignas(16) glm::vec3 color;
-			};
+			} __attribute__((packed));
 
 			using PreviewImpl = ColorMaterialPrevImpl;
 

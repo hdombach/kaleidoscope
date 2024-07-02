@@ -30,17 +30,19 @@ namespace vulkan {
 			{
 				auto uniform = Uniform::create(resource.range());
 				TRY(uniform);
+				memcpy(uniform.value().raw_value(), resource.objects(), resource.range());
 				result._objects.push_back(std::move(uniform.value()));
 				auto &last = result._objects[result._objects.size() - 1];
 				if (resource.type() == types::ShaderResource::UniformT) {
 					descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
 								i,
-								VK_SHADER_STAGE_FRAGMENT_BIT,
+								VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,
 								last));
 				} else {
 					descriptor_templates.push_back(DescriptorSetTemplate::create_storage_buffer(
 								i, 
-								VK_SHADER_STAGE_FRAGMENT_BIT, last.buffer(), last.size()));
+								VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,
+								last.buffer(), last.size()));
 				}
 				continue;
 			} else {
@@ -50,12 +52,12 @@ namespace vulkan {
 			if (resource.type() == types::ShaderResource::ImageT) {
 				descriptor_templates.push_back(DescriptorSetTemplate::create_image(
 							i, /* TODO */
-							VK_SHADER_STAGE_FRAGMENT_BIT,
+							VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,
 							resource.image_view()));
 			} else if (resource.type() == types::ShaderResource::ImageTargetT) {
 				descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
 							i,
-							VK_SHADER_STAGE_FRAGMENT_BIT,
+							VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,
 							resource.image_view()));
 			}
 		}

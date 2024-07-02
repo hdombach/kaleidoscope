@@ -48,9 +48,6 @@ namespace types {
 					std::vector<vulkan::Vertex> const &vertices,
 					std::vector<uint32_t> const &indices);
 
-			util::Result<uint32_t, KError> add_texture_material(
-					std::string const &name,
-					vulkan::Texture *texture);
 
 			Mesh *default_mesh();
 			Mesh const *default_mesh() const;
@@ -61,6 +58,15 @@ namespace types {
 
 			util::Result<void, KError> add_mesh_observer(util::Observer *observer);
 			util::Result<void, KError> rem_mesh_observer(util::Observer *observer);
+
+			util::Result<uint32_t, KError> add_texture_material(
+					std::string const &name,
+					vulkan::Texture *texture);
+			util::Result<uint32_t, KError> add_color_material(glm::vec3 color);
+
+			vulkan::Material const *get_material(std::string const &name) const;
+			vulkan::Material const *get_material(uint32_t id) const;
+			bool has_material(std::string const &name) const;
 
 			util::Result<void, KError> add_material_observer(util::Observer *observer);
 			util::Result<void, KError> rem_material_observer(util::Observer *observer);
