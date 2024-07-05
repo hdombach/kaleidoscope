@@ -10,6 +10,7 @@
 #include "../vulkan/StaticTexture.hpp"
 #include "../vulkan/Texture.hpp"
 #include "../vulkan/TextureMaterial.hpp"
+#include "../vulkan/ColorMaterial.hpp"
 
 #include "../types/StaticMesh.hpp"
 #include "../types/Mesh.hpp"
@@ -170,10 +171,16 @@ namespace types {
 			std::string const &name,
 			vulkan::Texture *texture)
 	{
-		return _add_material(name, new vulkan::TextureMaterial(
-					_get_material_id(),
-					texture));
+		return _add_material(name, vulkan::TextureMaterial::create(_get_material_id(), texture));
 	}
+
+	util::Result<uint32_t, KError> ResourceManager::add_color_material(
+			std::string const &name,
+			glm::vec3 color)
+	{
+		return _add_material(name, vulkan::ColorMaterial::create(_get_material_id(), color));
+	}
+
 
 	vulkan::Material const *ResourceManager::get_material(std::string const &name) const {
 		if (has_material(name)) {

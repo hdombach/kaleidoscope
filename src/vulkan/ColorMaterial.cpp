@@ -1,26 +1,28 @@
 #include <vector>
+
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/fwd.hpp>
 #include <vulkan/vulkan_core.h>
 
 #include "ColorMaterial.hpp"
-#include "defs.hpp"
-#include "Shader.hpp"
 
 namespace vulkan {
-	ColorMaterial::ColorMaterial(uint32_t id, glm::vec3 color):
-		_id(id),
-		_color(color)
-	{
-		_resources.push_back(types::ShaderResource::create_uniform("uniform_buffer", _uniform));
-	}
+	ColorMaterial* ColorMaterial::create(uint32_t id, glm::vec3 color) {
+		auto result = new ColorMaterial();
 
-	std::vector<types::ShaderResource> const &ColorMaterial::resources() const {
-		return _resources;
-	}	
+		result->_id = id;
+		result->_color = color;
+		result->_object_transformation = glm::mat4(1.0);
 
-	uint32_t ColorMaterial::id() const {
-		return _id;
+		result->_resources.push_back(types::ShaderResource::create_primitive(
+					"object_transformation",
+					result->_object_transformation));
+
+		result->_resources.push_back(types::ShaderResource::create_primitive(
+					"color",
+					result->_color));
+
+		return result;
 	}
 }

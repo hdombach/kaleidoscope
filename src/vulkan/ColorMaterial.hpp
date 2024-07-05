@@ -1,44 +1,38 @@
 #pragma once
 
-#include <optional>
 #include <vector>
 
 #include <glm/fwd.hpp>
 #include <glm/glm.hpp>
 #include <vulkan/vulkan_core.h>
 
-#include "DescriptorSet.hpp"
 #include "Material.hpp"
-#include "PreviewRenderPass.hpp"
-#include "MappedUniform.hpp"
+#include "../types/ShaderResource.hpp"
 
 namespace vulkan {
 	class ColorMaterial: public Material {
 		public:
-			struct UniformBuffer {
-				alignas(16) glm::mat4 object_transformation;
-				alignas(16) glm::vec3 color;
-			} __attribute__((packed));
-
-			ColorMaterial(uint32_t id, glm::vec3 color);
+			//TODO: change to unique_ptr
+			static ColorMaterial* create(uint32_t id, glm::vec3 color);
 
 			~ColorMaterial() override = default;
 
-			std::vector<types::ShaderResource> const &resources() const override;
-			uint32_t id() const override;
+			std::vector<types::ShaderResource> const &resources() const override { return _resources; }
+			uint32_t id() const override { return _id; }
 
 			ColorMaterial(const ColorMaterial& other) = delete;
-			ColorMaterial(ColorMaterial &&other) = default;
+			ColorMaterial(ColorMaterial &&other) = delete;
 			ColorMaterial& operator=(const ColorMaterial& other) = delete;
-			ColorMaterial& operator=(ColorMaterial&& other) = default;
+			ColorMaterial& operator=(ColorMaterial&& other) = delete;
 
 		private:
-			uint32_t _id;
+			ColorMaterial() = default;
 
-			glm::vec3 _color;
+			uint32_t _id;
 
 			std::vector<types::ShaderResource> _resources;
 
-			VType<UniformBuffer> _uniform;
+			glm::mat4 _object_transformation;
+			glm::vec3 _color;
 	};
 }

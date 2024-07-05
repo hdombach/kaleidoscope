@@ -37,7 +37,7 @@ namespace vulkan {
 
 		private:
 			const vulkan::Material *_material;
-			std::vector<Uniform> _objects;
+			Uniform _global_uniform;
 			DescriptorSets _descriptor_sets;
 			PreviewRenderPass *_render_pass;
 			VkPipelineLayout _pipeline_layout;

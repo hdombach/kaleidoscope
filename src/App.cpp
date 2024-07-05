@@ -50,6 +50,13 @@ App::Ptr App::create(std::string const &name) {
 		}
 	}
 
+	{
+		auto res = result->_resource_manager->add_color_material("color", glm::vec3(0.5, 0.1, 0.2));
+		if (!res) {
+			LOG_ERROR << res.error().desc() << std::endl;
+		}
+	}
+
 	if (auto scene = vulkan::Scene::create(*(result->_resource_manager))) {
 		result->_scene = std::move(scene.value());
 	} else {

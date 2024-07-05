@@ -1,5 +1,7 @@
 #include <array>
+#include <cstring>
 #include <vector>
+
 #include <vulkan/vulkan_core.h>
 
 #include "PreviewRenderPass.hpp"
@@ -9,7 +11,6 @@
 #include "../vulkan/Vertex.hpp"
 #include "../util/file.hpp"
 #include "MappedUniform.hpp"
-#include "defs.hpp"
 
 namespace vulkan {
 	util::Result<PreviewRenderPassMaterial, KError> PreviewRenderPassMaterial::create(
@@ -23,44 +24,28 @@ namespace vulkan {
 		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
 
 		int i = -1;
+		size_t uniform_s = 0;
 		for (auto &resource : material->resources()) {
-			i++;
-			if (resource.type() == types::ShaderResource::UniformT
-					|| resource.type() == types::ShaderResource::StorageBufferT)
-			{
-				auto uniform = Uniform::create(resource.range());
-				TRY(uniform);
-				memcpy(uniform.value().raw_value(), resource.objects(), resource.range());
-				result._objects.push_back(std::move(uniform.value()));
-				auto &last = result._objects[result._objects.size() - 1];
-				if (resource.type() == types::ShaderResource::UniformT) {
-					descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
-								i,
-								VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,
-								last));
-				} else {
-					descriptor_templates.push_back(DescriptorSetTemplate::create_storage_buffer(
-								i, 
-								VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,
-								last.buffer(), last.size()));
-				}
-				continue;
-			} else {
-				result._objects.push_back(Uniform());
-			}
-
-			if (resource.type() == types::ShaderResource::ImageT) {
-				descriptor_templates.push_back(DescriptorSetTemplate::create_image(
-							i, /* TODO */
-							VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,
-							resource.image_view()));
-			} else if (resource.type() == types::ShaderResource::ImageTargetT) {
-				descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
-							i,
-							VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT,
-							resource.image_view()));
+			if (resource.type() != types::ShaderResource::SRImage) {
+				uniform_s += resource.primitive_size();
 			}
 		}
+
+		auto uniform = Uniform::create(uniform_s);
+		TRY(uniform);
+		result._global_uniform = std::move(uniform.value());
+
+		size_t cur_offset = 0;
+		for (auto &resource : material->resources()) {
+			if (resource.type() == types::ShaderResource::SRImage) {
+				descriptor_templates.push_back(DescriptorSetTemplate::create_image(1, VK_SHADER_STAGE_FRAGMENT_BIT, resource.image_view()));
+			} else {
+				memcpy(result._global_uniform.raw_value(), resource.primitive(), resource.primitive_size());
+				cur_offset += resource.primitive_size();
+			}
+		}
+		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(0, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, result._global_uniform));
+
 		auto descriptor_sets = DescriptorSets::create(
 				descriptor_templates,
 				1,
@@ -96,7 +81,7 @@ namespace vulkan {
 		_material = other._material;
 		other._material = nullptr;
 
-		_objects = std::move(other._objects);
+		_global_uniform = std::move(other._global_uniform);
 		_descriptor_sets = std::move(other._descriptor_sets);
 
 		_render_pass = other._render_pass;
@@ -112,7 +97,7 @@ namespace vulkan {
 	PreviewRenderPassMaterial& PreviewRenderPassMaterial::operator=(PreviewRenderPassMaterial &&other) {
 		destroy();
 
-		_objects = std::move(other._objects);
+		_global_uniform = std::move(other._global_uniform);
 		_descriptor_sets = std::move(other._descriptor_sets);
 
 		_render_pass = other._render_pass;
@@ -129,7 +114,6 @@ namespace vulkan {
 
 	void PreviewRenderPassMaterial::destroy() {
 		_material = nullptr;
-		_objects.clear();
 		_descriptor_sets.clear();
 		_render_pass = nullptr;
 		if (_pipeline_layout) {

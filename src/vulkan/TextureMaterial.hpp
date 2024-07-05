@@ -6,33 +6,29 @@
 
 #include "Material.hpp"
 #include "Texture.hpp"
-#include "VType.hpp"
 
 namespace vulkan {
 	class TextureMaterial: public Material {
 		public:
-			struct UniformBuffer {
-				alignas(16) glm::mat4 object_transformation;
-			};
+			static TextureMaterial* create(uint32_t id, Texture* texture);
 
-			TextureMaterial(uint32_t id, Texture* texture);
-
-			~TextureMaterial() override;
+			~TextureMaterial() override = default;
 
 			TextureMaterial(const TextureMaterial& other) = delete;
-			TextureMaterial(TextureMaterial &&other) = default;
+			TextureMaterial(TextureMaterial &&other) = delete;
 			TextureMaterial& operator=(const TextureMaterial& other) = delete;
-			TextureMaterial& operator=(TextureMaterial&& other) = default;
+			TextureMaterial& operator=(TextureMaterial&& other) = delete;
 
 			std::vector<types::ShaderResource> const &resources() const override { return _resources; }
 			uint32_t id() const override { return _id; }
 		private:
+			TextureMaterial() = default;
 			Texture *_texture;
 			uint32_t _id;
 
 			std::vector<types::ShaderResource> _resources;
 
-			VType<UniformBuffer> _uniform;
+			glm::mat4 _object_transformation;
 	};
 
 }
