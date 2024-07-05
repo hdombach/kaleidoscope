@@ -14,6 +14,8 @@ namespace vulkan {
 			DescriptorPool& operator=(const DescriptorPool& other) = delete;
 			DescriptorPool& operator=(DescriptorPool&& other);
 
+			void destroy();
+
 			~DescriptorPool();
 
 			VkDescriptorPool const &descriptor_pool() const;

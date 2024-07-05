@@ -169,10 +169,12 @@ namespace vulkan {
 	{
 	}
 
-	PreviewRenderPass::~PreviewRenderPass() {
+	void PreviewRenderPass::destroy() {
 		LOG_MEMORY << "Deconstructing main render pipeline" << std::endl;
 
 		_cleanup_images();
+		_meshes.clear();
+		_materials.clear();
 		_descriptor_sets.clear();
 		if (_render_pass) {
 			vkDestroyRenderPass(Graphics::DEFAULT->device(), _render_pass, nullptr);
@@ -183,6 +185,10 @@ namespace vulkan {
 		
 		_in_flight_fences.clear();
 		_render_finished_semaphores.clear();
+	}
+
+	PreviewRenderPass::~PreviewRenderPass() {
+		destroy();
 	}
 
 	void PreviewRenderPass::render(std::vector<Node> &nodes, types::Camera &camera) {

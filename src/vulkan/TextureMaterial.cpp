@@ -26,4 +26,8 @@ namespace vulkan {
 		_resources.push_back(types::ShaderResource::create_uniform("object_uniform", _uniform));
 		_resources.push_back(types::ShaderResource::create_image("texSampler", texture->image_view()));
 	}
+
+	TextureMaterial::~TextureMaterial() {
+		LOG_MEMORY << "Destroying Texture Material" << std::endl;
+	}
 }

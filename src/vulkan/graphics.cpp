@@ -264,6 +264,7 @@ namespace vulkan {
 		if (result != VK_SUCCESS) {
 			return KError(result);
 		}
+		LOG_MEMORY << "Create instance " << _instance << std::endl;
 
 		return {};
 	}
@@ -341,6 +342,7 @@ namespace vulkan {
 			_debug_messenger = nullptr;
 		}
 
+		LOG_MEMORY << "Destroy instance " << _instance << std::endl;
 		vkDestroyInstance(_instance, nullptr);
 		_instance = nullptr;
 

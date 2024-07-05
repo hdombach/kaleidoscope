@@ -51,6 +51,7 @@ namespace vulkan {
 			static util::Result<Ptr, KError> create(
 					Scene &scene,
 					VkExtent2D size);
+			void destroy();
 			~PreviewRenderPass();
 			void render(std::vector<Node> &nodes, types::Camera &camera);
 			void resize(VkExtent2D size) override;

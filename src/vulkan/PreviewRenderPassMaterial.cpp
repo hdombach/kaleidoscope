@@ -63,7 +63,7 @@ namespace vulkan {
 		}
 		auto descriptor_sets = DescriptorSets::create(
 				descriptor_templates,
-				FRAMES_IN_FLIGHT,
+				1,
 				preview_pass.descriptor_pool());
 		TRY(descriptor_sets);
 		result._descriptor_sets = std::move(descriptor_sets.value());
@@ -87,6 +87,7 @@ namespace vulkan {
 				descriptor_layouts,
 				&result._pipeline,
 				&result._pipeline_layout);
+		LOG_MEMORY << "Just created a pipeline " << result._pipeline << std::endl;
 		TRY(res);
 		return result;
 	}
@@ -143,6 +144,10 @@ namespace vulkan {
 			vkDestroyPipeline(Graphics::DEFAULT->device(), _pipeline, nullptr);
 			_pipeline = nullptr;
 		}
+	}
+
+	PreviewRenderPassMaterial::~PreviewRenderPassMaterial() {
+		destroy();
 	}
 
 	bool PreviewRenderPassMaterial::exists() const {

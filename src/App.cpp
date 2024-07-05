@@ -78,8 +78,8 @@ App::Ptr App::create(std::string const &name) {
 }
 
 App::~App() {
-	_resource_manager.reset();
 	_scene.reset();
+	_resource_manager.reset();
 	_app_view.reset();
 	_ui_render_pipeline.reset();
 	vulkan::Graphics::delete_default();

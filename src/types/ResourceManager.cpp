@@ -35,6 +35,9 @@ namespace types {
 		for (auto mesh : _meshes) {
 			delete mesh;
 		}
+		for (auto material : _materials) {
+			delete material;
+		}
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_texture(

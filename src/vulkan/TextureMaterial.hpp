@@ -17,7 +17,7 @@ namespace vulkan {
 
 			TextureMaterial(uint32_t id, Texture* texture);
 
-			~TextureMaterial() override = default;
+			~TextureMaterial() override;
 
 			TextureMaterial(const TextureMaterial& other) = delete;
 			TextureMaterial(TextureMaterial &&other) = default;

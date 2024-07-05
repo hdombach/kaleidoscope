@@ -24,6 +24,8 @@ namespace vulkan {
 
 			void destroy();
 
+			~PreviewRenderPassMaterial();
+
 			bool exists() const;
 			operator bool() { return exists(); }
 

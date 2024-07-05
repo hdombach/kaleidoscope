@@ -52,7 +52,7 @@ namespace vulkan {
 		return *this;
 	}
 
-	DescriptorPool::~DescriptorPool() {
+	void DescriptorPool::destroy() {
 		if (_descriptor_pool) {
 			vkDestroyDescriptorPool(
 					Graphics::DEFAULT->device(),
@@ -60,6 +60,10 @@ namespace vulkan {
 					nullptr);
 			_descriptor_pool = nullptr;
 		}
+	}
+
+	DescriptorPool::~DescriptorPool() {
+		destroy();
 	}
 
 	VkDescriptorPool const &DescriptorPool::descriptor_pool() const {
