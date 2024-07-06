@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <vector>
 #include <list>
+#include <memory>
 
 #include "../util/errors.hpp"
 #include "../util/result.hpp"
@@ -74,10 +75,10 @@ namespace types {
 		private:
 			util::Result<uint32_t, KError> _add_mesh(
 					std::string const &name,
-					Mesh *mesh);
+					std::unique_ptr<Mesh> &&mesh);
 			util::Result<uint32_t, KError> _add_material(
 					std::string const &name,
-					vulkan::Material *material);
+					std::unique_ptr<vulkan::Material> &&material);
 			uint32_t _get_mesh_id();
 			uint32_t _get_material_id();
 
@@ -86,9 +87,9 @@ namespace types {
 			uint32_t _default_texture;
 
 			std::unordered_map<std::string, uint32_t> _mesh_map;
-			std::vector<Mesh *> _meshes;
+			std::vector<std::unique_ptr<Mesh>> _meshes;
 			std::unordered_map<std::string, uint32_t> _material_map;
-			std::vector<vulkan::Material *> _materials;
+			std::vector<std::unique_ptr<vulkan::Material>> _materials;
 			uint32_t _default_mesh;
 			std::list<util::Observer *> _mesh_observers;
 			std::list<util::Observer *> _material_observers;

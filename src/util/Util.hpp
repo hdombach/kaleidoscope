@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <string>
+#include <memory>
 
 namespace util {
 	template<typename Contains, typename Element>
@@ -18,4 +19,9 @@ namespace util {
 		str.erase(start, substr.size());
 		str.insert(start, replace);
 	}
+
+	template<typename Base, typename Derived>
+		std::unique_ptr<Base> cast(std::unique_ptr<Derived> &&ptr) {
+			return std::unique_ptr<Base>(static_cast<Base *>(ptr.release()));
+		}
 }

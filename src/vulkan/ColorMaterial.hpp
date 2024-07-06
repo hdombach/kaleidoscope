@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 
 #include <glm/fwd.hpp>
 #include <glm/glm.hpp>
@@ -13,7 +14,7 @@ namespace vulkan {
 	class ColorMaterial: public Material {
 		public:
 			//TODO: change to unique_ptr
-			static ColorMaterial* create(uint32_t id, glm::vec3 color);
+			static std::unique_ptr<ColorMaterial> create(uint32_t id, glm::vec3 color);
 
 			~ColorMaterial() override = default;
 

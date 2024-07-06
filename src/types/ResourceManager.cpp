@@ -33,12 +33,6 @@ namespace types {
 		for (auto texture : _textures) {
 			delete texture;
 		}
-		for (auto mesh : _meshes) {
-			delete mesh;
-		}
-		for (auto material : _materials) {
-			delete material;
-		}
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_texture(
@@ -85,7 +79,7 @@ namespace types {
 	{
 		auto res = StaticMesh::from_file(_get_mesh_id(), url);
 		TRY(res);
-		return _add_mesh(name, res.value());
+		return _add_mesh(name, util::cast<Mesh, StaticMesh>(std::move(res.value())));
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_mesh_square(
@@ -115,30 +109,30 @@ namespace types {
 	}
 
 	Mesh *ResourceManager::default_mesh() {
-		return _meshes[_default_mesh];
+		return _meshes[_default_mesh].get();
 	}
 
 	Mesh const *ResourceManager::default_mesh() const {
-		return _meshes[_default_mesh];
+		return _meshes[_default_mesh].get();
 	}
 
 	Mesh *ResourceManager::update_mesh(const std::string &name) {
 		//TODO: update mshes
 		if (has_mesh(name)) {
-			return _meshes[_mesh_map.at(name)];
+			return _meshes[_mesh_map.at(name)].get();
 		}
 		return default_mesh();
 	}
 
 	Mesh const *ResourceManager::get_mesh(const std::string &name) const {
 		if (has_mesh(name)) {
-			return _meshes[_mesh_map.at(name)];
+			return _meshes[_mesh_map.at(name)].get();
 		}
 		return default_mesh();
 	}
 
 	Mesh const *ResourceManager::get_mesh(uint32_t id) const {
-		return _meshes[id];
+		return _meshes[id].get();
 	}
 
 	bool ResourceManager::has_mesh(const std::string &name) const {
@@ -191,7 +185,7 @@ namespace types {
 
 	vulkan::Material const *ResourceManager::get_material(uint32_t id) const {
 		if (id >= 0 && id < _materials.size()) {
-			return _materials[id];
+			return _materials[id].get();
 		}
 		return nullptr;
 	}
@@ -224,32 +218,34 @@ namespace types {
 
 	util::Result<uint32_t, KError> ResourceManager::_add_mesh(
 			const std::string &name,
-			Mesh *mesh)
+			std::unique_ptr<Mesh> &&mesh)
 	{
 		if (_mesh_map.count(name)) {
 			return KError::mesh_already_exists(name);
 		}
-		_meshes.push_back(mesh);
-		_mesh_map[name] = mesh->id();
+		auto id = mesh->id();
+		_meshes.push_back(std::move(mesh));
+		_mesh_map[name] = id;
 		for (auto &mesh_observer: _mesh_observers) {
-			mesh_observer->obs_create(mesh->id());
+			mesh_observer->obs_create(id);
 		}
-		return {mesh->id()};
+		return {id};
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::_add_material(
 			const std::string &name,
-			vulkan::Material *material)
+			std::unique_ptr<vulkan::Material> &&material)
 	{
 		if (_material_map.count(name)) {
 			return KError::material_already_exists(name);
 		}
-		_materials.push_back(material);
-		_material_map[name] = material->id();
+		auto id = material->id();
+		_materials.push_back(std::move(material));
+		_material_map[name] = id;
 		for (auto &material_observer: _material_observers) {
-			material_observer->obs_create(material->id());
+			material_observer->obs_create(id);
 		}
-		return {material->id()};
+		return {id};
 	}
 
 	uint32_t ResourceManager::_get_mesh_id() {

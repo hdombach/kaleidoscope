@@ -46,6 +46,14 @@ namespace vulkan {
 		}
 		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(0, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, result._global_uniform));
 
+		struct {
+			bool operator()(DescriptorSetTemplate &lt, DescriptorSetTemplate &rt) const {
+				return lt.layout_binding().binding < rt.layout_binding().binding;
+			}
+		} sort_templates;
+
+		std::sort(descriptor_templates.begin(), descriptor_templates.end(), sort_templates);
+
 		auto descriptor_sets = DescriptorSets::create(
 				descriptor_templates,
 				1,

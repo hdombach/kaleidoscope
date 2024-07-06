@@ -1,4 +1,5 @@
 #include <vector>
+#include <memory>
 
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -11,8 +12,8 @@
 #include "TextureMaterial.hpp"
 
 namespace vulkan {
-	TextureMaterial* TextureMaterial::create(uint32_t id, Texture* texture) {
-		auto result = new TextureMaterial();
+	std::unique_ptr<TextureMaterial> TextureMaterial::create(uint32_t id, Texture* texture) {
+		auto result = std::unique_ptr<TextureMaterial>(new TextureMaterial());
 
 		result->_texture = texture;
 		result->_id = id;

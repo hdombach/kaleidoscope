@@ -10,7 +10,7 @@
 namespace vulkan {
 	class TextureMaterial: public Material {
 		public:
-			static TextureMaterial* create(uint32_t id, Texture* texture);
+			static std::unique_ptr<TextureMaterial> create(uint32_t id, Texture* texture);
 
 			~TextureMaterial() override = default;
 

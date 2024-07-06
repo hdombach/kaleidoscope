@@ -7,7 +7,7 @@
 #include "vulkan/vulkan_core.h"
 
 namespace types {
-	util::Result<StaticMesh *, KError> StaticMesh::from_file(
+	util::Result<StaticMesh::Ptr , KError> StaticMesh::from_file(
 			uint32_t id,
 			const std::string &url)
 	{
@@ -51,7 +51,7 @@ namespace types {
 		return from_vertices(id, vertices, indices);
 	}
 
-	StaticMesh *StaticMesh::create_square(uint32_t id) {
+	StaticMesh::Ptr StaticMesh::create_square(uint32_t id) {
 		auto vertices = std::vector<vulkan::Vertex>{
 			{{0.0, 0.2, 1.0}, {0.0, 0.0, 0.0}, {0.0, 1.0}},
 			{{0.0, 0.1, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0}},
@@ -69,12 +69,12 @@ namespace types {
 		return from_vertices(id, vertices, indices);
 	}
 
-	StaticMesh *StaticMesh::from_vertices(
+	StaticMesh::Ptr StaticMesh::from_vertices(
 			uint32_t id,
 			const std::vector<vulkan::Vertex> &vertices,
 			const std::vector<uint32_t> &indices)
 	{
-		auto result = new StaticMesh();
+		auto result = std::unique_ptr<StaticMesh>(new StaticMesh());
 
 		result->_id = id;
 		result->_vertices = vertices;
@@ -152,10 +152,10 @@ namespace types {
 
 		result->_index_count = indices.size();
 
-		return result;
+		return std::move(result);
 	}
 
-	StaticMesh *StaticMesh::from_vertices(
+	StaticMesh::Ptr StaticMesh::from_vertices(
 			uint32_t id,
 			std::vector<vulkan::Vertex> const &vertices)
 	{

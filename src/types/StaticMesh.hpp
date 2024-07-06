@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vector>
+#include <memory>
+
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
@@ -13,10 +15,12 @@
 namespace types {
 	class StaticMesh: public Mesh {
 		public:
-			static util::Result<StaticMesh *, KError> from_file(uint32_t id, std::string const &url);
-			static StaticMesh *create_square(uint32_t id);
-			static StaticMesh *from_vertices(uint32_t id, std::vector<vulkan::Vertex> const &vertices, std::vector<uint32_t> const &indices);
-			static StaticMesh *from_vertices(uint32_t id, std::vector<vulkan::Vertex> const &vertices);
+			using Ptr = std::unique_ptr<StaticMesh>;
+
+			static util::Result<Ptr, KError> from_file(uint32_t id, std::string const &url);
+			static Ptr create_square(uint32_t id);
+			static Ptr from_vertices(uint32_t id, std::vector<vulkan::Vertex> const &vertices, std::vector<uint32_t> const &indices);
+			static Ptr from_vertices(uint32_t id, std::vector<vulkan::Vertex> const &vertices);
 
 			StaticMesh(const StaticMesh& other) = delete;
 			StaticMesh(StaticMesh &&other);
