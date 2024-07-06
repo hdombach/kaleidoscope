@@ -4,22 +4,21 @@
 
 #include <vulkan/vulkan_core.h>
 
-#include "PreviewRenderPass.hpp"
-#include "PreviewRenderPassMaterial.hpp"
+#include "PrevPass.hpp"
+#include "PrevPassMaterial.hpp"
 #include "Material.hpp"
-#include "PreviewRenderPass.hpp"
 #include "../vulkan/Vertex.hpp"
 #include "../util/file.hpp"
 #include "MappedUniform.hpp"
 #include "../types/ShaderResource.hpp"
 
 namespace vulkan {
-	util::Result<PreviewRenderPassMaterial, KError> PreviewRenderPassMaterial::create(
+	util::Result<PrevPassMaterial, KError> PrevPassMaterial::create(
 			Scene &scene,
-			PreviewRenderPass &preview_pass,
+			PrevPass &preview_pass,
 			const vulkan::Material *material)
 	{
-		auto result = PreviewRenderPassMaterial();
+		auto result = PrevPassMaterial();
 		result._material = material;
 
 		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
@@ -86,7 +85,7 @@ namespace vulkan {
 		return result;
 	}
 
-	PreviewRenderPassMaterial::PreviewRenderPassMaterial(PreviewRenderPassMaterial &&other) {
+	PrevPassMaterial::PrevPassMaterial(PrevPassMaterial &&other) {
 		_material = other._material;
 		other._material = nullptr;
 
@@ -103,7 +102,7 @@ namespace vulkan {
 		other._pipeline = nullptr;
 	}
 
-	PreviewRenderPassMaterial& PreviewRenderPassMaterial::operator=(PreviewRenderPassMaterial &&other) {
+	PrevPassMaterial& PrevPassMaterial::operator=(PrevPassMaterial &&other) {
 		destroy();
 
 		_global_uniform = std::move(other._global_uniform);
@@ -121,7 +120,7 @@ namespace vulkan {
 		return *this;
 	}
 
-	void PreviewRenderPassMaterial::destroy() {
+	void PrevPassMaterial::destroy() {
 		_material = nullptr;
 		_descriptor_sets.clear();
 		_render_pass = nullptr;
@@ -139,22 +138,22 @@ namespace vulkan {
 		}
 	}
 
-	PreviewRenderPassMaterial::~PreviewRenderPassMaterial() {
+	PrevPassMaterial::~PrevPassMaterial() {
 		destroy();
 	}
 
-	bool PreviewRenderPassMaterial::exists() const {
+	bool PrevPassMaterial::exists() const {
 		return _pipeline != nullptr;
 	}
 
-	uint32_t PreviewRenderPassMaterial::id() const {
+	uint32_t PrevPassMaterial::id() const {
 		return _material->id();
 	}
 
-	util::Result<void, KError> PreviewRenderPassMaterial::_create_pipeline(
+	util::Result<void, KError> PrevPassMaterial::_create_pipeline(
 			Shader &vertex_shader,
 			Shader &fragment_shader,
-			PreviewRenderPass &render_pass,
+			PrevPass &render_pass,
 			std::vector<VkDescriptorSetLayout> &descriptor_set_layouts,
 			VkPipeline *pipeline,
 			VkPipelineLayout *pipeline_layout)

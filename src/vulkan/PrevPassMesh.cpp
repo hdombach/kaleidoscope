@@ -1,11 +1,11 @@
 #include <unordered_map>
 #include <vulkan/vulkan_core.h>
 
-#include "PreviewRenderPassMesh.hpp"
+#include "PrevPassMesh.hpp"
 #include "graphics.hpp"
 
 namespace vulkan {
-	util::Result<PreviewRenderPassMesh, KError> PreviewRenderPassMesh::create(
+	util::Result<PrevPassMesh, KError> PrevPassMesh::create(
 			Scene &scene,
 			const types::Mesh *mesh)
 	{
@@ -20,7 +20,7 @@ namespace vulkan {
 			indices.push_back(unique_vertices[vertex]);
 		}
 
-		PreviewRenderPassMesh result;
+		PrevPassMesh result;
 
 		result._id = mesh->id();
 		result._vertex_buffer_range = VkDeviceSize(sizeof(Vertex) * vertices.size());
@@ -104,7 +104,7 @@ namespace vulkan {
 		return {std::move(result)};
 	}
 
-	PreviewRenderPassMesh::PreviewRenderPassMesh(PreviewRenderPassMesh &&other)
+	PrevPassMesh::PrevPassMesh(PrevPassMesh &&other)
 	{
 		_mesh = other._mesh;
 		_id = other._id;
@@ -127,7 +127,7 @@ namespace vulkan {
 		_index_buffer_range = other._index_buffer_range;
 	}
 
-	PreviewRenderPassMesh& PreviewRenderPassMesh::operator=(PreviewRenderPassMesh&& other)
+	PrevPassMesh& PrevPassMesh::operator=(PrevPassMesh&& other)
 	{
 		destroy();
 
@@ -154,31 +154,31 @@ namespace vulkan {
 		return *this;
 	}
 
-	uint32_t PreviewRenderPassMesh::id() const {
+	uint32_t PrevPassMesh::id() const {
 		return _id;
 	}
 
-	VkBuffer PreviewRenderPassMesh::vertex_buffer() const {
+	VkBuffer PrevPassMesh::vertex_buffer() const {
 		return _vertex_buffer;
 	}
 
-	VkBuffer PreviewRenderPassMesh::index_buffer() const {
+	VkBuffer PrevPassMesh::index_buffer() const {
 		return _index_buffer;
 	}
 
-	size_t PreviewRenderPassMesh::index_count() const {
+	size_t PrevPassMesh::index_count() const {
 		return _index_count;
 	}
 
-	VkDeviceSize PreviewRenderPassMesh::vertex_buffer_range() const {
+	VkDeviceSize PrevPassMesh::vertex_buffer_range() const {
 		return _vertex_buffer_range;
 	}
 
-	VkDeviceSize PreviewRenderPassMesh::index_buffer_range() const {
+	VkDeviceSize PrevPassMesh::index_buffer_range() const {
 		return _index_buffer_range;
 	}
 
-	void PreviewRenderPassMesh::destroy() {
+	void PrevPassMesh::destroy() {
 		if (_vertex_buffer) {
 			vkDestroyBuffer(Graphics::DEFAULT->device(), _vertex_buffer, nullptr);
 			_vertex_buffer = nullptr;
@@ -197,11 +197,11 @@ namespace vulkan {
 		}
 	}
 
-	PreviewRenderPassMesh::~PreviewRenderPassMesh() {
+	PrevPassMesh::~PrevPassMesh() {
 		destroy();
 	}
 
-	PreviewRenderPassMesh::PreviewRenderPassMesh():
+	PrevPassMesh::PrevPassMesh():
 		_mesh(nullptr),
 		_id(0),
 		_vertex_buffer(nullptr),

@@ -31,7 +31,7 @@ namespace vulkan {
 			void set_position(glm::vec3 position) { _position = position; };
 
 			void render_preview(
-					PreviewRenderPass &preview_render_pass,
+					PrevPass &preview_render_pass,
 					VkCommandBuffer command_buffer);
 
 		private:

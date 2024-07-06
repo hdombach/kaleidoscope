@@ -1,7 +1,7 @@
 #include <array>
 
 #include "Material.hpp"
-#include "PreviewRenderPass.hpp"
+#include "PrevPass.hpp"
 #include "Vertex.hpp"
 #include "graphics.hpp"
 #include "../util/result.hpp"

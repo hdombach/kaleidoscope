@@ -11,7 +11,7 @@
 
 namespace vulkan {
 	class MaterialPreviewImpl;
-	class PreviewRenderPass;
+	class PrevPass;
 
 	class Material {
 		public:

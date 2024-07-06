@@ -4,7 +4,7 @@
 
 #include "Node.hpp"
 #include "Material.hpp"
-#include "PreviewRenderPass.hpp"
+#include "PrevPass.hpp"
 
 namespace vulkan {
 	Node::Node(Node&& other):

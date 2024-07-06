@@ -7,8 +7,8 @@
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 
-#include "PreviewRenderPass.hpp"
-#include "PreviewRenderPassMaterial.hpp"
+#include "PrevPass.hpp"
+#include "PrevPassMaterial.hpp"
 #include "Scene.hpp"
 #include "defs.hpp"
 #include "error.hpp"
@@ -18,46 +18,46 @@
 
 namespace vulkan {
 	/************************ Observers *********************************/
-	PreviewRenderPass::MeshObserver::MeshObserver(PreviewRenderPass &render_pass):
+	PrevPass::MeshObserver::MeshObserver(PrevPass &render_pass):
 		_render_pass(&render_pass)
 	{}
 
-	void PreviewRenderPass::MeshObserver::obs_create(uint32_t id) {
+	void PrevPass::MeshObserver::obs_create(uint32_t id) {
 		_render_pass->mesh_create(id);
 	}
 
-	void PreviewRenderPass::MeshObserver::obs_update(uint32_t id) {
+	void PrevPass::MeshObserver::obs_update(uint32_t id) {
 		_render_pass->mesh_update(id);
 	}
 
-	void PreviewRenderPass::MeshObserver::obs_remove(uint32_t id) {
+	void PrevPass::MeshObserver::obs_remove(uint32_t id) {
 		_render_pass->mesh_remove(id);
 	}
 
-	PreviewRenderPass::MaterialObserver::MaterialObserver(PreviewRenderPass &render_pass):
+	PrevPass::MaterialObserver::MaterialObserver(PrevPass &render_pass):
 		_render_pass(&render_pass)
 	{}
 
-	void PreviewRenderPass::MaterialObserver::obs_create(uint32_t id) {
+	void PrevPass::MaterialObserver::obs_create(uint32_t id) {
 		_render_pass->material_create(id);
 	}
 
-	void PreviewRenderPass::MaterialObserver::obs_update(uint32_t id) {
+	void PrevPass::MaterialObserver::obs_update(uint32_t id) {
 		_render_pass->material_update(id);
 	}
 
-	void PreviewRenderPass::MaterialObserver::obs_remove(uint32_t id) {
+	void PrevPass::MaterialObserver::obs_remove(uint32_t id) {
 		_render_pass->material_remove(id);
 	}
 
 	/************************ PreviewRenderPass *********************************/
 
-	util::Result<PreviewRenderPass::Ptr, KError> PreviewRenderPass::create(
+	util::Result<PrevPass::Ptr, KError> PrevPass::create(
 			Scene &scene,
 			VkExtent2D size)
 	{
-		auto result = std::unique_ptr<PreviewRenderPass>(
-				new PreviewRenderPass(scene, size));
+		auto result = std::unique_ptr<PrevPass>(
+				new PrevPass(scene, size));
 		TRY(result->_create_sync_objects());
 		result->_create_command_buffers();
 		result->_descriptor_pool = DescriptorPool::create();
@@ -162,14 +162,14 @@ namespace vulkan {
 		return result;
 	}
 
-	PreviewRenderPass::PreviewRenderPass(
+	PrevPass::PrevPass(
 			Scene &scene, VkExtent2D size):
 		_scene(&scene),
 		_size(size)
 	{
 	}
 
-	void PreviewRenderPass::destroy() {
+	void PrevPass::destroy() {
 		LOG_MEMORY << "Deconstructing main render pipeline" << std::endl;
 
 		_cleanup_images();
@@ -187,11 +187,11 @@ namespace vulkan {
 		_render_finished_semaphores.clear();
 	}
 
-	PreviewRenderPass::~PreviewRenderPass() {
+	PrevPass::~PrevPass() {
 		destroy();
 	}
 
-	void PreviewRenderPass::render(std::vector<Node> &nodes, types::Camera &camera) {
+	void PrevPass::render(std::vector<Node> &nodes, types::Camera &camera) {
 		require(_in_flight_fences[_frame_index].wait());
 		auto submit_info = VkSubmitInfo{};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -299,7 +299,7 @@ namespace vulkan {
 
 	}
 
-	void PreviewRenderPass::resize(VkExtent2D size) {
+	void PrevPass::resize(VkExtent2D size) {
 		if (size.width == _size.width && size.height == _size.height) return;
 		Graphics::DEFAULT->wait_idle();
 		_cleanup_images();
@@ -322,64 +322,64 @@ namespace vulkan {
 			_frame_index = FRAMES_IN_FLIGHT - 1;
 		}
 	}
-	bool PreviewRenderPass::is_resizable() const {
+	bool PrevPass::is_resizable() const {
 		return true;
 	}
 
-	VkExtent2D PreviewRenderPass::size() const {
+	VkExtent2D PrevPass::size() const {
 		return _size;
 	}
 
-	VkDescriptorSet PreviewRenderPass::get_descriptor_set() {
+	VkDescriptorSet PrevPass::get_descriptor_set() {
 		return _imgui_descriptor_sets[_frame_index];
 	}
 
-	ImageView const &PreviewRenderPass::image_view() {
+	ImageView const &PrevPass::image_view() {
 		return _color_image_views[_frame_index];
 	}
-	VkRenderPass PreviewRenderPass::render_pass() {
+	VkRenderPass PrevPass::render_pass() {
 		return _render_pass;
 	}
-	MappedGlobalUniform &PreviewRenderPass::current_uniform_buffer() {
+	MappedGlobalUniform &PrevPass::current_uniform_buffer() {
 		return _mapped_uniforms[_frame_index];
 	}
 
-	void PreviewRenderPass::mesh_create(uint32_t id) {
+	void PrevPass::mesh_create(uint32_t id) {
 		LOG_DEBUG << "Creating preview mesh" << std::endl;
 		while (id + 1 > _meshes.size()) {
-			_meshes.push_back(PreviewRenderPassMesh());
+			_meshes.push_back(PrevPassMesh());
 		}
-		if (auto mesh = PreviewRenderPassMesh::create(*_scene, _scene->resource_manager().get_mesh(id))) {
+		if (auto mesh = PrevPassMesh::create(*_scene, _scene->resource_manager().get_mesh(id))) {
 			_meshes[id] = std::move(mesh.value());
 		} else {
 			LOG_ERROR << "Couldn't create preview mesh: " << mesh.error().desc() << std::endl;
 		}
 	}
 
-	void PreviewRenderPass::mesh_update(uint32_t id) { }
+	void PrevPass::mesh_update(uint32_t id) { }
 
-	void PreviewRenderPass::mesh_remove(uint32_t id) {
+	void PrevPass::mesh_remove(uint32_t id) {
 		_meshes[id].destroy();
 	}
 
-	void PreviewRenderPass::material_create(uint32_t id) {
+	void PrevPass::material_create(uint32_t id) {
 		while (id + 1 > _materials.size()) {
-			_materials.push_back(PreviewRenderPassMaterial());
+			_materials.push_back(PrevPassMaterial());
 		}
-		if (auto material = PreviewRenderPassMaterial::create(*_scene, *this, _scene->resource_manager().get_material(id))) {
+		if (auto material = PrevPassMaterial::create(*_scene, *this, _scene->resource_manager().get_material(id))) {
 			_materials[id] = std::move(material.value());
 		} else {
 			LOG_ERROR << "Couldn't create preview material: " << material.error().desc() << std::endl;
 		}
 	}
 
-	void PreviewRenderPass::material_update(uint32_t id) { }
+	void PrevPass::material_update(uint32_t id) { }
 
-	void PreviewRenderPass::material_remove(uint32_t id) {
+	void PrevPass::material_remove(uint32_t id) {
 		_materials[id].destroy();
 	}
 
-	util::Result<void, KError> PreviewRenderPass::_create_sync_objects() {
+	util::Result<void, KError> PrevPass::_create_sync_objects() {
 		_render_finished_semaphores.resize(FRAMES_IN_FLIGHT);
 		_in_flight_fences.resize(FRAMES_IN_FLIGHT);
 
@@ -395,7 +395,7 @@ namespace vulkan {
 		return {};
 	}
 
-	void PreviewRenderPass::_create_command_buffers() {
+	void PrevPass::_create_command_buffers() {
 		_command_buffers.resize(FRAMES_IN_FLIGHT);
 		auto alloc_info = VkCommandBufferAllocateInfo{};
 		alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -406,7 +406,7 @@ namespace vulkan {
 		require(vkAllocateCommandBuffers(Graphics::DEFAULT->device(), &alloc_info, _command_buffers.data()));
 	}
 
-	util::Result<void, KError> PreviewRenderPass::_create_images() {
+	util::Result<void, KError> PrevPass::_create_images() {
 		_cleanup_images();
 		/* create depth resources */
 		{
@@ -501,7 +501,7 @@ namespace vulkan {
 		return {};
 	}
 
-	void PreviewRenderPass::_cleanup_images() {
+	void PrevPass::_cleanup_images() {
 		_depth_image.destroy();
 		_depth_image_view.destroy();
 		_color_image_views.clear();
@@ -518,7 +518,7 @@ namespace vulkan {
 		_imgui_descriptor_sets.clear();
 	}
 
-	VkFormat PreviewRenderPass::_depth_format() {
+	VkFormat PrevPass::_depth_format() {
 		return Graphics::DEFAULT->find_supported_format(
 				{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}, 
 				VK_IMAGE_TILING_OPTIMAL, 

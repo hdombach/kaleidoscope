@@ -8,7 +8,7 @@
 
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
-#include "PreviewRenderPass.hpp"
+#include "PrevPass.hpp"
 #include "RaytraceRenderPass.hpp"
 #include "Node.hpp"
 #include "../types/ResourceManager.hpp"
@@ -23,7 +23,7 @@ namespace vulkan {
 		public:
 			using Ptr = std::unique_ptr<Scene>;
 
-			Scene(types::ResourceManager &resource_manager, PreviewRenderPass::Ptr preview_render_pass);
+			Scene(types::ResourceManager &resource_manager, PrevPass::Ptr preview_render_pass);
 
 			Scene(const Scene& other) = delete;
 			Scene(Scene &&other) = default;
@@ -54,7 +54,7 @@ namespace vulkan {
 			Scene() = default;
 			Texture& _cur_texture();
 
-			PreviewRenderPass::Ptr _preview_render_pass;
+			PrevPass::Ptr _preview_render_pass;
 			RaytraceRenderPass::Ptr _raytrace_render_pass;
 
 			std::vector<Node> _nodes;

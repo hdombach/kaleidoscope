@@ -9,16 +9,16 @@
 namespace vulkan {
 	class Scene;
 
-	class PreviewRenderPassMesh {
+	class PrevPassMesh {
 		public:
-			PreviewRenderPassMesh();
+			PrevPassMesh();
 
-			static util::Result<PreviewRenderPassMesh, KError> create(Scene &scene, const types::Mesh *mesh);
+			static util::Result<PrevPassMesh, KError> create(Scene &scene, const types::Mesh *mesh);
 
-			PreviewRenderPassMesh(const PreviewRenderPassMesh& other) = delete;
-			PreviewRenderPassMesh(PreviewRenderPassMesh &&other);
-			PreviewRenderPassMesh& operator=(const PreviewRenderPassMesh& other) = delete;
-			PreviewRenderPassMesh& operator=(PreviewRenderPassMesh&& other);
+			PrevPassMesh(const PrevPassMesh& other) = delete;
+			PrevPassMesh(PrevPassMesh &&other);
+			PrevPassMesh& operator=(const PrevPassMesh& other) = delete;
+			PrevPassMesh& operator=(PrevPassMesh&& other);
 
 			bool exists() const;
 			operator bool() { return exists(); }
@@ -31,7 +31,7 @@ namespace vulkan {
 			VkDeviceSize index_buffer_range() const;
 
 			void destroy();
-			~PreviewRenderPassMesh();
+			~PrevPassMesh();
 		private:
 			const types::Mesh *_mesh;
 			uint32_t _id;

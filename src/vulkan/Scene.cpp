@@ -1,7 +1,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "Scene.hpp"
-#include "PreviewRenderPass.hpp"
+#include "PrevPass.hpp"
 #include "UniformBufferObject.hpp"
 
 namespace vulkan {
@@ -13,7 +13,7 @@ namespace vulkan {
 		auto raytrace_render_pass = RaytraceRenderPass::create({300, 300});
 		TRY(raytrace_render_pass);
 
-		auto render_pass_res = PreviewRenderPass::create(
+		auto render_pass_res = PrevPass::create(
 				*scene,
 				{300, 300});
 		if (!render_pass_res) {

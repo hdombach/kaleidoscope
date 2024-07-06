@@ -8,23 +8,23 @@
 namespace vulkan {
 	class Scene;
 
-	class PreviewRenderPassMaterial {
+	class PrevPassMaterial {
 		public:
-			PreviewRenderPassMaterial() = default;
+			PrevPassMaterial() = default;
 
-			static util::Result<PreviewRenderPassMaterial, KError> create(
+			static util::Result<PrevPassMaterial, KError> create(
 					Scene &scene,
-					PreviewRenderPass &preview_pass,
+					PrevPass &preview_pass,
 					const vulkan::Material *material);
 
-			PreviewRenderPassMaterial(const PreviewRenderPassMaterial& other) = delete;
-			PreviewRenderPassMaterial(PreviewRenderPassMaterial &&other);
-			PreviewRenderPassMaterial& operator=(const PreviewRenderPassMaterial& other) = delete;
-			PreviewRenderPassMaterial& operator=(PreviewRenderPassMaterial&& other);
+			PrevPassMaterial(const PrevPassMaterial& other) = delete;
+			PrevPassMaterial(PrevPassMaterial &&other);
+			PrevPassMaterial& operator=(const PrevPassMaterial& other) = delete;
+			PrevPassMaterial& operator=(PrevPassMaterial&& other);
 
 			void destroy();
 
-			~PreviewRenderPassMaterial();
+			~PrevPassMaterial();
 
 			bool exists() const;
 			operator bool() { return exists(); }
@@ -39,7 +39,7 @@ namespace vulkan {
 			const vulkan::Material *_material;
 			Uniform _global_uniform;
 			DescriptorSets _descriptor_sets;
-			PreviewRenderPass *_render_pass;
+			PrevPass *_render_pass;
 			VkPipelineLayout _pipeline_layout;
 			VkPipeline _pipeline;
 
@@ -53,7 +53,7 @@ namespace vulkan {
 			static util::Result<void, KError> _create_pipeline(
 					Shader &vertex_shader,
 					Shader &fragment_shader,
-					PreviewRenderPass &render_pass,
+					PrevPass &render_pass,
 					std::vector<VkDescriptorSetLayout> &descriptor_set_layouts,
 					VkPipeline *pipeline,
 					VkPipelineLayout *pipeline_layout);

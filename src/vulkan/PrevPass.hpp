@@ -12,8 +12,8 @@
 #include "ImageView.hpp"
 #include "Texture.hpp"
 #include "UniformBufferObject.hpp"
-#include "PreviewRenderPassMesh.hpp"
-#include "PreviewRenderPassMaterial.hpp"
+#include "PrevPassMesh.hpp"
+#include "PrevPassMaterial.hpp"
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
 #include "../util/Observer.hpp"
@@ -22,37 +22,37 @@
 
 namespace vulkan {
 	class Node;
-	class PreviewRenderPass: public Texture {
+	class PrevPass: public Texture {
 		public:
-			using Ptr = std::unique_ptr<PreviewRenderPass>;
+			using Ptr = std::unique_ptr<PrevPass>;
 
 			class MeshObserver: public util::Observer {
 				public:
 					MeshObserver() = default;
-					MeshObserver(PreviewRenderPass &render_pass);
+					MeshObserver(PrevPass &render_pass);
 					void obs_create(uint32_t id) override;
 					void obs_update(uint32_t id) override;
 					void obs_remove(uint32_t id) override;
 				private:
-					PreviewRenderPass *_render_pass;
+					PrevPass *_render_pass;
 			};
 
 			class MaterialObserver: public util::Observer {
 				public:
 					MaterialObserver() = default;
-					MaterialObserver(PreviewRenderPass &render_pass);
+					MaterialObserver(PrevPass &render_pass);
 					void obs_create(uint32_t id) override;
 					void obs_update(uint32_t id) override;
 					void obs_remove(uint32_t id) override;
 				private:
-					PreviewRenderPass *_render_pass;
+					PrevPass *_render_pass;
 			};
 
 			static util::Result<Ptr, KError> create(
 					Scene &scene,
 					VkExtent2D size);
 			void destroy();
-			~PreviewRenderPass();
+			~PrevPass();
 			void render(std::vector<Node> &nodes, types::Camera &camera);
 			void resize(VkExtent2D size) override;
 			bool is_resizable() const override;
@@ -80,7 +80,7 @@ namespace vulkan {
 			void material_remove(uint32_t id);
 
 		private:
-			PreviewRenderPass(Scene &scene, VkExtent2D size);
+			PrevPass(Scene &scene, VkExtent2D size);
 
 			util::Result<void, KError> _create_sync_objects();
 			void _create_command_buffers();
@@ -88,8 +88,8 @@ namespace vulkan {
 			void _cleanup_images();
 			static VkFormat _depth_format();
 
-			std::vector<PreviewRenderPassMesh> _meshes;
-			std::vector<PreviewRenderPassMaterial> _materials;
+			std::vector<PrevPassMesh> _meshes;
+			std::vector<PrevPassMaterial> _materials;
 			MeshObserver _mesh_observer;
 			MaterialObserver _material_observer;
 
