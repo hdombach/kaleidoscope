@@ -9,11 +9,11 @@
 namespace types {
 	class ShaderResource {
 		public:
-			enum Type {
-				SRUnknown,
-				SRImage,
-				SRMat4,
-				SRVec3,
+			enum class Type {
+				Unknown,
+				Image,
+				Mat4,
+				Vec3,
 			};
 
 			static ShaderResource create_primitive(std::string name, glm::mat4 &mat);
@@ -25,6 +25,8 @@ namespace types {
 			size_t primitive_size() const { return _primitive_size; }
 
 			Type type() const { return _type; }
+
+			bool is_primitive() const;
 
 			vulkan::ImageView const &image_view() const { return *_image_view; }
 

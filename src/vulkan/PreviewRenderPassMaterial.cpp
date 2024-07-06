@@ -11,6 +11,7 @@
 #include "../vulkan/Vertex.hpp"
 #include "../util/file.hpp"
 #include "MappedUniform.hpp"
+#include "../types/ShaderResource.hpp"
 
 namespace vulkan {
 	util::Result<PreviewRenderPassMaterial, KError> PreviewRenderPassMaterial::create(
@@ -26,7 +27,7 @@ namespace vulkan {
 		int i = -1;
 		size_t uniform_s = 0;
 		for (auto &resource : material->resources()) {
-			if (resource.type() != types::ShaderResource::SRImage) {
+			if (resource.is_primitive()) {
 				uniform_s += resource.primitive_size();
 			}
 		}
@@ -37,11 +38,11 @@ namespace vulkan {
 
 		size_t cur_offset = 0;
 		for (auto &resource : material->resources()) {
-			if (resource.type() == types::ShaderResource::SRImage) {
-				descriptor_templates.push_back(DescriptorSetTemplate::create_image(1, VK_SHADER_STAGE_FRAGMENT_BIT, resource.image_view()));
-			} else {
+			if (resource.is_primitive()) {
 				memcpy(result._global_uniform.raw_value(), resource.primitive(), resource.primitive_size());
 				cur_offset += resource.primitive_size();
+			} else {
+				descriptor_templates.push_back(DescriptorSetTemplate::create_image(1, VK_SHADER_STAGE_FRAGMENT_BIT, resource.image_view()));
 			}
 		}
 		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(0, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, result._global_uniform));

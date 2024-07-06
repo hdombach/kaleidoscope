@@ -9,7 +9,7 @@ namespace types {
 			std::string name,
 			glm::mat4 &mat)
 	{
-		auto result = ShaderResource(name, SRMat4);
+		auto result = ShaderResource(name, Type::Mat4);
 		result._primitive = &mat;
 		result._primitive_size = sizeof(mat);
 		return result;
@@ -19,7 +19,7 @@ namespace types {
 			std::string name,
 			glm::vec3 &vec)
 	{
-		auto result = ShaderResource(name, SRVec3);
+		auto result = ShaderResource(name, Type::Vec3);
 		result._primitive = &vec;
 		result._primitive_size = sizeof(vec);
 		return result;
@@ -29,9 +29,19 @@ namespace types {
 			std::string name,
 			const vulkan::ImageView &image_view)
 	{
-		auto result = ShaderResource(name, SRImage);
+		auto result = ShaderResource(name, Type::Image);
 		result._image_view = &image_view;
 		return result;
+	}
+
+	bool ShaderResource::is_primitive() const {
+		switch (_type) {
+			case Type::Mat4:
+			case Type::Vec3:
+				return true;
+			default:
+				return false;
+		}
 	}
 
 	ShaderResource::ShaderResource(std::string &name, Type type):
