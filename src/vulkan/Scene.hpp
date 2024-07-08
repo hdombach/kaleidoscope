@@ -1,6 +1,5 @@
 #pragma once
 
-#include <functional>
 #include <memory>
 #include <vector>
 
@@ -8,11 +7,12 @@
 
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
+#include "../util/Observer.hpp"
+#include "../types/ResourceManager.hpp"
+#include "../types/Camera.hpp"
 #include "PrevPass.hpp"
 #include "RaytraceRenderPass.hpp"
 #include "Node.hpp"
-#include "../types/ResourceManager.hpp"
-#include "../types/Camera.hpp"
 
 namespace vulkan {
 	/**
@@ -44,15 +44,28 @@ namespace vulkan {
 			void render_raytrace();
 
 			types::Camera& camera() { return _camera; }
-			types::Camera const& camera() const;
+			types::Camera const& camera() const { return _camera; }
+			Node const *get_node(uint32_t id) const;
+			Node *get_node_mut(uint32_t id);
+			void update_node(uint32_t id) { 
+				for (auto obs : _node_observers) {
+					obs->obs_update(id);
+				}
+			}
 
-			util::Result<void, KError> add_node(Node node);
+			util::Result<uint32_t, KError> add_node(
+					types::Mesh const *mesh,
+					vulkan::Material const *material);
 			//TODO: removing, identifiying node
 			types::ResourceManager &resource_manager();
+
+			util::Result<void, KError> add_node_observer(util::Observer *observer);
+			util::Result<void, KError> rem_node_observer(util::Observer *observer);
 
 		private:
 			Scene() = default;
 			Texture& _cur_texture();
+			uint32_t _get_node_id();
 
 			PrevPass::Ptr _preview_render_pass;
 			RaytraceRenderPass::Ptr _raytrace_render_pass;
@@ -61,5 +74,6 @@ namespace vulkan {
 			types::Camera _camera;
 			types::ResourceManager *_resource_manager;
 			bool _is_preview;
+			std::list<util::Observer *> _node_observers;
 	};
 }

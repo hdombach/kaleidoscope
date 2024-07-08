@@ -14,6 +14,7 @@
 #include "UniformBufferObject.hpp"
 #include "PrevPassMesh.hpp"
 #include "PrevPassMaterial.hpp"
+#include "PrevPassNode.hpp"
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
 #include "../util/Observer.hpp"
@@ -48,6 +49,17 @@ namespace vulkan {
 					PrevPass *_render_pass;
 			};
 
+			class NodeObserver: public util::Observer {
+				public:
+					NodeObserver() = default;
+					NodeObserver(PrevPass &render_pass);
+					void obs_create(uint32_t id) override;
+					void obs_update(uint32_t id) override;
+					void obs_remove(uint32_t id) override;
+				private:
+					PrevPass *_render_pass;
+			};
+
 			static util::Result<Ptr, KError> create(
 					Scene &scene,
 					VkExtent2D size);
@@ -67,8 +79,11 @@ namespace vulkan {
 			VkDescriptorSetLayout global_descriptor_set_layout() { return _descriptor_sets.layout(); }
 			VkDescriptorSet global_descriptor_set(int frame_index) { return _descriptor_sets.descriptor_set(frame_index); }
 
+			VkDescriptorSetLayout node_descriptor_set_layout(uint32_t material_id);
+
 			MaterialObserver &material_observer() { return _material_observer; }
 			MeshObserver &mesh_observer() { return _mesh_observer; }
+			NodeObserver &node_observer() { return _node_observer; }
 
 		private:
 			void mesh_create(uint32_t id);
@@ -78,6 +93,10 @@ namespace vulkan {
 			void material_create(uint32_t id);
 			void material_update(uint32_t id);
 			void material_remove(uint32_t id);
+
+			void node_create(uint32_t id);
+			void node_update(uint32_t id);
+			void node_remove(uint32_t id);
 
 		private:
 			PrevPass(Scene &scene, VkExtent2D size);
@@ -90,8 +109,10 @@ namespace vulkan {
 
 			std::vector<PrevPassMesh> _meshes;
 			std::vector<PrevPassMaterial> _materials;
+			std::vector<PrevPassNode> _nodes;
 			MeshObserver _mesh_observer;
 			MaterialObserver _material_observer;
+			NodeObserver _node_observer;
 
 			VkExtent2D _size;
 			Image _depth_image;
@@ -107,6 +128,8 @@ namespace vulkan {
 			std::vector<Semaphore> _render_finished_semaphores;
 			std::vector<VkCommandBuffer> _command_buffers;
 			DescriptorPool _descriptor_pool;
+			/* TODO: this is just hardcoded */
+			VkDescriptorSetLayout _node_descriptor_layout;
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
 			int _frame_index;
 			uint32_t _mip_levels;

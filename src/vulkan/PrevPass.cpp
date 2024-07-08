@@ -1,6 +1,5 @@
 #include <array>
 #include <vector>
-#include <functional>
 
 #include <vulkan/vulkan_core.h>
 #include <glm/fwd.hpp>
@@ -9,6 +8,7 @@
 
 #include "PrevPass.hpp"
 #include "PrevPassMaterial.hpp"
+#include "PrevPassNode.hpp"
 #include "Scene.hpp"
 #include "defs.hpp"
 #include "error.hpp"
@@ -48,6 +48,22 @@ namespace vulkan {
 
 	void PrevPass::MaterialObserver::obs_remove(uint32_t id) {
 		_render_pass->material_remove(id);
+	}
+
+	PrevPass::NodeObserver::NodeObserver(PrevPass &render_pass):
+		_render_pass(&render_pass)
+	{}
+
+	void PrevPass::NodeObserver::obs_create(uint32_t id) {
+		_render_pass->node_create(id);
+	}
+
+	void PrevPass::NodeObserver::obs_update(uint32_t id) {
+		_render_pass->node_update(id);
+	}
+
+	void PrevPass::NodeObserver::obs_remove(uint32_t id) {
+		_render_pass->node_remove(id);
 	}
 
 	/************************ PreviewRenderPass *********************************/
@@ -156,8 +172,31 @@ namespace vulkan {
 		TRY(descriptor_sets);
 		result->_descriptor_sets = std::move(descriptor_sets.value());
 
+		auto layout_binding = VkDescriptorSetLayoutBinding{};
+		layout_binding.binding = 0;
+		layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		layout_binding.descriptorCount = 1;
+		layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+		layout_binding.pImmutableSamplers = nullptr;
+
+		auto layout_info = VkDescriptorSetLayoutCreateInfo{};
+		layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layout_info.bindingCount = 1;
+		layout_info.pBindings = &layout_binding;
+
+		res = vkCreateDescriptorSetLayout(
+				Graphics::DEFAULT->device(),
+				&layout_info,
+				nullptr,
+				&result->_node_descriptor_layout);
+
+		if (res != VK_SUCCESS) {
+			return {res};
+		}
+
 		result->_mesh_observer = MeshObserver(*result);
 		result->_material_observer = MaterialObserver(*result);
+		result->_node_observer = NodeObserver(*result);
 
 		return result;
 	}
@@ -173,6 +212,7 @@ namespace vulkan {
 		LOG_MEMORY << "Deconstructing main render pipeline" << std::endl;
 
 		_cleanup_images();
+		_nodes.clear();
 		_meshes.clear();
 		_materials.clear();
 		_descriptor_sets.clear();
@@ -185,6 +225,10 @@ namespace vulkan {
 		
 		_in_flight_fences.clear();
 		_render_finished_semaphores.clear();
+		if (_node_descriptor_layout) {
+			vkDestroyDescriptorSetLayout(Graphics::DEFAULT->device(), _node_descriptor_layout, nullptr);
+			_node_descriptor_layout = nullptr;
+		}
 	}
 
 	PrevPass::~PrevPass() {
@@ -247,6 +291,7 @@ namespace vulkan {
 		for (auto &node : nodes) {
 			auto &mesh = _meshes[node.mesh().id()];
 			auto &material = _materials[node.material().id()];
+			auto &prev_node = _nodes[node.id()];
 
 			auto size = glm::vec2{_size.width, _size.height};
 			/*node.material().preview_impl()->update_uniform(
@@ -263,9 +308,10 @@ namespace vulkan {
 			vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
 			vkCmdBindIndexBuffer(command_buffer, mesh.index_buffer(), 0, VK_INDEX_TYPE_UINT32);
 
-			auto descriptor_sets = std::array<VkDescriptorSet, 2>{
+			auto descriptor_sets = std::array<VkDescriptorSet, 3>{
 				global_descriptor_set(_frame_index),
 				material.get_descriptor_set(),
+				prev_node.descriptor_set().descriptor_set(0),
 			};
 
 			vkCmdBindDescriptorSets(
@@ -344,6 +390,11 @@ namespace vulkan {
 		return _mapped_uniforms[_frame_index];
 	}
 
+	VkDescriptorSetLayout PrevPass::node_descriptor_set_layout(uint32_t material_id) {
+		//TODO: make this function actually work.
+		return _node_descriptor_layout;
+	}
+
 	void PrevPass::mesh_create(uint32_t id) {
 		LOG_DEBUG << "Creating preview mesh" << std::endl;
 		while (id + 1 > _meshes.size()) {
@@ -377,6 +428,25 @@ namespace vulkan {
 
 	void PrevPass::material_remove(uint32_t id) {
 		_materials[id].destroy();
+	}
+
+	void PrevPass::node_create(uint32_t id) {
+		while (id + 1 > _nodes.size()) {
+			_nodes.push_back(PrevPassNode());
+		}
+		if (auto node = PrevPassNode::create(*_scene, *this, _scene->get_node(id))) {
+			_nodes[id] = std::move(node.value());
+		} else {
+			LOG_ERROR << "Couldn't create preview node: " << node.error().desc() << std::endl;
+		}
+	}
+
+	void PrevPass::node_update(uint32_t id) {
+		_nodes[id].update();
+	}
+
+	void PrevPass::node_remove(uint32_t id) {
+		_nodes[id].destroy();
 	}
 
 	util::Result<void, KError> PrevPass::_create_sync_objects() {

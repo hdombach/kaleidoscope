@@ -64,12 +64,29 @@ App::Ptr App::create(std::string const &name) {
 	}
 
 	{
-		auto new_node = vulkan::Node(
-				*(result->_resource_manager)->get_mesh("square"),
-				*result->_resource_manager->get_material("viking_room"));
-		new_node.set_position({0, 0, 0});
-		result->_scene->add_node(std::move(new_node));
+		auto id = result->_scene->add_node(
+				result->_resource_manager->get_mesh("square"),
+				result->_resource_manager->get_material("viking_room"));
+		result->_scene->get_node_mut(id.value())->set_position({3, 2, 0});
+		result->_scene->update_node(id.value());
 	}
+
+	{
+		auto id = result->_scene->add_node(
+				result->_resource_manager->get_mesh("square"),
+				result->_resource_manager->get_material("viking_room"));
+		result->_scene->get_node_mut(id.value())->set_position({2, 1, 0});
+		result->_scene->update_node(id.value());
+	}
+
+	{
+		auto id = result->_scene->add_node(
+				result->_resource_manager->get_mesh("square"),
+				result->_resource_manager->get_material("viking_room"));
+		result->_scene->get_node_mut(id.value())->set_position({0, 0, 0});
+		result->_scene->update_node(id.value());
+	}
+
 
 	/*{
 		auto new_node = vulkan::Node(

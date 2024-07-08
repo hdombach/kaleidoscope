@@ -68,9 +68,11 @@ namespace vulkan {
 				util::readEnvFile("assets/default_shader.frag"));
 		TRY(frag_shader);
 
+		//Nodes need to be created first.
 		auto descriptor_layouts = std::vector<VkDescriptorSetLayout>{
 			result._render_pass->global_descriptor_set_layout(),
 			result._descriptor_sets.layout(),
+			result._render_pass->node_descriptor_set_layout(material->id()),
 		};
 
 		auto res = _create_pipeline(

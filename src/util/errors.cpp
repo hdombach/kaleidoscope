@@ -67,6 +67,13 @@ KError KError::shader_compile_error(std::string msg) {
 			"Shader compile error");
 }
 
+KError KError::invalid_arg(std::string msg) {
+	return KError(
+			INVALID_ARG,
+			msg,
+			"Internal invalid argument");
+}
+
 KError KError::internal(std::string msg) {
 	return KError(
 			INTERNAL,

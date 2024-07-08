@@ -12,20 +12,23 @@ namespace vulkan {
 	 */
 	class Node {
 		public:
-			Node(types::Mesh const &mesh, Material const &material):
+			Node(uint32_t id, types::Mesh const &mesh, Material const &material):
+				_id(id),
 				_mesh(mesh),
 				_material(material),
 				_position(0, 0, 0)
 			{}
 
 			Node(const Node& other) = delete;
-			Node(Node &&other);
+			Node(Node &&other) = default;
 			Node& operator=(const Node& other) = delete;
 			Node& operator=(Node&& other) = delete;
 
 			types::Mesh const &mesh() const { return _mesh; }
 
 			Material const &material() const { return _material; }
+
+			uint32_t id() const { return _id; }
 
 			glm::vec3 position() const { return _position; };
 			void set_position(glm::vec3 position) { _position = position; };
@@ -35,6 +38,7 @@ namespace vulkan {
 					VkCommandBuffer command_buffer);
 
 		private:
+			uint32_t _id;
 			types::Mesh const &_mesh;
 			vulkan::Material const &_material;
 

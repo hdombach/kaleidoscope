@@ -18,6 +18,7 @@ class KError {
 			INVALID_MEM_PROPERTY,
 			VK_ERROR,
 			SHADER_COMPILER_ERROR,
+			INVALID_ARG,
 			INTERNAL,
 		};
 
@@ -37,6 +38,7 @@ class KError {
 		static KError material_already_exists(std::string material_name);
 		static KError invalid_mem_property();
 		static KError shader_compile_error(std::string msg);
+		static KError invalid_arg(std::string msg);
 		static KError internal(std::string msg);
 
 	private:

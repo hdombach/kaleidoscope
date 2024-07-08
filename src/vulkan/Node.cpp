@@ -7,12 +7,6 @@
 #include "PrevPass.hpp"
 
 namespace vulkan {
-	Node::Node(Node&& other):
-		_mesh(other._mesh),
-		_material(std::move(other._material)),
-		_position(other._position)
-	{ }
-
 	/*void Node::render_preview(
 			PreviewRenderPass &preview_render_pass,
 			VkCommandBuffer command_buffer)
