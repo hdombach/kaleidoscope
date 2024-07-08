@@ -76,7 +76,7 @@ namespace vulkan {
 
 	util::Result<uint32_t, KError> Scene::add_node(
 			types::Mesh const *mesh,
-			vulkan::Material const *material)
+			types::Material const *material)
 	{
 		if (!mesh) {
 			return KError::invalid_arg("Mesh is null");

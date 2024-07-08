@@ -7,7 +7,7 @@
 
 #include "ColorMaterial.hpp"
 
-namespace vulkan {
+namespace types {
 	std::unique_ptr<ColorMaterial> ColorMaterial::create(uint32_t id, glm::vec3 color) {
 		auto result = std::unique_ptr<ColorMaterial>(new ColorMaterial());
 

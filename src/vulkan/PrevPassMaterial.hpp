@@ -2,11 +2,13 @@
 
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
-#include "../vulkan/Material.hpp"
+#include "../types/Material.hpp"
 #include "../vulkan/DescriptorSet.hpp"
+#include "Shader.hpp"
 
 namespace vulkan {
 	class Scene;
+	class PrevPass;
 
 	class PrevPassMaterial {
 		public:
@@ -15,7 +17,7 @@ namespace vulkan {
 			static util::Result<PrevPassMaterial, KError> create(
 					Scene &scene,
 					PrevPass &preview_pass,
-					const vulkan::Material *material);
+					const types::Material *material);
 
 			PrevPassMaterial(const PrevPassMaterial& other) = delete;
 			PrevPassMaterial(PrevPassMaterial &&other);
@@ -36,7 +38,7 @@ namespace vulkan {
 			VkDescriptorSet get_descriptor_set() { return _descriptor_sets.descriptor_set(0); }
 
 		private:
-			const vulkan::Material *_material;
+			const types::Material *_material;
 			Uniform _global_uniform;
 			DescriptorSets _descriptor_sets;
 			PrevPass *_render_pass;

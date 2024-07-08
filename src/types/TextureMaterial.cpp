@@ -11,8 +11,8 @@
 
 #include "TextureMaterial.hpp"
 
-namespace vulkan {
-	std::unique_ptr<TextureMaterial> TextureMaterial::create(uint32_t id, Texture* texture) {
+namespace types {
+	std::unique_ptr<TextureMaterial> TextureMaterial::create(uint32_t id, vulkan::Texture* texture) {
 		auto result = std::unique_ptr<TextureMaterial>(new TextureMaterial());
 
 		result->_texture = texture;

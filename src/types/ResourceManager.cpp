@@ -9,8 +9,8 @@
 
 #include "../vulkan/StaticTexture.hpp"
 #include "../vulkan/Texture.hpp"
-#include "../vulkan/TextureMaterial.hpp"
-#include "../vulkan/ColorMaterial.hpp"
+#include "../types/TextureMaterial.hpp"
+#include "../types/ColorMaterial.hpp"
 
 #include "../types/StaticMesh.hpp"
 #include "../types/Mesh.hpp"
@@ -165,25 +165,25 @@ namespace types {
 			std::string const &name,
 			vulkan::Texture *texture)
 	{
-		return _add_material(name, vulkan::TextureMaterial::create(_get_material_id(), texture));
+		return _add_material(name, types::TextureMaterial::create(_get_material_id(), texture));
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_color_material(
 			std::string const &name,
 			glm::vec3 color)
 	{
-		return _add_material(name, vulkan::ColorMaterial::create(_get_material_id(), color));
+		return _add_material(name, types::ColorMaterial::create(_get_material_id(), color));
 	}
 
 
-	vulkan::Material const *ResourceManager::get_material(std::string const &name) const {
+	types::Material const *ResourceManager::get_material(std::string const &name) const {
 		if (has_material(name)) {
 			return get_material(_material_map.at(name));
 		}
 		return nullptr;
 	}
 
-	vulkan::Material const *ResourceManager::get_material(uint32_t id) const {
+	types::Material const *ResourceManager::get_material(uint32_t id) const {
 		if (id >= 0 && id < _materials.size()) {
 			return _materials[id].get();
 		}
@@ -234,7 +234,7 @@ namespace types {
 
 	util::Result<uint32_t, KError> ResourceManager::_add_material(
 			const std::string &name,
-			std::unique_ptr<vulkan::Material> &&material)
+			std::unique_ptr<types::Material> &&material)
 	{
 		if (_material_map.count(name)) {
 			return KError::material_already_exists(name);

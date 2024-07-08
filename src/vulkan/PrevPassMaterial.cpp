@@ -6,17 +6,17 @@
 
 #include "PrevPass.hpp"
 #include "PrevPassMaterial.hpp"
-#include "Material.hpp"
 #include "../vulkan/Vertex.hpp"
 #include "../util/file.hpp"
 #include "MappedUniform.hpp"
 #include "../types/ShaderResource.hpp"
+#include "../types/Material.hpp"
 
 namespace vulkan {
 	util::Result<PrevPassMaterial, KError> PrevPassMaterial::create(
 			Scene &scene,
 			PrevPass &preview_pass,
-			const vulkan::Material *material)
+			const types::Material *material)
 	{
 		auto result = PrevPassMaterial();
 		result._material = material;

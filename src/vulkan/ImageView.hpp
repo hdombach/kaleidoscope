@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
 

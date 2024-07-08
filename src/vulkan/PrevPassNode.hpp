@@ -7,7 +7,7 @@
 #include "../vulkan/DescriptorSet.hpp"
 
 #include "MappedUniform.hpp"
-#include "Node.hpp"
+#include "../types/Node.hpp"
 
 namespace vulkan {
 	class Scene;

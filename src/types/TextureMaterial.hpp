@@ -5,12 +5,12 @@
 #include <vulkan/vulkan_core.h>
 
 #include "Material.hpp"
-#include "Texture.hpp"
+#include "../vulkan/Texture.hpp"
 
-namespace vulkan {
+namespace types {
 	class TextureMaterial: public Material {
 		public:
-			static std::unique_ptr<TextureMaterial> create(uint32_t id, Texture* texture);
+			static std::unique_ptr<TextureMaterial> create(uint32_t id, vulkan::Texture* texture);
 
 			~TextureMaterial() override = default;
 
@@ -23,7 +23,7 @@ namespace vulkan {
 			uint32_t id() const override { return _id; }
 		private:
 			TextureMaterial() = default;
-			Texture *_texture;
+			vulkan::Texture *_texture;
 			uint32_t _id;
 
 			std::vector<types::ShaderResource> _resources;

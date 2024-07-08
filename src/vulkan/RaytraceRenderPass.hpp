@@ -1,3 +1,5 @@
+#include <memory>
+
 #include "DescriptorPool.hpp"
 #include "DescriptorSet.hpp"
 #include "Fence.hpp"
@@ -6,8 +8,7 @@
 #include "Semaphore.hpp"
 #include "Texture.hpp"
 #include "UniformBufferObject.hpp"
-#include "Node.hpp"
-#include <memory>
+#include "../types/Node.hpp"
 
 namespace vulkan {
 	class RaytraceRenderPass: public Texture {

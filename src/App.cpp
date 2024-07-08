@@ -11,8 +11,6 @@
 #include "./vulkan/UIRenderPipeline.hpp"
 #include "./ui/AppView.hpp"
 #include "vulkan/Scene.hpp"
-#include "vulkan/TextureMaterial.hpp"
-#include "vulkan/ColorMaterial.hpp"
 #include "util/file.hpp"
 
 App::Ptr App::create(std::string const &name) {

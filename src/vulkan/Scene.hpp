@@ -12,7 +12,7 @@
 #include "../types/Camera.hpp"
 #include "PrevPass.hpp"
 #include "RaytraceRenderPass.hpp"
-#include "Node.hpp"
+#include "../types/Node.hpp"
 
 namespace vulkan {
 	/**
@@ -55,7 +55,7 @@ namespace vulkan {
 
 			util::Result<uint32_t, KError> add_node(
 					types::Mesh const *mesh,
-					vulkan::Material const *material);
+					types::Material const *material);
 			//TODO: removing, identifiying node
 			types::ResourceManager &resource_manager();
 

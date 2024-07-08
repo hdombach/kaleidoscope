@@ -13,7 +13,7 @@
 #include "../types/Mesh.hpp"
 #include "../vulkan/Texture.hpp"
 #include "../vulkan/Vertex.hpp"
-#include "../vulkan/Material.hpp"
+#include "Material.hpp"
 
 
 namespace types {
@@ -65,8 +65,8 @@ namespace types {
 					vulkan::Texture *texture);
 			util::Result<uint32_t, KError> add_color_material(std::string const &name, glm::vec3 color);
 
-			vulkan::Material const *get_material(std::string const &name) const;
-			vulkan::Material const *get_material(uint32_t id) const;
+			types::Material const *get_material(std::string const &name) const;
+			types::Material const *get_material(uint32_t id) const;
 			bool has_material(std::string const &name) const;
 
 			util::Result<void, KError> add_material_observer(util::Observer *observer);
@@ -78,7 +78,7 @@ namespace types {
 					std::unique_ptr<Mesh> &&mesh);
 			util::Result<uint32_t, KError> _add_material(
 					std::string const &name,
-					std::unique_ptr<vulkan::Material> &&material);
+					std::unique_ptr<types::Material> &&material);
 			uint32_t _get_mesh_id();
 			uint32_t _get_material_id();
 
@@ -89,7 +89,7 @@ namespace types {
 			std::unordered_map<std::string, uint32_t> _mesh_map;
 			std::vector<std::unique_ptr<Mesh>> _meshes;
 			std::unordered_map<std::string, uint32_t> _material_map;
-			std::vector<std::unique_ptr<vulkan::Material>> _materials;
+			std::vector<std::unique_ptr<types::Material>> _materials;
 			uint32_t _default_mesh;
 			std::list<util::Observer *> _mesh_observers;
 			std::list<util::Observer *> _material_observers;

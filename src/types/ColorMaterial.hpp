@@ -10,7 +10,7 @@
 #include "Material.hpp"
 #include "../types/ShaderResource.hpp"
 
-namespace vulkan {
+namespace types {
 	class ColorMaterial: public Material {
 		public:
 			//TODO: change to unique_ptr

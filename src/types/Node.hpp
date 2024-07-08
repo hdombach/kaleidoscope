@@ -12,7 +12,7 @@ namespace vulkan {
 	 */
 	class Node {
 		public:
-			Node(uint32_t id, types::Mesh const &mesh, Material const &material):
+			Node(uint32_t id, types::Mesh const &mesh, types::Material const &material):
 				_id(id),
 				_mesh(mesh),
 				_material(material),
@@ -26,21 +26,17 @@ namespace vulkan {
 
 			types::Mesh const &mesh() const { return _mesh; }
 
-			Material const &material() const { return _material; }
+			types::Material const &material() const { return _material; }
 
 			uint32_t id() const { return _id; }
 
 			glm::vec3 position() const { return _position; };
 			void set_position(glm::vec3 position) { _position = position; };
 
-			void render_preview(
-					PrevPass &preview_render_pass,
-					VkCommandBuffer command_buffer);
-
 		private:
 			uint32_t _id;
 			types::Mesh const &_mesh;
-			vulkan::Material const &_material;
+			types::Material const &_material;
 
 			glm::vec3 _position;
 	};
