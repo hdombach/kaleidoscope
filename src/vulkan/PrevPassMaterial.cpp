@@ -124,7 +124,7 @@ namespace vulkan {
 
 	void PrevPassMaterial::destroy() {
 		_material = nullptr;
-		_descriptor_sets.clear();
+		_descriptor_sets.destroy();
 		_render_pass = nullptr;
 		if (_pipeline_layout) {
 			vkDestroyPipelineLayout(

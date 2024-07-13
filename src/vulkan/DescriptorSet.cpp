@@ -76,16 +76,13 @@ namespace vulkan {
 
 	}
 
-	util::Result<DescriptorSets, KError> DescriptorSets::create(
-			std::vector<DescriptorSetTemplate> &templates,
-			uint32_t frame_count,
-			DescriptorPool &descriptor_pool)
+	util::Result<DescriptorSetLayout, KError> DescriptorSetLayout::create(
+			std::vector<DescriptorSetTemplate> &templates)
 	{
-		auto result = DescriptorSets();
-		result._descriptor_pool = &descriptor_pool;
+		auto result = DescriptorSetLayout();
 
 		auto layout_bindings = std::vector<VkDescriptorSetLayoutBinding>();
-		for (auto templ : templates) {
+		for (auto &templ : templates) {
 			layout_bindings.push_back(templ.layout_binding());
 		}
 
@@ -104,9 +101,54 @@ namespace vulkan {
 			return {res};
 		}
 
+		return result;
+	}
+
+	DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout &&other) {
+		_descriptor_set_layout = other._descriptor_set_layout;
+		other._descriptor_set_layout = nullptr;
+	}
+
+	DescriptorSetLayout& DescriptorSetLayout::operator=(DescriptorSetLayout&& other) {
+		destroy();
+
+		_descriptor_set_layout = other._descriptor_set_layout;
+		other._descriptor_set_layout = nullptr;
+
+		return *this;
+	}
+
+	DescriptorSetLayout::DescriptorSetLayout():
+		_descriptor_set_layout(nullptr)
+	{}
+
+	void DescriptorSetLayout::destroy() {
+		if (_descriptor_set_layout) {
+			vkDestroyDescriptorSetLayout(
+					Graphics::DEFAULT->device(), 
+					_descriptor_set_layout, 
+					nullptr);
+			_descriptor_set_layout = nullptr;
+		}
+	}
+
+	util::Result<DescriptorSets, KError> DescriptorSets::create(
+			std::vector<DescriptorSetTemplate> &templates,
+			uint32_t frame_count,
+			DescriptorPool &descriptor_pool)
+	{
+		auto result = DescriptorSets();
+		result._descriptor_pool = &descriptor_pool;
+
+		if (auto layout = DescriptorSetLayout::create(templates)) {
+			result._descriptor_set_layout = std::move(layout.value());
+		} else {
+			return layout.error();
+		}
+
 		auto layout_binding_vec = std::vector<VkDescriptorSetLayout>(
 				frame_count,
-				result._descriptor_set_layout);
+				result._descriptor_set_layout.layout());
 
 		auto alloc_info = VkDescriptorSetAllocateInfo{};
 		alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -115,7 +157,7 @@ namespace vulkan {
 		alloc_info.pSetLayouts = layout_binding_vec.data();
 
 		result._descriptor_sets.resize(frame_count);
-		res = vkAllocateDescriptorSets(
+		auto res = vkAllocateDescriptorSets(
 				Graphics::DEFAULT->device(),
 				&alloc_info,
 				result._descriptor_sets.data());
@@ -185,12 +227,10 @@ namespace vulkan {
 	}
 
 	DescriptorSets::DescriptorSets(DescriptorSets &&other):
-		_descriptor_pool(other._descriptor_pool)
+		_descriptor_pool(other._descriptor_pool),
+		_descriptor_set_layout(std::move(other._descriptor_set_layout))
 	{
 		_descriptor_sets = std::move(other._descriptor_sets);
-
-		_descriptor_set_layout = other._descriptor_set_layout;
-		other._descriptor_set_layout = nullptr;
 
 		_descriptor_pool = other._descriptor_pool;
 	}
@@ -198,8 +238,7 @@ namespace vulkan {
 	DescriptorSets& DescriptorSets::operator=(DescriptorSets &&other) {
 		_descriptor_sets = std::move(other._descriptor_sets);
 
-		_descriptor_set_layout = other._descriptor_set_layout;
-		other._descriptor_set_layout = nullptr;
+		_descriptor_set_layout = std::move(other._descriptor_set_layout);
 
 		_descriptor_pool = other._descriptor_pool;
 
@@ -209,21 +248,15 @@ namespace vulkan {
 	DescriptorSets::DescriptorSets():
 		_descriptor_pool(nullptr),
 		_descriptor_sets(),
-		_descriptor_set_layout(nullptr)
+		_descriptor_set_layout()
 	{ }
 
 	DescriptorSets::~DescriptorSets() {
-		clear();
+		destroy();
 	}
 
-	void DescriptorSets::clear() {
-		if (_descriptor_set_layout) {
-			vkDestroyDescriptorSetLayout(
-					Graphics::DEFAULT->device(), 
-					_descriptor_set_layout, 
-					nullptr);
-			_descriptor_set_layout = nullptr;
-		}
+	void DescriptorSets::destroy() {
+		_descriptor_set_layout.destroy();
 
 		if (_descriptor_sets.size() > 0) {
 			vkFreeDescriptorSets(
@@ -240,11 +273,11 @@ namespace vulkan {
 	}
 
 	VkDescriptorSetLayout DescriptorSets::layout() {
-		return _descriptor_set_layout;
+		return _descriptor_set_layout.layout();
 	}
 
 	VkDescriptorSetLayout *DescriptorSets::layout_ptr() {
-		return &_descriptor_set_layout;
+		return _descriptor_set_layout.layout_ptr();
 	}
 
 	DescriptorPool &DescriptorSets::descriptor_pool() {

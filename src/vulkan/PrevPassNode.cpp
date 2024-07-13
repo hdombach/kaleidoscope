@@ -38,7 +38,7 @@ namespace vulkan {
 
 	void PrevPassNode::destroy() {
 		_node = nullptr;
-		_descriptor_set.clear();
+		_descriptor_set.destroy();
 		_uniform.destroy();
 	}
 

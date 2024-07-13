@@ -96,6 +96,27 @@ namespace vulkan {
 					size_t buffer_size);
 	};
 
+	class DescriptorSetLayout {
+		public:
+			static util::Result<DescriptorSetLayout, KError> create(
+					std::vector<DescriptorSetTemplate> &templates);
+
+			DescriptorSetLayout(const DescriptorSetLayout& other) = delete;
+			DescriptorSetLayout(DescriptorSetLayout &&other);
+			DescriptorSetLayout& operator=(const DescriptorSetLayout& other) = delete;
+			DescriptorSetLayout& operator=(DescriptorSetLayout&& other);
+			DescriptorSetLayout();
+
+			~DescriptorSetLayout() { destroy(); }
+			void destroy();
+
+			VkDescriptorSetLayout layout() { return _descriptor_set_layout; }
+			VkDescriptorSetLayout *layout_ptr() { return &_descriptor_set_layout; }
+
+		private:
+			VkDescriptorSetLayout _descriptor_set_layout;
+	};
+
 	class DescriptorSets {
 		public:
 			static util::Result<DescriptorSets, KError> create(
@@ -110,7 +131,7 @@ namespace vulkan {
 			DescriptorSets();
 
 			~DescriptorSets();
-			void clear();
+			void destroy();
 
 			VkDescriptorSet descriptor_set(uint32_t frame_index);
 			VkDescriptorSetLayout layout();
@@ -119,7 +140,7 @@ namespace vulkan {
 			bool is_cleared();
 		private:
 			std::vector<VkDescriptorSet> _descriptor_sets;
-			VkDescriptorSetLayout _descriptor_set_layout;
+			DescriptorSetLayout _descriptor_set_layout;
 			DescriptorPool *_descriptor_pool;
 	};
 }

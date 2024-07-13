@@ -215,7 +215,7 @@ namespace vulkan {
 		_nodes.clear();
 		_meshes.clear();
 		_materials.clear();
-		_descriptor_sets.clear();
+		_descriptor_sets.destroy();
 		if (_render_pass) {
 			vkDestroyRenderPass(Graphics::DEFAULT->device(), _render_pass, nullptr);
 			_render_pass = nullptr;
