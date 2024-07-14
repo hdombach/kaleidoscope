@@ -20,6 +20,7 @@ namespace types {
 
 			ShaderResources const &resources() const override { return _resources; }
 			uint32_t id() const override { return _id; }
+			std::string const &frag_shader_src() const override { return _frag_shader_src; }
 
 			ColorMaterial(const ColorMaterial& other) = delete;
 			ColorMaterial(ColorMaterial &&other) = delete;
@@ -30,10 +31,12 @@ namespace types {
 			ColorMaterial() = default;
 
 			uint32_t _id;
+			std::string _frag_shader_src;
 
 			ShaderResources _resources;
 
 			glm::mat4 _object_transformation;
 			glm::vec3 _color;
+			glm::vec3 _default_position;
 	};
 }

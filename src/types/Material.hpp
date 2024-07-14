@@ -12,5 +12,6 @@ namespace types {
 
 			virtual types::ShaderResources const &resources() const = 0;
 			virtual uint32_t id() const = 0;
+			virtual std::string const &frag_shader_src() const = 0;
 	};
 }

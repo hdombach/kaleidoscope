@@ -7,6 +7,7 @@
 #include "PrevPassMaterial.hpp"
 #include "../vulkan/Vertex.hpp"
 #include "../util/file.hpp"
+#include "../util/Util.hpp"
 #include "../types/Material.hpp"
 
 namespace vulkan {
@@ -19,15 +20,26 @@ namespace vulkan {
 		result._material = material;
 
 		result._render_pass = &preview_pass;
+		
+		/* code gen vertex code */
+		auto vert_source = util::readEnvFile("assets/default_shader.vert");
+		auto frag_source = util::readEnvFile("assets/default_shader.frag");
+		auto uniform_source = std::string();
+		for (auto &resource : material->resources()) {
+			uniform_source += resource.declaration();
+		}
 
-		auto vert_shader = vulkan::Shader::from_env_file(
-				"src/shaders/default_shader.vert.spv");
-		auto frag_shader = vulkan::Shader::from_source_code(
-				util::readEnvFile("assets/default_shader.frag"));
+		util::replace_substr(vert_source, "/*INSERT_MATERIAL_UNIFORM*/\n", uniform_source);
+		util::replace_substr(frag_source, "/*INSERT_MATERIAL_UNIFORM*/\n", uniform_source);
+		util::replace_substr(frag_source, "/*INSERT_FRAG_SRC*/\n", material->frag_shader_src());
+
+		auto vert_shader = vulkan::Shader::from_source_code(vert_source, Shader::Type::Vertex);
+		TRY(vert_shader);
+		auto frag_shader = vulkan::Shader::from_source_code(frag_source, Shader::Type::Fragment);
 		TRY(frag_shader);
 
 		auto layout_bindings = std::vector<VkDescriptorSetLayoutBinding>(
-				2,
+				1,
 				VkDescriptorSetLayoutBinding{});
 		layout_bindings[0].binding = 0;
 		layout_bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -35,11 +47,21 @@ namespace vulkan {
 		layout_bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 		layout_bindings[0].pImmutableSamplers = nullptr;
 
-		layout_bindings[1].binding = 1;
-		layout_bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		layout_bindings[1].descriptorCount = 1;
-		layout_bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		layout_bindings[1].pImmutableSamplers = nullptr;
+		bool has_image = false;
+		for (auto &resource : material->resources()) {
+			if (resource.type() == types::ShaderResource::Type::Image) {
+				has_image = true;
+			}
+		}
+		if (has_image) {
+			auto binding = VkDescriptorSetLayoutBinding{};
+			binding.binding = 1;
+			binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			binding.descriptorCount = 1;
+			binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			binding.pImmutableSamplers = nullptr;
+			layout_bindings.push_back(binding);
+		}
 
 		auto layout_info = VkDescriptorSetLayoutCreateInfo{};
 		layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -56,7 +78,7 @@ namespace vulkan {
 		};
 
 		auto res = _create_pipeline(
-				vert_shader, 
+				vert_shader.value(), 
 				frag_shader.value(), 
 				*result._render_pass,
 				descriptor_layouts,

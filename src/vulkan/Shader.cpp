@@ -19,13 +19,24 @@ namespace vulkan {
 		return Shader(util::readEnvFile(file));
 	}
 
-	util::Result<Shader, KError> Shader::from_source_code(const std::string &code) {
+	util::Result<Shader, KError> Shader::from_source_code(
+			const std::string &code,
+			Type type)
+	{
 		auto compiler = shaderc::Compiler();
 		auto options = shaderc::CompileOptions();
 
 		options.SetOptimizationLevel(shaderc_optimization_level_size);
 
-		auto module = compiler.CompileGlslToSpv(code, shaderc_glsl_fragment_shader, "codegen", options);
+		shaderc_shader_kind kind;
+		if (type == Type::Vertex) {
+			kind = shaderc_glsl_vertex_shader;
+		} else {
+			kind = shaderc_glsl_fragment_shader;
+		}
+		
+		//TODO: not just fragment shader
+		auto module = compiler.CompileGlslToSpv(code, kind, "codegen", options);
 
 		if (module.GetCompilationStatus() != shaderc_compilation_status_success) {
 			return KError::shader_compile_error(module.GetErrorMessage());

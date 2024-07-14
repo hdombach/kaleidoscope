@@ -12,8 +12,8 @@ namespace util {
 
 	inline void replace_substr(
 			std::string &str,
-			std::string const &substr,
-			std::string const &replace)
+			std::string const substr,
+			std::string const replace)
 	{
 		auto start = str.find(substr);
 		str.erase(start, substr.size());

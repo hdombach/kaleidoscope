@@ -33,6 +33,7 @@ namespace types {
 			vulkan::ImageView const &image_view() const { return *_image_view; }
 
 			std::string const &name() const { return _name; }
+			std::string const &declaration() const { return _declaration; }
 
 			~ShaderResource() = default;
 
@@ -40,6 +41,7 @@ namespace types {
 			ShaderResource(std::string &name, Type type);
 
 			std::string _name;
+			std::string _declaration;
 
 			void* _primitive;
 			size_t _primitive_size;

@@ -5,7 +5,7 @@
 
 #include "ShaderResource.hpp"
 #include "../vulkan/MappedUniform.hpp"
-#include "../util/log.hpp"
+#include "../util/format.hpp"
 
 namespace types {
 	ShaderResource ShaderResource::create_primitive(
@@ -15,6 +15,7 @@ namespace types {
 		auto result = ShaderResource(name, Type::Mat4);
 		result._primitive = &mat;
 		result._primitive_size = sizeof(mat);
+		result._declaration = util::f("\tmat4 ", name, ";\n");
 		return result;
 	}
 
@@ -25,6 +26,7 @@ namespace types {
 		auto result = ShaderResource(name, Type::Vec3);
 		result._primitive = &vec;
 		result._primitive_size = sizeof(vec);
+		result._declaration = util::f("\tvec3 ", name, ";\n");
 		return result;
 	}
 

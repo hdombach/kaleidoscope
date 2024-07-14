@@ -388,7 +388,7 @@ namespace vulkan {
 		if (auto material = PrevPassMaterial::create(*_scene, *this, _scene->resource_manager().get_material(id))) {
 			_materials[id] = std::move(material.value());
 		} else {
-			LOG_ERROR << "Couldn't create preview material: " << material.error().desc() << std::endl;
+			LOG_ERROR << "Couldn't create preview material: " << material.error().desc() << ", " << material.error().content() << std::endl;
 		}
 	}
 

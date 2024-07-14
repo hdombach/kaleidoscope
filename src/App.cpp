@@ -48,12 +48,12 @@ App::Ptr App::create(std::string const &name) {
 		}
 	}
 
-	/*{
+	{
 		auto res = result->_resource_manager->add_color_material("color", glm::vec3(0.5, 0.1, 0.2));
 		if (!res) {
 			LOG_ERROR << res.error().desc() << std::endl;
 		}
-	}*/
+	}
 
 	if (auto scene = vulkan::Scene::create(*(result->_resource_manager))) {
 		result->_scene = std::move(scene.value());
@@ -84,6 +84,15 @@ App::Ptr App::create(std::string const &name) {
 		result->_scene->get_node_mut(id.value())->set_position({0, 0, 0});
 		result->_scene->update_node(id.value());
 	}
+
+	{
+		auto id = result->_scene->add_node(
+				result->_resource_manager->get_mesh("square"),
+				result->_resource_manager->get_material("color"));
+		result->_scene->get_node_mut(id.value())->set_position({-1, -1, -1});
+		result->_scene->update_node(id.value());
+	}
+
 
 
 	/*{

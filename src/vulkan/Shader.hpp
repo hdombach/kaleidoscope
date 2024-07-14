@@ -11,10 +11,17 @@
 namespace vulkan {
 	class Shader {
 		public:
+			enum class Type {
+				Fragment,
+				Vertex,
+			};
+
 			Shader(const std::string& code);
 			Shader(const std::vector<uint32_t> &code);
 			static Shader from_env_file(std::string const &file);
-			static util::Result<Shader, KError> from_source_code(std::string const &code);
+			static util::Result<Shader, KError> from_source_code(
+					std::string const &code,
+					Type type);
 
 			Shader(const Shader& other) = delete;
 			Shader(Shader &&other);
