@@ -1,8 +1,11 @@
+#include <algorithm>
 #include <stdlib.h>
 
 #include <glm/glm.hpp>
 
 #include "ShaderResource.hpp"
+#include "../vulkan/MappedUniform.hpp"
+#include "../util/log.hpp"
 
 namespace types {
 	ShaderResource ShaderResource::create_primitive(
@@ -51,5 +54,58 @@ namespace types {
 		_primitive_size(0),
 		_type(type)
 	{
+	}
+
+	util::Result<vulkan::Uniform, KError> ShaderResources::create_prim_uniform() const {
+		int i = -1;
+		size_t uniform_s = 0;
+		for (auto &resource : _resources) {
+			if (resource.is_primitive()) {
+				uniform_s += resource.primitive_size();
+				if (uniform_s % 16) {
+					uniform_s += 16 - uniform_s % 16;
+				}
+			}
+		}
+		//uniform_s = (uniform_s / 16 + 1) * 16;
+
+		auto uniform = vulkan::Uniform::create(uniform_s);
+		TRY(uniform);
+		update_prim_uniform(uniform.value());
+		return {std::move(uniform.value())};
+	}
+
+	void ShaderResources::update_prim_uniform(vulkan::Uniform &uniform) const {
+		update_prim_uniform(uniform, iterator(), iterator());
+	}
+
+	void ShaderResources::update_prim_uniform(
+			vulkan::Uniform &uniform,
+			const_iterator begin,
+			const_iterator end) const
+	{
+		size_t cur_offset = 0;
+		for (auto &resource : _resources) {
+			if (resource.is_primitive()) {
+				auto r = std::find_if(
+						begin, end,
+						[&resource](ShaderResource const &r) {
+							return r.name() == resource.name();
+						});
+
+				auto value = static_cast<char *>(uniform.raw_value()) + cur_offset;
+				if (r == end) {
+					memcpy(value, resource.primitive(), resource.primitive_size());
+				} else {
+					memcpy(value, r->primitive(), resource.primitive_size());
+				}
+
+				cur_offset += resource.primitive_size();
+				if (cur_offset % 16) {
+					cur_offset += 16 - cur_offset % 16;
+				}
+				//cur_offset = ((cur_offset / 16) + 1) * 16;
+			}
+		}
 	}
 }

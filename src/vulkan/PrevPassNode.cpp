@@ -1,6 +1,8 @@
+#include <cstring>
 #include <vector>
 
 #include "../util/result.hpp"
+#include "../types/Node.hpp"
 
 #include "PrevPass.hpp"
 #include "PrevPassNode.hpp"
@@ -18,20 +20,35 @@ namespace vulkan {
 		result._id = node->id();
 		result._node = node;
 
-		auto uniform = MappedUniform<glm::vec3>::create();
-		TRY(uniform);
-		result._uniform = std::move(uniform.value());
-		result._uniform.value() = result._node->position();
-
 		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
 
-		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(0, VK_SHADER_STAGE_VERTEX_BIT, result._uniform));
+		auto uniform = node->material().resources().create_prim_uniform();
+		TRY(uniform);
+		result._uniform = std::move(uniform.value());
 
-		auto descriptor_sets = DescriptorSets::create(descriptor_templates, 1, preview_pass.descriptor_pool());
-		
+		for (auto &resource : node->material().resources()) {
+			if (!resource.is_primitive()) {
+				descriptor_templates.push_back(DescriptorSetTemplate::create_image(1, VK_SHADER_STAGE_FRAGMENT_BIT, resource.image_view()));
+			}
+		}
+		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, result._uniform));
+
+		struct {
+			bool operator()(DescriptorSetTemplate &lt, DescriptorSetTemplate &rt) const {
+				return lt.layout_binding().binding < rt.layout_binding().binding;
+			}
+		} sort_templates;
+
+		std::sort(descriptor_templates.begin(), descriptor_templates.end(), sort_templates);
+
+		auto descriptor_sets = DescriptorSets::create(
+			descriptor_templates,
+			1,
+			preview_pass.descriptor_pool());
 		TRY(descriptor_sets);
-
 		result._descriptor_set = std::move(descriptor_sets.value());
+
+		//TODO: This can be optimized by sharing some descriptors between nodes.
 
 		return result;
 	}
@@ -43,6 +60,9 @@ namespace vulkan {
 	}
 
 	void PrevPassNode::update() {
-		_uniform.set_value(_node->position());
+		_node->material().resources().update_prim_uniform(
+				_uniform,
+				_node->resources().begin(),
+				_node->resources().end());
 	}
 }

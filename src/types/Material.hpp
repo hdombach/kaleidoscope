@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vector>
 #include <glm/fwd.hpp>
 
 #include "../types/ShaderResource.hpp"
@@ -11,7 +10,7 @@ namespace types {
 		public:
 			virtual ~Material() = default;
 
-			virtual std::vector<types::ShaderResource> const &resources() const = 0;
+			virtual types::ShaderResources const &resources() const = 0;
 			virtual uint32_t id() const = 0;
 	};
 }

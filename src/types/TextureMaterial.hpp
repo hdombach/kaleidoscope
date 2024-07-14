@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vector>
-
 #include <vulkan/vulkan_core.h>
 
 #include "Material.hpp"
@@ -19,16 +17,17 @@ namespace types {
 			TextureMaterial& operator=(const TextureMaterial& other) = delete;
 			TextureMaterial& operator=(TextureMaterial&& other) = delete;
 
-			std::vector<types::ShaderResource> const &resources() const override { return _resources; }
+			types::ShaderResources const &resources() const override { return _resources; }
 			uint32_t id() const override { return _id; }
 		private:
 			TextureMaterial() = default;
 			vulkan::Texture *_texture;
 			uint32_t _id;
 
-			std::vector<types::ShaderResource> _resources;
+			ShaderResources _resources;
 
 			glm::mat4 _object_transformation;
+			glm::vec3 _default_position;
 	};
 
 }

@@ -91,10 +91,18 @@ namespace vulkan {
 		layout_info.bindingCount = static_cast<uint32_t>(layout_bindings.size());
 		layout_info.pBindings = layout_bindings.data();
 
+		return create(layout_info);
+	}
+
+	util::Result<DescriptorSetLayout, KError> DescriptorSetLayout::create(
+			VkDescriptorSetLayoutCreateInfo &layout_info)
+	{
+		auto result = DescriptorSetLayout();
+
 		auto res = vkCreateDescriptorSetLayout(
-				Graphics::DEFAULT->device(), 
-				&layout_info, 
-				nullptr, 
+				Graphics::DEFAULT->device(),
+				&layout_info,
+				nullptr,
 				&result._descriptor_set_layout);
 
 		if (res != VK_SUCCESS) {

@@ -12,12 +12,19 @@ namespace vulkan {
 	 */
 	class Node {
 		public:
-			Node(uint32_t id, types::Mesh const &mesh, types::Material const &material):
-				_id(id),
-				_mesh(mesh),
-				_material(material),
-				_position(0, 0, 0)
-			{}
+			using Ptr = std::unique_ptr<Node>;
+
+			static Ptr create(
+					uint32_t id,
+					types::Mesh const &mesh,
+					types::Material const &material)
+			{
+				auto result = Ptr(new Node(id, mesh, material));
+
+				result->_resources.add_resource(types::ShaderResource::create_primitive("position", result->_position));
+
+				return std::move(result);
+			}
 
 			Node(const Node& other) = delete;
 			Node(Node &&other) = default;
@@ -32,6 +39,7 @@ namespace vulkan {
 
 			glm::vec3 position() const { return _position; };
 			void set_position(glm::vec3 position) { _position = position; };
+			types::ShaderResources const &resources() const { return _resources; }
 
 		private:
 			uint32_t _id;
@@ -39,5 +47,13 @@ namespace vulkan {
 			types::Material const &_material;
 
 			glm::vec3 _position;
+
+			types::ShaderResources _resources;
+
+			Node(uint32_t id, types::Mesh const &mesh, types::Material const &material):
+				_id(id),
+				_mesh(mesh),
+				_material(material)
+		{}
 	};
 }

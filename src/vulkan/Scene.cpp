@@ -63,15 +63,15 @@ namespace vulkan {
 		uniform_buffer.camera_rotation = camera().gen_rotate_mat();
 		uniform_buffer.camera_translation = glm::vec4(camera().position, 0.0);
 		_raytrace_render_pass->current_uniform_buffer().set_value(uniform_buffer);
-		_raytrace_render_pass->submit(_nodes[0]);
+		_raytrace_render_pass->submit(*_nodes[0]);
 	}
 
 	Node const *Scene::get_node(uint32_t id) const {
-		return &_nodes[id];
+		return _nodes[id].get();
 	}
 
 	Node *Scene::get_node_mut(uint32_t id) {
-		return &_nodes[id];
+		return _nodes[id].get();
 	}
 
 	util::Result<uint32_t, KError> Scene::add_node(
@@ -85,7 +85,7 @@ namespace vulkan {
 			return KError::invalid_arg("Material is null");
 		}
 		auto id = _get_node_id();
-		_nodes.push_back(Node(id, *mesh, *material));
+		_nodes.push_back(Node::create(id, *mesh, *material));
 		for (auto &observer : _node_observers) {
 			observer->obs_create(id);
 		}
@@ -102,7 +102,7 @@ namespace vulkan {
 		}
 		_node_observers.push_back(observer);
 		for (auto &node : _nodes) {
-			observer->obs_create(node.id());
+			observer->obs_create(node->id());
 		}
 		return {};
 	}

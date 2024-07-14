@@ -35,12 +35,9 @@ namespace vulkan {
 
 			VkPipeline pipeline() { return _pipeline; }
 			VkPipelineLayout pipeline_layout() { return _pipeline_layout; }
-			VkDescriptorSet get_descriptor_set() { return _descriptor_sets.descriptor_set(0); }
 
 		private:
 			const types::Material *_material;
-			Uniform _global_uniform;
-			DescriptorSets _descriptor_sets;
 			PrevPass *_render_pass;
 			VkPipelineLayout _pipeline_layout;
 			VkPipeline _pipeline;

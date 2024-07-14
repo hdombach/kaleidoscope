@@ -100,6 +100,8 @@ namespace vulkan {
 		public:
 			static util::Result<DescriptorSetLayout, KError> create(
 					std::vector<DescriptorSetTemplate> &templates);
+			static util::Result<DescriptorSetLayout, KError> create(
+					VkDescriptorSetLayoutCreateInfo &layout_info);
 
 			DescriptorSetLayout(const DescriptorSetLayout& other) = delete;
 			DescriptorSetLayout(DescriptorSetLayout &&other);

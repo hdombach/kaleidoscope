@@ -1,5 +1,4 @@
 #include <array>
-#include <cstring>
 #include <vector>
 
 #include <vulkan/vulkan_core.h>
@@ -8,8 +7,6 @@
 #include "PrevPassMaterial.hpp"
 #include "../vulkan/Vertex.hpp"
 #include "../util/file.hpp"
-#include "MappedUniform.hpp"
-#include "../types/ShaderResource.hpp"
 #include "../types/Material.hpp"
 
 namespace vulkan {
@@ -21,45 +18,6 @@ namespace vulkan {
 		auto result = PrevPassMaterial();
 		result._material = material;
 
-		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
-
-		int i = -1;
-		size_t uniform_s = 0;
-		for (auto &resource : material->resources()) {
-			if (resource.is_primitive()) {
-				uniform_s += resource.primitive_size();
-			}
-		}
-
-		auto uniform = Uniform::create(uniform_s);
-		TRY(uniform);
-		result._global_uniform = std::move(uniform.value());
-
-		size_t cur_offset = 0;
-		for (auto &resource : material->resources()) {
-			if (resource.is_primitive()) {
-				memcpy(result._global_uniform.raw_value(), resource.primitive(), resource.primitive_size());
-				cur_offset += resource.primitive_size();
-			} else {
-				descriptor_templates.push_back(DescriptorSetTemplate::create_image(1, VK_SHADER_STAGE_FRAGMENT_BIT, resource.image_view()));
-			}
-		}
-		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(0, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT, result._global_uniform));
-
-		struct {
-			bool operator()(DescriptorSetTemplate &lt, DescriptorSetTemplate &rt) const {
-				return lt.layout_binding().binding < rt.layout_binding().binding;
-			}
-		} sort_templates;
-
-		std::sort(descriptor_templates.begin(), descriptor_templates.end(), sort_templates);
-
-		auto descriptor_sets = DescriptorSets::create(
-				descriptor_templates,
-				1,
-				preview_pass.descriptor_pool());
-		TRY(descriptor_sets);
-		result._descriptor_sets = std::move(descriptor_sets.value());
 		result._render_pass = &preview_pass;
 
 		auto vert_shader = vulkan::Shader::from_env_file(
@@ -68,11 +26,33 @@ namespace vulkan {
 				util::readEnvFile("assets/default_shader.frag"));
 		TRY(frag_shader);
 
+		auto layout_bindings = std::vector<VkDescriptorSetLayoutBinding>(
+				2,
+				VkDescriptorSetLayoutBinding{});
+		layout_bindings[0].binding = 0;
+		layout_bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		layout_bindings[0].descriptorCount = 1;
+		layout_bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		layout_bindings[0].pImmutableSamplers = nullptr;
+
+		layout_bindings[1].binding = 1;
+		layout_bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		layout_bindings[1].descriptorCount = 1;
+		layout_bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		layout_bindings[1].pImmutableSamplers = nullptr;
+
+		auto layout_info = VkDescriptorSetLayoutCreateInfo{};
+		layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layout_info.bindingCount = static_cast<uint32_t>(layout_bindings.size());
+		layout_info.pBindings = layout_bindings.data();
+
+		auto descriptor_layout = DescriptorSetLayout::create(layout_info);
+		TRY(descriptor_layout);
+
 		//Nodes need to be created first.
 		auto descriptor_layouts = std::vector<VkDescriptorSetLayout>{
 			result._render_pass->global_descriptor_set_layout(),
-			result._descriptor_sets.layout(),
-			result._render_pass->node_descriptor_set_layout(material->id()),
+			descriptor_layout.value().layout(),
 		};
 
 		auto res = _create_pipeline(
@@ -91,9 +71,6 @@ namespace vulkan {
 		_material = other._material;
 		other._material = nullptr;
 
-		_global_uniform = std::move(other._global_uniform);
-		_descriptor_sets = std::move(other._descriptor_sets);
-
 		_render_pass = other._render_pass;
 		other._render_pass = nullptr;
 
@@ -106,9 +83,6 @@ namespace vulkan {
 
 	PrevPassMaterial& PrevPassMaterial::operator=(PrevPassMaterial &&other) {
 		destroy();
-
-		_global_uniform = std::move(other._global_uniform);
-		_descriptor_sets = std::move(other._descriptor_sets);
 
 		_render_pass = other._render_pass;
 		other._render_pass = nullptr;
@@ -124,7 +98,6 @@ namespace vulkan {
 
 	void PrevPassMaterial::destroy() {
 		_material = nullptr;
-		_descriptor_sets.destroy();
 		_render_pass = nullptr;
 		if (_pipeline_layout) {
 			vkDestroyPipelineLayout(

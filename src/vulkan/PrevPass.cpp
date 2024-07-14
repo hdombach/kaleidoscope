@@ -172,28 +172,6 @@ namespace vulkan {
 		TRY(descriptor_sets);
 		result->_descriptor_sets = std::move(descriptor_sets.value());
 
-		auto layout_binding = VkDescriptorSetLayoutBinding{};
-		layout_binding.binding = 0;
-		layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		layout_binding.descriptorCount = 1;
-		layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-		layout_binding.pImmutableSamplers = nullptr;
-
-		auto layout_info = VkDescriptorSetLayoutCreateInfo{};
-		layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layout_info.bindingCount = 1;
-		layout_info.pBindings = &layout_binding;
-
-		res = vkCreateDescriptorSetLayout(
-				Graphics::DEFAULT->device(),
-				&layout_info,
-				nullptr,
-				&result->_node_descriptor_layout);
-
-		if (res != VK_SUCCESS) {
-			return {res};
-		}
-
 		result->_mesh_observer = MeshObserver(*result);
 		result->_material_observer = MaterialObserver(*result);
 		result->_node_observer = NodeObserver(*result);
@@ -225,17 +203,13 @@ namespace vulkan {
 		
 		_in_flight_fences.clear();
 		_render_finished_semaphores.clear();
-		if (_node_descriptor_layout) {
-			vkDestroyDescriptorSetLayout(Graphics::DEFAULT->device(), _node_descriptor_layout, nullptr);
-			_node_descriptor_layout = nullptr;
-		}
 	}
 
 	PrevPass::~PrevPass() {
 		destroy();
 	}
 
-	void PrevPass::render(std::vector<Node> &nodes, types::Camera &camera) {
+	void PrevPass::render(std::vector<Node::Ptr> &nodes, types::Camera &camera) {
 		require(_in_flight_fences[_frame_index].wait());
 		auto submit_info = VkSubmitInfo{};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -289,9 +263,9 @@ namespace vulkan {
 
 
 		for (auto &node : nodes) {
-			auto &mesh = _meshes[node.mesh().id()];
-			auto &material = _materials[node.material().id()];
-			auto &prev_node = _nodes[node.id()];
+			auto &mesh = _meshes[node->mesh().id()];
+			auto &material = _materials[node->material().id()];
+			auto &prev_node = _nodes[node->id()];
 
 			auto size = glm::vec2{_size.width, _size.height};
 			/*node.material().preview_impl()->update_uniform(
@@ -308,9 +282,8 @@ namespace vulkan {
 			vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
 			vkCmdBindIndexBuffer(command_buffer, mesh.index_buffer(), 0, VK_INDEX_TYPE_UINT32);
 
-			auto descriptor_sets = std::array<VkDescriptorSet, 3>{
+			auto descriptor_sets = std::array<VkDescriptorSet, 2>{
 				global_descriptor_set(_frame_index),
-				material.get_descriptor_set(),
 				prev_node.descriptor_set().descriptor_set(0),
 			};
 
@@ -388,11 +361,6 @@ namespace vulkan {
 	}
 	MappedGlobalUniform &PrevPass::current_uniform_buffer() {
 		return _mapped_uniforms[_frame_index];
-	}
-
-	VkDescriptorSetLayout PrevPass::node_descriptor_set_layout(uint32_t material_id) {
-		//TODO: make this function actually work.
-		return _node_descriptor_layout;
 	}
 
 	void PrevPass::mesh_create(uint32_t id) {

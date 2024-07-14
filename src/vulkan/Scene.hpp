@@ -70,7 +70,7 @@ namespace vulkan {
 			PrevPass::Ptr _preview_render_pass;
 			RaytraceRenderPass::Ptr _raytrace_render_pass;
 
-			std::vector<Node> _nodes;
+			std::vector<Node::Ptr> _nodes;
 			types::Camera _camera;
 			types::ResourceManager *_resource_manager;
 			bool _is_preview;

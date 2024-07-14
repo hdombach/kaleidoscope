@@ -18,7 +18,7 @@ namespace types {
 
 			~ColorMaterial() override = default;
 
-			std::vector<types::ShaderResource> const &resources() const override { return _resources; }
+			ShaderResources const &resources() const override { return _resources; }
 			uint32_t id() const override { return _id; }
 
 			ColorMaterial(const ColorMaterial& other) = delete;
@@ -31,7 +31,7 @@ namespace types {
 
 			uint32_t _id;
 
-			std::vector<types::ShaderResource> _resources;
+			ShaderResources _resources;
 
 			glm::mat4 _object_transformation;
 			glm::vec3 _color;

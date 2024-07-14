@@ -65,7 +65,7 @@ namespace vulkan {
 					VkExtent2D size);
 			void destroy();
 			~PrevPass();
-			void render(std::vector<Node> &nodes, types::Camera &camera);
+			void render(std::vector<Node::Ptr> &nodes, types::Camera &camera);
 			void resize(VkExtent2D size) override;
 			bool is_resizable() const override;
 
@@ -78,8 +78,6 @@ namespace vulkan {
 			int frame_index() { return _frame_index; };
 			VkDescriptorSetLayout global_descriptor_set_layout() { return _descriptor_sets.layout(); }
 			VkDescriptorSet global_descriptor_set(int frame_index) { return _descriptor_sets.descriptor_set(frame_index); }
-
-			VkDescriptorSetLayout node_descriptor_set_layout(uint32_t material_id);
 
 			MaterialObserver &material_observer() { return _material_observer; }
 			MeshObserver &mesh_observer() { return _mesh_observer; }
@@ -128,8 +126,6 @@ namespace vulkan {
 			std::vector<Semaphore> _render_finished_semaphores;
 			std::vector<VkCommandBuffer> _command_buffers;
 			DescriptorPool _descriptor_pool;
-			/* TODO: this is just hardcoded */
-			VkDescriptorSetLayout _node_descriptor_layout;
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
 			int _frame_index;
 			uint32_t _mip_levels;

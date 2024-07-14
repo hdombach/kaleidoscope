@@ -39,6 +39,6 @@ namespace vulkan {
 			uint32_t _id;
 			const vulkan::Node *_node;
 			DescriptorSets _descriptor_set;
-			MappedUniform<glm::vec3> _uniform;
+			Uniform _uniform;
 	};
 }
