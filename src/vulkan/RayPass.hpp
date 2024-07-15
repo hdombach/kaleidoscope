@@ -11,18 +11,18 @@
 #include "../types/Node.hpp"
 
 namespace vulkan {
-	class RaytraceRenderPass: public Texture {
+	class RayPass: public Texture {
 		public:
-			using Ptr = std::unique_ptr<RaytraceRenderPass>;
+			using Ptr = std::unique_ptr<RayPass>;
 			static util::Result<Ptr, KError> create(VkExtent2D size);
 
-			~RaytraceRenderPass();
+			~RayPass();
 
-			RaytraceRenderPass(const RaytraceRenderPass& other) = delete;
-			RaytraceRenderPass(RaytraceRenderPass &&other);
-			RaytraceRenderPass& operator=(const RaytraceRenderPass& other) = delete;
-			RaytraceRenderPass& operator=(RaytraceRenderPass&& other);
-			RaytraceRenderPass();
+			RayPass(const RayPass& other) = delete;
+			RayPass(RayPass &&other);
+			RayPass& operator=(const RayPass& other) = delete;
+			RayPass& operator=(RayPass&& other);
+			RayPass();
 
 			VkDescriptorSet get_descriptor_set() override;
 			ImageView const &image_view() override;

@@ -13,7 +13,7 @@ namespace vulkan {
 	{
 		auto scene = Scene::Ptr(new Scene());
 
-		auto raytrace_render_pass = RaytraceRenderPass::create({300, 300});
+		auto raytrace_render_pass = RayPass::create({300, 300});
 		TRY(raytrace_render_pass);
 
 		auto render_pass_res = PrevPass::create(

@@ -11,7 +11,7 @@
 #include "../types/ResourceManager.hpp"
 #include "../types/Camera.hpp"
 #include "PrevPass.hpp"
-#include "RaytraceRenderPass.hpp"
+#include "RayPass.hpp"
 #include "../types/Node.hpp"
 
 namespace vulkan {
@@ -68,7 +68,7 @@ namespace vulkan {
 			uint32_t _get_node_id();
 
 			PrevPass::Ptr _preview_render_pass;
-			RaytraceRenderPass::Ptr _raytrace_render_pass;
+			RayPass::Ptr _raytrace_render_pass;
 
 			std::vector<Node::Ptr> _nodes;
 			types::Camera _camera;

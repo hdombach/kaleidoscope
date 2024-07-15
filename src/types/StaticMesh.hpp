@@ -23,9 +23,9 @@ namespace types {
 			static Ptr from_vertices(uint32_t id, std::vector<vulkan::Vertex> const &vertices);
 
 			StaticMesh(const StaticMesh& other) = delete;
-			StaticMesh(StaticMesh &&other);
+			StaticMesh(StaticMesh &&other) = default;
 			StaticMesh& operator=(const StaticMesh& other) = delete;
-			StaticMesh& operator=(StaticMesh&& other);
+			StaticMesh& operator=(StaticMesh&& other) = default;
 
 			void destroy();
 			~StaticMesh();
@@ -35,24 +35,10 @@ namespace types {
 			uint32_t id() const;
 			size_t size() const;
 
-			VkBuffer vertex_buffer() const;
-			VkBuffer index_buffer() const;
-			uint32_t index_count() const;
-			VkDeviceSize vertex_buffer_range() const;
-			VkDeviceSize index_buffer_range() const;
-
 		private:
 			StaticMesh() = default;
 
 			std::vector<vulkan::Vertex> _vertices;
 			uint32_t _id;
-
-			VkBuffer _vertex_buffer;
-			VkDeviceMemory _vertex_buffer_memory;
-			VkBuffer _index_buffer;
-			VkDeviceMemory _index_buffer_memory;
-			uint32_t _index_count;
-			VkDeviceSize _vertex_buffer_range;
-			VkDeviceSize _index_buffer_range;
 	};
 }

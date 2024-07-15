@@ -1,17 +1,16 @@
 #include <memory>
 #include <vulkan/vulkan_core.h>
 
-#include "RaytraceRenderPass.hpp"
+#include "RayPass.hpp"
 #include "../types/Node.hpp"
 #include "Shader.hpp"
-#include "defs.hpp"
 #include "imgui_impl_vulkan.h"
 
 namespace vulkan {
-	util::Result<RaytraceRenderPass::Ptr, KError> RaytraceRenderPass::create(
+	util::Result<RayPass::Ptr, KError> RayPass::create(
 			VkExtent2D size)
 	{
-		auto result = std::unique_ptr<RaytraceRenderPass>(new RaytraceRenderPass());
+		auto result = std::unique_ptr<RayPass>(new RayPass());
 
 		result->_size = size;
 
@@ -77,7 +76,7 @@ namespace vulkan {
 		return {std::move(result)};
 	}
 
-	RaytraceRenderPass::~RaytraceRenderPass() {
+	RayPass::~RayPass() {
 		if (_pipeline_layout) {
 			vkDestroyPipelineLayout(
 					Graphics::DEFAULT->device(), 
@@ -100,7 +99,7 @@ namespace vulkan {
 		}
 	}
 
-	RaytraceRenderPass::RaytraceRenderPass(RaytraceRenderPass &&other):
+	RayPass::RayPass(RayPass &&other):
 		_descriptor_set(std::move(other._descriptor_set))
 	{
 		_size = other._size;
@@ -117,8 +116,8 @@ namespace vulkan {
 		other._pipeline = nullptr;
 	}
 
-	RaytraceRenderPass& RaytraceRenderPass::operator=(RaytraceRenderPass&& other) {
-		this->~RaytraceRenderPass();
+	RayPass& RayPass::operator=(RayPass&& other) {
+		this->~RayPass();
 
 		_size = other._size;
 		_result_image = std::move(other._result_image);
@@ -136,19 +135,19 @@ namespace vulkan {
 		return *this;
 	}
 
-	RaytraceRenderPass::RaytraceRenderPass():
+	RayPass::RayPass():
 	_pipeline_layout(nullptr),
 	_pipeline(nullptr)
 	{ }
 
-	VkDescriptorSet RaytraceRenderPass::get_descriptor_set() {
+	VkDescriptorSet RayPass::get_descriptor_set() {
 		return _imgui_descriptor_set;
 	}
-	ImageView const &RaytraceRenderPass::image_view() {
+	ImageView const &RayPass::image_view() {
 		return _result_image_view;
 	}
 
-	void RaytraceRenderPass::submit(Node &node) {
+	void RayPass::submit(Node &node) {
 		if (_descriptor_set.is_cleared()) {
 			_create_descriptor_sets(node);
 		}
@@ -194,11 +193,11 @@ namespace vulkan {
 		}
 	}
 
-	MappedComputeUniform &RaytraceRenderPass::current_uniform_buffer() {
+	MappedComputeUniform &RayPass::current_uniform_buffer() {
 		return _mapped_uniform;
 	}
 
-	util::Result<void, KError> RaytraceRenderPass::_create_descriptor_sets(Node &node) {
+	util::Result<void, KError> RayPass::_create_descriptor_sets(Node &node) {
 		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
 
 		descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
@@ -210,7 +209,7 @@ namespace vulkan {
 					1,
 					VK_SHADER_STAGE_COMPUTE_BIT,
 					_mapped_uniform));
-
+/*
 		descriptor_templates.push_back(DescriptorSetTemplate::create_storage_buffer(
 					2, 
 					VK_SHADER_STAGE_COMPUTE_BIT, 
@@ -222,7 +221,7 @@ namespace vulkan {
 					VK_SHADER_STAGE_COMPUTE_BIT, 
 					node.mesh().index_buffer(), 
 					node.mesh().index_buffer_range()));
-
+*/
 		auto descriptor_sets = DescriptorSets::create(
 				descriptor_templates,
 				1,

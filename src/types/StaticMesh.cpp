@@ -3,8 +3,6 @@
 #include <unordered_map>
 
 #include "StaticMesh.hpp"
-#include "../vulkan/graphics.hpp"
-#include "vulkan/vulkan_core.h"
 
 namespace types {
 	util::Result<StaticMesh::Ptr , KError> StaticMesh::from_file(
@@ -78,81 +76,7 @@ namespace types {
 
 		result->_id = id;
 		result->_vertices = vertices;
-		result->_vertex_buffer_range = VkDeviceSize(sizeof(result->_vertices[0]) * result->_vertices.size());
-
-		VkBuffer staginBuffer;
-		VkDeviceMemory staginBufferMemory;
-		vulkan::Graphics::DEFAULT->create_buffer(
-				result->_vertex_buffer_range,
-				VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-				staginBuffer, 
-				staginBufferMemory);
-
-		void *data;
-		vkMapMemory(
-				vulkan::Graphics::DEFAULT->device(),
-				staginBufferMemory,
-				0,
-				result->_vertex_buffer_range,
-				0,
-				&data);
-		memcpy(data, result->_vertices.data(), (size_t) result->_vertex_buffer_range);
-		vkUnmapMemory(vulkan::Graphics::DEFAULT->device(), staginBufferMemory);
-
-		vulkan::Graphics::DEFAULT->create_buffer(
-				result->_vertex_buffer_range, 
-				VK_BUFFER_USAGE_TRANSFER_DST_BIT
-					| VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
-					| VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-				result->_vertex_buffer, 
-				result->_vertex_buffer_memory);
-
-		vulkan::Graphics::DEFAULT->copy_buffer(
-				staginBuffer,
-				result->_vertex_buffer,
-				result->_vertex_buffer_range);
-
-		vkDestroyBuffer(vulkan::Graphics::DEFAULT->device(), staginBuffer, nullptr);
-		vkFreeMemory(vulkan::Graphics::DEFAULT->device(), staginBufferMemory, nullptr);
-
-		result->_index_buffer_range = sizeof(indices[0]) * indices.size();
-
-		vulkan::Graphics::DEFAULT->create_buffer(
-				result->_index_buffer_range, 
-				VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-				staginBuffer, 
-				staginBufferMemory);
-
-		vkMapMemory(
-				vulkan::Graphics::DEFAULT->device(),
-				staginBufferMemory,
-				0,
-				result->_index_buffer_range,
-				0,
-				&data);
-		memcpy(data, indices.data(), (size_t) result->_index_buffer_range);
-		vkUnmapMemory(vulkan::Graphics::DEFAULT->device(), staginBufferMemory);
-
-		vulkan::Graphics::DEFAULT->create_buffer(
-				result->_index_buffer_range, 
-				VK_BUFFER_USAGE_TRANSFER_DST_BIT
-					| VK_BUFFER_USAGE_INDEX_BUFFER_BIT
-					| VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-				result->_index_buffer, 
-				result->_index_buffer_memory);
-
-		vulkan::Graphics::DEFAULT->copy_buffer(staginBuffer, result->_index_buffer, result->_index_buffer_range);
-
-		vkDestroyBuffer(vulkan::Graphics::DEFAULT->device(), staginBuffer, nullptr);
-		vkFreeMemory(vulkan::Graphics::DEFAULT->device(), staginBufferMemory, nullptr);
-
-		result->_index_count = indices.size();
-
-		return std::move(result);
+		return result;
 	}
 
 	StaticMesh::Ptr StaticMesh::from_vertices(
@@ -172,55 +96,8 @@ namespace types {
 		return from_vertices(id, vertices_result, indices_result);
 	}
 
-	StaticMesh::StaticMesh(StaticMesh &&other) {
-		_vertex_buffer = other._vertex_buffer;
-		other._vertex_buffer = nullptr;
-
-		_vertex_buffer_memory = other._vertex_buffer_memory;
-		other._vertex_buffer_memory = nullptr;
-
-		_index_buffer = other._index_buffer;
-		other._index_buffer = nullptr;
-
-		_index_buffer_memory = other._index_buffer_memory;
-		other._index_buffer_memory = nullptr;
-	}
-
-	StaticMesh& StaticMesh::operator=(StaticMesh&& other) {
-		destroy();
-
-		_vertex_buffer = other._vertex_buffer;
-		other._vertex_buffer = nullptr;
-
-		_vertex_buffer_memory = other._vertex_buffer_memory;
-		other._vertex_buffer_memory = nullptr;
-
-		_index_buffer = other._index_buffer;
-		other._index_buffer = nullptr;
-
-		_index_buffer_memory = other._index_buffer_memory;
-		other._index_buffer_memory = nullptr;
-
-		return *this;
-	}
-
 	void StaticMesh::destroy() {
-		if (_vertex_buffer) {
-			vkDestroyBuffer(vulkan::Graphics::DEFAULT->device(), _vertex_buffer, nullptr);
-			_vertex_buffer = nullptr;
-		}
-		if (_vertex_buffer_memory) {
-			vkFreeMemory(vulkan::Graphics::DEFAULT->device(), _vertex_buffer_memory, nullptr);
-			_vertex_buffer_memory = nullptr;
-		}
-		if (_index_buffer) {
-			vkDestroyBuffer(vulkan::Graphics::DEFAULT->device(), _index_buffer, nullptr);
-			_index_buffer = nullptr;
-		}
-		if (_index_buffer_memory) {
-			vkFreeMemory(vulkan::Graphics::DEFAULT->device(), _index_buffer_memory, nullptr);
-			_index_buffer_memory = nullptr;
-		}
+		_vertices.clear();
 	}
 
 	StaticMesh::~StaticMesh() {
@@ -241,21 +118,5 @@ namespace types {
 
 	size_t StaticMesh::size() const {
 		return _vertices.size();
-	}
-
-	VkBuffer StaticMesh::vertex_buffer() const {
-		return _vertex_buffer;
-	}
-	VkBuffer StaticMesh::index_buffer() const {
-		return _index_buffer;
-	}
-	uint32_t StaticMesh::index_count() const {
-		return _index_count;
-	}
-	VkDeviceSize StaticMesh::vertex_buffer_range() const {
-		return _vertex_buffer_range;
-	}
-	VkDeviceSize StaticMesh::index_buffer_range() const {
-		return _index_buffer_range;
 	}
 }
