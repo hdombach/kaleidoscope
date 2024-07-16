@@ -57,5 +57,10 @@ namespace vulkan {
 					VkPipeline *pipeline,
 					VkPipelineLayout *pipeline_layout);
 
+			static void _codegen(
+					std::string &frag_source,
+					std::string &vert_source,
+					const types::Material *material);
+
 	};
 }

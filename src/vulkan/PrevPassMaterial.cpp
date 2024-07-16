@@ -22,16 +22,9 @@ namespace vulkan {
 		result._render_pass = &preview_pass;
 		
 		/* code gen vertex code */
-		auto vert_source = util::readEnvFile("assets/default_shader.vert");
-		auto frag_source = util::readEnvFile("assets/default_shader.frag");
-		auto uniform_source = std::string();
-		for (auto &resource : material->resources()) {
-			uniform_source += resource.declaration();
-		}
-
-		util::replace_substr(vert_source, "/*INSERT_MATERIAL_UNIFORM*/\n", uniform_source);
-		util::replace_substr(frag_source, "/*INSERT_MATERIAL_UNIFORM*/\n", uniform_source);
-		util::replace_substr(frag_source, "/*INSERT_FRAG_SRC*/\n", material->frag_shader_src());
+		auto vert_source = std::string();
+		auto frag_source = std::string();
+		_codegen(frag_source, vert_source, material);
 
 		auto vert_shader = vulkan::Shader::from_source_code(vert_source, Shader::Type::Vertex);
 		TRY(vert_shader);
@@ -318,5 +311,22 @@ namespace vulkan {
 		} else {
 			return {res};
 		}
+	}
+
+	void PrevPassMaterial::_codegen(
+			std::string &frag_source,
+			std::string &vert_source,
+			const types::Material *material)
+	{
+		frag_source = util::readEnvFile("assets/default_shader.frag");
+		vert_source = util::readEnvFile("assets/default_shader.vert");
+		auto uniform_source = std::string();
+		for (auto &resource : material->resources()) {
+			uniform_source += resource.declaration();
+		}
+
+		util::replace_substr(vert_source, "/*INSERT_MATERIAL_UNIFORM*/\n", uniform_source);
+		util::replace_substr(frag_source, "/*INSERT_MATERIAL_UNIFORM*/\n", uniform_source);
+		util::replace_substr(frag_source, "/*INSERT_FRAG_SRC*/\n", material->frag_shader_src());
 	}
 }
