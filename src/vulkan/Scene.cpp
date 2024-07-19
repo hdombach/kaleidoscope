@@ -13,7 +13,7 @@ namespace vulkan {
 	{
 		auto scene = Scene::Ptr(new Scene());
 
-		auto raytrace_render_pass = RayPass::create({300, 300});
+		auto raytrace_render_pass = RayPass::create(*scene, {300, 300});
 		TRY(raytrace_render_pass);
 
 		auto render_pass_res = PrevPass::create(
@@ -29,6 +29,9 @@ namespace vulkan {
 		scene->add_node_observer(&scene->_preview_render_pass->node_observer());
 		resource_manager.add_mesh_observer(&scene->_preview_render_pass->mesh_observer());
 		resource_manager.add_material_observer(&scene->_preview_render_pass->material_observer());
+
+		scene->add_node_observer(&scene->_raytrace_render_pass->node_observer());
+		resource_manager.add_mesh_observer(&scene->_raytrace_render_pass->mesh_observer());
 		return scene;
 	}
 

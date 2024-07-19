@@ -244,6 +244,8 @@ namespace vulkan {
 	}
 
 	DescriptorSets& DescriptorSets::operator=(DescriptorSets &&other) {
+		destroy();
+
 		_descriptor_sets = std::move(other._descriptor_sets);
 
 		_descriptor_set_layout = std::move(other._descriptor_set_layout);
