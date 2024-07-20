@@ -7,6 +7,7 @@
 
 #include "MappedUniform.hpp"
 #include "DescriptorPool.hpp"
+#include "StaticBuffer.hpp"
 
 namespace vulkan {
 	class DescriptorSetTemplate {
@@ -72,6 +73,11 @@ namespace vulkan {
 					VkShaderStageFlags stage_flags,
 					VkBuffer buffer,
 					size_t range);
+
+			static DescriptorSetTemplate create_storage_buffer(
+					uint32_t binding,
+					VkShaderStageFlags stage_flags,
+					StaticBuffer &static_buffer);
 
 			VkDescriptorSetLayoutBinding layout_binding() const { return _layout_binding; }
 			std::vector<VkBuffer> const &buffers() const { return _buffers; }

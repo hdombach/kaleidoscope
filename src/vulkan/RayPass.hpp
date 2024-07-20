@@ -12,6 +12,7 @@
 #include "UniformBufferObject.hpp"
 #include "RayPassMesh.hpp"
 #include "RayPassNode.hpp"
+#include "StaticBuffer.hpp"
 
 #include "../types/Node.hpp"
 
@@ -91,21 +92,10 @@ namespace vulkan {
 			MeshObserver _mesh_observer;
 			NodeObserver _node_observer;
 
-			VkBuffer _vertex_buffer;
-			VkDeviceMemory _vertex_buffer_memory;
-			VkDeviceSize _vertex_buffer_range;
-
-			VkBuffer _index_buffer;
-			VkDeviceMemory _index_buffer_memory;
-			VkDeviceSize _index_buffer_range;
-
-			VkBuffer _mesh_buffer;
-			VkDeviceMemory _mesh_buffer_memory;
-			VkDeviceSize _mesh_buffer_range;
-
-			VkBuffer _node_buffer;
-			VkDeviceMemory _node_buffer_memory;
-			VkDeviceSize _node_buffer_range;
+			StaticBuffer _vertex_buffer;
+			StaticBuffer _index_buffer;
+			StaticBuffer _mesh_buffer;
+			StaticBuffer _node_buffer;
 
 			std::vector<RayPassMesh> _meshes;
 			std::vector<RayPassNode> _nodes;
@@ -116,13 +106,7 @@ namespace vulkan {
 			util::Result<void, KError> _create_pipeline();
 
 			void _create_mesh_buffers();
-			void _destroy_mesh_buffers();
 			void _create_node_buffers();
-			void _destroy_node_buffers();
-			static void _create_comp_buffer(
-					void *data,
-					VkBuffer &buffer,
-					VkDeviceMemory &buffer_memory,
-					VkDeviceSize range);
+			std::string _codegen();
 	};
 }

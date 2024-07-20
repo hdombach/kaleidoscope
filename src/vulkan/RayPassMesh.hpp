@@ -23,7 +23,7 @@ namespace vulkan {
 					"	uint vertex_size;\n"
 					"	uint index_offset;\n"
 					"	uint index_size;\n"
-					"}\n";
+					"};\n";
 				}
 			} __attribute__((packed));
 

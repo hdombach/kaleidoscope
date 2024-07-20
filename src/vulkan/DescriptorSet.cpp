@@ -57,6 +57,18 @@ namespace vulkan {
 		return result;
 	}
 
+	DescriptorSetTemplate DescriptorSetTemplate::create_storage_buffer(
+			uint32_t binding,
+			VkShaderStageFlags stage_flags,
+			StaticBuffer &static_buffer)
+	{
+		return create_storage_buffer(
+				binding,
+				stage_flags,
+				static_buffer.buffer(),
+				static_buffer.range());
+	}
+
 	DescriptorSetTemplate DescriptorSetTemplate::_create_uniform_impl(
 			uint32_t binding,
 			VkShaderStageFlags stage_flags,

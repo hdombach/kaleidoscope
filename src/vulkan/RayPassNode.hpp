@@ -15,8 +15,8 @@ namespace vulkan {
 				static constexpr const char *declaration() {
 					return
 					"struct Node {\n"
-					"	uint mesh_id;"
-					"}\n";
+					"	uint mesh_id;\n"
+					"};\n";
 				}
 			} __attribute__((packed));
 

@@ -14,6 +14,7 @@ namespace vulkan {
 			enum class Type {
 				Fragment,
 				Vertex,
+				Compute,
 			};
 
 			Shader(const std::string& code);

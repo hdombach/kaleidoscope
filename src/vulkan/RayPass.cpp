@@ -10,6 +10,8 @@
 #include "graphics.hpp"
 #include "Scene.hpp"
 #include "../types/Node.hpp"
+#include "../util/file.hpp"
+#include "../util/Util.hpp"
 
 namespace vulkan {
 	RayPass::MeshObserver::MeshObserver(RayPass &ray_pass):
@@ -52,10 +54,6 @@ namespace vulkan {
 
 		result->_scene = &scene;
 		result->_size = size;
-		result->_vertex_buffer = nullptr;
-		result->_vertex_buffer_memory = nullptr;
-		result->_index_buffer = nullptr;
-		result->_index_buffer_memory = nullptr;
 
 		result->_descriptor_pool = DescriptorPool::create();
 
@@ -122,8 +120,6 @@ namespace vulkan {
 	}
 
 	void RayPass::destroy() {
-		_destroy_mesh_buffers();
-		_destroy_node_buffers();
 		if (_pipeline_layout) {
 			vkDestroyPipelineLayout(
 					Graphics::DEFAULT->device(), 
@@ -175,29 +171,13 @@ namespace vulkan {
 
 		_mapped_uniform = std::move(other._mapped_uniform);
 
-		_vertex_buffer = other._vertex_buffer;
-		other._vertex_buffer = nullptr;
-		_vertex_buffer_memory = other._vertex_buffer_memory;
-		other._vertex_buffer_memory = nullptr;
-		_vertex_buffer_range = other._vertex_buffer_range;
+		_vertex_buffer = std::move(other._vertex_buffer);
 
-		_index_buffer = other._index_buffer;
-		other._index_buffer = nullptr;
-		_index_buffer_memory = other._index_buffer_memory;
-		other._index_buffer_memory = nullptr;
-		_index_buffer_range = other._index_buffer_range;
+		_index_buffer = std::move(other._index_buffer);
 
-		_mesh_buffer = other._mesh_buffer;
-		other._mesh_buffer = nullptr;
-		_mesh_buffer_memory = other._mesh_buffer_memory;
-		other._mesh_buffer_memory = nullptr;
-		_mesh_buffer_range = other._mesh_buffer_range;
+		_mesh_buffer = std::move(other._mesh_buffer);
 
-		_node_buffer = other._node_buffer;
-		other._node_buffer = nullptr;
-		_node_buffer_memory = other._node_buffer_memory;
-		other._node_buffer_memory = nullptr;
-		_node_buffer_range = other._node_buffer_range;
+		_node_buffer = std::move(other._node_buffer);
 
 		_meshes = std::move(other._meshes);
 
@@ -240,7 +220,11 @@ namespace vulkan {
 			_create_descriptor_sets();
 		}
 		if (!_pipeline) {
-			_create_pipeline();
+			auto res = _create_pipeline();
+			if (!res) {
+				LOG_ERROR << "problem creating pipeline: " << res.error().desc() << " " << res.error().content() << std::endl;
+				return;
+			}
 		}
 
 		auto submit_info = VkSubmitInfo{};
@@ -290,7 +274,6 @@ namespace vulkan {
 
 	void RayPass::mesh_create(uint32_t id) {
 		_meshes.push_back(RayPassMesh(_scene->resource_manager().get_mesh(id), this));
-		_destroy_mesh_buffers();
 		_create_mesh_buffers();
 		_create_descriptor_sets();
 	}
@@ -301,7 +284,6 @@ namespace vulkan {
 
 	void RayPass::node_create(uint32_t id) {
 		_nodes.push_back(RayPassNode(_scene->get_node(id), this));
-		_destroy_node_buffers();
 		_create_node_buffers();
 		_create_descriptor_sets();
 	}
@@ -326,14 +308,22 @@ namespace vulkan {
 		descriptor_templates.push_back(DescriptorSetTemplate::create_storage_buffer(
 					2, 
 					VK_SHADER_STAGE_COMPUTE_BIT, 
-					_vertex_buffer, 
-					_vertex_buffer_range));
+					_vertex_buffer));
 
 		descriptor_templates.push_back(DescriptorSetTemplate::create_storage_buffer(
 					3,
 					VK_SHADER_STAGE_COMPUTE_BIT, 
-					_index_buffer, 
-					_index_buffer_range));
+					_index_buffer));
+
+		descriptor_templates.push_back(DescriptorSetTemplate::create_storage_buffer(
+					4,
+					VK_SHADER_STAGE_COMPUTE_BIT,
+					_mesh_buffer));
+
+		descriptor_templates.push_back(DescriptorSetTemplate::create_storage_buffer(
+					5,
+					VK_SHADER_STAGE_COMPUTE_BIT,
+					_node_buffer));
 
 		auto descriptor_sets = DescriptorSets::create(
 				descriptor_templates,
@@ -347,12 +337,13 @@ namespace vulkan {
 	}
 
 	util::Result<void, KError> RayPass::_create_pipeline() {
-		auto compute_shader = Shader::from_env_file("src/shaders/default_shader.comp.spv");
+		auto compute_shader = Shader::from_source_code(_codegen(), Shader::Type::Compute);
+		TRY(compute_shader);
 
 		auto compute_shader_stage_info = VkPipelineShaderStageCreateInfo{};
 		compute_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		compute_shader_stage_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		compute_shader_stage_info.module = compute_shader.shader_module();
+		compute_shader_stage_info.module = compute_shader.value().shader_module();
 		compute_shader_stage_info.pName = "main";
 
 		auto pipeline_layout_info = VkPipelineLayoutCreateInfo{};
@@ -380,6 +371,8 @@ namespace vulkan {
 		if (res != VK_SUCCESS) {
 			return {res};
 		}
+
+		LOG_DEBUG << "just created raypass pipeline " << _pipeline << std::endl;
 
 		return {};
 	}
@@ -409,50 +402,17 @@ namespace vulkan {
 
 			meshes.push_back(mesh.vimpl());
 		}
-		_vertex_buffer_range = vertices.size() * sizeof(vertices[0]);
-		_index_buffer_range = indices.size() * sizeof(indices[0]);
+		auto vertex_buffer = StaticBuffer::create(vertices);
+		//TODO: error handling
+		_vertex_buffer = std::move(vertex_buffer.value());
 
-		/* move vertex buffer to gpu */
-		_create_comp_buffer(
-				vertices.data(),
-				_vertex_buffer,
-				_vertex_buffer_memory,
-				_vertex_buffer_range);
-		LOG_DEBUG << "creating vertex buffer " << _vertex_buffer << std::endl;
+		auto index_buffer = StaticBuffer::create(indices);
+		//TODO: error handling
+		_index_buffer = std::move(index_buffer.value());
 
-		/* move index buffer to gpu */
-		_create_comp_buffer(
-				indices.data(), 
-				_index_buffer, 
-				_index_buffer_memory, 
-				_index_buffer_range);
-	}
-
-	void RayPass::_destroy_mesh_buffers() {
-		if (_vertex_buffer) {
-			vkDestroyBuffer(Graphics::DEFAULT->device(), _vertex_buffer, nullptr);
-			_vertex_buffer = nullptr;
-		}
-		if (_vertex_buffer_memory) {
-			vkFreeMemory(Graphics::DEFAULT->device(), _vertex_buffer_memory, nullptr);
-			_vertex_buffer_memory = nullptr;
-		}
-		if (_index_buffer) {
-			vkDestroyBuffer(Graphics::DEFAULT->device(), _index_buffer, nullptr);
-			_index_buffer = nullptr;
-		}
-		if (_index_buffer_memory) {
-			vkFreeMemory(Graphics::DEFAULT->device(), _index_buffer_memory, nullptr);
-			_index_buffer_memory = nullptr;
-		}
-		if (_mesh_buffer) {
-			vkDestroyBuffer(Graphics::DEFAULT->device(), _mesh_buffer, nullptr);
-			_mesh_buffer = nullptr;
-		}
-		if (_mesh_buffer_memory) {
-			vkFreeMemory(Graphics::DEFAULT->device(), _mesh_buffer_memory, nullptr);
-			_mesh_buffer_memory = nullptr;
-		}
+		auto mesh_buffer = StaticBuffer::create(meshes);
+		//TODO: error handling
+		_mesh_buffer = std::move(mesh_buffer.value());
 	}
 
 	void RayPass::_create_node_buffers() {
@@ -461,73 +421,19 @@ namespace vulkan {
 			nodes.push_back(node.vimpl());
 		}
 
-		_node_buffer_range = nodes.size() * sizeof(nodes[0]);
-
-		_create_comp_buffer(
-				nodes.data(), 
-				_node_buffer,
-				_node_buffer_memory,
-				_node_buffer_range);
+		auto node_buffer = StaticBuffer::create(nodes);
+		//TODO: error handling
+		_node_buffer = std::move(node_buffer.value());
 	}
 
-	void RayPass::_destroy_node_buffers() {
-		if (_node_buffer) {
-			vkDestroyBuffer(Graphics::DEFAULT->device(), _node_buffer, nullptr);
-			_node_buffer = nullptr;
-		}
-		if (_node_buffer_memory) {
-			vkFreeMemory(Graphics::DEFAULT->device(), _node_buffer_memory, nullptr);
-			_node_buffer_memory = nullptr;
-		}
+	std::string RayPass::_codegen() {
+		auto source = util::readEnvFile("assets/default_shader.comp");
+
+		util::replace_substr(source, "/*MESH_DECL*/\n", RayPassMesh::VImpl::declaration());
+		util::replace_substr(source, "/*NODE_DECL*/\n", RayPassNode::VImpl::declaration());
+
+		LOG_DEBUG << "codegen: " << source << std::endl;
+
+		return source;
 	}
-
-	void RayPass::_create_comp_buffer(
-			void *data,
-			VkBuffer &buffer,
-			VkDeviceMemory &buffer_memory,
-			VkDeviceSize range)
-	{
-		VkBuffer staging_buffer;
-		VkDeviceMemory staging_buffer_memory;
-		Graphics::DEFAULT->create_buffer(
-				range,
-				VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-				staging_buffer, 
-				staging_buffer_memory);
-
-		void *mapped_data;
-		vkMapMemory(
-				Graphics::DEFAULT->device(),
-				staging_buffer_memory,
-				0,
-				range,
-				0,
-				&mapped_data);
-		memcpy(
-				mapped_data,
-				data,
-				range);
-		vkUnmapMemory(
-				Graphics::DEFAULT->device(),
-				staging_buffer_memory);
-
-		Graphics::DEFAULT->create_buffer(
-				range, 
-				VK_BUFFER_USAGE_TRANSFER_DST_BIT
-				| VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
-				| VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-				buffer, 
-				buffer_memory);
-
-		Graphics::DEFAULT->copy_buffer(
-				staging_buffer, 
-				buffer, 
-				range);
-
-		vkDestroyBuffer(Graphics::DEFAULT->device(), staging_buffer, nullptr);
-		vkFreeMemory(Graphics::DEFAULT->device(), staging_buffer_memory, nullptr);
-	}
-
 }

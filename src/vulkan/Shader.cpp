@@ -31,8 +31,12 @@ namespace vulkan {
 		shaderc_shader_kind kind;
 		if (type == Type::Vertex) {
 			kind = shaderc_glsl_vertex_shader;
-		} else {
+		} else if (type == Type::Fragment) {
 			kind = shaderc_glsl_fragment_shader;
+		} else if (type == Type::Compute) {
+			kind = shaderc_glsl_compute_shader;
+		} else {
+			return KError::internal("Unknown shader type");
 		}
 		
 		//TODO: not just fragment shader
