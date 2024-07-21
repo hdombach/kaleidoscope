@@ -90,7 +90,9 @@ void main() {
 
 	vec4 position = vec4(0, 0, 0, 1) + global_uniform.camera_translation;
 
-	for (uint m = 0; m < meshes.length(); m++) {
+	for (uint n = 0; n < nodes.length(); n++) {
+		uint m = nodes[n].mesh_id;
+		vec3 node_pos = nodes[n].position;
 		uint vertex_offset = meshes[m].vertex_offset;
 		uint index_offset = meshes[m].index_offset;
 		uint index_size = meshes[m].index_size;
@@ -102,7 +104,7 @@ void main() {
 			t.v2 = vertices[vertex_offset + indices[v+1]].pos;
 			t.v3 = vertices[vertex_offset + indices[v+2]].pos;
 
-			if (ray_intersects_triangle(position.xyz, dir.xyz, t, intersection)) {
+			if (ray_intersects_triangle(position.xyz + node_pos, dir.xyz, t, intersection)) {
 				color.b = 1.0;
 			}
 		}

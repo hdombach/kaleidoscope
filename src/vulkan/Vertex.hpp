@@ -11,11 +11,9 @@
 
 namespace vulkan {
 	struct Vertex {
-		alignas(4) glm::vec3 pos;
-		alignas(4) glm::vec3 color;
-		alignas(4) char padding[8];
-		alignas(4) glm::vec2 tex_coord;
-		alignas(4) char padding2[8];
+		alignas(16) glm::vec3 pos;
+		alignas(16) glm::vec3 color;
+		alignas(8) glm::vec2 tex_coord;
 
 		Vertex() = default;
 

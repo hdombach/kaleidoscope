@@ -288,7 +288,11 @@ namespace vulkan {
 		_create_descriptor_sets();
 	}
 
-	void RayPass::node_update(uint32_t id) {}
+	void RayPass::node_update(uint32_t id) {
+		_nodes[id] = RayPassNode(_scene->get_node(id), this);
+		_create_node_buffers();
+		_create_descriptor_sets();
+	}
 
 	void RayPass::node_remove(uint32_t id) {}
 
