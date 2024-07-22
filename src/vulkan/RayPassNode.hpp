@@ -24,14 +24,8 @@ namespace vulkan {
 				}
 			} __attribute__((packed));
 
-			RayPassNode(const Node *node, RayPass *ray_pass) {
-				_node = node;
-				_vimpl = {
-					_node->mesh().id(),
-					_node->material().id(),
-					_node->position(),
-				};
-			}
+			RayPassNode();
+			static RayPassNode create(const Node *node, const RayPass *ray_pass);
 
 			VImpl vimpl() const { return _vimpl; }
 

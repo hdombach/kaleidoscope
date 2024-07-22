@@ -17,6 +17,8 @@ struct Vertex {
 
 /*NODE_DECL*/
 
+/*RESOURCE_DECL*/
+
 layout(binding = 2) readonly buffer vertex_buffer {
 	Vertex vertices[];
 };

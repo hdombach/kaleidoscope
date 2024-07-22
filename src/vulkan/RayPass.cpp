@@ -4,6 +4,7 @@
 #include <imgui_impl_vulkan.h>
 
 #include "RayPass.hpp"
+#include "RayPassMaterial.hpp"
 #include "RayPassMesh.hpp"
 #include "RayPassNode.hpp"
 #include "Shader.hpp"
@@ -28,6 +29,22 @@ namespace vulkan {
 
 	void RayPass::MeshObserver::obs_remove(uint32_t id) {
 		_ray_pass->mesh_remove(id);
+	}
+
+	RayPass::MaterialObserver::MaterialObserver(RayPass &ray_pass):
+		_ray_pass(&ray_pass)
+	{}
+
+	void RayPass::MaterialObserver::obs_create(uint32_t id) {
+		_ray_pass->material_create(id);
+	}
+
+	void RayPass::MaterialObserver::obs_update(uint32_t id) {
+		_ray_pass->material_update(id);
+	}
+
+	void RayPass::MaterialObserver::obs_remove(uint32_t id) {
+		_ray_pass->material_remove(id);
 	}
 
 	RayPass::NodeObserver::NodeObserver(RayPass &ray_pass):
@@ -58,6 +75,7 @@ namespace vulkan {
 		result->_descriptor_pool = DescriptorPool::create();
 
 		result->_mesh_observer = MeshObserver(*result);
+		result->_material_observer = MaterialObserver(*result);
 		result->_node_observer = NodeObserver(*result);
 
 		auto fence = Fence::create();
@@ -282,14 +300,37 @@ namespace vulkan {
 
 	void RayPass::mesh_remove(uint32_t id) {}
 
+	void RayPass::material_create(uint32_t id) {
+		while (id + 1 > _materials.size()) {
+			_materials.push_back(RayPassMaterial());
+		}
+		_materials[id] = RayPassMaterial::create(
+				_scene->resource_manager().get_material(id),
+				this);
+		//TODO: update internal buffers
+	}
+
+	void RayPass::material_update(uint32_t id) {
+		_materials[id] = RayPassMaterial::create(
+				_scene->resource_manager().get_material(id),
+				this);
+		//TODO: update internal buffers
+	}
+
+	void RayPass::material_remove(uint32_t id) {
+	}
+
 	void RayPass::node_create(uint32_t id) {
-		_nodes.push_back(RayPassNode(_scene->get_node(id), this));
+		while (id + 1 > _nodes.size()) {
+			_nodes.push_back(RayPassNode());
+		}
+		_nodes[id] = RayPassNode::create(_scene->get_node(id), this);
 		_create_node_buffers();
 		_create_descriptor_sets();
 	}
 
 	void RayPass::node_update(uint32_t id) {
-		_nodes[id] = RayPassNode(_scene->get_node(id), this);
+		_nodes[id] = RayPassNode::create(_scene->get_node(id), this);
 		_create_node_buffers();
 		_create_descriptor_sets();
 	}
@@ -435,6 +476,13 @@ namespace vulkan {
 
 		util::replace_substr(source, "/*MESH_DECL*/\n", RayPassMesh::VImpl::declaration());
 		util::replace_substr(source, "/*NODE_DECL*/\n", RayPassNode::VImpl::declaration());
+
+		auto resource_decls = std::string();
+		for (auto material : _materials) {
+			resource_decls += material.resource_declaration() + "\n";
+		}
+
+		util::replace_substr(source, "/*RESOURCE_DECL*/", resource_decls);
 
 		LOG_DEBUG << "codegen: " << source << std::endl;
 

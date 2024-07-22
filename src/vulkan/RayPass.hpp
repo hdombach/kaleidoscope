@@ -12,6 +12,7 @@
 #include "UniformBufferObject.hpp"
 #include "RayPassMesh.hpp"
 #include "RayPassNode.hpp"
+#include "RayPassMaterial.hpp"
 #include "StaticBuffer.hpp"
 
 #include "../types/Node.hpp"
@@ -29,6 +30,17 @@ namespace vulkan {
 				public:
 					MeshObserver() = default;
 					MeshObserver(RayPass &ray_pass);
+					void obs_create(uint32_t id) override;
+					void obs_update(uint32_t id) override;
+					void obs_remove(uint32_t id) override;
+				private:
+					RayPass *_ray_pass;
+			};
+
+			class MaterialObserver: public util::Observer {
+				public:
+					MaterialObserver() = default;
+					MaterialObserver(RayPass &ray_pass);
 					void obs_create(uint32_t id) override;
 					void obs_update(uint32_t id) override;
 					void obs_remove(uint32_t id) override;
@@ -65,12 +77,17 @@ namespace vulkan {
 			MappedComputeUniform &current_uniform_buffer();
 
 			MeshObserver &mesh_observer() { return _mesh_observer; }
+			MaterialObserver &material_observer() { return _material_observer; }
 			NodeObserver &node_observer() { return _node_observer; }
 
 		private:
 			void mesh_create(uint32_t id);
 			void mesh_update(uint32_t id);
 			void mesh_remove(uint32_t id);
+
+			void material_create(uint32_t id);
+			void material_update(uint32_t id);
+			void material_remove(uint32_t id);
 
 			void node_create(uint32_t id);
 			void node_update(uint32_t id);
@@ -90,6 +107,7 @@ namespace vulkan {
 			VkCommandBuffer _command_buffer;
 			MappedComputeUniform _mapped_uniform;
 			MeshObserver _mesh_observer;
+			MaterialObserver _material_observer;
 			NodeObserver _node_observer;
 
 			StaticBuffer _vertex_buffer;
@@ -99,6 +117,7 @@ namespace vulkan {
 
 			std::vector<RayPassMesh> _meshes;
 			std::vector<RayPassNode> _nodes;
+			std::vector<RayPassMaterial> _materials;
 
 			Scene *_scene;
 
