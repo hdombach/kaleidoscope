@@ -16,6 +16,7 @@ namespace types {
 		result._primitive = &mat;
 		result._primitive_size = sizeof(mat);
 		result._declaration = util::f("\tmat4 ", name, ";\n");
+		result._alignment = 16;
 		return result;
 	}
 
@@ -27,6 +28,7 @@ namespace types {
 		result._primitive = &vec;
 		result._primitive_size = sizeof(vec);
 		result._declaration = util::f("\tvec3 ", name, ";\n");
+		result._alignment = 16;
 		return result;
 	}
 
@@ -36,6 +38,7 @@ namespace types {
 	{
 		auto result = ShaderResource(name, Type::Image);
 		result._image_view = &image_view;
+		result._alignment = 0;
 		return result;
 	}
 
@@ -58,18 +61,22 @@ namespace types {
 	{
 	}
 
+	void ShaderResources::add_resource(ShaderResource resource) {
+		_resources.push_back(resource);
+		_range = _calc_range();
+	}
+
 	util::Result<vulkan::Uniform, KError> ShaderResources::create_prim_uniform() const {
 		int i = -1;
 		size_t uniform_s = 0;
 		for (auto &resource : _resources) {
 			if (resource.is_primitive()) {
 				uniform_s += resource.primitive_size();
-				if (uniform_s % 16) {
-					uniform_s += 16 - uniform_s % 16;
-				}
+				uniform_s += _calc_alignment(resource.alignment(), uniform_s);
 			}
 		}
-		//uniform_s = (uniform_s / 16 + 1) * 16;
+		// Structs need to be aligned to 16 bytes
+		uniform_s += _calc_alignment(16, uniform_s);
 
 		auto uniform = vulkan::Uniform::create(uniform_s);
 		TRY(uniform);
@@ -77,12 +84,20 @@ namespace types {
 		return {std::move(uniform.value())};
 	}
 
-	void ShaderResources::update_prim_uniform(vulkan::Uniform &uniform) const {
-		update_prim_uniform(uniform, iterator(), iterator());
+	size_t ShaderResources::update_prim_uniform(vulkan::Uniform &uniform) const {
+		return update_prim_uniform(uniform, iterator(), iterator());
 	}
 
-	void ShaderResources::update_prim_uniform(
+	size_t ShaderResources::update_prim_uniform(
 			vulkan::Uniform &uniform,
+			const_iterator begin,
+			const_iterator end) const
+	{
+		return update_prim_uniform(uniform.raw_value(), begin, end);
+	}
+
+	size_t ShaderResources::update_prim_uniform(
+			void *data,
 			const_iterator begin,
 			const_iterator end) const
 	{
@@ -92,10 +107,11 @@ namespace types {
 				auto r = std::find_if(
 						begin, end,
 						[&resource](ShaderResource const &r) {
-							return r.name() == resource.name();
+							//TODO: maybe throw a error if a type exists with different type
+							return r.name() == resource.name() && r.type() == resource.type();
 						});
 
-				auto value = static_cast<char *>(uniform.raw_value()) + cur_offset;
+				auto value = static_cast<char *>(data) + cur_offset;
 				if (r == end) {
 					memcpy(value, resource.primitive(), resource.primitive_size());
 				} else {
@@ -103,11 +119,30 @@ namespace types {
 				}
 
 				cur_offset += resource.primitive_size();
-				if (cur_offset % 16) {
-					cur_offset += 16 - cur_offset % 16;
-				}
-				//cur_offset = ((cur_offset / 16) + 1) * 16;
+				cur_offset += _calc_alignment(resource.alignment(), cur_offset);
 			}
 		}
+		cur_offset += _calc_alignment(16, cur_offset);
+		return cur_offset;
+
+	}
+
+	size_t ShaderResources::_calc_alignment(size_t alignment, size_t cur_offset) {
+		if (cur_offset % alignment) {
+			return alignment - cur_offset % alignment;
+		} else {
+			return 0;
+		}
+	}
+
+	size_t ShaderResources::_calc_range() const {
+		size_t result = 0;
+		for (auto &resource : _resources) {
+			if (resource.is_primitive()) {
+				result += resource.primitive_size();
+				result += _calc_alignment(resource.alignment(), result);
+			}
+		}
+		return result;
 	}
 }

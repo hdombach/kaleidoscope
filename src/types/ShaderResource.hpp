@@ -34,6 +34,7 @@ namespace types {
 
 			std::string const &name() const { return _name; }
 			std::string const &declaration() const { return _declaration; }
+			size_t alignment() const { return _alignment; }
 
 			~ShaderResource() = default;
 
@@ -45,6 +46,7 @@ namespace types {
 
 			void* _primitive;
 			size_t _primitive_size;
+			size_t _alignment;
 
 			const vulkan::ImageView *_image_view;
 			Type _type;
@@ -59,7 +61,7 @@ namespace types {
 
 			ShaderResources() = default;
 
-			void add_resource(ShaderResource resource) { _resources.push_back(resource); }
+			void add_resource(ShaderResource resource);
 
 			ShaderResource &get(size_t index) { return _resources[index]; }
 			ShaderResource const &get(size_t index) const { return _resources[index]; }
@@ -72,15 +74,28 @@ namespace types {
 			const_iterator begin() const { return _resources.begin(); }
 			const_iterator end() const { return _resources.end(); }
 
+			/* Number of resources */
 			size_t size() const { return _resources.size(); }
 
+			/* Size (with padding) of vulkan object */
+			size_t range() const { return _range; }
+
 			util::Result<vulkan::Uniform, KError> create_prim_uniform() const;
-			void update_prim_uniform(vulkan::Uniform &uniform) const;
-			void update_prim_uniform(
+			size_t update_prim_uniform(vulkan::Uniform &uniform) const;
+			size_t update_prim_uniform(
 					vulkan::Uniform &uniform,
+					const_iterator begin,
+					const_iterator end) const;
+			size_t update_prim_uniform(
+					void *data,
 					const_iterator begin,
 					const_iterator end) const;
 		private:
 			Container _resources;
+			size_t _range;
+
+			static size_t _calc_alignment(size_t alignment, size_t cur_offset);
+
+			size_t _calc_range() const;
 	};
 }

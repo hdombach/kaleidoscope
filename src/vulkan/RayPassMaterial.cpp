@@ -19,7 +19,7 @@ namespace vulkan {
 		result._resource_declaration += util::f("struct MaterialResource", material->id(), "{\n");
 		for (auto &resource : material->resources()) {
 			if (resource.is_primitive()) {
-				result._resource_declaration += "\t" + resource.declaration();
+				result._resource_declaration += resource.declaration();
 			}
 		}
 		result._resource_declaration += "};\n";
