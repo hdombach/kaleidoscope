@@ -26,9 +26,9 @@ namespace types {
 			ResourceManager();
 			~ResourceManager();
 	
-			util::Result<uint32_t, KError> add_texture(
+			util::Result<uint32_t, KError> add_texture_from_file(
 					std::string const &name,
-					vulkan::Texture *texture);
+					std::string const &url);
 
 			vulkan::Texture *default_texture();
 			vulkan::Texture const *default_texture() const;
@@ -81,6 +81,7 @@ namespace types {
 					std::unique_ptr<types::Material> &&material);
 			uint32_t _get_mesh_id();
 			uint32_t _get_material_id();
+			uint32_t _get_texture_id();
 
 			std::unordered_map<std::string, uint32_t> _texture_map;
 			std::vector<vulkan::Texture *> _textures;

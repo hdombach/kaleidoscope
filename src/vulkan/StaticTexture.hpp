@@ -11,12 +11,13 @@ namespace vulkan {
 	class StaticTexture: public Texture {
 		public:
 			static util::Result<StaticTexture *, KError> from_file(
+					uint32_t id,
 					std::string const &url);
 			~StaticTexture();
 
 			VkDescriptorSet imgui_descriptor_set() override;
 			ImageView const &image_view() override;
-			uint32_t id() const override { return _id; }
+			uint32_t id() const override;
 		private:
 			StaticTexture() = default;
 			Image _texture;

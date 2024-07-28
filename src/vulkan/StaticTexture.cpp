@@ -9,9 +9,11 @@
 
 namespace vulkan {
 	util::Result<StaticTexture *, KError> StaticTexture::from_file(
+			uint32_t id,
 			const std::string &url)
 	{
 		auto result = new StaticTexture();
+		result->_id = id;
 
 		int tex_width, texHeight, texChannels;
 		auto pixels = stbi_load(
@@ -109,5 +111,9 @@ namespace vulkan {
 
 	ImageView const &StaticTexture::image_view() {
 		return _texture_view;
+	}
+
+	uint32_t StaticTexture::id() const {
+		return _id;
 	}
 }

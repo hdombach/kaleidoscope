@@ -20,8 +20,7 @@
 namespace types {
 	ResourceManager::ResourceManager() {
 		//Can't use defaultTexture_ for holder because of const issues
-		auto temp_texture = vulkan::StaticTexture::from_file(util::env_file_path("assets/default.png"));
-		auto res = add_texture("default", temp_texture.value());
+		auto res = add_texture_from_file("default", "assets/default.png");
 		if (res) {
 			_default_texture = res.value();
 		} else {
@@ -35,14 +34,18 @@ namespace types {
 		}
 	}
 
-	util::Result<uint32_t, KError> ResourceManager::add_texture(
+	util::Result<uint32_t, KError> ResourceManager::add_texture_from_file(
 			const std::string &name,
-			vulkan::Texture *texture)
+			const std::string &url)
 	{
 		if (_texture_map.count(name)) {
 			return KError::texture_exists(name);
 		}
-		_textures.push_back(texture);
+		auto texture = vulkan::StaticTexture::from_file(
+				_get_texture_id(),
+				util::env_file_path(url));
+		TRY(texture);
+		_textures.push_back(texture.value());
 		_texture_map[name] = _textures.size() - 1;
 		return {static_cast<uint32_t>(_textures.size() - 1)};
 	}
@@ -254,5 +257,9 @@ namespace types {
 
 	uint32_t ResourceManager::_get_material_id() {
 		return _materials.size();
+	}
+
+	uint32_t ResourceManager::_get_texture_id() {
+		return _textures.size();
 	}
 }

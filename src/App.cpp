@@ -19,10 +19,11 @@ App::Ptr App::create(std::string const &name) {
 	result->_ui_render_pipeline = std::make_unique<vulkan::UIRenderPipeline>();
 	result->_resource_manager = std::make_unique<types::ResourceManager>();
 
-	if (auto viking_room = vulkan::StaticTexture::from_file(util::env_file_path("assets/viking_room.png"))) {
-		result->_resource_manager->add_texture("viking_room", viking_room.value());
-	} else {
-		LOG_ERROR << "Could not load example texture viking_room.png" << std::endl;
+	{
+		auto res = result->_resource_manager->add_texture_from_file("viking_room", "assets/viking_room.png");
+		if (!res) {
+			LOG_ERROR << "Could not load example texture viking_room.png: " << res.value() << std::endl;
+		}
 	}
 
 	/*{
