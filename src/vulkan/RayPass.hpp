@@ -93,6 +93,13 @@ namespace vulkan {
 			void node_update(uint32_t id);
 			void node_remove(uint32_t id);
 
+			util::Result<void, KError> _create_descriptor_sets();
+			util::Result<void, KError> _create_pipeline();
+
+			void _create_mesh_buffers();
+			void _create_node_buffers();
+			std::string _codegen();
+
 		private:
 			VkExtent2D _size;
 			Image _result_image;
@@ -120,12 +127,5 @@ namespace vulkan {
 			std::vector<RayPassMaterial> _materials;
 
 			Scene *_scene;
-
-			util::Result<void, KError> _create_descriptor_sets();
-			util::Result<void, KError> _create_pipeline();
-
-			void _create_mesh_buffers();
-			void _create_node_buffers();
-			std::string _codegen();
 	};
 }

@@ -86,6 +86,13 @@ namespace vulkan {
 			VkImageView const image_view() const { return _image_view; }
 
 		private:
+			static DescriptorSetTemplate _create_uniform_impl(
+					uint32_t binding,
+					VkShaderStageFlags stage_flags,
+					std::vector<VkBuffer> &&buffers,
+					size_t buffer_size);
+
+		private:
 			VkDescriptorSetLayoutBinding _layout_binding;
 
 			// used for buffer descirptor set
@@ -94,12 +101,6 @@ namespace vulkan {
 
 			// Used for image descriptor set
 			VkImageView _image_view;
-
-			static DescriptorSetTemplate _create_uniform_impl(
-					uint32_t binding,
-					VkShaderStageFlags stage_flags,
-					std::vector<VkBuffer> &&buffers,
-					size_t buffer_size);
 	};
 
 	class DescriptorSetLayout {

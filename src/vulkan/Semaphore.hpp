@@ -27,6 +27,7 @@ namespace vulkan {
 		private:
 			Semaphore(VkSemaphore semaphore);
 
+		private:
 			VkSemaphore _semaphore;
 	};
 }

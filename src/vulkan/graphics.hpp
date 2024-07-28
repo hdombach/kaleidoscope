@@ -188,7 +188,7 @@ namespace vulkan {
 				const VkDebugUtilsMessengerCallbackDataEXT * p_callback_data,
 				void* p_user_data);
 
-
+		private:
 			const char *_name;
 			GLFWwindow* _window;
 			VkInstance _instance;

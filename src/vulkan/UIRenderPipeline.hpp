@@ -24,6 +24,7 @@ namespace vulkan {
 			void _render_frame(ImDrawData *draw_data);
 			void _present_frame();
 
+		private:
 			VkDescriptorPool _descriptor_pool;
 			ImGui_ImplVulkanH_Window _window_data;
 			ImGuiIO *_io;

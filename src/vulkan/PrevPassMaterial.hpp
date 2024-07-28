@@ -37,11 +37,6 @@ namespace vulkan {
 			VkPipelineLayout pipeline_layout() { return _pipeline_layout; }
 
 		private:
-			const types::Material *_material;
-			PrevPass *_render_pass;
-			VkPipelineLayout _pipeline_layout;
-			VkPipeline _pipeline;
-
 			/**
 			 * @param[in] vertex_shader
 			 * @param[in] fragment_shader
@@ -61,6 +56,12 @@ namespace vulkan {
 					std::string &frag_source,
 					std::string &vert_source,
 					const types::Material *material);
+
+		private:
+			const types::Material *_material;
+			PrevPass *_render_pass;
+			VkPipelineLayout _pipeline_layout;
+			VkPipeline _pipeline;
 
 	};
 }

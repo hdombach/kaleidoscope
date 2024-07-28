@@ -30,8 +30,9 @@ namespace vulkan {
 			VkImageView const& operator*() const { return value(); }
 
 		private:
-			VkImageView _image_view;
-
 			ImageView(VkImageView imageView): _image_view(imageView) {};
+
+		private:
+			VkImageView _image_view;
 	};
 }

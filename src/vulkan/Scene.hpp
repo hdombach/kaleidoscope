@@ -65,6 +65,7 @@ namespace vulkan {
 			Scene() = default;
 			uint32_t _get_node_id();
 
+		private:
 			PrevPass::Ptr _preview_render_pass;
 			RayPass::Ptr _raytrace_render_pass;
 

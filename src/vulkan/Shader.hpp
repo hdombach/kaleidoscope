@@ -36,6 +36,7 @@ namespace vulkan {
 		private:
 			Shader(const uint32_t *code, size_t code_s);
 
+		private:
 			VkShaderModule _shader_module;
 	};
 }

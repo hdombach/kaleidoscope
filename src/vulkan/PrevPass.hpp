@@ -95,7 +95,6 @@ namespace vulkan {
 			void node_update(uint32_t id);
 			void node_remove(uint32_t id);
 
-		private:
 			PrevPass(Scene &scene, VkExtent2D size);
 
 			util::Result<void, KError> _create_sync_objects();
@@ -104,6 +103,7 @@ namespace vulkan {
 			void _cleanup_images();
 			static VkFormat _depth_format();
 
+		private:
 			std::vector<PrevPassMesh> _meshes;
 			std::vector<PrevPassMaterial> _materials;
 			std::vector<PrevPassNode> _nodes;

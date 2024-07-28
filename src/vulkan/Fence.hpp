@@ -31,6 +31,7 @@ namespace vulkan {
 		private:
 			Fence(VkFence fence);
 
+		private:
 			VkFence _fence;
 	};
 }
