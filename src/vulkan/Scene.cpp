@@ -36,12 +36,20 @@ namespace vulkan {
 		return scene;
 	}
 
-	VkDescriptorSet Scene::get_descriptor_set() {
-		return _cur_texture().get_descriptor_set();
+	VkDescriptorSet Scene::imgui_descriptor_set() {
+		if (_is_preview) {
+			return _preview_render_pass->imgui_descriptor_set();
+		} else {
+			return _raytrace_render_pass->imgui_descriptor_set();
+		}
 	}
 
 	ImageView const &Scene::image_view() {
-		return _cur_texture().image_view();
+		if (_is_preview) {
+			return _preview_render_pass->image_view();
+		} else {
+			return _raytrace_render_pass->image_view();
+		}
 	}
 
 	VkExtent2D Scene::size() const {
@@ -120,14 +128,6 @@ namespace vulkan {
 				_node_observers.end(),
 				observer);
 		return {};
-	}
-
-	Texture& Scene::_cur_texture() {
-		if (_is_preview) {
-			return *_preview_render_pass;
-		} else {
-			return *_raytrace_render_pass;
-		}
 	}
 
 	uint32_t Scene::_get_node_id() {

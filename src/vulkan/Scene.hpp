@@ -19,7 +19,7 @@ namespace vulkan {
 	 * @brief The primary collection of nodes. Can render as a preview or final,
 	 * raytraced image
 	 */
-	class Scene: public Texture {
+	class Scene {
 		public:
 			using Ptr = std::unique_ptr<Scene>;
 
@@ -32,12 +32,11 @@ namespace vulkan {
 
 			static util::Result<Ptr, KError> create(types::ResourceManager &resource_manager);
 
-			VkDescriptorSet get_descriptor_set() override;
-			ImageView const &image_view() override;
+			VkDescriptorSet imgui_descriptor_set();
+			ImageView const &image_view();
 
 			VkExtent2D size() const;
-			bool is_resizable() const override { return true; }
-			void resize(VkExtent2D new_size) override;
+			void resize(VkExtent2D new_size);
 
 			void set_is_preview(bool is_preview);
 			void render_preview();
@@ -64,7 +63,6 @@ namespace vulkan {
 
 		private:
 			Scene() = default;
-			Texture& _cur_texture();
 			uint32_t _get_node_id();
 
 			PrevPass::Ptr _preview_render_pass;

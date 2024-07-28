@@ -226,7 +226,7 @@ namespace vulkan {
 	_pipeline(nullptr)
 	{ }
 
-	VkDescriptorSet RayPass::get_descriptor_set() {
+	VkDescriptorSet RayPass::imgui_descriptor_set() {
 		return _imgui_descriptor_set;
 	}
 	ImageView const &RayPass::image_view() {

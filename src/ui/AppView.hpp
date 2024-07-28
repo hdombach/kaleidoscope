@@ -1,7 +1,9 @@
 #pragma once
 
-#include "textureView.hpp"
 #include <glm/fwd.hpp>
+
+#include "textureView.hpp"
+#include "../vulkan/SceneTexture.hpp"
 
 class App;
 namespace ui {
@@ -14,6 +16,7 @@ namespace ui {
 
 		private:
 			App &_app;
+			vulkan::SceneTexture _scene_texture;
 			TextureView _scene_viewport;
 
 			bool _showing_preview;

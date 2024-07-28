@@ -17,7 +17,7 @@ namespace ui {
 		}
 
 		ImGui::ImageButton(
-				texture.get_descriptor_set(),
+				texture.imgui_descriptor_set(),
 				widget_size,
 				ImVec2(0, 0),
 				ImVec2(1, 1),

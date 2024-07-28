@@ -15,8 +15,9 @@ namespace vulkan {
 	class Texture {
 		public:
 			virtual ~Texture() = default;
-			virtual VkDescriptorSet get_descriptor_set() = 0;
+			virtual VkDescriptorSet imgui_descriptor_set() = 0;
 			virtual ImageView const &image_view() = 0;
+			virtual uint32_t id() const = 0;
 
 			virtual bool is_resizable() const {
 				return false;

@@ -341,15 +341,12 @@ namespace vulkan {
 			_frame_index = FRAMES_IN_FLIGHT - 1;
 		}
 	}
-	bool PrevPass::is_resizable() const {
-		return true;
-	}
 
 	VkExtent2D PrevPass::size() const {
 		return _size;
 	}
 
-	VkDescriptorSet PrevPass::get_descriptor_set() {
+	VkDescriptorSet PrevPass::imgui_descriptor_set() {
 		return _imgui_descriptor_sets[_frame_index];
 	}
 

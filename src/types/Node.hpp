@@ -40,6 +40,7 @@ namespace vulkan {
 			glm::vec3 position() const { return _position; };
 			void set_position(glm::vec3 position) { _position = position; };
 			types::ShaderResources const &resources() const { return _resources; }
+			types::ShaderResources &resources() { return _resources; }
 
 		private:
 			uint32_t _id;

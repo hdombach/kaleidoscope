@@ -22,7 +22,7 @@
 namespace vulkan {
 	class Scene;
 
-	class RayPass: public Texture {
+	class RayPass {
 		public:
 			using Ptr = std::unique_ptr<RayPass>;
 
@@ -71,8 +71,8 @@ namespace vulkan {
 			void destroy();
 			~RayPass();
 
-			VkDescriptorSet get_descriptor_set() override;
-			ImageView const &image_view() override;
+			VkDescriptorSet imgui_descriptor_set();
+			ImageView const &image_view();
 			void submit(Node &node);
 			MappedComputeUniform &current_uniform_buffer();
 

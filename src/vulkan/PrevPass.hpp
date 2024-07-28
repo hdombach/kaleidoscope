@@ -23,7 +23,7 @@
 
 namespace vulkan {
 	class Node;
-	class PrevPass: public Texture {
+	class PrevPass {
 		public:
 			using Ptr = std::unique_ptr<PrevPass>;
 
@@ -66,12 +66,11 @@ namespace vulkan {
 			void destroy();
 			~PrevPass();
 			void render(std::vector<Node::Ptr> &nodes, types::Camera &camera);
-			void resize(VkExtent2D size) override;
-			bool is_resizable() const override;
+			void resize(VkExtent2D size);
 
 			VkExtent2D size() const;
-			VkDescriptorSet get_descriptor_set() override;
-			ImageView const &image_view() override;
+			VkDescriptorSet imgui_descriptor_set();
+			ImageView const &image_view();
 			VkRenderPass render_pass();
 			MappedGlobalUniform &current_uniform_buffer();
 			DescriptorPool &descriptor_pool() { return _descriptor_pool; };

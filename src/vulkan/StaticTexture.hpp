@@ -14,13 +14,15 @@ namespace vulkan {
 					std::string const &url);
 			~StaticTexture();
 
-			VkDescriptorSet get_descriptor_set() override;
+			VkDescriptorSet imgui_descriptor_set() override;
 			ImageView const &image_view() override;
+			uint32_t id() const override { return _id; }
 		private:
 			StaticTexture() = default;
 			Image _texture;
 			ImageView _texture_view;
 			uint32_t _mip_levels;
 			VkDescriptorSet _imgui_descriptor_set;
+			uint32_t _id;
 	};
 }

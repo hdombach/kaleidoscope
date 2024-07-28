@@ -7,7 +7,8 @@
 namespace ui {
 	AppView::AppView(App& app):
 		_app(app),
-		_scene_viewport(app.scene()),
+		_scene_texture(0, app.scene()),
+		_scene_viewport(_scene_texture),
 		_showing_preview(true)
 	{}
 
