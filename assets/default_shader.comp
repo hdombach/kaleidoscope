@@ -31,6 +31,7 @@ layout(binding = 4) readonly buffer mesh_buffer {
 layout(binding = 5) readonly buffer node_buffer {
 	Node nodes[];
 };
+layout(binding = 6) uniform sampler2D textures[/*TEXTURE_COUNT*/];
 
 
 struct triangle3 {
@@ -41,7 +42,8 @@ struct triangle3 {
 bool ray_intersects_triangle(in vec3 ray_origin, 
                              in vec3 ray_vector, 
                              in triangle3 triangle,
-                             inout vec3 out_intersection_point)
+                             inout vec3 out_intersection_point,
+                             inout vec2 uv)
 {
 	//https://en.cppreference.com/w/cpp/types/climits
 	float epsilon = 1.19209e-07;
@@ -73,6 +75,7 @@ bool ray_intersects_triangle(in vec3 ray_origin,
 	if (t > epsilon) // ray intersection
 	{
 			out_intersection_point = ray_origin + ray_vector * t;
+			uv = vec2(u, v);
 			return true;
 	}
 	else // This means that there is a line intersection but not a ray intersection.
@@ -84,7 +87,9 @@ void main() {
 	vec2 uv = vec2(gl_GlobalInvocationID.xy) / resultDim;
 
 	vec4 dir = normalize(vec4(0.5 - uv.x, uv.y, 3, 0)) * global_uniform.camera_rotation;
-	vec3 intersection;
+	vec3 intr;
+	vec2 intr_uv;
+	vec2 tex_uv;
 
 	vec4 color = imageLoad(result, ivec2(gl_GlobalInvocationID.xy));
 	color *= 0.9;
@@ -106,8 +111,18 @@ void main() {
 			t.v2 = vertices[vertex_offset + indices[v+1]].pos;
 			t.v3 = vertices[vertex_offset + indices[v+2]].pos;
 
-			if (ray_intersects_triangle(position.xyz + node_pos, dir.xyz, t, intersection)) {
-				color.b = 1.0;
+			if (ray_intersects_triangle(position.xyz + node_pos, dir.xyz, t, intr, intr_uv)) {
+				vec2 u1 = vertices[vertex_offset + indices[v+0]].texCoord;
+				vec2 u2 = vertices[vertex_offset + indices[v+1]].texCoord;
+				vec2 u3 = vertices[vertex_offset + indices[v+2]].texCoord;
+
+				tex_uv = vec2(0, 0);
+				tex_uv = (1 - intr_uv.x - intr_uv.y) * u1;
+				tex_uv += intr_uv.x * u2;
+				tex_uv += intr_uv.y * u3;
+
+				color = texture(textures[0], tex_uv);
+				color.xyz = vec3(pow(color.x, 1/2.2), pow(color.y, 1/2.2), pow(color.z, 1/2.2));
 			}
 		}
 	}

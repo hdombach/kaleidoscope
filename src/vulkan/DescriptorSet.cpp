@@ -1,6 +1,5 @@
 #include "DescriptorSet.hpp"
 #include <vulkan/vulkan_core.h>
-
 #include "../util/log.hpp"
 
 namespace vulkan {
@@ -16,7 +15,26 @@ namespace vulkan {
 		result._layout_binding.stageFlags = stage_flags;
 		result._layout_binding.pImmutableSamplers = nullptr;
 
-		result._image_view = image_view.value();
+		result._image_views = std::vector<VkImageView>{image_view.value()};
+
+		return result;
+	}
+
+	DescriptorSetTemplate DescriptorSetTemplate::create_images(
+			uint32_t binding,
+			VkShaderStageFlags stage_flags,
+			std::vector<VkImageView> const &image_views)
+	{
+		auto result = DescriptorSetTemplate{};
+		result._layout_binding.binding = binding;
+		result._layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		result._layout_binding.descriptorCount = image_views.size();
+		result._layout_binding.stageFlags = stage_flags;
+		result._layout_binding.pImmutableSamplers = nullptr;
+
+		for (auto &image_view : image_views) {
+			result._image_views.push_back(image_view);
+		}
 
 		return result;
 	}
@@ -33,7 +51,7 @@ namespace vulkan {
 		result._layout_binding.stageFlags = stage_flags;
 		result._layout_binding.pImmutableSamplers = nullptr;
 
-		result._image_view = image_view.value();
+		result._image_views = std::vector<VkImageView>{image_view.value()};
 
 		return result;
 	}
@@ -188,9 +206,9 @@ namespace vulkan {
 		for (size_t frame = 0; frame < frame_count; frame++) {
 			auto descriptor_writes = std::vector<VkWriteDescriptorSet>();
 
-			union WriteBufferInfo {
+			struct WriteBufferInfo {
 				VkDescriptorBufferInfo buffer_info;
-				VkDescriptorImageInfo image_info;
+				std::vector<VkDescriptorImageInfo> image_infos;
 			};
 			/* literally just makes sure buffer's lifetime lasts outside for loop */
 			auto write_buffer_infos = std::vector<WriteBufferInfo>();
@@ -207,29 +225,39 @@ namespace vulkan {
 				descriptor_write.descriptorCount = 1;
 
 				if (descriptor_write.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-					auto &buffer_info = write_buffer_infos[write_i].buffer_info;
-					buffer_info.buffer = templ.buffers()[frame];
-					buffer_info.offset = 0;
-					buffer_info.range = templ.buffer_range();
-					descriptor_write.pBufferInfo = &buffer_info;
+					auto buffer_info = &write_buffer_infos[write_i].buffer_info;
+					buffer_info->buffer = templ.buffers()[frame];
+					buffer_info->offset = 0;
+					buffer_info->range = templ.buffer_range();
+					descriptor_write.pBufferInfo = buffer_info;
 				} else if (descriptor_write.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-					auto &image_info = write_buffer_infos[write_i].image_info;
-					image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-					image_info.imageView = templ.image_view();
-					image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
-					descriptor_write.pImageInfo = &image_info;
+					auto &image_infos = write_buffer_infos[write_i].image_infos;
+					for (auto image_view : templ.image_views()) {
+						auto image_info = VkDescriptorImageInfo{};
+						image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+						image_info.imageView = image_view;
+						image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
+						image_infos.push_back(image_info);
+					}
+					descriptor_write.pImageInfo = image_infos.data();
+					descriptor_write.descriptorCount = image_infos.size();
 				} else if (descriptor_write.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
-					auto &image_info = write_buffer_infos[write_i].image_info;
-					image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-					image_info.imageView = templ.image_view();
-					image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
-					descriptor_write.pImageInfo = &image_info;
+					auto &image_infos = write_buffer_infos[write_i].image_infos;
+					for (auto image_view : templ.image_views()) {
+						auto image_info = VkDescriptorImageInfo{};
+						image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+						image_info.imageView = image_view;
+						image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
+						image_infos.push_back(image_info);
+					}
+					descriptor_write.pImageInfo = image_infos.data();
+					descriptor_write.descriptorCount = image_infos.size();
 				} else if (descriptor_write.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-					auto &buffer_info = write_buffer_infos[write_i].buffer_info;
-					buffer_info.buffer = templ.buffers()[frame];
-					buffer_info.offset = 0;
-					buffer_info.range = templ.buffer_range();
-					descriptor_write.pBufferInfo = &buffer_info;
+					auto buffer_info = &write_buffer_infos[write_i].buffer_info;
+					buffer_info->buffer = templ.buffers()[frame];
+					buffer_info->offset = 0;
+					buffer_info->range = templ.buffer_range();
+					descriptor_write.pBufferInfo = buffer_info;
 				}
 				descriptor_writes.push_back(descriptor_write);
 				write_i++;

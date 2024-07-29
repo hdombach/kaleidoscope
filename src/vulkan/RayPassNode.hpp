@@ -29,6 +29,8 @@ namespace vulkan {
 
 			VImpl vimpl() const { return _vimpl; }
 
+			Node const &get() const { return *_node; }
+
 		private:
 			const Node *_node;
 			const RayPass *_ray_pass;

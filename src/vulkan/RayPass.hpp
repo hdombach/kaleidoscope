@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <set>
 
 #include "DescriptorPool.hpp"
 #include "DescriptorSet.hpp"
@@ -98,7 +99,9 @@ namespace vulkan {
 
 			void _create_mesh_buffers();
 			void _create_node_buffers();
-			std::string _codegen();
+			std::string _codegen(uint32_t texture_count);
+
+			std::set<VkImageView> _used_textures();
 
 		private:
 			VkExtent2D _size;

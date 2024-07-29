@@ -339,6 +339,7 @@ namespace vulkan {
 
 	util::Result<void, KError> RayPass::_create_descriptor_sets() {
 		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
+		auto textures = _used_textures();
 
 		descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
 					0, 
@@ -370,6 +371,11 @@ namespace vulkan {
 					VK_SHADER_STAGE_COMPUTE_BIT,
 					_node_buffer));
 
+		descriptor_templates.push_back(DescriptorSetTemplate::create_images(
+					6, 
+					VK_SHADER_STAGE_COMPUTE_BIT, 
+					std::vector<VkImageView>(textures.begin(), textures.end())));
+
 		auto descriptor_sets = DescriptorSets::create(
 				descriptor_templates,
 				1,
@@ -382,7 +388,7 @@ namespace vulkan {
 	}
 
 	util::Result<void, KError> RayPass::_create_pipeline() {
-		auto compute_shader = Shader::from_source_code(_codegen(), Shader::Type::Compute);
+		auto compute_shader = Shader::from_source_code(_codegen(_used_textures().size()), Shader::Type::Compute);
 		TRY(compute_shader);
 
 		auto compute_shader_stage_info = VkPipelineShaderStageCreateInfo{};
@@ -471,7 +477,7 @@ namespace vulkan {
 		_node_buffer = std::move(node_buffer.value());
 	}
 
-	std::string RayPass::_codegen() {
+	std::string RayPass::_codegen(uint32_t texture_count) {
 		auto source = util::readEnvFile("assets/default_shader.comp");
 
 		util::replace_substr(source, "/*MESH_DECL*/\n", RayPassMesh::VImpl::declaration());
@@ -483,9 +489,24 @@ namespace vulkan {
 		}
 
 		util::replace_substr(source, "/*RESOURCE_DECL*/", resource_decls);
+		util::replace_substr(source, "/*TEXTURE_COUNT*/", std::to_string(texture_count));
 
 		LOG_DEBUG << "codegen: " << source << std::endl;
 
 		return source;
+	}
+
+	std::set<VkImageView> RayPass::_used_textures() {
+		auto result = std::set<VkImageView>();
+
+		for (auto &node : _nodes) {
+			for (auto &resource : node.get().material().resources()) {
+				if (resource.type() == types::ShaderResource::Type::Image) {
+					result.insert(resource.image_view().value());
+				}
+			}
+		}
+
+		return result;
 	}
 }

@@ -63,6 +63,11 @@ namespace vulkan {
 					VkShaderStageFlags stage_flags,
 					ImageView const &image_view);
 
+			static DescriptorSetTemplate create_images(
+					uint32_t binding,
+					VkShaderStageFlags stage_flags,
+					std::vector<VkImageView> const &image_views);
+
 			static DescriptorSetTemplate create_image_target(
 					uint32_t binding,
 					VkShaderStageFlags stage_flags,
@@ -83,7 +88,7 @@ namespace vulkan {
 			std::vector<VkBuffer> const &buffers() const { return _buffers; }
 			unsigned long buffer_range() const { return _buffer_range; }
 
-			VkImageView const image_view() const { return _image_view; }
+			std::vector<VkImageView> const &image_views() const { return _image_views; }
 
 		private:
 			static DescriptorSetTemplate _create_uniform_impl(
@@ -100,7 +105,7 @@ namespace vulkan {
 			unsigned long _buffer_range;
 
 			// Used for image descriptor set
-			VkImageView _image_view;
+			std::vector<VkImageView> _image_views;
 	};
 
 	class DescriptorSetLayout {
