@@ -121,7 +121,7 @@ void main() {
 				tex_uv += intr_uv.x * u2;
 				tex_uv += intr_uv.y * u3;
 
-				color = texture(textures[0], tex_uv);
+				color = texture(textures[0], tex_uv) * (texture(textures[1], tex_uv) * 0.5 + 0.5);
 				color.xyz = vec3(pow(color.x, 1/2.2), pow(color.y, 1/2.2), pow(color.z, 1/2.2));
 			}
 		}

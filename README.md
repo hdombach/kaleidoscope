@@ -25,3 +25,7 @@ The goal is to include more tools like the ability to load textures and meshes i
 Currently, I'm still building up framework based on the vulkan tutorial.
 I just got a viewport working correctly in ImGui.
 <img width="912" alt="Screenshot 2023-06-15 at 2 18 58 PM" src="https://github.com/hdombach/kaleidoscope/assets/56201502/0176a856-c49e-436a-a7b8-be4daa070619">
+
+
+# Misc sources
+[grunge texture](https://www.deviantart.com/fictionchick/art/Grunge-Texture-Overlay-PNG-428805936)
