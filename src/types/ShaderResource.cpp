@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <stdlib.h>
+#include <set>
 
 #include <glm/glm.hpp>
 
@@ -15,7 +16,7 @@ namespace types {
 		auto result = ShaderResource(name, Type::Mat4);
 		result._primitive = &mat;
 		result._primitive_size = sizeof(mat);
-		result._declaration = util::f("\tmat4 ", name, ";\n");
+		result._declaration = util::f("mat4 ", name);
 		result._alignment = 16;
 		return result;
 	}
@@ -27,7 +28,7 @@ namespace types {
 		auto result = ShaderResource(name, Type::Vec3);
 		result._primitive = &vec;
 		result._primitive_size = sizeof(vec);
-		result._declaration = util::f("\tvec3 ", name, ";\n");
+		result._declaration = util::f("vec3 ", name);
 		result._alignment = 16;
 		return result;
 	}
@@ -39,6 +40,7 @@ namespace types {
 		auto result = ShaderResource(name, Type::Image);
 		result._image_view = &image_view;
 		result._alignment = 0;
+		result._declaration = util::f("sampler2D ", name);
 		return result;
 	}
 

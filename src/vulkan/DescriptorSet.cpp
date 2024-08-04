@@ -20,11 +20,15 @@ namespace vulkan {
 		return result;
 	}
 
-	DescriptorSetTemplate DescriptorSetTemplate::create_images(
+	util::Result<DescriptorSetTemplate, KError> DescriptorSetTemplate::create_images(
 			uint32_t binding,
 			VkShaderStageFlags stage_flags,
 			std::vector<VkImageView> const &image_views)
 	{
+		if (image_views.empty()) {
+			return KError::invalid_arg("Descriptor set images is emty");
+		}
+
 		auto result = DescriptorSetTemplate{};
 		result._layout_binding.binding = binding;
 		result._layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -56,12 +60,16 @@ namespace vulkan {
 		return result;
 	}
 
-	DescriptorSetTemplate DescriptorSetTemplate::create_storage_buffer(
+	util::Result<DescriptorSetTemplate, KError> DescriptorSetTemplate::create_storage_buffer(
 			uint32_t binding,
 			VkShaderStageFlags stage_flags,
 			VkBuffer buffer,
 			size_t range)
 	{
+		if (buffer == nullptr) {
+			return KError::invalid_arg("Null buffer");
+		}
+
 		auto result = DescriptorSetTemplate{};
 		result._layout_binding.binding = binding;
 		result._layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -75,7 +83,7 @@ namespace vulkan {
 		return result;
 	}
 
-	DescriptorSetTemplate DescriptorSetTemplate::create_storage_buffer(
+	util::Result<DescriptorSetTemplate, KError> DescriptorSetTemplate::create_storage_buffer(
 			uint32_t binding,
 			VkShaderStageFlags stage_flags,
 			StaticBuffer &static_buffer)
@@ -261,6 +269,10 @@ namespace vulkan {
 				}
 				descriptor_writes.push_back(descriptor_write);
 				write_i++;
+			}
+
+			if (descriptor_writes.size() > 5 && descriptor_writes[5].pBufferInfo[0].buffer == VK_NULL_HANDLE) {
+				LOG_DEBUG << "no buffer info" << std::endl;
 			}
 
 			vkUpdateDescriptorSets(

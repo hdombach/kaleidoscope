@@ -321,12 +321,37 @@ namespace vulkan {
 		frag_source = util::readEnvFile("assets/default_shader.frag");
 		vert_source = util::readEnvFile("assets/default_shader.vert");
 		auto uniform_source = std::string();
+		auto shader_args = std::string();
+		auto frag_main = std::string();
+
+		frag_main += "frag_main(";
+		bool first = true;
 		for (auto &resource : material->resources()) {
-			uniform_source += resource.declaration();
+			if (resource.is_primitive()) {
+				uniform_source += "\t" + resource.declaration() + ";\n";
+			}
+
+			if (first) {
+				first = false;
+			} else {
+				shader_args += ", ";
+				frag_main += ", ";
+			}
+
+			shader_args += "in " + resource.declaration();
+			if (resource.is_primitive()) {
+				frag_main += "material_uniform.";
+			}
+			frag_main += resource.name();
 		}
+		frag_main += ");\n";
 
 		util::replace_substr(vert_source, "/*INSERT_MATERIAL_UNIFORM*/\n", uniform_source);
 		util::replace_substr(frag_source, "/*INSERT_MATERIAL_UNIFORM*/\n", uniform_source);
 		util::replace_substr(frag_source, "/*INSERT_FRAG_SRC*/\n", material->frag_shader_src());
+		util::replace_substr(frag_source, "/*SHADER_ARGS*/", shader_args);
+		util::replace_substr(frag_source, "/*FRAG_MAIN*/\n", frag_main);
+
+		LOG_DEBUG << "frag codegen:\n" << frag_source << std::endl;
 	}
 }

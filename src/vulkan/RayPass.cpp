@@ -351,30 +351,45 @@ namespace vulkan {
 					VK_SHADER_STAGE_COMPUTE_BIT,
 					_mapped_uniform));
 
-		descriptor_templates.push_back(DescriptorSetTemplate::create_storage_buffer(
-					2, 
-					VK_SHADER_STAGE_COMPUTE_BIT, 
-					_vertex_buffer));
+		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
+					2,
+					VK_SHADER_STAGE_COMPUTE_BIT,
+					_vertex_buffer))
+		{
+			descriptor_templates.push_back(buffer.value());
+		}
 
-		descriptor_templates.push_back(DescriptorSetTemplate::create_storage_buffer(
+		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
 					3,
 					VK_SHADER_STAGE_COMPUTE_BIT, 
-					_index_buffer));
+					_index_buffer))
+		{
+			descriptor_templates.push_back(buffer.value());
+		}
 
-		descriptor_templates.push_back(DescriptorSetTemplate::create_storage_buffer(
+		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
 					4,
 					VK_SHADER_STAGE_COMPUTE_BIT,
-					_mesh_buffer));
+					_mesh_buffer))
+		{
+			descriptor_templates.push_back(buffer.value());
+		}
 
-		descriptor_templates.push_back(DescriptorSetTemplate::create_storage_buffer(
+		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
 					5,
 					VK_SHADER_STAGE_COMPUTE_BIT,
-					_node_buffer));
+					_node_buffer))
+		{
+			descriptor_templates.push_back(buffer.value());
+		}
 
-		descriptor_templates.push_back(DescriptorSetTemplate::create_images(
+		if (auto images = DescriptorSetTemplate::create_images(
 					6, 
 					VK_SHADER_STAGE_COMPUTE_BIT, 
-					std::vector<VkImageView>(textures.begin(), textures.end())));
+					std::vector<VkImageView>(textures.begin(), textures.end())))
+		{
+			descriptor_templates.push_back(images.value());
+		}
 
 		auto descriptor_sets = DescriptorSets::create(
 				descriptor_templates,
