@@ -24,7 +24,13 @@ namespace vulkan {
 		/* code gen vertex code */
 		auto vert_source = std::string();
 		auto frag_source = std::string();
-		_codegen(frag_source, vert_source, material);
+		auto texture_names = std::vector<std::string>();
+		for (auto resource : material->resources()) {
+			if (resource.type() == types::ShaderResource::Type::Image) {
+				texture_names.push_back(resource.name());
+			}
+		}
+		_codegen(frag_source, vert_source, material, texture_names);
 
 		auto vert_shader = vulkan::Shader::from_source_code(vert_source, Shader::Type::Vertex);
 		TRY(vert_shader);
@@ -316,7 +322,8 @@ namespace vulkan {
 	void PrevPassMaterial::_codegen(
 			std::string &frag_source,
 			std::string &vert_source,
-			const types::Material *material)
+			const types::Material *material,
+			std::vector<std::string> &textures)
 	{
 		frag_source = util::readEnvFile("assets/default_shader.frag");
 		vert_source = util::readEnvFile("assets/default_shader.vert");
@@ -341,16 +348,32 @@ namespace vulkan {
 			shader_args += "in " + resource.declaration();
 			if (resource.is_primitive()) {
 				frag_main += "material_uniform.";
+				frag_main += resource.name();
+			} else if (resource.type() == types::ShaderResource::Type::Image) {
+				int i = -1;
+				for (auto &texture_name : textures) {
+					i++;
+				}
+				frag_main += "textures[" + std::to_string(i) + "]";
 			}
-			frag_main += resource.name();
 		}
 		frag_main += ");\n";
+
+		auto texture_uniform = std::string();
+		if (textures.size() > 0) {
+			texture_uniform = "layout(set = 1, binding = 1) uniform sampler2D textures["
+				+ std::to_string(textures.size())
+				+ "];";
+		}
 
 		util::replace_substr(vert_source, "/*INSERT_MATERIAL_UNIFORM*/\n", uniform_source);
 		util::replace_substr(frag_source, "/*INSERT_MATERIAL_UNIFORM*/\n", uniform_source);
 		util::replace_substr(frag_source, "/*INSERT_FRAG_SRC*/\n", material->frag_shader_src());
 		util::replace_substr(frag_source, "/*SHADER_ARGS*/", shader_args);
 		util::replace_substr(frag_source, "/*FRAG_MAIN*/\n", frag_main);
+
+
+		util::replace_substr(frag_source, "/*TEXTURE_UNIFORM*/", texture_uniform);
 
 		LOG_DEBUG << "frag codegen:\n" << frag_source << std::endl;
 	}

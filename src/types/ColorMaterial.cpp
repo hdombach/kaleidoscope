@@ -26,7 +26,7 @@ namespace types {
 					result->_color));
 
 		result->_frag_shader_src =
-			"outColor = vec4(material_uniform.color, 1.0);\n";
+			"outColor = vec4(color, 1.0);\n";
 
 		return result;
 	}

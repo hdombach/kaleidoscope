@@ -19,10 +19,10 @@ namespace types {
 		result->_object_transformation = glm::mat4(1.0);
 		result->_resources.add_resource(types::ShaderResource::create_primitive("position", result->_default_position));
 		result->_resources.add_resource(types::ShaderResource::create_primitive("object_transformation", result->_object_transformation));
-		result->_resources.add_resource(types::ShaderResource::create_image("texSampler", texture->image_view()));
+		result->_resources.add_resource(types::ShaderResource::create_image("primary_texture", texture->image_view()));
 
 		result->_frag_shader_src =
-			"outColor = texture(texSampler, fragTexCoord);\n"
+			"outColor = texture(primary_texture, fragTexCoord);\n"
 			"outColor.w = 1.0;\n"
 			"outColor.xyz = vec3(pow(outColor.x, 1/2.2), pow(outColor.y, 1/2.2), pow(outColor.z, 1/2.2));\n";
 

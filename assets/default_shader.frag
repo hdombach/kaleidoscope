@@ -1,6 +1,6 @@
 #version 450
 
-layout(set = 1, binding = 1) uniform sampler2D texSampler;
+/*TEXTURE_UNIFORM*/
 layout(set = 0, binding = 1) uniform sampler2D resultTexSampler;
 
 layout(set = 1, binding = 0) uniform MaterialUniformBuffer {

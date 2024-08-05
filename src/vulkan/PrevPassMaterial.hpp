@@ -55,7 +55,8 @@ namespace vulkan {
 			static void _codegen(
 					std::string &frag_source,
 					std::string &vert_source,
-					const types::Material *material);
+					const types::Material *material,
+					std::vector<std::string> &textures);
 
 		private:
 			const types::Material *_material;
