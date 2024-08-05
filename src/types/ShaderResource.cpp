@@ -11,6 +11,18 @@
 namespace types {
 	ShaderResource ShaderResource::create_primitive(
 			std::string name,
+			float &val)
+	{
+		auto result = ShaderResource(name, Type::Float);
+		result._primitive = &val;
+		result._primitive_size = sizeof(float);
+		result._declaration = util::f("float ", name);
+		result._alignment = 4;
+		return result;
+	}
+
+	ShaderResource ShaderResource::create_primitive(
+			std::string name,
 			glm::mat4 &mat)
 	{
 		auto result = ShaderResource(name, Type::Mat4);
@@ -48,6 +60,7 @@ namespace types {
 		switch (_type) {
 			case Type::Mat4:
 			case Type::Vec3:
+			case Type::Float:
 				return true;
 			default:
 				return false;

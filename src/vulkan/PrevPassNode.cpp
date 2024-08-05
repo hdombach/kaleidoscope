@@ -26,20 +26,17 @@ namespace vulkan {
 		TRY(uniform);
 		result._uniform = std::move(uniform.value());
 
+		auto images = std::vector<VkImageView>();
+
 		for (auto &resource : node->material().resources()) {
-			if (!resource.is_primitive()) {
-				descriptor_templates.push_back(DescriptorSetTemplate::create_image(1, VK_SHADER_STAGE_FRAGMENT_BIT, resource.image_view()));
+			if (resource.type() == types::ShaderResource::Type::Image) {
+				images.push_back(resource.image_view().value());
 			}
 		}
 		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, result._uniform));
-
-		struct {
-			bool operator()(DescriptorSetTemplate &lt, DescriptorSetTemplate &rt) const {
-				return lt.layout_binding().binding < rt.layout_binding().binding;
-			}
-		} sort_templates;
-
-		std::sort(descriptor_templates.begin(), descriptor_templates.end(), sort_templates);
+		if (auto temp = DescriptorSetTemplate::create_images(1, VK_SHADER_STAGE_FRAGMENT_BIT, images)) {
+			descriptor_templates.push_back(temp.value());
+		}
 
 		auto descriptor_sets = DescriptorSets::create(
 			descriptor_templates,

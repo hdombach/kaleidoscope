@@ -52,11 +52,11 @@ namespace vulkan {
 				has_image = true;
 			}
 		}
-		if (has_image) {
+		if (texture_names.size() > 0) {
 			auto binding = VkDescriptorSetLayoutBinding{};
 			binding.binding = 1;
 			binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			binding.descriptorCount = 1;
+			binding.descriptorCount = texture_names.size();
 			binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 			binding.pImmutableSamplers = nullptr;
 			layout_bindings.push_back(binding);
@@ -350,9 +350,13 @@ namespace vulkan {
 				frag_main += "material_uniform.";
 				frag_main += resource.name();
 			} else if (resource.type() == types::ShaderResource::Type::Image) {
-				int i = -1;
-				for (auto &texture_name : textures) {
+				int i = 0;
+				while (textures[i] != resource.name()) {
 					i++;
+					if (i >= textures.size()) {
+						LOG_FATAL_ERROR << "INTERNAL: unknown texture name: " << resource.name() << std::endl;
+						return;
+					}
 				}
 				frag_main += "textures[" + std::to_string(i) + "]";
 			}

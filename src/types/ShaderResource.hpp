@@ -16,8 +16,10 @@ namespace types {
 				Image,
 				Mat4,
 				Vec3,
+				Float,
 			};
 
+			static ShaderResource create_primitive(std::string name, float &val);
 			static ShaderResource create_primitive(std::string name, glm::mat4 &mat);
 			static ShaderResource create_primitive(std::string name, glm::vec3 &vec);
 

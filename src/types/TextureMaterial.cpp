@@ -17,9 +17,12 @@ namespace types {
 		result->_texture = texture;
 		result->_id = id;
 		result->_object_transformation = glm::mat4(1.0);
-		result->_resources.add_resource(types::ShaderResource::create_primitive("position", result->_default_position));
-		result->_resources.add_resource(types::ShaderResource::create_primitive("object_transformation", result->_object_transformation));
-		result->_resources.add_resource(types::ShaderResource::create_image("primary_texture", texture->image_view()));
+		result->_resources.add_resource(
+				ShaderResource::create_primitive("position", result->_default_position));
+		result->_resources.add_resource(
+				ShaderResource::create_primitive("object_transformation", result->_object_transformation));
+		result->_resources.add_resource(
+				ShaderResource::create_image("primary_texture", texture->image_view()));
 
 		result->_frag_shader_src =
 			"outColor = texture(primary_texture, fragTexCoord);\n"

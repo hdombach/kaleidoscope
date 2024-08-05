@@ -65,6 +65,13 @@ App::Ptr App::create(std::string const &name) {
 		}
 	}
 
+	if (auto res = result->_resource_manager->add_comb_texture_material(
+				"grunge_comb", 
+				result->_resource_manager->get_texture("viking_room"), 
+				result->_resource_manager->get_texture("grunge")))
+	{ } else {
+		LOG_ERROR << res.error().desc() << std::endl;
+	}
 
 	{
 		auto res = result->_resource_manager->add_color_material("color", glm::vec3(0.5, 0.1, 0.2));
@@ -90,7 +97,7 @@ App::Ptr App::create(std::string const &name) {
 	{
 		auto id = result->_scene->add_node(
 				result->_resource_manager->get_mesh("square"),
-				result->_resource_manager->get_material("grunge"));
+				result->_resource_manager->get_material("grunge_comb"));
 		result->_scene->get_node_mut(id.value())->set_position({2, 1, 0});
 		result->_scene->update_node(id.value());
 	}

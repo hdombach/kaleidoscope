@@ -64,6 +64,10 @@ namespace types {
 					std::string const &name,
 					vulkan::Texture *texture);
 			util::Result<uint32_t, KError> add_color_material(std::string const &name, glm::vec3 color);
+			util::Result<uint32_t, KError> add_comb_texture_material(
+					std::string const &name,
+					vulkan::Texture *prim_texture,
+					vulkan::Texture *comb_texture);
 
 			types::Material const *get_material(std::string const &name) const;
 			types::Material const *get_material(uint32_t id) const;

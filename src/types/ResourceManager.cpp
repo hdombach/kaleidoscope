@@ -10,6 +10,7 @@
 #include "../vulkan/StaticTexture.hpp"
 #include "../vulkan/Texture.hpp"
 #include "../types/TextureMaterial.hpp"
+#include "../types/CombTextureMaterial.hpp"
 #include "../types/ColorMaterial.hpp"
 
 #include "../types/StaticMesh.hpp"
@@ -178,6 +179,16 @@ namespace types {
 		return _add_material(name, types::ColorMaterial::create(_get_material_id(), color));
 	}
 
+	util::Result<uint32_t, KError> ResourceManager::add_comb_texture_material(
+			std::string const &name,
+			vulkan::Texture *prim_texture,
+			vulkan::Texture *comb_texture)
+	{
+		return _add_material(name, types::CombTextureMaterial::create(
+					_get_material_id(),
+					prim_texture,
+					comb_texture));
+	}
 
 	types::Material const *ResourceManager::get_material(std::string const &name) const {
 		if (has_material(name)) {
