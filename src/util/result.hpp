@@ -4,12 +4,14 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <variant>
+
 namespace util {
 	/*
 	 * @brief Rust style error handling
 	 */
-	template<typename Value, typename Error>
+	template<typename Value, typename Error, bool = std::is_reference<Value>::value>
 		class Result: private std::variant<Value, Error> {
 			public:
 				Result(Value value): parent_t(std::move(value)) {}
@@ -44,18 +46,18 @@ namespace util {
 					}
 				}
 
-				Value &value(Value defaultValue) {
+				Value &value(Value default_value) {
 					try {
 						return std::get<Value>(*this);
 					} catch (std::bad_variant_access) {
-						return defaultValue;
+						return default_value;
 					}
 				}
-				Value const &value(Value defaultValue) const {
+				Value const &value(Value default_value) const {
 					try {
 						return std::get<Value>(*this);
 					} catch (std::bad_variant_access) {
-						return defaultValue;
+						return default_value;
 					}
 				}
 
@@ -72,7 +74,7 @@ namespace util {
 		};
 
 	template<typename Error>
-		class Result<void, Error>: private std::optional<Error> {
+		class Result<void, Error, false>: private std::optional<Error> {
 			public:
 				Result() = default;
 				Result(Error error): parent_t(error) {}
@@ -98,7 +100,7 @@ namespace util {
 		};
 
 	template<typename Value>
-		class Result<Value, void>: private std::optional<Value> {
+		class Result<Value, void, false>: private std::optional<Value> {
 			public:
 				Result() = default;
 				Result(Value value): parent_t(value) {}
@@ -121,6 +123,52 @@ namespace util {
 			private:
 				using parent_t = std::optional<Value>;
 
+		};
+
+	template<typename Value, typename Error>
+		class Result<Value, Error, true> {
+			public:
+				using BaseValue = typename std::remove_reference<Value>::type;
+				using PtrValue = BaseValue*;
+				using Base = Result<PtrValue, Error>;
+
+			public:
+				Result() = default;
+				Result(BaseValue value): _base(&value) {}
+
+				template<class ...Args>
+					Result(Args ...args): _base(args...) {}
+
+				bool has_value() const {
+					return _base.has_value();
+				}
+
+				operator bool() const {
+					return has_value();
+				}
+
+				BaseValue &value() {
+					return *_base.value();
+				}
+
+				BaseValue const &value() const {
+					return *_base.value();
+				}
+
+				BaseValue &value(BaseValue default_value) {
+					return *_base.value(default_value);
+				}
+
+				BaseValue const &value(BaseValue default_value) const {
+					return *_base.value(default_value);
+				}
+
+				Error const error() const {
+					return _base.error();
+				}
+
+			private:
+				Base _base;
 		};
 
 	template<typename Value, typename Error>
