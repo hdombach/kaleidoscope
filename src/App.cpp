@@ -13,6 +13,8 @@
 #include "vulkan/Scene.hpp"
 #include "util/file.hpp"
 
+float comb_ratio_value = 0.0f;
+
 App::Ptr App::create(std::string const &name) {
 	auto result = new App();
 	vulkan::Graphics::init_default("Kaleidoscope");
@@ -33,12 +35,12 @@ App::Ptr App::create(std::string const &name) {
 		}
 	}
 
-	/*{
+	{
 		auto res = result->_resource_manager->add_mesh_from_file("viking_room", "assets/viking_room.obj");
 		if (!res) {
 			LOG_ERROR << res.error().desc() << std::endl;
 		}
-	}*/
+	}
 
 	{
 		auto res = result->_resource_manager->add_mesh_square("square");
@@ -96,9 +98,10 @@ App::Ptr App::create(std::string const &name) {
 
 	{
 		auto id = result->_scene->add_node(
-				result->_resource_manager->get_mesh("square"),
+				result->_resource_manager->get_mesh("viking_room"),
 				result->_resource_manager->get_material("grunge_comb"));
 		result->_scene->get_node_mut(id.value())->set_position({2, 1, 0});
+		result->_scene->get_node_mut(id.value())->resources().add_resource(types::ShaderResource::create_primitive("comb_ratio", comb_ratio_value));
 		result->_scene->update_node(id.value());
 	}
 
@@ -145,6 +148,15 @@ App::~App() {
 void App::main_loop() {
 	while (!glfwWindowShouldClose(vulkan::Graphics::DEFAULT->window())) {
 		glfwPollEvents();
+
+		static auto start_time = std::chrono::high_resolution_clock::now();
+		auto current_time = std::chrono::high_resolution_clock::now();
+		auto time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
+		comb_ratio_value = 0.5 + 0.4 * sin(time * 1);
+
+		for (auto &node : *_scene) {
+			_scene->update_node(node->id()); //update the comb ratio
+		}
 
 		if (_app_view->showing_preview()) {
 			_scene->render_preview();

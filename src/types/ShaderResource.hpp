@@ -25,6 +25,8 @@ namespace types {
 
 			static ShaderResource create_image(std::string name, vulkan::ImageView const &image_view);
 
+			~ShaderResource() = default;
+
 			void const *primitive() const { return _primitive; }
 			size_t primitive_size() const { return _primitive_size; }
 
@@ -38,7 +40,9 @@ namespace types {
 			std::string const &declaration() const { return _declaration; }
 			size_t alignment() const { return _alignment; }
 
-			~ShaderResource() = default;
+			util::Result<glm::mat4&, void> as_mat4();
+			util::Result<glm::vec3&, void> as_vec3();
+			util::Result<float&, void> as_float();
 
 		private:
 			ShaderResource(std::string &name, Type type);
@@ -70,6 +74,14 @@ namespace types {
 
 			ShaderResource& operator[](size_t index) { return get(index); }
 			ShaderResource const& operator[](size_t index) const { return get(index); }
+
+			util::Result<ShaderResource&, void> get(std::string name);
+			util::Result<ShaderResource const&, void> get(std::string name) const;
+
+			ShaderResource& operator[](std::string name) { return get(name).value(); }
+			ShaderResource const & operator[](std::string name) const { return get(name).value(); }
+
+			bool contains(std::string name) const;
 
 			iterator begin() { return _resources.begin(); }
 			iterator end() { return _resources.end(); }

@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <stdlib.h>
-#include <set>
 
 #include <glm/glm.hpp>
 
@@ -67,6 +66,30 @@ namespace types {
 		}
 	}
 
+	util::Result<glm::mat4&, void> ShaderResource::as_mat4() {
+		if (type() == Type::Mat4) {
+			return static_cast<glm::mat4*>(_primitive);
+		} else {
+			return {};
+		}
+	}
+
+	util::Result<glm::vec3&, void> ShaderResource::as_vec3() {
+		if (type() == Type::Vec3) {
+			return static_cast<glm::vec3*>(_primitive);
+		} else {
+			return {};
+		}
+	}
+
+	util::Result<float&, void> ShaderResource::as_float() {
+		if (type() == Type::Float) {
+			return static_cast<float*>(_primitive);
+		} else {
+			return {};
+		}
+	}
+
 	ShaderResource::ShaderResource(std::string &name, Type type):
 		_name(name),
 		_image_view(nullptr),
@@ -79,6 +102,37 @@ namespace types {
 	void ShaderResources::add_resource(ShaderResource resource) {
 		_resources.push_back(resource);
 		_range = _calc_range();
+	}
+
+	util::Result<ShaderResource&, void> ShaderResources::get(std::string name) {
+		auto res = std::find_if(begin(), end(), [&name](ShaderResource &r) {
+				return r.name() == name;
+		});
+		if (res == end()) {
+			return {};
+		} else {
+			return res.base();
+		}
+	}
+
+	util::Result<ShaderResource const&, void> ShaderResources::get(std::string name) const {
+		auto res = std::find_if(begin(), end(), [&name](ShaderResource const &r) {
+				return r.name() == name;
+		});
+		if (res == end()) {
+			return {};
+		} else {
+			return res.base();
+		}
+	}
+
+	bool ShaderResources::contains(std::string name) const {
+		for (auto &resource : *this) {
+			if (resource.name() == name) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	util::Result<vulkan::Uniform, KError> ShaderResources::create_prim_uniform() const {

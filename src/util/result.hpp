@@ -113,8 +113,11 @@ namespace util {
 					return has_value();
 				}
 
-				Value &value() const {
-					return parent_t::value();;
+				Value &value() {
+					return parent_t::value();
+				}
+				Value const &value() const {
+					return parent_t::value();
 				}
 				void const error() const {
 					return;
@@ -138,6 +141,11 @@ namespace util {
 
 				template<class ...Args>
 					Result(Args ...args): _base(args...) {}
+
+				Result(const Result& other) = delete;
+				Result(Result &&other) = default;
+				Result& operator=(const Result& other) = delete;
+				Result& operator=(Result &&other) = default;
 
 				bool has_value() const {
 					return _base.has_value();

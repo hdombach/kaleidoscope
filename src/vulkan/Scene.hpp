@@ -22,6 +22,9 @@ namespace vulkan {
 	class Scene {
 		public:
 			using Ptr = std::unique_ptr<Scene>;
+			using Container = std::vector<Node::Ptr>;
+			using iterator = Container::iterator;
+			using const_iterator = Container::const_iterator;
 
 			Scene(types::ResourceManager &resource_manager, PrevPass::Ptr preview_render_pass);
 
@@ -60,6 +63,11 @@ namespace vulkan {
 
 			util::Result<void, KError> add_node_observer(util::Observer *observer);
 			util::Result<void, KError> rem_node_observer(util::Observer *observer);
+
+			iterator begin() { return _nodes.begin(); }
+			iterator end() { return _nodes.end(); }
+			const_iterator begin() const { return _nodes.begin(); }
+			const_iterator end() const { return _nodes.end(); }
 
 		private:
 			Scene() = default;

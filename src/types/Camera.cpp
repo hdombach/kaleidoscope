@@ -16,7 +16,7 @@ namespace types {
 		width = 100;
 		height = 100;
 		fovy = 45;
-		z_near = 0.1f;
+		z_near = 0.01f;
 		z_far = 10.0f;
 	}
 
