@@ -101,17 +101,6 @@ namespace types {
 					vertices));
 	}
 
-	util::Result<uint32_t, KError> ResourceManager::add_mesh_from_vertices(
-			std::string const &name,
-			std::vector<vulkan::Vertex> const &vertices,
-			std::vector<uint32_t> const &indices)
-	{
-		return _add_mesh(name, StaticMesh::from_vertices(
-					_get_mesh_id(),
-					vertices,
-					indices));
-	}
-
 	Mesh *ResourceManager::default_mesh() {
 		return _meshes[_default_mesh].get();
 	}

@@ -19,7 +19,6 @@ namespace types {
 
 			static util::Result<Ptr, KError> from_file(uint32_t id, std::string const &url);
 			static Ptr create_square(uint32_t id);
-			static Ptr from_vertices(uint32_t id, std::vector<vulkan::Vertex> const &vertices, std::vector<uint32_t> const &indices);
 			static Ptr from_vertices(uint32_t id, std::vector<vulkan::Vertex> const &vertices);
 
 			StaticMesh(const StaticMesh& other) = delete;

@@ -44,10 +44,6 @@ namespace types {
 			util::Result<uint32_t, KError> add_mesh_from_vertices(
 					std::string const &name,
 					std::vector<vulkan::Vertex> const &vertices);
-			util::Result<uint32_t, KError> add_mesh_from_vertices(
-					std::string const &name,
-					std::vector<vulkan::Vertex> const &vertices,
-					std::vector<uint32_t> const &indices);
 
 
 			Mesh *default_mesh();
