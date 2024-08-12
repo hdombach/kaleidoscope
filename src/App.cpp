@@ -93,7 +93,6 @@ App::Ptr App::create(std::string const &name) {
 				result->_resource_manager->get_mesh("square"),
 				result->_resource_manager->get_material("viking_room"));
 		result->_scene->get_node_mut(id.value())->set_position({3, 2, 0});
-		result->_scene->update_node(id.value());
 	}
 
 	{
@@ -102,7 +101,6 @@ App::Ptr App::create(std::string const &name) {
 				result->_resource_manager->get_material("grunge_comb"));
 		result->_scene->get_node_mut(id.value())->set_position({2, 1, 0});
 		result->_scene->get_node_mut(id.value())->resources().add_resource(types::ShaderResource::create_primitive("comb_ratio", comb_ratio_value));
-		result->_scene->update_node(id.value());
 	}
 
 	{
@@ -110,7 +108,6 @@ App::Ptr App::create(std::string const &name) {
 				result->_resource_manager->get_mesh("square"),
 				result->_resource_manager->get_material("viking_room"));
 		result->_scene->get_node_mut(id.value())->set_position({0, 0, 0});
-		result->_scene->update_node(id.value());
 	}
 
 	{
@@ -118,7 +115,6 @@ App::Ptr App::create(std::string const &name) {
 				result->_resource_manager->get_mesh("square"),
 				result->_resource_manager->get_material("color"));
 		result->_scene->get_node_mut(id.value())->set_position({-1, -1, -1});
-		result->_scene->update_node(id.value());
 	}
 
 
@@ -155,9 +151,12 @@ void App::main_loop() {
 		comb_ratio_value = 0.5 + 0.4 * sin(time * 1);
 
 		for (auto &node : *_scene) {
-			_scene->update_node(node->id()); //update the comb ratio
+			if (auto comb_ratio = node->resources().get("comb_ratio")) {
+				comb_ratio.value().set_float(comb_ratio_value);
+			}
 		}
 
+		_scene->update();
 		if (_app_view->showing_preview()) {
 			_scene->render_preview();
 		} else {

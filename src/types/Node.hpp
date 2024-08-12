@@ -38,9 +38,21 @@ namespace vulkan {
 			uint32_t id() const { return _id; }
 
 			glm::vec3 position() const { return _position; };
-			void set_position(glm::vec3 position) { _position = position; };
+			void set_position(glm::vec3 position) {
+				_position = position;
+				if (auto pos_resource = _resources.get("position")) {
+					pos_resource.value().set_vec3(position);
+				}
+			}
 			types::ShaderResources const &resources() const { return _resources; }
 			types::ShaderResources &resources() { return _resources; }
+
+			bool dirty_bits() const {
+				return _resources.dirty_bits();
+			}
+			void clear_dirty_bits() {
+				_resources.clear_dirty_bits();
+			}
 
 		private:
 			uint32_t _id;

@@ -44,6 +44,7 @@ namespace vulkan {
 			void set_is_preview(bool is_preview);
 			void render_preview();
 			void render_raytrace();
+			void update();
 
 			types::Camera& camera() { return _camera; }
 			types::Camera const& camera() const { return _camera; }

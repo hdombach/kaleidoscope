@@ -10,15 +10,13 @@ namespace types {
 
 		result->_prim_texture = prim_texture;
 		result->_comb_texture = comb_texture;
-		result->_comb_ratio = 0.75;
 		result->_id = id;
-		result->_object_transformation = glm::mat4(1.0);
 		result->_resources.add_resource(
-				ShaderResource::create_primitive("position", result->_default_position));
+				ShaderResource::create_primitive("position", glm::vec3()));
 		result->_resources.add_resource(
-				ShaderResource::create_primitive("object_transformation", result->_object_transformation));
+				ShaderResource::create_primitive("object_transformation", glm::mat4(1.0)));
 		result->_resources.add_resource(
-				ShaderResource::create_primitive("comb_ratio", result->_comb_ratio));
+				ShaderResource::create_primitive("comb_ratio", 0.75));
 		result->_resources.add_resource(
 				ShaderResource::create_image("primary_texture", prim_texture->image_view()));
 		result->_resources.add_resource(

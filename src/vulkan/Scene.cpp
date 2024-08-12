@@ -79,6 +79,15 @@ namespace vulkan {
 		_raytrace_render_pass->submit(*_nodes[0]);
 	}
 
+	void Scene::update() {
+		for (auto &node : _nodes) {
+			if (node->dirty_bits()) {
+				update_node(node->id());
+				node->clear_dirty_bits();
+			}
+		}
+	}
+
 	Node const *Scene::get_node(uint32_t id) const {
 		return _nodes[id].get();
 	}

@@ -3,6 +3,7 @@
 
 #include "../util/result.hpp"
 #include "../types/Node.hpp"
+#include "../types/ShaderResource.hpp"
 
 #include "PrevPass.hpp"
 #include "PrevPassNode.hpp"
@@ -29,8 +30,8 @@ namespace vulkan {
 		auto images = std::vector<VkImageView>();
 
 		for (auto &resource : node->material().resources()) {
-			if (resource.type() == types::ShaderResource::Type::Image) {
-				images.push_back(resource.image_view().value());
+			if (auto image = resource.as_image()) {
+				images.push_back(image.value().value());
 			}
 		}
 		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, result._uniform));

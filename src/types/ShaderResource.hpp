@@ -19,43 +19,55 @@ namespace types {
 				Float,
 			};
 
-			static ShaderResource create_primitive(std::string name, float &val);
-			static ShaderResource create_primitive(std::string name, glm::mat4 &mat);
-			static ShaderResource create_primitive(std::string name, glm::vec3 &vec);
+			static ShaderResource create_primitive(std::string name, float val);
+			static ShaderResource create_primitive(std::string name, glm::mat4 mat);
+			static ShaderResource create_primitive(std::string name, glm::vec3 vec);
 
 			static ShaderResource create_image(std::string name, vulkan::ImageView const &image_view);
 
 			~ShaderResource() = default;
 
-			void const *primitive() const { return _primitive; }
-			size_t primitive_size() const { return _primitive_size; }
-
 			Type type() const { return _type; }
 
 			bool is_primitive() const;
-
-			vulkan::ImageView const &image_view() const { return *_image_view; }
+			size_t primitive_size() const { return _primitive_size; }
+			void const *data() const { return &_as_float; }
 
 			std::string const &name() const { return _name; }
 			std::string const &declaration() const { return _declaration; }
 			size_t alignment() const { return _alignment; }
 
-			util::Result<glm::mat4&, void> as_mat4();
-			util::Result<glm::vec3&, void> as_vec3();
-			util::Result<float&, void> as_float();
+			util::Result<vulkan::ImageView const &, void> as_image() const;
+			util::Result<void, KError> set_mat4(glm::mat4 const &val);
+			util::Result<glm::mat4 const&, void> as_mat4() const;
+			util::Result<void, KError> set_vec3(glm::vec3 const &val);
+			util::Result<glm::vec3 const &, void> as_vec3() const;
+			util::Result<void, KError> set_float(float val);
+			util::Result<float const &, void> as_float() const;
+
+			bool const dirty_bit() const { return _dirty_bit; }
+			void clear_dirty_bit() { _dirty_bit = false; }
 
 		private:
 			ShaderResource(std::string &name, Type type);
+			void _set_dirty_bit();
 
+		private:
 			std::string _name;
 			std::string _declaration;
 
-			void* _primitive;
-			size_t _primitive_size;
-			size_t _alignment;
+			union {
+				float _as_float;
+				glm::mat4 _as_mat4;
+				glm::vec3 _as_vec3;
+				const vulkan::ImageView *_as_image;
+			};
 
-			const vulkan::ImageView *_image_view;
+			size_t _alignment;
+			size_t _primitive_size;
+
 			Type _type;
+			bool _dirty_bit;
 	};
 
 	class ShaderResources {
@@ -104,6 +116,9 @@ namespace types {
 					void *data,
 					const_iterator begin,
 					const_iterator end) const;
+
+			bool dirty_bits() const;
+			void clear_dirty_bits();
 		private:
 			Container _resources;
 			size_t _range;

@@ -25,7 +25,11 @@ namespace types {
 			std::string const &frag_shader_src() const override { return _frag_shader_src; }
 
 			float comb_ratio() const;
-			void set_comb_ratio(float ratio) { _comb_ratio = ratio; }
+			void set_comb_ratio(float ratio) {
+				if (auto comb_ratio = _resources.get("comb_ratio")) {
+					comb_ratio.value().set_float(ratio);
+				}
+			}
 		private:
 			CombTextureMaterial() = default;
 			vulkan::Texture *_prim_texture;
@@ -34,9 +38,5 @@ namespace types {
 			std::string _frag_shader_src;
 
 			ShaderResources _resources;
-
-			glm::mat4 _object_transformation;
-			glm::vec3 _default_position;
-			float _comb_ratio;
 	};
 }

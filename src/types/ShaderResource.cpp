@@ -10,10 +10,10 @@
 namespace types {
 	ShaderResource ShaderResource::create_primitive(
 			std::string name,
-			float &val)
+			float val)
 	{
 		auto result = ShaderResource(name, Type::Float);
-		result._primitive = &val;
+		result._as_float = val;
 		result._primitive_size = sizeof(float);
 		result._declaration = util::f("float ", name);
 		result._alignment = 4;
@@ -22,10 +22,10 @@ namespace types {
 
 	ShaderResource ShaderResource::create_primitive(
 			std::string name,
-			glm::mat4 &mat)
+			glm::mat4 mat)
 	{
 		auto result = ShaderResource(name, Type::Mat4);
-		result._primitive = &mat;
+		result._as_mat4 = mat;
 		result._primitive_size = sizeof(mat);
 		result._declaration = util::f("mat4 ", name);
 		result._alignment = 16;
@@ -34,10 +34,10 @@ namespace types {
 
 	ShaderResource ShaderResource::create_primitive(
 			std::string name,
-			glm::vec3 &vec)
+			glm::vec3 vec)
 	{
 		auto result = ShaderResource(name, Type::Vec3);
-		result._primitive = &vec;
+		result._as_vec3 = vec;
 		result._primitive_size = sizeof(vec);
 		result._declaration = util::f("vec3 ", name);
 		result._alignment = 16;
@@ -49,7 +49,7 @@ namespace types {
 			const vulkan::ImageView &image_view)
 	{
 		auto result = ShaderResource(name, Type::Image);
-		result._image_view = &image_view;
+		result._as_image = &image_view;
 		result._alignment = 0;
 		result._declaration = util::f("sampler2D ", name);
 		return result;
@@ -66,25 +66,68 @@ namespace types {
 		}
 	}
 
-	util::Result<glm::mat4&, void> ShaderResource::as_mat4() {
+	util::Result<vulkan::ImageView const &, void> ShaderResource::as_image() const {
+		if (type() == Type::Image) {
+			return _as_image;
+		} else {
+			return {};
+		}
+	}
+
+	util::Result<void, KError> ShaderResource::set_mat4(glm::mat4 const &val) {
 		if (type() == Type::Mat4) {
-			return static_cast<glm::mat4*>(_primitive);
+			if (val != _as_mat4) {
+				_set_dirty_bit();
+				_as_mat4 = val;
+			}
+			return {};
+		} else {
+			return KError::invalid_arg("ShaderResource is not a mat4");
+		}
+	}
+	util::Result<glm::mat4 const &, void> ShaderResource::as_mat4() const {
+		if (type() == Type::Mat4) {
+			return _as_mat4;
 		} else {
 			return {};
 		}
 	}
 
-	util::Result<glm::vec3&, void> ShaderResource::as_vec3() {
+	util::Result<void, KError> ShaderResource::set_vec3(glm::vec3 const &val) {
 		if (type() == Type::Vec3) {
-			return static_cast<glm::vec3*>(_primitive);
+			if (val != _as_vec3) {
+				_set_dirty_bit();
+				_as_vec3 = val;
+			}
+			return {};
+		} else {
+			return KError::invalid_arg("ShaderResource is not a vec3");
+		}
+	}
+
+	util::Result<glm::vec3 const &, void> ShaderResource::as_vec3() const {
+		if (type() == Type::Vec3) {
+			return _as_vec3;
 		} else {
 			return {};
 		}
 	}
 
-	util::Result<float&, void> ShaderResource::as_float() {
+	util::Result<void, KError> ShaderResource::set_float(float val) {
 		if (type() == Type::Float) {
-			return static_cast<float*>(_primitive);
+			if (val != _as_float) {
+				_set_dirty_bit();
+				_as_float = val;
+			}
+			return {};
+		} else {
+			return KError::invalid_arg("ShaderResource is not a float");
+		}
+	}
+
+	util::Result<float const &, void> ShaderResource::as_float() const {
+		if (type() == Type::Float) {
+			return _as_float;
 		} else {
 			return {};
 		}
@@ -92,11 +135,14 @@ namespace types {
 
 	ShaderResource::ShaderResource(std::string &name, Type type):
 		_name(name),
-		_image_view(nullptr),
-		_primitive(nullptr),
 		_primitive_size(0),
-		_type(type)
+		_type(type),
+		_dirty_bit(false)
 	{
+	}
+
+	void ShaderResource::_set_dirty_bit() {
+		_dirty_bit = true;
 	}
 
 	void ShaderResources::add_resource(ShaderResource resource) {
@@ -182,9 +228,9 @@ namespace types {
 
 				auto value = static_cast<char *>(data) + cur_offset;
 				if (r == end) {
-					memcpy(value, resource.primitive(), resource.primitive_size());
+					memcpy(value, resource.data(), resource.primitive_size());
 				} else {
-					memcpy(value, r->primitive(), resource.primitive_size());
+					memcpy(value, r->data(), resource.primitive_size());
 				}
 
 				cur_offset += resource.primitive_size();
@@ -194,6 +240,20 @@ namespace types {
 		cur_offset += _calc_alignment(16, cur_offset);
 		return cur_offset;
 
+	}
+
+	bool ShaderResources::dirty_bits() const {
+		bool res = false;
+		for (auto &resource : _resources) {
+			res |= resource.dirty_bit();
+		}
+		return res;
+	}
+
+	void ShaderResources::clear_dirty_bits() {
+		for (auto &resource : _resources) {
+			resource.clear_dirty_bit();
+		}
 	}
 
 	size_t ShaderResources::_calc_alignment(size_t alignment, size_t cur_offset) {

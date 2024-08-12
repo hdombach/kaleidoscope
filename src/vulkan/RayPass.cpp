@@ -516,8 +516,8 @@ namespace vulkan {
 
 		for (auto &node : _nodes) {
 			for (auto &resource : node.get().material().resources()) {
-				if (resource.type() == types::ShaderResource::Type::Image) {
-					result.insert(resource.image_view().value());
+				if (auto image = resource.as_image()) {
+					result.insert(image.value().value());
 				}
 			}
 		}
