@@ -5,7 +5,7 @@ layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
 } global_uniform;
 
 layout(set = 1, binding = 0) uniform MaterialUniformBuffer {
-/*INSERT_MATERIAL_UNIFORM*/
+/*MATERIAL_UNIFORM_CONTENT*/
 } material_uniform;
 
 

@@ -325,30 +325,30 @@ namespace vulkan {
 			const types::Material *material,
 			std::vector<std::string> &textures)
 	{
-		frag_source = util::readEnvFile("assets/default_shader.frag");
-		vert_source = util::readEnvFile("assets/default_shader.vert");
-		auto uniform_source = std::string();
-		auto shader_args = std::string();
-		auto frag_main = std::string();
+		frag_source = util::readEnvFile("assets/prev_pass_shader.frag");
+		vert_source = util::readEnvFile("assets/prev_pass_shader.vert");
+		auto material_uniform_content = std::string();
+		auto frag_main_args = std::string();
+		auto frag_main_call = std::string();
 
-		frag_main += "frag_main(";
+		frag_main_call += "frag_main(";
 		bool first = true;
 		for (auto &resource : material->resources()) {
 			if (resource.is_primitive()) {
-				uniform_source += "\t" + resource.declaration() + ";\n";
+				material_uniform_content += "\t" + resource.declaration() + ";\n";
 			}
 
 			if (first) {
 				first = false;
 			} else {
-				shader_args += ", ";
-				frag_main += ", ";
+				frag_main_args += ", ";
+				frag_main_call += ", ";
 			}
 
-			shader_args += "in " + resource.declaration();
+			frag_main_args += "in " + resource.declaration();
 			if (resource.is_primitive()) {
-				frag_main += "material_uniform.";
-				frag_main += resource.name();
+				frag_main_call += "material_uniform.";
+				frag_main_call += resource.name();
 			} else if (resource.type() == types::ShaderResource::Type::Image) {
 				int i = 0;
 				while (textures[i] != resource.name()) {
@@ -358,10 +358,10 @@ namespace vulkan {
 						return;
 					}
 				}
-				frag_main += "textures[" + std::to_string(i) + "]";
+				frag_main_call += "textures[" + std::to_string(i) + "]";
 			}
 		}
-		frag_main += ");\n";
+		frag_main_call += ");\n";
 
 		auto texture_uniform = std::string();
 		if (textures.size() > 0) {
@@ -370,11 +370,11 @@ namespace vulkan {
 				+ "];";
 		}
 
-		util::replace_substr(vert_source, "/*INSERT_MATERIAL_UNIFORM*/\n", uniform_source);
-		util::replace_substr(frag_source, "/*INSERT_MATERIAL_UNIFORM*/\n", uniform_source);
-		util::replace_substr(frag_source, "/*INSERT_FRAG_SRC*/\n", material->frag_shader_src());
-		util::replace_substr(frag_source, "/*SHADER_ARGS*/", shader_args);
-		util::replace_substr(frag_source, "/*FRAG_MAIN*/\n", frag_main);
+		util::replace_substr(vert_source, "/*MATERIAL_UNIFORM_CONTENT*/\n", material_uniform_content);
+		util::replace_substr(frag_source, "/*MATERIAL_UNIFORM_CONTENT*/\n", material_uniform_content);
+		util::replace_substr(frag_source, "/*FRAG_MAIN_SRC*/\n", material->frag_shader_src());
+		util::replace_substr(frag_source, "/*FRAG_MAIN_ARGS*/", frag_main_args);
+		util::replace_substr(frag_source, "/*FRAG_MAIN_CALL*/\n", frag_main_call);
 
 
 		util::replace_substr(frag_source, "/*TEXTURE_UNIFORM*/", texture_uniform);
