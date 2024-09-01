@@ -13,7 +13,7 @@ struct Vertex {
 		vec2 texCoord;
 };
 
-/*MESH_DECL*/
+/*BVNODE_DECL*/
 
 /*NODE_DECL*/
 
@@ -26,7 +26,7 @@ layout(binding = 3) readonly buffer index_buffer {
 	uint indices[];
 };
 layout(binding = 4) readonly buffer mesh_buffer {
-	Mesh meshes[];
+	BVNode bvnodes[];
 };
 layout(binding = 5) readonly buffer node_buffer {
 	Node nodes[];
@@ -37,6 +37,18 @@ layout(binding = 6) uniform sampler2D textures[/*TEXTURE_COUNT*/];
 struct triangle3 {
 	vec3 v1, v2, v3;
 };
+
+// https://gist.github.com/DomNomNom/46bb1ce47f68d255fd5d
+// returns (near, far)
+vec2 intersectAABB(vec3 rayOrigin, vec3 rayDir, vec3 boxMin, vec3 boxMax) {
+    vec3 tMin = (boxMin - rayOrigin) / rayDir;
+    vec3 tMax = (boxMax - rayOrigin) / rayDir;
+    vec3 t1 = min(tMin, tMax);
+    vec3 t2 = max(tMin, tMax);
+    float tNear = max(max(t1.x, t1.y), t1.z);
+    float tFar = min(min(t2.x, t2.y), t2.z);
+    return vec2(tNear, tFar);
+}
 
 //https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
 bool ray_intersects_triangle(in vec3 ray_origin, 
@@ -87,7 +99,6 @@ void main() {
 	vec2 uv = vec2(gl_GlobalInvocationID.xy) / resultDim;
 
 	vec4 dir = normalize(vec4(0.5 - uv.x, uv.y, 3, 0)) * global_uniform.camera_rotation;
-	vec3 intr;
 	vec2 intr_uv;
 	vec2 tex_uv;
 
@@ -99,31 +110,9 @@ void main() {
 
 	for (uint n = 0; n < nodes.length(); n++) {
 		uint m = nodes[n].mesh_id;
-		vec3 node_pos = nodes[n].position;
-		uint vertex_offset = meshes[m].vertex_offset;
-		uint index_offset = meshes[m].index_offset;
-		uint index_size = meshes[m].index_size;
-		for (uint i = index_offset; i < index_offset + index_size; i += 3) {
-			uint v = i + vertex_offset;
-
-			triangle3 t;
-			t.v1 = vertices[vertex_offset + indices[v+0]].pos;
-			t.v2 = vertices[vertex_offset + indices[v+1]].pos;
-			t.v3 = vertices[vertex_offset + indices[v+2]].pos;
-
-			if (ray_intersects_triangle(position.xyz + node_pos, dir.xyz, t, intr, intr_uv)) {
-				vec2 u1 = vertices[vertex_offset + indices[v+0]].texCoord;
-				vec2 u2 = vertices[vertex_offset + indices[v+1]].texCoord;
-				vec2 u3 = vertices[vertex_offset + indices[v+2]].texCoord;
-
-				tex_uv = vec2(0, 0);
-				tex_uv = (1 - intr_uv.x - intr_uv.y) * u1;
-				tex_uv += intr_uv.x * u2;
-				tex_uv += intr_uv.y * u3;
-
-				color = texture(textures[0], tex_uv) * (texture(textures[1], tex_uv) * 0.5 + 0.5);
-				color.xyz = vec3(pow(color.x, 1/2.2), pow(color.y, 1/2.2), pow(color.z, 1/2.2));
-			}
+		vec2 intr = intersectAABB(position.xyz, dir.xyz, bvnodes[m].min_pos, bvnodes[m].max_pos);
+		if (intr.x < intr.y) {
+			color.x = 1.0;
 		}
 	}
 

@@ -77,6 +77,9 @@ namespace vulkan {
 			void submit(Node &node);
 			MappedComputeUniform &current_uniform_buffer();
 
+			RayPassMesh &mesh(uint32_t id) { return _meshes[id]; }
+			RayPassMesh const &mesh(uint32_t id) const { return _meshes[id]; }
+
 			MeshObserver &mesh_observer() { return _mesh_observer; }
 			MaterialObserver &material_observer() { return _material_observer; }
 			NodeObserver &node_observer() { return _node_observer; }
@@ -121,8 +124,7 @@ namespace vulkan {
 			NodeObserver _node_observer;
 
 			StaticBuffer _vertex_buffer;
-			StaticBuffer _index_buffer;
-			StaticBuffer _mesh_buffer;
+			StaticBuffer _bvnode_buffer;
 			StaticBuffer _node_buffer;
 
 			std::vector<RayPassMesh> _meshes;

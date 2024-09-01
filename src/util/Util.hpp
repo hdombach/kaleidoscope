@@ -1,5 +1,6 @@
 #pragma once
 
+#include "format.hpp"
 #include <algorithm>
 #include <string>
 #include <memory>
@@ -10,18 +11,33 @@ namespace util {
 		return std::find(container.begin(), container.end(), element) != container.end();
 	}
 
-	inline void replace_substr(
+	inline bool replace_substr(
 			std::string &str,
 			std::string const substr,
 			std::string const replace)
 	{
 		auto start = str.find(substr);
+		if (start == std::string::npos) return false;
 		str.erase(start, substr.size());
 		str.insert(start, replace);
+		return true;
 	}
 
 	template<typename Base, typename Derived>
 		std::unique_ptr<Base> cast(std::unique_ptr<Derived> &&ptr) {
 			return std::unique_ptr<Base>(static_cast<Base *>(ptr.release()));
 		}
+
+	inline void add_strnum(std::string &str) {
+		size_t i = 0;
+		size_t line = 2;
+		str.insert(0, "1\t");
+		while (str[i]) {
+			if (str[i] == '\n') {
+				str.insert(i+1, f(line, "\t"));
+				line++;
+			}
+			i++;
+		}
+	}
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <ostream>
 
 #include "../types/Node.hpp"
 
@@ -22,6 +23,8 @@ namespace vulkan {
 					"	vec3 position;\n"
 					"};\n";
 				}
+
+				std::ostream& print_debug(std::ostream& os) const;
 			} __attribute__((packed));
 
 			RayPassNode();
@@ -37,4 +40,8 @@ namespace vulkan {
 
 			struct VImpl _vimpl;
 	};
+}
+
+inline std::ostream& operator<<(std::ostream& os, vulkan::RayPassNode::VImpl const &node) {
+	return node.print_debug(os);
 }

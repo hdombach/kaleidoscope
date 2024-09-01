@@ -191,9 +191,7 @@ namespace vulkan {
 
 		_vertex_buffer = std::move(other._vertex_buffer);
 
-		_index_buffer = std::move(other._index_buffer);
-
-		_mesh_buffer = std::move(other._mesh_buffer);
+		_bvnode_buffer = std::move(other._bvnode_buffer);
 
 		_node_buffer = std::move(other._node_buffer);
 
@@ -361,8 +359,8 @@ namespace vulkan {
 
 		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
 					3,
-					VK_SHADER_STAGE_COMPUTE_BIT, 
-					_index_buffer))
+					VK_SHADER_STAGE_COMPUTE_BIT,
+					_bvnode_buffer))
 		{
 			descriptor_templates.push_back(buffer.value());
 		}
@@ -370,21 +368,13 @@ namespace vulkan {
 		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
 					4,
 					VK_SHADER_STAGE_COMPUTE_BIT,
-					_mesh_buffer))
-		{
-			descriptor_templates.push_back(buffer.value());
-		}
-
-		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
-					5,
-					VK_SHADER_STAGE_COMPUTE_BIT,
 					_node_buffer))
 		{
 			descriptor_templates.push_back(buffer.value());
 		}
 
 		if (auto images = DescriptorSetTemplate::create_images(
-					6, 
+					5, 
 					VK_SHADER_STAGE_COMPUTE_BIT, 
 					std::vector<VkImageView>(textures.begin(), textures.end())))
 		{
@@ -446,45 +436,31 @@ namespace vulkan {
 	void RayPass::_create_mesh_buffers() {
 		/* setup buffer on cpu */
 		auto vertices = std::vector<vulkan::Vertex>();
-		auto indices = std::vector<uint32_t>();
-		auto meshes = std::vector<RayPassMesh::VImpl>();
+		auto bvnodes = std::vector<BVNode>();
 		for (auto &mesh : _meshes) {
-			auto vertex_chunk = std::vector<vulkan::Vertex>();
-			auto index_chunk = std::vector<uint32_t>();
-			auto unique_vertices = std::unordered_map<vulkan::Vertex, uint32_t>();
-			for (auto &vertex : *mesh.base_mesh()) {
-				if (unique_vertices.count(vertex) == 0) {
-					unique_vertices[vertex] = static_cast<uint32_t>(vertex_chunk.size());
-					vertex_chunk.push_back(vertex);
-				}
-				index_chunk.push_back(unique_vertices[vertex]);
-			}
+			mesh.build(bvnodes, vertices);
+			LOG_DEBUG << "created mesh " << mesh.bvnode_id() << ": " << bvnodes[mesh.bvnode_id()] << std::endl;
+		} 
 
-			uint32_t vertex_start = vertices.size();
-			uint32_t index_start = indices.size();
-			vertices.insert(vertices.end(), vertex_chunk.begin(), vertex_chunk.end());
-			indices.insert(indices.end(), index_chunk.begin(), index_chunk.end());
-			mesh.update_offsets(vertex_start, vertex_chunk.size(), index_start, index_chunk.size());
-
-			meshes.push_back(mesh.vimpl());
+		if (vertices.size()) {
+			auto vertex_buffer = StaticBuffer::create(vertices);
+			//TODO: error handling
+			_vertex_buffer = std::move(vertex_buffer.value());
 		}
-		auto vertex_buffer = StaticBuffer::create(vertices);
-		//TODO: error handling
-		_vertex_buffer = std::move(vertex_buffer.value());
 
-		auto index_buffer = StaticBuffer::create(indices);
-		//TODO: error handling
-		_index_buffer = std::move(index_buffer.value());
-
-		auto mesh_buffer = StaticBuffer::create(meshes);
-		//TODO: error handling
-		_mesh_buffer = std::move(mesh_buffer.value());
+		if (bvnodes.size()) {
+			auto bvnode_buffer = StaticBuffer::create(bvnodes);
+			//TODO: error handling
+			_bvnode_buffer = std::move(bvnode_buffer.value());
+		}
 	}
 
 	void RayPass::_create_node_buffers() {
 		auto nodes = std::vector<RayPassNode::VImpl>();
+		LOG_DEBUG << "==========================================" << std::endl;
 		for (auto &node : _nodes) {
 			nodes.push_back(node.vimpl());
+			LOG_DEBUG << "added node: " << node.vimpl() << std::endl;
 		}
 
 		auto node_buffer = StaticBuffer::create(nodes);
@@ -495,18 +471,20 @@ namespace vulkan {
 	std::string RayPass::_codegen(uint32_t texture_count) {
 		auto source = util::readEnvFile("assets/default_shader.comp");
 
-		util::replace_substr(source, "/*MESH_DECL*/\n", RayPassMesh::VImpl::declaration());
-		util::replace_substr(source, "/*NODE_DECL*/\n", RayPassNode::VImpl::declaration());
 
 		auto resource_decls = std::string();
 		for (auto material : _materials) {
 			resource_decls += material.resource_declaration() + "\n";
 		}
 
+		util::replace_substr(source, "/*BVNODE_DECL*/\n", BVNode::declaration());
+		util::replace_substr(source, "/*NODE_DECL*/\n", RayPassNode::VImpl::declaration());
 		util::replace_substr(source, "/*RESOURCE_DECL*/", resource_decls);
 		util::replace_substr(source, "/*TEXTURE_COUNT*/", std::to_string(texture_count));
 
-		LOG_DEBUG << "codegen: " << source << std::endl;
+		std::string source_log = source;
+		util::add_strnum(source_log);
+		LOG_DEBUG << "codegen: \n" << source_log << std::endl;
 
 		return source;
 	}
