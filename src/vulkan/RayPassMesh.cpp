@@ -27,7 +27,6 @@ namespace vulkan {
 	}
 
 	void BVNodeBuilder::add_vertex(Vertex v) {
-		_verts.push_back(v);
 		_pos_sum += v.pos;
 		if (_verts.empty()) {
 			_min_pos = v.pos;
@@ -53,6 +52,7 @@ namespace vulkan {
 				_max_pos.z = v.pos.z;
 			}
 		}
+		_verts.push_back(v);
 	}
 
 	void BVNodeBuilder::split() {
