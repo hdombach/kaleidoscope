@@ -22,16 +22,13 @@ struct Vertex {
 layout(binding = 2) readonly buffer vertex_buffer {
 	Vertex vertices[];
 };
-layout(binding = 3) readonly buffer index_buffer {
-	uint indices[];
-};
-layout(binding = 4) readonly buffer mesh_buffer {
+layout(binding = 3) readonly buffer mesh_buffer {
 	BVNode bvnodes[];
 };
-layout(binding = 5) readonly buffer node_buffer {
+layout(binding = 4) readonly buffer node_buffer {
 	Node nodes[];
 };
-layout(binding = 6) uniform sampler2D textures[/*TEXTURE_COUNT*/];
+layout(binding = 5) uniform sampler2D textures[/*TEXTURE_COUNT*/];
 
 
 struct triangle3 {
@@ -102,9 +99,8 @@ void main() {
 	vec2 intr_uv;
 	vec2 tex_uv;
 
-	vec4 color = imageLoad(result, ivec2(gl_GlobalInvocationID.xy));
-	color *= 0.9;
-	color += vec4(uv, 0.0, 1.0) * 0.01;
+	//vec4 color = imageLoad(result, ivec2(gl_GlobalInvocationID.xy));
+	vec4 color = vec4(uv, 0.0, 1.0) * 0.1;
 
 	vec4 position = vec4(0, 0, 0, 1) + global_uniform.camera_translation;
 
@@ -116,6 +112,6 @@ void main() {
 		}
 	}
 
-	color.a = 2.0;
+	color.a = 1.0;
 	imageStore(result, ivec2(gl_GlobalInvocationID.xy), color);
 }

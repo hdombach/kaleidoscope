@@ -20,7 +20,7 @@ namespace vulkan {
 				_ray_pass(ray_pass)
 			{ }
 
-			void build(std::vector<BVNode> &nodes, std::vector<Vertex> vertices);
+			void build(std::vector<BVNode> &nodes, std::vector<Vertex> &vertices);
 
 			uint32_t bvnode_id() const { return _bvnode_id; }
 
@@ -84,12 +84,14 @@ namespace vulkan {
 			void split();
 			uint32_t build(std::vector<BVNode> &nodes, std::vector<Vertex> &vertices);
 			glm::vec3 avg_pos() const;
+			std::ostream& print_debug(std::ostream& os) const;
 
 		private:
 			std::vector<Vertex> _verts;
 			bool _is_leaf;
 			glm::vec3 _min_pos;
 			glm::vec3 _max_pos;
+			glm::vec3 _pos_sum;
 			std::unique_ptr<BVNodeBuilder> _lchild;
 			std::unique_ptr<BVNodeBuilder> _rchild;
 
@@ -98,5 +100,12 @@ namespace vulkan {
 }
 
 inline std::ostream& operator<<(std::ostream& os, vulkan::BVNode const &node) {
+	return node.print_debug(os);
+}
+
+inline std::ostream& operator<<(
+		std::ostream& os,
+		vulkan::BVNodeBuilder const &node)
+{
 	return node.print_debug(os);
 }

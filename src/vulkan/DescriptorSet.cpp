@@ -271,10 +271,6 @@ namespace vulkan {
 				write_i++;
 			}
 
-			if (descriptor_writes.size() > 5 && descriptor_writes[5].pBufferInfo[0].buffer == VK_NULL_HANDLE) {
-				LOG_DEBUG << "no buffer info" << std::endl;
-			}
-
 			vkUpdateDescriptorSets(
 					Graphics::DEFAULT->device(), 
 					static_cast<uint32_t>(descriptor_writes.size()),

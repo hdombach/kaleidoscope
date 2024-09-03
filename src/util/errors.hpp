@@ -49,7 +49,7 @@ class KError {
 		VkResult _vk_error;
 };
 
-inline std::ostream &operator <<(std::ostream &os, KError &error) {
-	os << error.desc();
+inline std::ostream &operator <<(std::ostream &os, KError const &error) {
+	os << error.desc() << ": " << error.content();
 	return os;
 }

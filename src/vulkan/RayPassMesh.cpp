@@ -7,14 +7,14 @@ namespace vulkan {
 
 	std::ostream& BVNode::print_debug(std::ostream& os) const {
 		return os << "{"
-			<< "\"min_pos\":" << min_pos
+			<< "\"min_pos\":" << min_pos << ","
 			<< "\"max_pos\":" << max_pos
 			<< "}";
 	}
 
 	void RayPassMesh::build(
 			std::vector<BVNode> &nodes,
-			std::vector<Vertex> vertices)
+			std::vector<Vertex> &vertices)
 	{
 		auto b = BVNodeBuilder();
 		for (auto &v : *_mesh) {
@@ -22,10 +22,13 @@ namespace vulkan {
 		}
 		b.split();
 		_bvnode_id = b.build(nodes, vertices);
+		LOG_DEBUG << "created " << vertices.size() << " vertices" << std::endl;
 		return;
 	}
 
 	void BVNodeBuilder::add_vertex(Vertex v) {
+		_verts.push_back(v);
+		_pos_sum += v.pos;
 		if (_verts.empty()) {
 			_min_pos = v.pos;
 			_max_pos = v.pos;
@@ -53,7 +56,7 @@ namespace vulkan {
 	}
 
 	void BVNodeBuilder::split() {
-		if (_verts.size() <= 2) {
+		if (_verts.size() <= 6) {
 			_is_leaf = true;
 			return;
 		}
@@ -68,10 +71,10 @@ namespace vulkan {
 			axis = types::Axis::Z;
 		}
 
-		_lchild = std::unique_ptr<BVNodeBuilder>();
-		_rchild = std::unique_ptr<BVNodeBuilder>();
+		_lchild = std::unique_ptr<BVNodeBuilder>(new BVNodeBuilder());
+		_rchild = std::unique_ptr<BVNodeBuilder>(new BVNodeBuilder());
 
-		auto avg_pos = (_min_pos + _max_pos) / 2.0f;
+		auto avg_pos = _pos_sum / _verts.size();
 		for (int i = 0; i < _verts.size(); i += 3) {
 			auto v1 = _verts[i + 0];
 			auto v2 = _verts[i + 1];
@@ -98,6 +101,30 @@ namespace vulkan {
 				_rchild->add_vertex(v3);
 			}
 		}
+
+		//Too lopsided. Just split in half
+		if (_lchild->_verts.empty() || _rchild->_verts.empty()) {
+			_lchild = std::unique_ptr<BVNodeBuilder>(new BVNodeBuilder());
+			_rchild = std::unique_ptr<BVNodeBuilder>(new BVNodeBuilder());
+			bool is_left = true;
+
+			for (int i = 0; i < _verts.size(); i += 3) {
+				auto v1 = _verts[i + 0];
+				auto v2 = _verts[i + 1];
+				auto v3 = _verts[i + 2];
+				if (is_left) {
+					_lchild->add_vertex(v1);
+					_lchild->add_vertex(v2);
+					_lchild->add_vertex(v3);
+				} else {
+					_rchild->add_vertex(v1);
+					_rchild->add_vertex(v2);
+					_rchild->add_vertex(v3);
+				}
+
+				is_left = !is_left;
+			}
+		}
 		_verts.clear();
 		//make sure they are relative
 		_lchild->_normalize_children();
@@ -113,38 +140,44 @@ namespace vulkan {
 		auto res = nodes.size();
 		nodes.push_back(BVNode());
 
-		auto &node = nodes[res];
-
-		node.min_pos = _min_pos;
-		node.max_pos = _max_pos;
-		node.parent = -1;
+		nodes[res].min_pos = _min_pos;
+		nodes[res].max_pos = _max_pos;
+		nodes[res].parent = -1;
 
 		if (_is_leaf) {
-			node.type = BVType::Mesh;
-			if (_verts.size() > 2) {
+			nodes[res].type = BVType::Mesh;
+			if (_verts.size() > 6) {
 				LOG_FATAL_ERROR << "BVNodeBuilder has more than 2 children." << std::endl;
 				return res;
 			}
 			auto vstart = vertices.size();
 			if (_verts.size() == 0) {
-				node.lchild = -1;
-				node.rchild = -1;
+				nodes[res].lchild = -1;
+				nodes[res].rchild = -1;
 			} else if (_verts.size() == 1) {
-				node.lchild = vstart;
-				node.rchild = -1;
+				nodes[res].lchild = vstart;
+				nodes[res].rchild = -1;
 			} else if (_verts.size() == 2) {
-				node.lchild = vstart;
-				node.rchild = vstart + 3;
+				nodes[res].lchild = vstart;
+				nodes[res].rchild = vstart + 3;
 			}
+			vertices.insert(vertices.begin(), _verts.begin(), _verts.end());
 		} else {
-			node.type = BVType::Node;
-			node.lchild = _lchild->build(nodes, vertices);
-			node.rchild = _rchild->build(nodes, vertices);
-			nodes[node.lchild].parent = res;
-			nodes[node.rchild].parent = res;
+			nodes[res].type = BVType::Node;
+			nodes[res].lchild = _lchild->build(nodes, vertices);
+			nodes[res].rchild = _rchild->build(nodes, vertices);
+			nodes[nodes[res].lchild].parent = res;
+			nodes[nodes[res].rchild].parent = res;
 		}
 	
 		return res;
+	}
+
+	std::ostream& BVNodeBuilder::print_debug(std::ostream& os) const {
+		return os << "{"
+			<< "\"min_pos:\"" << _min_pos << ","
+			<< "\"max_pos:\"" << _max_pos
+			<< "}";
 	}
 
 	void BVNodeBuilder::_normalize_children() {

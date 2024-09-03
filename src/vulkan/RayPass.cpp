@@ -134,6 +134,10 @@ namespace vulkan {
 			return {res};
 		}
 
+		result->_create_mesh_buffers();
+		result->_create_node_buffers();
+		result->_create_descriptor_sets();
+
 		return {std::move(result)};
 	}
 
@@ -355,6 +359,8 @@ namespace vulkan {
 					_vertex_buffer))
 		{
 			descriptor_templates.push_back(buffer.value());
+		} else {
+			LOG_ERROR << "Problem creating vertex buffer: " << buffer.error() << std::endl;
 		}
 
 		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
@@ -363,6 +369,8 @@ namespace vulkan {
 					_bvnode_buffer))
 		{
 			descriptor_templates.push_back(buffer.value());
+		} else {
+			LOG_ERROR << "Problem creating bvnode buffer: " << buffer.error() << std::endl;
 		}
 
 		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
@@ -371,6 +379,8 @@ namespace vulkan {
 					_node_buffer))
 		{
 			descriptor_templates.push_back(buffer.value());
+		} else {
+			LOG_ERROR << "Problem creating node buffer: " << buffer.error() << std::endl;
 		}
 
 		if (auto images = DescriptorSetTemplate::create_images(
@@ -379,6 +389,8 @@ namespace vulkan {
 					std::vector<VkImageView>(textures.begin(), textures.end())))
 		{
 			descriptor_templates.push_back(images.value());
+		} else {
+			LOG_ERROR << "Problem attaching images: " << images.error() << std::endl;
 		}
 
 		auto descriptor_sets = DescriptorSets::create(
@@ -439,28 +451,28 @@ namespace vulkan {
 		auto bvnodes = std::vector<BVNode>();
 		for (auto &mesh : _meshes) {
 			mesh.build(bvnodes, vertices);
-			LOG_DEBUG << "created mesh " << mesh.bvnode_id() << ": " << bvnodes[mesh.bvnode_id()] << std::endl;
+			LOG_DEBUG << "created mesh " << mesh.bvnode_id() << ": " << bvnodes[mesh.bvnode_id()] << "(" << vertices.size() << ")" << std::endl;
 		} 
 
-		if (vertices.size()) {
-			auto vertex_buffer = StaticBuffer::create(vertices);
-			//TODO: error handling
-			_vertex_buffer = std::move(vertex_buffer.value());
+		if (auto buffer = StaticBuffer::create(vertices)) {
+			_vertex_buffer = std::move(buffer.value());
+		} else {
+			LOG_ERROR << buffer.error() << std::endl;
 		}
 
-		if (bvnodes.size()) {
-			auto bvnode_buffer = StaticBuffer::create(bvnodes);
-			//TODO: error handling
-			_bvnode_buffer = std::move(bvnode_buffer.value());
+		if (auto buffer = StaticBuffer::create(bvnodes)) {
+			_bvnode_buffer = std::move(buffer.value());
+		} else {
+			LOG_ERROR << buffer.error() << std::endl;
 		}
 	}
 
 	void RayPass::_create_node_buffers() {
 		auto nodes = std::vector<RayPassNode::VImpl>();
-		LOG_DEBUG << "==========================================" << std::endl;
+		//LOG_DEBUG << "==========================================" << std::endl;
 		for (auto &node : _nodes) {
 			nodes.push_back(node.vimpl());
-			LOG_DEBUG << "added node: " << node.vimpl() << std::endl;
+			//LOG_DEBUG << "added node: " << node.vimpl() << std::endl;
 		}
 
 		auto node_buffer = StaticBuffer::create(nodes);
