@@ -1,7 +1,7 @@
 #include "errors.hpp"
 
 KError::KError(Type type, std::string content, std::string desc):
-	_desc(desc), _content(content), _vk_error(VK_ERROR_UNKNOWN)
+	_desc(desc), _content(content), _vk_error(VK_ERROR_UNKNOWN), _type(type)
 {}
 
 KError::KError(VkResult result):
@@ -65,6 +65,13 @@ KError KError::shader_compile_error(std::string msg) {
 			SHADER_COMPILER_ERROR,
 			msg,
 			"Shader compile error");
+}
+
+KError KError::empty_buffer() {
+	return KError(
+			EMPTY_BUFFER,
+			std::string(),
+			"Empty buffer");
 }
 
 KError KError::invalid_arg(std::string msg) {

@@ -5,6 +5,15 @@
 
 namespace vulkan {
 
+	BVNode BVNode::create_empty() {
+		return BVNode{
+			glm::vec3(0),
+			glm::vec3(0),
+			BVType::Unknown,
+			0, 0, 0
+		};
+	}
+
 	std::ostream& BVNode::print_debug(std::ostream& os) const {
 		return os << "{"
 			<< "\"min_pos\":" << min_pos << ","

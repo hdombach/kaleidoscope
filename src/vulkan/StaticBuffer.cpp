@@ -15,31 +15,33 @@ namespace vulkan {
 
 		VkBuffer staging_buffer;
 		VkDeviceMemory staging_buffer_memory;
-
-		if (range) {
-			Graphics::DEFAULT->create_buffer(
-					range, 
-					VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-					staging_buffer, 
-					staging_buffer_memory);
-
-			void *mapped_data;
-			auto res = vkMapMemory(
-					Graphics::DEFAULT->device(), 
-					staging_buffer_memory, 
-					0, 
-					range,
-					0,
-					&mapped_data);
-			if (res != VK_SUCCESS) {
-				return {res};
-			}
-
-			memcpy(mapped_data, data, range);
-
-			vkUnmapMemory(Graphics::DEFAULT->device(), staging_buffer_memory);
+		
+		if (range == 0) {
+			return KError::empty_buffer();
 		}
+
+		Graphics::DEFAULT->create_buffer(
+				range, 
+				VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+				staging_buffer, 
+				staging_buffer_memory);
+
+		void *mapped_data;
+		auto res = vkMapMemory(
+				Graphics::DEFAULT->device(), 
+				staging_buffer_memory, 
+				0, 
+				range,
+				0,
+				&mapped_data);
+		if (res != VK_SUCCESS) {
+			return {res};
+		}
+
+		memcpy(mapped_data, data, range);
+
+		vkUnmapMemory(Graphics::DEFAULT->device(), staging_buffer_memory);
 
 		Graphics::DEFAULT->create_buffer(
 				range, 
@@ -50,12 +52,10 @@ namespace vulkan {
 				result._buffer,
 				result._buffer_memory);
 
-		if (range) {
-			Graphics::DEFAULT->copy_buffer(staging_buffer, result._buffer, range);
+		Graphics::DEFAULT->copy_buffer(staging_buffer, result._buffer, range);
 
-			vkDestroyBuffer(Graphics::DEFAULT->device(), staging_buffer, nullptr);
-			vkFreeMemory(Graphics::DEFAULT->device(), staging_buffer_memory, nullptr);
-		}
+		vkDestroyBuffer(Graphics::DEFAULT->device(), staging_buffer, nullptr);
+		vkFreeMemory(Graphics::DEFAULT->device(), staging_buffer_memory, nullptr);
 
 		return {std::move(result)};
 	}

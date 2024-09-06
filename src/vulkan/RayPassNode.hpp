@@ -15,6 +15,8 @@ namespace vulkan {
 				alignas(4) uint32_t material_id;
 				alignas(16) glm::vec3 position;
 
+				static VImpl create_empty();
+
 				static constexpr const char *declaration() {
 					return
 					"struct Node {\n"

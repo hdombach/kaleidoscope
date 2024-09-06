@@ -30,6 +30,10 @@ namespace vulkan {
 			VkBuffer buffer() { return _buffer; }
 			VkDeviceSize range() { return _range; }
 
+			operator bool() const {
+				return _buffer != nullptr;
+			}
+
 		private:
 			VkBuffer _buffer;
 			VkDeviceMemory _buffer_memory;

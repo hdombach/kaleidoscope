@@ -58,6 +58,8 @@ namespace vulkan {
 		alignas(4)  uint32_t rchild; /* either bvnode or triangle index */ 
 		alignas(4)  uint32_t parent;
 
+		static BVNode create_empty();
+
 		static constexpr const char *declaration() {
 			return
 			"#define BV_UNKNOWN 0\n"

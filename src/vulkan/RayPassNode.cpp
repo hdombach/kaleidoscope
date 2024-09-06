@@ -4,6 +4,14 @@
 #include "../util/format.hpp"
 
 namespace vulkan {
+	RayPassNode::VImpl RayPassNode::VImpl::create_empty() {
+		return RayPassNode::VImpl {
+			0, // References the empty mesh
+			0, // Not sure if this matters
+			glm::vec3(0)
+		};
+	}
+
 	std::ostream& RayPassNode::VImpl::print_debug(std::ostream& os) const {
 		return os << "{"
 			<< "\"mesh_id\":" << mesh_id << ","

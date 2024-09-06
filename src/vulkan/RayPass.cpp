@@ -383,14 +383,16 @@ namespace vulkan {
 			LOG_ERROR << "Problem creating node buffer: " << buffer.error() << std::endl;
 		}
 
-		if (auto images = DescriptorSetTemplate::create_images(
-					5, 
-					VK_SHADER_STAGE_COMPUTE_BIT, 
-					std::vector<VkImageView>(textures.begin(), textures.end())))
-		{
-			descriptor_templates.push_back(images.value());
-		} else {
-			LOG_ERROR << "Problem attaching images: " << images.error() << std::endl;
+		if (textures.size() > 0) {
+			if (auto images = DescriptorSetTemplate::create_images(
+						5, 
+						VK_SHADER_STAGE_COMPUTE_BIT, 
+						std::vector<VkImageView>(textures.begin(), textures.end())))
+			{
+				descriptor_templates.push_back(images.value());
+			} else {
+				LOG_ERROR << "Problem attaching images: " << images.error() << std::endl;
+			}
 		}
 
 		auto descriptor_sets = DescriptorSets::create(
@@ -449,21 +451,30 @@ namespace vulkan {
 		/* setup buffer on cpu */
 		auto vertices = std::vector<vulkan::Vertex>();
 		auto bvnodes = std::vector<BVNode>();
+		bvnodes.push_back(BVNode::create_empty());
 		for (auto &mesh : _meshes) {
 			mesh.build(bvnodes, vertices);
 			LOG_DEBUG << "created mesh " << mesh.bvnode_id() << ": " << bvnodes[mesh.bvnode_id()] << "(" << vertices.size() << ")" << std::endl;
 		} 
+		if (vertices.empty()) {
+			//make sure buffer isn't empty because vulkan
+			vertices.push_back(vulkan::Vertex());
+		}
 
 		if (auto buffer = StaticBuffer::create(vertices)) {
 			_vertex_buffer = std::move(buffer.value());
 		} else {
-			LOG_ERROR << buffer.error() << std::endl;
+			if (buffer.error().type() != KError::Type::EMPTY_BUFFER) {
+				LOG_ERROR << buffer.error() << std::endl;
+			}
 		}
 
 		if (auto buffer = StaticBuffer::create(bvnodes)) {
 			_bvnode_buffer = std::move(buffer.value());
 		} else {
-			LOG_ERROR << buffer.error() << std::endl;
+			if (buffer.error().type() != KError::Type::EMPTY_BUFFER) {
+				LOG_ERROR << buffer.error() << std::endl;
+			}
 		}
 	}
 
@@ -475,9 +486,17 @@ namespace vulkan {
 			//LOG_DEBUG << "added node: " << node.vimpl() << std::endl;
 		}
 
-		auto node_buffer = StaticBuffer::create(nodes);
-		//TODO: error handling
-		_node_buffer = std::move(node_buffer.value());
+		if (nodes.empty()) {
+			nodes.push_back(RayPassNode::VImpl::create_empty());
+		}
+
+		if (auto buffer = StaticBuffer::create(nodes)) {
+			_node_buffer = std::move(buffer.value());
+		} else {
+			if (buffer.error().type() != KError::Type::EMPTY_BUFFER) {
+				LOG_ERROR << buffer.error() << std::endl;
+			}
+		}
 	}
 
 	std::string RayPass::_codegen(uint32_t texture_count) {
