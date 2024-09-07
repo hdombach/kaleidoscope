@@ -10,7 +10,7 @@ layout(set = 0, binding = 1) uniform GlobalUniformBuffer {
 struct Vertex {
 		vec3 pos;
 		vec3 color;
-		vec2 texCoord;
+		vec2 tex_coord;
 };
 
 /*BVNODE_DECL*/
@@ -31,26 +31,26 @@ layout(binding = 4) readonly buffer node_buffer {
 layout(binding = 5) uniform sampler2D textures[/*TEXTURE_COUNT*/];
 
 
-struct triangle3 {
+struct Triangle {
 	vec3 v1, v2, v3;
 };
 
 // https://gist.github.com/DomNomNom/46bb1ce47f68d255fd5d
 // returns (near, far)
-vec2 intersectAABB(vec3 rayOrigin, vec3 rayDir, vec3 boxMin, vec3 boxMax) {
-    vec3 tMin = (boxMin - rayOrigin) / rayDir;
-    vec3 tMax = (boxMax - rayOrigin) / rayDir;
-    vec3 t1 = min(tMin, tMax);
-    vec3 t2 = max(tMin, tMax);
-    float tNear = max(max(t1.x, t1.y), t1.z);
-    float tFar = min(min(t2.x, t2.y), t2.z);
-    return vec2(tNear, tFar);
+vec2 intersect_aabb(vec3 ray_pos, vec3 ray_dir, vec3 box_min, vec3 box_max) {
+    vec3 tmin = (box_min - ray_pos) / ray_dir;
+    vec3 tmax = (box_max - ray_pos) / ray_dir;
+    vec3 t1 = min(tmin, tmax);
+    vec3 t2 = max(tmin, tmax);
+    float tnear = max(max(t1.x, t1.y), t1.z);
+    float tfar = min(min(t2.x, t2.y), t2.z);
+    return vec2(tnear, tfar);
 }
 
 //https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
 bool ray_intersects_triangle(in vec3 ray_origin, 
                              in vec3 ray_vector, 
-                             in triangle3 triangle,
+                             in Triangle triangle,
                              inout vec3 out_intersection_point,
                              inout vec2 uv)
 {
@@ -91,9 +91,82 @@ bool ray_intersects_triangle(in vec3 ray_origin,
 			return false;
 }
 
+bool intersect_mesh(vec3 ray_pos, vec3 ray_dir, uint m, inout uint debug) {
+	vec2 intr;
+	uint prevm = 0;
+
+	vec3 intr_point;
+	vec2 uv;
+
+	while (m > 0) {
+		if (bvnodes[m].type == BV_UNKNOWN) {
+			return false;
+		}
+
+		if (bvnodes[m].type == BV_MESH) {
+			Triangle t;
+
+			intr = intersect_aabb(
+				ray_pos,
+				ray_dir,
+				bvnodes[m].min_pos,
+				bvnodes[m].max_pos);
+
+			if (intr.x < intr.y) {
+				debug += 1;
+				if (bvnodes[m].lchild != -1) {
+					t.v1 = vertices[bvnodes[m].lchild + 0].pos;
+					t.v2 = vertices[bvnodes[m].lchild + 1].pos;
+					t.v3 = vertices[bvnodes[m].lchild + 2].pos;
+					if (ray_intersects_triangle(ray_pos, ray_dir, t, intr_point, uv)) {
+						return true;
+					}
+				}
+				if (bvnodes[m].rchild != -1) {
+					t.v1 = vertices[bvnodes[m].rchild + 0].pos;
+					t.v2 = vertices[bvnodes[m].rchild + 1].pos;
+					t.v3 = vertices[bvnodes[m].rchild + 2].pos;
+					if (ray_intersects_triangle(ray_pos, ray_dir, t, intr_point, uv)) {
+						return true;
+					}
+				}
+			}
+
+			prevm = m;
+			m = bvnodes[m].parent;
+			continue;
+		}
+
+		if (bvnodes[m].type != BV_NODE) return false;
+
+		if (prevm == bvnodes[m].parent) {
+			intr = intersect_aabb(
+				ray_pos,
+				ray_dir,
+				bvnodes[m].min_pos,
+				bvnodes[m].max_pos);
+
+			if (intr.x < intr.y) {
+				prevm = m;
+				m = bvnodes[m].lchild;
+			} else {
+				prevm = m;
+				m = bvnodes[m].parent;
+			}
+		} else if (prevm == bvnodes[m].lchild) {
+			prevm = m;
+			m = bvnodes[m].rchild;
+		} else if (prevm == bvnodes[m].rchild) {
+			prevm = m;
+			m = bvnodes[m].parent;
+		}
+	}
+	return false;
+}
+
 void main() {
-	ivec2 resultDim = imageSize(result);
-	vec2 uv = vec2(gl_GlobalInvocationID.xy) / resultDim;
+	ivec2 size = imageSize(result);
+	vec2 uv = vec2(gl_GlobalInvocationID.xy) / vec2(size);
 
 	vec4 dir = normalize(vec4(0.5 - uv.x, uv.y, 3, 0)) * global_uniform.camera_rotation;
 	vec2 intr_uv;
@@ -106,10 +179,12 @@ void main() {
 
 	for (uint n = 0; n < nodes.length(); n++) {
 		uint m = nodes[n].mesh_id;
-		vec2 intr = intersectAABB(position.xyz, dir.xyz, bvnodes[m].min_pos, bvnodes[m].max_pos);
-		if (intr.x < intr.y) {
+		uint debug = 0;
+		if (intersect_mesh(position.xyz, dir.xyz, m, debug)) {
 			color.x = 1.0;
 		}
+		color.y = debug;
+		color.y /= 10;
 	}
 
 	color.a = 1.0;

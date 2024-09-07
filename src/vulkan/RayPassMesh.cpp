@@ -17,7 +17,11 @@ namespace vulkan {
 	std::ostream& BVNode::print_debug(std::ostream& os) const {
 		return os << "{"
 			<< "\"min_pos\":" << min_pos << ","
-			<< "\"max_pos\":" << max_pos
+			<< "\"max_pos\":" << max_pos << ","
+			<< "\"type\":" << type << ","
+			<< "\"lchild\":" << lchild << ","
+			<< "\"rchild\":" << rchild << ","
+			<< "\"parent\":" << parent
 			<< "}";
 	}
 
@@ -36,10 +40,11 @@ namespace vulkan {
 	}
 
 	void BVNodeBuilder::add_vertex(Vertex v) {
+		float small = 0.0001;
 		_pos_sum += v.pos;
 		if (_verts.empty()) {
 			_min_pos = v.pos;
-			_max_pos = v.pos;
+			_max_pos = v.pos + glm::vec3(small);
 		} else {
 			if (v.pos.x < _min_pos.x) {
 				_min_pos.x = v.pos.x;
@@ -53,12 +58,15 @@ namespace vulkan {
 
 			if (v.pos.x > _max_pos.x) {
 				_max_pos.x = v.pos.x;
+				_max_pos.x += small;
 			}
 			if (v.pos.y > _max_pos.y) {
 				_max_pos.y = v.pos.y;
+				_max_pos.x += small;
 			}
 			if (v.pos.z > _max_pos.z) {
 				_max_pos.z = v.pos.z;
+				_max_pos.x += small;
 			}
 		}
 		_verts.push_back(v);
@@ -136,8 +144,8 @@ namespace vulkan {
 		}
 		_verts.clear();
 		//make sure they are relative
-		_lchild->_normalize_children();
-		_rchild->_normalize_children();
+		//_lchild->_normalize_children();
+		//_rchild->_normalize_children();
 		_lchild->split();
 		_rchild->split();
 	}
@@ -151,7 +159,7 @@ namespace vulkan {
 
 		nodes[res].min_pos = _min_pos;
 		nodes[res].max_pos = _max_pos;
-		nodes[res].parent = -1;
+		nodes[res].parent = 0;
 
 		if (_is_leaf) {
 			nodes[res].type = BVType::Mesh;
@@ -160,17 +168,18 @@ namespace vulkan {
 				return res;
 			}
 			auto vstart = vertices.size();
+			LOG_DEBUG << "vstart: " << vstart << std::endl;
 			if (_verts.size() == 0) {
 				nodes[res].lchild = -1;
 				nodes[res].rchild = -1;
-			} else if (_verts.size() == 1) {
+			} else if (_verts.size() == 3) {
 				nodes[res].lchild = vstart;
 				nodes[res].rchild = -1;
-			} else if (_verts.size() == 2) {
+			} else if (_verts.size() == 6) {
 				nodes[res].lchild = vstart;
 				nodes[res].rchild = vstart + 3;
 			}
-			vertices.insert(vertices.begin(), _verts.begin(), _verts.end());
+			vertices.insert(vertices.end(), _verts.begin(), _verts.end());
 		} else {
 			nodes[res].type = BVType::Node;
 			nodes[res].lchild = _lchild->build(nodes, vertices);

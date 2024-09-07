@@ -25,3 +25,7 @@ namespace util {
 inline std::ostream& operator<<(std::ostream& os, glm::vec3 const &v) {
 	return os << "[" << v.x << "," << v.y << "," << v.z << "]";
 }
+
+inline std::ostream& operator<<(std::ostream& os, glm::vec2 const &v) {
+	return os << "[" << v.x << "," << v.y << "]";
+}

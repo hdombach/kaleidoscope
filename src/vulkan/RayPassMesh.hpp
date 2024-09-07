@@ -39,17 +39,6 @@ namespace vulkan {
 		Node,
 	};
 
-	inline std::ostream& operator>>(std::ostream& os, BVType const &type) {
-		switch (type) {
-			case BVType::Unknown:
-				return os << "Unknown";
-			case BVType::Mesh:
-				return os << "Mesh";
-			case BVType::Node:
-				return os << "Node";
-		}
-	}
-
 	struct BVNode {
 		alignas(16) glm::vec3 min_pos;
 		alignas(16) glm::vec3 max_pos;
@@ -100,6 +89,18 @@ namespace vulkan {
 			void _normalize_children();
 	};
 }
+
+inline std::ostream& operator<<(std::ostream& os, vulkan::BVType const &type) {
+	switch (type) {
+		case vulkan::BVType::Unknown:
+			return os << "Unknown";
+		case vulkan::BVType::Mesh:
+			return os << "Mesh";
+		case vulkan::BVType::Node:
+			return os << "Node";
+	}
+}
+
 
 inline std::ostream& operator<<(std::ostream& os, vulkan::BVNode const &node) {
 	return node.print_debug(os);

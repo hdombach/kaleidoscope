@@ -2,12 +2,15 @@
 
 #include <array>
 #include <cstddef>
+#include <ostream>
 
 #include "vulkan/vulkan_core.h"
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
 #include <vulkan/vulkan.h>
+
+#include "../util/format.hpp"
 
 namespace vulkan {
 	struct Vertex {
@@ -61,6 +64,14 @@ namespace vulkan {
 
 			return attribute_descriptions;
 		}
+
+		std::ostream& print_debug(std::ostream& os) const {
+			return os << "{"
+				<< "\"pos\":" << pos << ","
+				<< "\"color\":" << color << ","
+				<< "\"tex_coord\":" << tex_coord
+				<< "}";
+		}
 	} __attribute__((packed));
 
 }
@@ -71,4 +82,8 @@ namespace std {
 			return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.tex_coord) << 1);
 		}
 	};
+}
+
+inline std::ostream& operator<<(std::ostream& os, vulkan::Vertex const &v) {
+	return v.print_debug(os);
 }
