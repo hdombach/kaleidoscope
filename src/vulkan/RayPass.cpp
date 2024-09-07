@@ -457,14 +457,12 @@ namespace vulkan {
 			mesh.build(bvnodes, vertices);
 		}
 		for (auto &bvnode : bvnodes) {
-			LOG_DEBUG << "bvnode: " << bvnode << std::endl;
 		}
 		if (vertices.empty()) {
 			//make sure buffer isn't empty because vulkan
 			vertices.push_back(vulkan::Vertex());
 		}
 		for (auto &vertex : vertices) {
-			LOG_DEBUG << "vertex: " << vertex << std::endl;
 		}
 
 		if (auto buffer = StaticBuffer::create(vertices)) {
@@ -486,10 +484,8 @@ namespace vulkan {
 
 	void RayPass::_create_node_buffers() {
 		auto nodes = std::vector<RayPassNode::VImpl>();
-		LOG_DEBUG << "==========================================" << std::endl;
 		for (auto &node : _nodes) {
 			nodes.push_back(node.vimpl());
-			LOG_DEBUG << "added node: " << node.vimpl() << std::endl;
 		}
 
 		if (nodes.empty()) {

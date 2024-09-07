@@ -35,7 +35,6 @@ namespace vulkan {
 		}
 		b.split();
 		_bvnode_id = b.build(nodes, vertices);
-		LOG_DEBUG << "created " << vertices.size() << " vertices" << std::endl;
 		return;
 	}
 
@@ -168,7 +167,6 @@ namespace vulkan {
 				return res;
 			}
 			auto vstart = vertices.size();
-			LOG_DEBUG << "vstart: " << vstart << std::endl;
 			if (_verts.size() == 0) {
 				nodes[res].lchild = -1;
 				nodes[res].rchild = -1;

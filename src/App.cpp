@@ -88,12 +88,12 @@ App::Ptr App::create(std::string const &name) {
 		LOG_ERROR << scene.error().desc() << std::endl;
 	}
 
-	/*{
+	{
 		auto id = result->_scene->add_node(
 				result->_resource_manager->get_mesh("square"),
 				result->_resource_manager->get_material("viking_room"));
 		result->_scene->get_node_mut(id.value())->set_position({3, 2, 0});
-	}*/
+	}
 
 	{
 		auto id = result->_scene->add_node(
@@ -103,7 +103,7 @@ App::Ptr App::create(std::string const &name) {
 		result->_scene->get_node_mut(id.value())->resources().add_resource(types::ShaderResource::create_primitive("comb_ratio", comb_ratio_value));
 	}
 
-	/*{
+	{
 		auto id = result->_scene->add_node(
 				result->_resource_manager->get_mesh("square"),
 				result->_resource_manager->get_material("viking_room"));
@@ -115,7 +115,7 @@ App::Ptr App::create(std::string const &name) {
 				result->_resource_manager->get_mesh("square"),
 				result->_resource_manager->get_material("color"));
 		result->_scene->get_node_mut(id.value())->set_position({-1, -1, -1});
-	}*/
+	}
 
 
 
