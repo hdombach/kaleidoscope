@@ -10,7 +10,7 @@
 #include "ImageView.hpp"
 #include "Semaphore.hpp"
 #include "Texture.hpp"
-#include "UniformBufferObject.hpp"
+#include "UniformBuffer.hpp"
 #include "RayPassMesh.hpp"
 #include "RayPassNode.hpp"
 #include "RayPassMaterial.hpp"

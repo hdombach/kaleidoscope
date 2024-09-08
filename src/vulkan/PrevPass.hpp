@@ -11,7 +11,7 @@
 #include "Image.hpp"
 #include "ImageView.hpp"
 #include "Texture.hpp"
-#include "UniformBufferObject.hpp"
+#include "UniformBuffer.hpp"
 #include "PrevPassMesh.hpp"
 #include "PrevPassMaterial.hpp"
 #include "PrevPassNode.hpp"

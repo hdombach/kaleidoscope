@@ -6,7 +6,7 @@
 #include "../util/Util.hpp"
 #include "Scene.hpp"
 #include "PrevPass.hpp"
-#include "UniformBufferObject.hpp"
+#include "UniformBuffer.hpp"
 
 namespace vulkan {
 	util::Result<Scene::Ptr, KError> Scene::create(
