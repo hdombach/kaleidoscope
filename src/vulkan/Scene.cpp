@@ -75,6 +75,8 @@ namespace vulkan {
 		auto uniform_buffer = ComputeUniformBuffer{};
 		uniform_buffer.camera_rotation = camera().gen_rotate_mat();
 		uniform_buffer.camera_translation = glm::vec4(camera().position, 0.0);
+		uniform_buffer.aspect = static_cast<float>(camera().width) / static_cast<float>(camera().height);
+		uniform_buffer.fovy = camera().fovy;
 		_raytrace_render_pass->current_uniform_buffer().set_value(uniform_buffer);
 		_raytrace_render_pass->submit(*_nodes[0]);
 	}

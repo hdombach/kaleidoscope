@@ -24,7 +24,7 @@ namespace types {
 		auto result = glm::mat4(1.0);
 		auto perspective = glm::perspective(
 				glm::radians(fovy), 
-				width / (float) height, 
+				(float) width / (float) height, 
 				z_near, 
 				z_far);
 		perspective[1][1] *= -1;

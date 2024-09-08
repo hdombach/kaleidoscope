@@ -510,9 +510,11 @@ namespace vulkan {
 			resource_decls += material.resource_declaration() + "\n";
 		}
 
+		util::replace_substr(source, "/*VERTEX_DECL*/\n", Vertex::declaration());
 		util::replace_substr(source, "/*BVNODE_DECL*/\n", BVNode::declaration());
 		util::replace_substr(source, "/*NODE_DECL*/\n", RayPassNode::VImpl::declaration());
 		util::replace_substr(source, "/*RESOURCE_DECL*/", resource_decls);
+		util::replace_substr(source, "/*UNIFORM_DECL*/\n", ComputeUniformBuffer::declaration());
 		util::replace_substr(source, "/*TEXTURE_COUNT*/", std::to_string(texture_count));
 
 		std::string source_log = source;

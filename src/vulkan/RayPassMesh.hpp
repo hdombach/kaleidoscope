@@ -55,12 +55,12 @@ namespace vulkan {
 			"#define BV_MESH 1\n"
 			"#define BV_NODE 2\n"
 			"struct BVNode {\n"
-			"	vec3 min_pos;\n"
-			"	vec3 max_pos;\n"
-			"	uint type;\n"
-			"	uint lchild;\n"
-			"	uint rchild;\n"
-			"	uint parent;\n"
+			"\tvec3 min_pos;\n"
+			"\tvec3 max_pos;\n"
+			"\tuint type;\n"
+			"\tuint lchild;\n"
+			"\tuint rchild;\n"
+			"\tuint parent;\n"
 			"};\n";
 		}
 

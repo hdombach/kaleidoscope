@@ -11,12 +11,6 @@
 namespace types {
 	class Camera {
 		public:
-			Camera();
-
-			glm::mat4 gen_raster_mat();
-			glm::mat4 gen_rotate_mat();
-			glm::mat4 gen_translate_mat();
-
 			glm::vec3 position;
 			glm::quat rotation;
 			int width;
@@ -24,6 +18,13 @@ namespace types {
 			float fovy;
 			float z_near;
 			float z_far;
+
+		public:
+			Camera();
+
+			glm::mat4 gen_raster_mat();
+			glm::mat4 gen_rotate_mat();
+			glm::mat4 gen_translate_mat();
 
 			void rotate_drag(float deltax, float deltay);
 			inline void rotate_drag(glm::vec2 delta) {
