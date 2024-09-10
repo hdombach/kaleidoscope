@@ -11,6 +11,7 @@ namespace vulkan {
 	class RayPassNode {
 		public:
 			struct VImpl {
+				alignas(4) uint32_t node_id;
 				alignas(4) uint32_t mesh_id;
 				alignas(4) uint32_t material_id;
 				alignas(16) glm::vec3 position;
@@ -20,9 +21,10 @@ namespace vulkan {
 				static constexpr const char *declaration() {
 					return
 					"struct Node {\n"
-					"	uint mesh_id;\n"
-					"	uint material_id;\n"
-					"	vec3 position;\n"
+					"\tuint node_id;\n"
+					"\tuint mesh_id;\n"
+					"\tuint material_id;\n"
+					"\tvec3 position;\n"
 					"};\n";
 				}
 

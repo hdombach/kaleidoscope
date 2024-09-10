@@ -40,4 +40,15 @@ namespace util {
 			i++;
 		}
 	}
+
+	inline void indent(std::string &str, std::string indent) {
+		size_t i = 0;
+		str.insert(0, indent);
+		while (str[i]) {
+			if (str[i] == '\n') {
+				str.insert(i+1, indent);
+			}
+			i++;
+		}
+	}
 }

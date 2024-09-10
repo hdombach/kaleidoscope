@@ -6,6 +6,7 @@
 namespace vulkan {
 	RayPassNode::VImpl RayPassNode::VImpl::create_empty() {
 		return RayPassNode::VImpl {
+			0,
 			0, // References the empty mesh
 			0, // Not sure if this matters
 			glm::vec3(0)
@@ -14,6 +15,7 @@ namespace vulkan {
 
 	std::ostream& RayPassNode::VImpl::print_debug(std::ostream& os) const {
 		return os << "{"
+			<< "\"node_id\":" << node_id << ","
 			<< "\"mesh_id\":" << mesh_id << ","
 			<< "\"material_id\":" << material_id << ","
 			<< "\"position\":" << position
@@ -25,6 +27,7 @@ namespace vulkan {
 		result._node = node;
 		result._ray_pass = ray_pass;
 		result._vimpl = {
+			node->id(),
 			ray_pass->mesh(node->mesh().id()).bvnode_id(),
 			node->material().id(),
 			node->position()

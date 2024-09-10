@@ -84,6 +84,8 @@ namespace vulkan {
 			MaterialObserver &material_observer() { return _material_observer; }
 			NodeObserver &node_observer() { return _node_observer; }
 
+			size_t max_material_range() const;
+
 		private:
 			void mesh_create(uint32_t id);
 			void mesh_update(uint32_t id);
@@ -102,9 +104,10 @@ namespace vulkan {
 
 			void _create_mesh_buffers();
 			void _create_node_buffers();
+			void _create_material_buffers();
 			std::string _codegen(uint32_t texture_count);
 
-			std::set<VkImageView> _used_textures();
+			std::vector<VkImageView> _used_textures();
 
 		private:
 			VkExtent2D _size;
@@ -126,6 +129,7 @@ namespace vulkan {
 			StaticBuffer _vertex_buffer;
 			StaticBuffer _bvnode_buffer;
 			StaticBuffer _node_buffer;
+			StaticBuffer _material_buffer;
 
 			std::vector<RayPassMesh> _meshes;
 			std::vector<RayPassNode> _nodes;

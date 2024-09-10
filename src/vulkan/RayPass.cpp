@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <memory>
 #include <unordered_map>
 #include <vulkan/vulkan_core.h>
@@ -137,6 +138,7 @@ namespace vulkan {
 
 		result->_create_mesh_buffers();
 		result->_create_node_buffers();
+		result->_create_material_buffers();
 		result->_create_descriptor_sets();
 
 		return {std::move(result)};
@@ -293,6 +295,21 @@ namespace vulkan {
 		return _mapped_uniform;
 	}
 
+	size_t RayPass::max_material_range() const {
+		size_t res = 0;
+
+		for (auto &material : _materials) {
+			if (auto m = material.get()) {
+				size_t r = m->resources().range();
+				if (r > res) {
+					res = r;
+				}
+			}
+		}
+
+		return res;
+	}
+
 	void RayPass::mesh_create(uint32_t id) {
 		_meshes.push_back(RayPassMesh(_scene->resource_manager().get_mesh(id), this));
 		_create_mesh_buffers();
@@ -311,6 +328,11 @@ namespace vulkan {
 				_scene->resource_manager().get_material(id),
 				this);
 		//TODO: update internal buffers
+		for (auto &m : _materials) {
+			m.update(); //TODO: keep track of a dirty bit
+		}
+		_create_material_buffers();
+		_create_descriptor_sets();
 	}
 
 	void RayPass::material_update(uint32_t id) {
@@ -318,6 +340,8 @@ namespace vulkan {
 				_scene->resource_manager().get_material(id),
 				this);
 		//TODO: update internal buffers
+		_create_material_buffers();
+		_create_descriptor_sets();
 	}
 
 	void RayPass::material_remove(uint32_t id) {
@@ -329,12 +353,14 @@ namespace vulkan {
 		}
 		_nodes[id] = RayPassNode::create(_scene->get_node(id), this);
 		_create_node_buffers();
+		_create_material_buffers();
 		_create_descriptor_sets();
 	}
 
 	void RayPass::node_update(uint32_t id) {
 		_nodes[id] = RayPassNode::create(_scene->get_node(id), this);
 		_create_node_buffers();
+		_create_material_buffers();
 		_create_descriptor_sets();
 	}
 
@@ -394,6 +420,16 @@ namespace vulkan {
 			} else {
 				LOG_ERROR << "Problem attaching images: " << images.error() << std::endl;
 			}
+		}
+
+		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
+					6,
+					VK_SHADER_STAGE_COMPUTE_BIT,
+					_material_buffer))
+		{
+			descriptor_templates.push_back(buffer.value());
+		} else {
+			LOG_ERROR << "Problem creating material buffer: " << buffer.error() << std::endl;
 		}
 
 		auto descriptor_sets = DescriptorSets::create(
@@ -486,6 +522,7 @@ namespace vulkan {
 		auto nodes = std::vector<RayPassNode::VImpl>();
 		for (auto &node : _nodes) {
 			nodes.push_back(node.vimpl());
+			LOG_DEBUG << "node: " << node.vimpl() << std::endl;
 		}
 
 		if (nodes.empty()) {
@@ -501,13 +538,53 @@ namespace vulkan {
 		}
 	}
 
+	void RayPass::_create_material_buffers() {
+		auto range = max_material_range() * _nodes.size();
+		if (range == 0) {
+			range = 1;
+		}
+		auto buf = std::vector<char>(range);
+		size_t i = 0;
+		for (auto &node : _nodes) {
+			auto &n = node.get();
+			n.material().resources().update_prim_uniform(
+					buf.data() + i * max_material_range(),
+					n.resources().begin(),
+					n.resources().end());
+			i++;
+		}
+		if (auto buffer = StaticBuffer::create(buf.data(), range)) {
+			_material_buffer = std::move(buffer.value());
+		} else {
+			LOG_ERROR << buffer.error() << std::endl;
+		}
+	}
+
 	std::string RayPass::_codegen(uint32_t texture_count) {
 		auto source = util::readEnvFile("assets/default_shader.comp");
 
 
 		auto resource_decls = std::string();
-		for (auto material : _materials) {
+		auto material_bufs = std::string();
+		auto material_srcs = std::string();
+		for (auto &material : _materials) {
 			resource_decls += material.resource_declaration() + "\n";
+			material_bufs += material.material_buf();
+			material_srcs += material.frag_src();
+		}
+
+		auto material_call = std::string();
+		bool first_call = true;
+		for (auto &material : _materials) {
+			auto id = std::to_string(material.get()->id());
+			if (first_call) {
+				first_call = false;
+			} else {
+				material_call += " else ";
+			}
+			material_call += "if (nodes[n].material_id == " + id + ") {\n";
+			material_call += "\t\t\t\t" + material.material_frag_call() + ";\n";
+			material_call += "\t\t\t}\n";
 		}
 
 		util::replace_substr(source, "/*VERTEX_DECL*/\n", Vertex::declaration());
@@ -516,6 +593,9 @@ namespace vulkan {
 		util::replace_substr(source, "/*RESOURCE_DECL*/", resource_decls);
 		util::replace_substr(source, "/*UNIFORM_DECL*/\n", ComputeUniformBuffer::declaration());
 		util::replace_substr(source, "/*TEXTURE_COUNT*/", std::to_string(texture_count));
+		util::replace_substr(source, "/*MATERIAL_BUFFERS*/\n", material_bufs);
+		util::replace_substr(source, "/*MATERIAL_SRCS*/\n", material_srcs);
+		util::replace_substr(source, "/*MATERIAL_CALLS*/\n", material_call);
 
 		std::string source_log = source;
 		util::add_strnum(source_log);
@@ -524,13 +604,16 @@ namespace vulkan {
 		return source;
 	}
 
-	std::set<VkImageView> RayPass::_used_textures() {
-		auto result = std::set<VkImageView>();
+	std::vector<VkImageView> RayPass::_used_textures() {
+		auto result = std::vector<VkImageView>();
 
 		for (auto &node : _nodes) {
 			for (auto &resource : node.get().material().resources()) {
 				if (auto image = resource.as_image()) {
-					result.insert(image.value().value());
+					auto v = image.value().value();
+					if (std::find(result.begin(), result.end(), v) == std::end(result)) {
+						result.push_back(v);
+					}
 				}
 			}
 		}

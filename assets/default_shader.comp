@@ -26,12 +26,15 @@ layout(binding = 4) readonly buffer node_buffer {
 	Node nodes[];
 };
 layout(binding = 5) uniform sampler2D textures[/*TEXTURE_COUNT*/];
+/*MATERIAL_BUFFERS*/
 
 float PI = 3.14159265358979;
 
 struct Triangle {
 	vec3 v1, v2, v3;
 };
+
+/*MATERIAL_SRCS*/
 
 // https://gist.github.com/DomNomNom/46bb1ce47f68d255fd5d
 // returns (near, far)
@@ -210,8 +213,7 @@ void main() {
 		vec2 uv;
 		if (intersect_mesh(position.xyz - nodes[n].position, dir.xyz, m, debug, uv)) {
 			color.xy = uv;
-			color = texture(textures[0], uv);
-			color.xyz = vec3(pow(color.x, 1/2.2), pow(color.y, 1/2.2), pow(color.z, 1/2.2));
+			/*MATERIAL_CALLS*/
 		}
 	}
 	color.x += debug / 1000.0f;
