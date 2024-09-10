@@ -85,6 +85,7 @@ namespace vulkan {
 			NodeObserver &node_observer() { return _node_observer; }
 
 			size_t max_material_range() const;
+			std::vector<VkImageView> used_textures() const;
 
 		private:
 			void mesh_create(uint32_t id);
@@ -107,7 +108,6 @@ namespace vulkan {
 			void _create_material_buffers();
 			std::string _codegen(uint32_t texture_count);
 
-			std::vector<VkImageView> _used_textures();
 
 		private:
 			VkExtent2D _size;

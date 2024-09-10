@@ -211,12 +211,13 @@ void main() {
 	for (uint n = 0; n < nodes.length(); n++) {
 		uint m = nodes[n].mesh_id;
 		vec2 uv;
+		uint id = nodes[n].node_id;
 		if (intersect_mesh(position.xyz - nodes[n].position, dir.xyz, m, debug, uv)) {
 			color.xy = uv;
 			/*MATERIAL_CALLS*/
 		}
 	}
-	color.x += debug / 1000.0f;
+	//color.x += debug / 1000.0f;
 	color.a = 1.0;
 	imageStore(result, dst, color);
 }

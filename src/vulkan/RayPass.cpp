@@ -310,6 +310,24 @@ namespace vulkan {
 		return res;
 	}
 
+	std::vector<VkImageView> RayPass::used_textures() const {
+		auto result = std::vector<VkImageView>();
+
+		for (auto &node : _nodes) {
+			for (auto &resource : node.get().material().resources()) {
+				if (auto image = resource.as_image()) {
+					auto v = image.value().value();
+					if (std::find(result.begin(), result.end(), v) == std::end(result)) {
+						result.push_back(v);
+					}
+				}
+			}
+		}
+
+		return result;
+	}
+
+
 	void RayPass::mesh_create(uint32_t id) {
 		_meshes.push_back(RayPassMesh(_scene->resource_manager().get_mesh(id), this));
 		_create_mesh_buffers();
@@ -328,9 +346,6 @@ namespace vulkan {
 				_scene->resource_manager().get_material(id),
 				this);
 		//TODO: update internal buffers
-		for (auto &m : _materials) {
-			m.update(); //TODO: keep track of a dirty bit
-		}
 		_create_material_buffers();
 		_create_descriptor_sets();
 	}
@@ -368,7 +383,7 @@ namespace vulkan {
 
 	util::Result<void, KError> RayPass::_create_descriptor_sets() {
 		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
-		auto textures = _used_textures();
+		auto textures = used_textures();
 
 		descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
 					0, 
@@ -444,7 +459,7 @@ namespace vulkan {
 	}
 
 	util::Result<void, KError> RayPass::_create_pipeline() {
-		auto compute_shader = Shader::from_source_code(_codegen(_used_textures().size()), Shader::Type::Compute);
+		auto compute_shader = Shader::from_source_code(_codegen(used_textures().size()), Shader::Type::Compute);
 		TRY(compute_shader);
 
 		auto compute_shader_stage_info = VkPipelineShaderStageCreateInfo{};
@@ -522,7 +537,6 @@ namespace vulkan {
 		auto nodes = std::vector<RayPassNode::VImpl>();
 		for (auto &node : _nodes) {
 			nodes.push_back(node.vimpl());
-			LOG_DEBUG << "node: " << node.vimpl() << std::endl;
 		}
 
 		if (nodes.empty()) {
@@ -539,6 +553,10 @@ namespace vulkan {
 	}
 
 	void RayPass::_create_material_buffers() {
+		for (auto &m : _materials) {
+			m.update(); //TODO: keep track of a dirty bit
+		}
+
 		auto range = max_material_range() * _nodes.size();
 		if (range == 0) {
 			range = 1;
@@ -604,20 +622,4 @@ namespace vulkan {
 		return source;
 	}
 
-	std::vector<VkImageView> RayPass::_used_textures() {
-		auto result = std::vector<VkImageView>();
-
-		for (auto &node : _nodes) {
-			for (auto &resource : node.get().material().resources()) {
-				if (auto image = resource.as_image()) {
-					auto v = image.value().value();
-					if (std::find(result.begin(), result.end(), v) == std::end(result)) {
-						result.push_back(v);
-					}
-				}
-			}
-		}
-
-		return result;
-	}
 }

@@ -27,6 +27,7 @@ namespace vulkan {
 	}
 
 	void RayPassMaterial::update() {
+		_create_frag_call();
 		_create_declaration();
 	}
 
@@ -78,16 +79,26 @@ namespace vulkan {
 
 	void RayPassMaterial::_create_frag_call() {
 		auto id = std::to_string(_material->id());
+		auto textures = _ray_pass->used_textures();
 		_frag_call = "";
 
 		_frag_call += "material" + id + "_main(color, uv";
 		for (auto &resource : _material->resources()) {
 			_frag_call += ", ";
 			if (resource.is_primitive()) {
-				_frag_call += "material" + id + "[nodes[n].node_id]." + resource.name();
+				_frag_call += "material" + id + "[id]." + resource.name();
 			} else if (resource.type() == types::ShaderResource::Type::Image) {
-				//TODO: proper index
-				_frag_call += "textures[0]";
+				int i = 0;
+				for (auto texture : textures) {
+					if (resource.as_image().value().value() == texture) {
+						break;
+					}
+					i++;
+				}
+				if (i == textures.size()) {
+					LOG_ERROR << "Texture not found for ray pass" << std::endl;
+				}
+				_frag_call += "textures[" + std::to_string(i) + "]";
 			}
 		}
 		_frag_call += ")";
