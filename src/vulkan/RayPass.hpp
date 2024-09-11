@@ -103,6 +103,7 @@ namespace vulkan {
 			util::Result<void, KError> _create_descriptor_sets();
 			util::Result<void, KError> _create_pipeline();
 
+			void _update_buffers();
 			void _create_mesh_buffers();
 			void _create_node_buffers();
 			void _create_material_buffers();
@@ -125,6 +126,10 @@ namespace vulkan {
 			MeshObserver _mesh_observer;
 			MaterialObserver _material_observer;
 			NodeObserver _node_observer;
+
+			bool _vertex_dirty_bit;
+			bool _node_dirty_bit;
+			bool _material_dirty_bit;
 
 			StaticBuffer _vertex_buffer;
 			StaticBuffer _bvnode_buffer;

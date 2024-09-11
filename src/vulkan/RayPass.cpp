@@ -136,10 +136,9 @@ namespace vulkan {
 			return {res};
 		}
 
-		result->_create_mesh_buffers();
-		result->_create_node_buffers();
-		result->_create_material_buffers();
-		result->_create_descriptor_sets();
+		result->_vertex_dirty_bit = true;
+		result->_node_dirty_bit = true;
+		result->_material_dirty_bit = true;
 
 		return {std::move(result)};
 	}
@@ -239,6 +238,7 @@ namespace vulkan {
 	}
 
 	void RayPass::submit(Node &node) {
+		_update_buffers();
 		if (_descriptor_set.is_cleared()) {
 			_create_descriptor_sets();
 		}
@@ -330,11 +330,12 @@ namespace vulkan {
 
 	void RayPass::mesh_create(uint32_t id) {
 		_meshes.push_back(RayPassMesh(_scene->resource_manager().get_mesh(id), this));
-		_create_mesh_buffers();
-		_create_descriptor_sets();
+		_vertex_dirty_bit = true;
 	}
 
-	void RayPass::mesh_update(uint32_t id) {}
+	void RayPass::mesh_update(uint32_t id) {
+		_vertex_dirty_bit = true;
+	}
 
 	void RayPass::mesh_remove(uint32_t id) {}
 
@@ -345,18 +346,14 @@ namespace vulkan {
 		_materials[id] = RayPassMaterial::create(
 				_scene->resource_manager().get_material(id),
 				this);
-		//TODO: update internal buffers
-		_create_material_buffers();
-		_create_descriptor_sets();
+		_material_dirty_bit = true;
 	}
 
 	void RayPass::material_update(uint32_t id) {
 		_materials[id] = RayPassMaterial::create(
 				_scene->resource_manager().get_material(id),
 				this);
-		//TODO: update internal buffers
-		_create_material_buffers();
-		_create_descriptor_sets();
+		_material_dirty_bit = true;
 	}
 
 	void RayPass::material_remove(uint32_t id) {
@@ -367,16 +364,12 @@ namespace vulkan {
 			_nodes.push_back(RayPassNode());
 		}
 		_nodes[id] = RayPassNode::create(_scene->get_node(id), this);
-		_create_node_buffers();
-		_create_material_buffers();
-		_create_descriptor_sets();
+		_node_dirty_bit = true;
 	}
 
 	void RayPass::node_update(uint32_t id) {
 		_nodes[id] = RayPassNode::create(_scene->get_node(id), this);
-		_create_node_buffers();
-		_create_material_buffers();
-		_create_descriptor_sets();
+		_node_dirty_bit = true;
 	}
 
 	void RayPass::node_remove(uint32_t id) {}
@@ -497,6 +490,33 @@ namespace vulkan {
 		LOG_DEBUG << "just created raypass pipeline " << _pipeline << std::endl;
 
 		return {};
+	}
+
+	void RayPass::_update_buffers() {
+		bool update = false;
+		if (_vertex_dirty_bit) {
+			_create_mesh_buffers();
+			_vertex_dirty_bit = false;
+			_node_dirty_bit = true;
+			update = true;
+		}
+
+		if (_node_dirty_bit) {
+			_create_node_buffers();
+			_node_dirty_bit = false;
+			_material_dirty_bit = true;
+			update = true;
+		}
+
+		if (_material_dirty_bit) {
+			_create_material_buffers();
+			_material_dirty_bit = false;
+			update = true;
+		}
+
+		if (update) {
+			_create_descriptor_sets();
+		}
 	}
 
 	void RayPass::_create_mesh_buffers() {

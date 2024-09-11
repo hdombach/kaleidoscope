@@ -26,19 +26,25 @@ namespace vulkan {
 
 		result._node = node;
 		result._ray_pass = ray_pass;
-		result._vimpl = {
-			node->id(),
-			ray_pass->mesh(node->mesh().id()).bvnode_id(),
-			node->material().id(),
-			node->position()
-		};
 
 		return result;
 	}
 
+	RayPassNode::VImpl RayPassNode::vimpl() const {
+		if (_node) {
+			return VImpl{
+				_node->id(),
+					_ray_pass->mesh(_node->mesh().id()).bvnode_id(),
+					_node->material().id(),
+					_node->position(),
+			};
+		} else {
+			return VImpl::create_empty();
+		}
+	}
+
 	RayPassNode::RayPassNode():
 		_node(nullptr),
-		_ray_pass(nullptr),
-		_vimpl{}
+		_ray_pass(nullptr)
 	{ }
 }

@@ -34,15 +34,13 @@ namespace vulkan {
 			RayPassNode();
 			static RayPassNode create(const Node *node, const RayPass *ray_pass);
 
-			VImpl vimpl() const { return _vimpl; }
+			VImpl vimpl() const;
 
 			Node const &get() const { return *_node; }
 
 		private:
 			const Node *_node;
 			const RayPass *_ray_pass;
-
-			struct VImpl _vimpl;
 	};
 }
 
