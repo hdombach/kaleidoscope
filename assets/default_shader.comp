@@ -92,11 +92,17 @@ bool ray_intersects_triangle(in vec3 ray_origin,
 			return false;
 }
 
-bool intersect_mesh(vec3 ray_pos, vec3 ray_dir, uint m, inout uint debug, inout vec2 uv) {
+bool intersect_mesh(
+	vec3 ray_pos,
+	vec3 ray_dir,
+	uint m,
+	inout uint debug,
+	inout vec2 uv,
+	inout float dist)
+{
 	vec2 intr, tuv;
 	uint prevm = 0;
 	vec3 intr_point;
-	float dist = 3.402823466e+38;
 	bool result = false;
 
 	while (m > 0) {
@@ -191,6 +197,18 @@ bool intersect_mesh(vec3 ray_pos, vec3 ray_dir, uint m, inout uint debug, inout 
 	return result;
 }
 
+bool intersect_nodes(vec3 ray_pos, vec3 ray_dir, inout vec2 uv, inout uint node_id, inout uint debug) {
+	float dist = 3.402823466e+38;
+	bool result = false;
+	for (uint n = 0; n < nodes.length(); n++) {
+		if (intersect_mesh(ray_pos.xyz - nodes[n].position, ray_dir, nodes[n].mesh_id, debug, uv, dist)) {
+			node_id = n;
+			result = true;
+		}
+	}
+	return result;
+}
+
 void main() {
 	ivec2 size = imageSize(result);
 	vec2 uv = vec2(gl_GlobalInvocationID.xy) / vec2(size);
@@ -201,23 +219,19 @@ void main() {
 	dir = normalize(dir) * -1 * compute_uniform.u.rotation;
 	vec2 intr_uv;
 	vec2 tex_uv;
-	uint debug = 0;
+	uint node_id = 0;
 
-	vec4 color = vec4(uv, 0.0, 1.0);
+	vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
 	ivec2 dst = size - ivec2(gl_GlobalInvocationID.xy);
 
 	vec4 position = vec4(0, 0, 0, 1) - compute_uniform.u.translation;
 
-	for (uint n = 0; n < nodes.length(); n++) {
-		uint m = nodes[n].mesh_id;
-		vec2 uv;
-		uint id = nodes[n].node_id;
-		if (intersect_mesh(position.xyz - nodes[n].position, dir.xyz, m, debug, uv)) {
-			color.xy = uv;
-			/*MATERIAL_CALLS*/
-		}
+	uint debug = 0;
+	if (intersect_nodes(position.xyz, dir.xyz, uv, node_id, debug)) {
+		/*MATERIAL_CALLS*/
 	}
-	//color.x += debug / 1000.0f;
+
+	//color.g += debug / 500.0f;
 	color.a = 1.0;
 	imageStore(result, dst, color);
 }

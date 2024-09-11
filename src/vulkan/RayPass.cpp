@@ -620,7 +620,7 @@ namespace vulkan {
 			} else {
 				material_call += " else ";
 			}
-			material_call += "if (nodes[n].material_id == " + id + ") {\n";
+			material_call += "if (nodes[node_id].material_id == " + id + ") {\n";
 			material_call += "\t\t\t\t" + material.cg_frag_call() + ";\n";
 			material_call += "\t\t\t}\n";
 		}
