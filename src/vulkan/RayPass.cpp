@@ -586,9 +586,9 @@ namespace vulkan {
 		auto material_bufs = std::string();
 		auto material_srcs = std::string();
 		for (auto &material : _materials) {
-			resource_decls += material.resource_declaration() + "\n";
-			material_bufs += material.material_buf();
-			material_srcs += material.frag_src();
+			resource_decls += material.cg_struct_decl() + "\n";
+			material_bufs += material.cg_buf_decl();
+			material_srcs += material.cg_frag_def();
 		}
 
 		auto material_call = std::string();
@@ -601,7 +601,7 @@ namespace vulkan {
 				material_call += " else ";
 			}
 			material_call += "if (nodes[n].material_id == " + id + ") {\n";
-			material_call += "\t\t\t\t" + material.material_frag_call() + ";\n";
+			material_call += "\t\t\t\t" + material.cg_frag_call() + ";\n";
 			material_call += "\t\t\t}\n";
 		}
 
