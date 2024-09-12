@@ -74,7 +74,7 @@ namespace vulkan {
 
 			VkDescriptorSet imgui_descriptor_set();
 			ImageView const &image_view();
-			void submit(Node &node);
+			void submit(Node &node, uint32_t count);
 			MappedComputeUniform &current_uniform_buffer();
 
 			RayPassMesh &mesh(uint32_t id) { return _meshes[id]; }
@@ -86,6 +86,12 @@ namespace vulkan {
 
 			size_t max_material_range() const;
 			std::vector<VkImageView> used_textures() const;
+			uint32_t compute_index() const { return _compute_index; }
+			uint32_t ray_count() const { return _ray_count; }
+			void reset_counters() {
+				_compute_index = 0;
+				_ray_count = 0;
+			}
 
 		private:
 			void mesh_create(uint32_t id);
@@ -141,5 +147,7 @@ namespace vulkan {
 			std::vector<RayPassMaterial> _materials;
 
 			Scene *_scene;
+			uint32_t _compute_index;
+			uint32_t _ray_count;
 	};
 }

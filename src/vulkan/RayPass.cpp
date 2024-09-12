@@ -237,7 +237,7 @@ namespace vulkan {
 		return _result_image_view;
 	}
 
-	void RayPass::submit(Node &node) {
+	void RayPass::submit(Node &node, uint32_t count) {
 		_update_buffers();
 		if (_descriptor_set.is_cleared()) {
 			_create_descriptor_sets();
@@ -275,7 +275,14 @@ namespace vulkan {
 				&descriptor_set,
 				0,
 				nullptr);
-		vkCmdDispatch(_command_buffer, 300, 300, 1);
+		vkCmdDispatch(_command_buffer, count, 1, 1);
+		_compute_index += count;
+		uint32_t pixel_count = _result_image.width() * _result_image.height();
+		if (_compute_index > pixel_count) {
+			LOG_DEBUG << "pixel count is: " << pixel_count << std::endl;
+			_compute_index -= pixel_count;
+			_ray_count++;
+		}
 		if (vkEndCommandBuffer(_command_buffer) != VK_SUCCESS) {
 			LOG_ERROR << "Couldn't end command buffer" << std::endl;
 		}

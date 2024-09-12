@@ -16,6 +16,9 @@ namespace vulkan {
 		alignas(4) glm::vec4 camera_translation;
 		alignas(4) float aspect;
 		alignas(4) float fovy;
+		alignas(4) uint32_t seed;
+		alignas(4) uint32_t ray_count;
+		alignas(4) uint32_t compute_index;
 
 		static constexpr const char *declaration() {
 			return
@@ -24,6 +27,9 @@ namespace vulkan {
 				"\tvec4 translation;\n"
 				"\tfloat aspect;\n"
 				"\tfloat fovy;\n"
+				"\tuint seed;\n"
+				"\tuint ray_count;\n"
+				"\tuint compute_index;\n"
 				"};\n";
 		}
 	};

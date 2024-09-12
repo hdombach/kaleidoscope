@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <chrono>
+#include <random>
 
 #include <vulkan/vulkan_core.h>
 
@@ -14,7 +15,7 @@ namespace vulkan {
 	{
 		auto scene = Scene::Ptr(new Scene());
 
-		auto raytrace_render_pass = RayPass::create(*scene, {300, 300});
+		auto raytrace_render_pass = RayPass::create(*scene, {1000, 1000});
 		TRY(raytrace_render_pass);
 
 		auto render_pass_res = PrevPass::create(
@@ -64,6 +65,9 @@ namespace vulkan {
 	}
 
 	void Scene::set_is_preview(bool is_preview) {
+		if (_is_preview && !is_preview) {
+			_raytrace_render_pass->reset_counters();
+		}
 		_is_preview = is_preview;
 	}
 
@@ -72,13 +76,19 @@ namespace vulkan {
 	}
 
 	void Scene::render_raytrace() {
+		auto rand = std::random_device();
+		auto dist = std::uniform_int_distribution<uint32_t>();
+
 		auto uniform_buffer = ComputeUniformBuffer{};
 		uniform_buffer.camera_rotation = camera().gen_rotate_mat();
 		uniform_buffer.camera_translation = glm::vec4(camera().position, 0.0);
 		uniform_buffer.aspect = static_cast<float>(camera().width) / static_cast<float>(camera().height);
 		uniform_buffer.fovy = camera().fovy;
+		uniform_buffer.seed = dist(rand);
+		uniform_buffer.ray_count = _raytrace_render_pass->ray_count();
+		uniform_buffer.compute_index = _raytrace_render_pass->compute_index();
 		_raytrace_render_pass->current_uniform_buffer().set_value(uniform_buffer);
-		_raytrace_render_pass->submit(*_nodes[0]);
+		_raytrace_render_pass->submit(*_nodes[0], 5000);
 	}
 
 	void Scene::update() {

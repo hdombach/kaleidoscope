@@ -51,9 +51,14 @@ namespace vulkan {
 					VkImageAspectFlagBits aspect,
 					uint32_t mip_levels);
 
+			uint32_t width() const { return _width; }
+			uint32_t height() const { return _height; }
+
 		private:
 			VkImage _image;
 			VkDeviceMemory _image_memory;
+			uint32_t _width;
+			uint32_t _height;
 	};
 
 }

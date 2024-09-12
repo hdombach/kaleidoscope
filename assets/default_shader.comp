@@ -34,6 +34,38 @@ struct Triangle {
 	vec3 v1, v2, v3;
 };
 
+//---------------- RAND helper functions
+//https://blog.bithole.dev/blogposts/random-float/
+
+uint rotl(uint x, uint k) {
+	return (x << k) | (x >> (32 - k));
+}
+
+uint next(inout uvec4 s) {
+	uint result = s.x + s.w;
+	uint t = s.y << 9;
+
+	s.z ^= s.x;
+	s.w ^= s.y;
+	s.y ^= s.z;
+	s.x ^= s.w;
+
+	s.z ^= t;
+
+	s.w = rotl(s.w, 11);
+
+	return result;
+}
+
+float rand_float(inout uvec4 s) {
+	uint result = next(s) >> 9 | 0x3f800000;
+	return uintBitsToFloat(result) - 1.0f;
+}
+
+vec3 rand_vec3(inout uvec4 s) {
+	return vec3(rand_float(s), rand_float(s), rand_float(s));
+}
+
 /*MATERIAL_SRCS*/
 
 // https://gist.github.com/DomNomNom/46bb1ce47f68d255fd5d
@@ -98,7 +130,8 @@ bool intersect_mesh(
 	uint m,
 	inout uint debug,
 	inout vec2 uv,
-	inout float dist)
+	inout float dist,
+	inout vec3 normal)
 {
 	vec2 intr, tuv;
 	uint prevm = 0;
@@ -138,6 +171,8 @@ bool intersect_mesh(
 							uv = (1 - tuv.x - tuv.y) * uv1;
 							uv += tuv.x * uv2;
 							uv += tuv.y * uv3;
+
+							normal = normalize(cross(t.v1 - t.v2, t.v1 - t.v3));
 						}
 						result = true;
 					}
@@ -158,6 +193,8 @@ bool intersect_mesh(
 							uv = (1 - tuv.x - tuv.y) * uv1;
 							uv += tuv.x * uv2;
 							uv += tuv.y * uv3;
+
+							normal = normalize(cross(t.v1 - t.v2, t.v1 - t.v3));
 						}
 						result = true;
 					}
@@ -197,11 +234,10 @@ bool intersect_mesh(
 	return result;
 }
 
-bool intersect_nodes(vec3 ray_pos, vec3 ray_dir, inout vec2 uv, inout uint node_id, inout uint debug) {
-	float dist = 3.402823466e+38;
+bool intersect_nodes(vec3 ray_pos, vec3 ray_dir, inout vec2 uv, inout uint node_id, inout uint debug, inout vec3 normal, inout float dist) {
 	bool result = false;
 	for (uint n = 0; n < nodes.length(); n++) {
-		if (intersect_mesh(ray_pos.xyz - nodes[n].position, ray_dir, nodes[n].mesh_id, debug, uv, dist)) {
+		if (intersect_mesh(ray_pos.xyz - nodes[n].position, ray_dir, nodes[n].mesh_id, debug, uv, dist, normal)) {
 			node_id = n;
 			result = true;
 		}
@@ -209,9 +245,46 @@ bool intersect_nodes(vec3 ray_pos, vec3 ray_dir, inout vec2 uv, inout uint node_
 	return result;
 }
 
+vec3 raytrace(vec3 pos, vec3 dir, uvec4 seed) {
+	vec4 color;
+	vec2 uv;
+	uint node_id;
+	vec3 normal;
+	uint debug;
+	float dist = 3.402823466e+38;
+	vec3 absorbed = vec3(1.0);
+	vec3 light = vec3(0);
+
+	for (int i = 0; i < 5; i++) {
+		if (intersect_nodes(pos, dir, uv, node_id, debug, normal, dist)) {
+			/*MATERIAL_CALLS*/
+			absorbed *= color.xyz;
+			pos += dir * (dist - 0.00001);
+
+			vec3 refl_normal = normalize(rand_vec3(seed));
+			if (dot(refl_normal, normal) > 0) {
+				refl_normal *= -1;
+			}
+			dir = reflect(dir, refl_normal);
+		} else {
+			//temp skybox for now
+			if (dot(dir, vec3(-0.1, 0.3, 1.0)) > 0.9) {
+				light = vec3(15);
+			}
+			//light = vec3(1);
+			break;
+		}
+	}
+	return light * absorbed;
+}
+
 void main() {
 	ivec2 size = imageSize(result);
-	vec2 uv = vec2(gl_GlobalInvocationID.xy) / vec2(size);
+	ivec2 dst;
+	uint index = (gl_GlobalInvocationID.x + compute_uniform.u.compute_index) % (size.x * size.y);
+	dst.x = int(index % size.x);
+	dst.y = int(index / size.x);
+	vec2 uv = vec2(dst) / vec2(size);
 
 	vec4 dir = vec4(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, 2.0, 0.0);
 	dir.x *= compute_uniform.u.aspect;
@@ -221,17 +294,31 @@ void main() {
 	vec2 tex_uv;
 	uint node_id = 0;
 
-	vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
-	ivec2 dst = size - ivec2(gl_GlobalInvocationID.xy);
+
+	dst = size - dst;
 
 	vec4 position = vec4(0, 0, 0, 1) - compute_uniform.u.translation;
 
+	uvec4 seed;
+	//Hopefully this is random enough
+	seed.x = compute_uniform.u.seed * gl_GlobalInvocationID.x + uint(dir.y * 95928) + 50122193;
+	seed.y = compute_uniform.u.seed * gl_GlobalInvocationID.x + uint(dir.x * 84231) + 19240123;
+	seed.z = compute_uniform.u.seed + gl_GlobalInvocationID.x * 2439;
+	seed.w = compute_uniform.u.seed ^ uint(position.x * position.y * position.z) + 12044;
+
 	uint debug = 0;
-	if (intersect_nodes(position.xyz, dir.xyz, uv, node_id, debug)) {
-		/*MATERIAL_CALLS*/
+	vec3 normal;
+
+	vec4 color = imageLoad(result, dst);
+	vec3 newcolor = raytrace(position.xyz, dir.xyz, seed);
+	if (compute_uniform.u.ray_count == 1) {
+		color.xyz = newcolor;
+	} else {
+		color *= (compute_uniform.u.ray_count - 1);
+		color.xyz += raytrace(position.xyz, dir.xyz, seed);
+		color /= (compute_uniform.u.ray_count);
 	}
 
-	//color.g += debug / 500.0f;
 	color.a = 1.0;
 	imageStore(result, dst, color);
 }

@@ -152,7 +152,7 @@ void App::main_loop() {
 
 		for (auto &node : *_scene) {
 			if (auto comb_ratio = node->resources().get("comb_ratio")) {
-				comb_ratio.value().set_float(comb_ratio_value);
+				//comb_ratio.value().set_float(comb_ratio_value);
 			}
 		}
 

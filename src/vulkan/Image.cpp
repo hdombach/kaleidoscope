@@ -89,6 +89,9 @@ namespace vulkan {
 				result._image_memory,
 				0);
 
+		result._width = width;
+		result._height = height;
+
 		return std::move(result);
 	}
 
@@ -100,6 +103,9 @@ namespace vulkan {
 
 		_image_memory = other._image_memory;
 		other._image_memory = nullptr;
+
+		_width = other._width;
+		_height = other._height;
 	}
 
 	Image& Image::operator=(Image &&other) {
@@ -108,6 +114,9 @@ namespace vulkan {
 
 		_image_memory = other._image_memory;
 		other._image_memory = nullptr;
+
+		_width = other._width;
+		_height = other._height;
 
 		return *this;
 	}
