@@ -85,10 +85,7 @@ namespace vulkan {
 		uniform_buffer.aspect = static_cast<float>(camera().width) / static_cast<float>(camera().height);
 		uniform_buffer.fovy = camera().fovy;
 		uniform_buffer.seed = dist(rand);
-		uniform_buffer.ray_count = _raytrace_render_pass->ray_count();
-		uniform_buffer.compute_index = _raytrace_render_pass->compute_index();
-		_raytrace_render_pass->current_uniform_buffer().set_value(uniform_buffer);
-		_raytrace_render_pass->submit(*_nodes[0], 5000);
+		_raytrace_render_pass->submit(*_nodes[0], 10000, uniform_buffer);
 	}
 
 	void Scene::update() {

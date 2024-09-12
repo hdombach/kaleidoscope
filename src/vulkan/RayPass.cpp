@@ -88,39 +88,69 @@ namespace vulkan {
 		TRY(semaphore);
 		result->_pass_semaphore = std::move(semaphore.value());
 
-		auto image = Image::create(
-				result->_size.width, 
-				result->_size.height,
-				VK_FORMAT_R8G8B8A8_SRGB,
-				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-					| VK_IMAGE_USAGE_STORAGE_BIT
-					| VK_IMAGE_USAGE_SAMPLED_BIT);
-		TRY(image);
-		result->_result_image = std::move(image.value());
+		{
+			//Set up main texture
+			auto image = Image::create(
+					result->_size.width, 
+					result->_size.height,
+					VK_FORMAT_R8G8B8A8_SRGB,
+					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+						| VK_IMAGE_USAGE_STORAGE_BIT
+						| VK_IMAGE_USAGE_SAMPLED_BIT);
+			TRY(image);
+			result->_result_image = std::move(image.value());
 
-		Graphics::DEFAULT->transition_image_layout(
-				result->_result_image.value(),
-				VK_FORMAT_R8G8B8A8_SRGB,
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_GENERAL,
-				1);
+			Graphics::DEFAULT->transition_image_layout(
+					result->_result_image.value(),
+					VK_FORMAT_R8G8B8A8_SRGB,
+					VK_IMAGE_LAYOUT_UNDEFINED,
+					VK_IMAGE_LAYOUT_GENERAL,
+					1);
 
+			auto image_view = result->_result_image.create_image_view_full(
+					VK_FORMAT_R8G8B8A8_SRGB, 
+					VK_IMAGE_ASPECT_COLOR_BIT, 
+					1);
+			TRY(image_view);
+			result->_result_image_view = std::move(image_view.value());
 
-		auto image_view = result->_result_image.create_image_view_full(
-				VK_FORMAT_R8G8B8A8_SRGB, 
-				VK_IMAGE_ASPECT_COLOR_BIT, 
-				1);
-		TRY(image_view);
-		result->_result_image_view = std::move(image_view.value());
+			result->_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
+					Graphics::DEFAULT->main_texture_sampler(), 
+					result->_result_image_view.value(), 
+					VK_IMAGE_LAYOUT_GENERAL);
+		}
+
+		{
+			//Setup accumulator
+			auto image = Image::create(
+					result->_size.width,
+					result->_size.height,
+					VK_FORMAT_R16G16B16A16_SFLOAT,
+					VK_IMAGE_USAGE_STORAGE_BIT
+						| VK_IMAGE_USAGE_SAMPLED_BIT
+						| VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+			TRY(image);
+			result->_accumulator_image = std::move(image.value());
+
+			Graphics::DEFAULT->transition_image_layout(
+					result->_accumulator_image.value(), 
+					VK_FORMAT_R16G16B16A16_SFLOAT, 
+					VK_IMAGE_LAYOUT_UNDEFINED, 
+					VK_IMAGE_LAYOUT_GENERAL,
+					1);
+
+			auto image_view = result->_accumulator_image.create_image_view_full(
+					VK_FORMAT_R16G16B16A16_SFLOAT, 
+					VK_IMAGE_ASPECT_COLOR_BIT, 
+					1);
+			TRY(image_view);
+			result->_accumulator_image_view = std::move(image_view.value());
+		}
 
 		auto buffer_res = MappedComputeUniform::create();
 		TRY(buffer_res);
 		result->_mapped_uniform = std::move(buffer_res.value());
 
-		result->_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
-				Graphics::DEFAULT->main_texture_sampler(), 
-				result->_result_image_view.value(), 
-				VK_IMAGE_LAYOUT_GENERAL);
 		auto command_info = VkCommandBufferAllocateInfo{};
 		command_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		command_info.commandPool = Graphics::DEFAULT->command_pool();
@@ -139,6 +169,7 @@ namespace vulkan {
 		result->_vertex_dirty_bit = true;
 		result->_node_dirty_bit = true;
 		result->_material_dirty_bit = true;
+		result->_clear_accumulator = true;
 
 		return {std::move(result)};
 	}
@@ -237,7 +268,7 @@ namespace vulkan {
 		return _result_image_view;
 	}
 
-	void RayPass::submit(Node &node, uint32_t count) {
+	void RayPass::submit(Node &node, uint32_t count, ComputeUniformBuffer uniform) {
 		_update_buffers();
 		if (_descriptor_set.is_cleared()) {
 			_create_descriptor_sets();
@@ -259,10 +290,29 @@ namespace vulkan {
 
 		vkResetCommandBuffer(_command_buffer, 0);
 
+		uniform.ray_count = _ray_count;
+		uniform.compute_index = _compute_index;
+		_mapped_uniform.set_value(uniform);
+
 		auto begin_info = VkCommandBufferBeginInfo{};
 		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		if (vkBeginCommandBuffer(_command_buffer, &begin_info) != VK_SUCCESS) {
 			LOG_ERROR << "Couldn't begin command buffer" << std::endl;
+		}
+		VkClearColorValue clear_color = {0.0, 0.0, 0.0, 0.0};
+		VkImageSubresourceRange range;
+
+		if (_clear_accumulator) {
+				_clear_accumulator = false;
+			//TODO: this information is copied from the image view constructor
+			range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			range.baseMipLevel = 0;
+			range.levelCount = 1;
+			range.baseArrayLayer = 0;
+			range.layerCount = 1;
+			range.levelCount = 1;
+			vkCmdClearColorImage(_command_buffer, _accumulator_image.value(), VK_IMAGE_LAYOUT_GENERAL, &clear_color, 1, &range);
+			LOG_DEBUG << "Cleared accumulator" << std::endl;
 		}
 		vkCmdBindPipeline(_command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, _pipeline);
 		auto descriptor_set = _descriptor_set.descriptor_set(0);
@@ -292,7 +342,7 @@ namespace vulkan {
 		submit_info.signalSemaphoreCount = 0;
 		submit_info.pSignalSemaphores = nullptr;
 
-		auto res = vkQueueSubmit(Graphics::DEFAULT->graphics_queue(), 1, &submit_info, *_pass_fence);
+		auto res = vkQueueSubmit(Graphics::DEFAULT->compute_queue(), 1, &submit_info, *_pass_fence);
 		if (res != VK_SUCCESS) {
 			LOG_ERROR << "Problem submitting queue" << std::endl;
 		}
@@ -334,6 +384,12 @@ namespace vulkan {
 		return result;
 	}
 
+	void RayPass::reset_counters() {
+		_compute_index = 0;
+		_ray_count = 1;
+		_clear_accumulator = true;
+	}
+	
 
 	void RayPass::mesh_create(uint32_t id) {
 		_meshes.push_back(RayPassMesh(_scene->resource_manager().get_mesh(id), this));
@@ -390,13 +446,18 @@ namespace vulkan {
 					VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 					_result_image_view));
 
+		descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
+					1, 
+					VK_SHADER_STAGE_COMPUTE_BIT, 
+					_accumulator_image_view));
+
 		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
-					1,
+					2,
 					VK_SHADER_STAGE_COMPUTE_BIT,
 					_mapped_uniform));
 
 		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
-					2,
+					3,
 					VK_SHADER_STAGE_COMPUTE_BIT,
 					_vertex_buffer))
 		{
@@ -406,7 +467,7 @@ namespace vulkan {
 		}
 
 		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
-					3,
+					4,
 					VK_SHADER_STAGE_COMPUTE_BIT,
 					_bvnode_buffer))
 		{
@@ -416,7 +477,7 @@ namespace vulkan {
 		}
 
 		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
-					4,
+					5,
 					VK_SHADER_STAGE_COMPUTE_BIT,
 					_node_buffer))
 		{
@@ -427,7 +488,7 @@ namespace vulkan {
 
 		if (textures.size() > 0) {
 			if (auto images = DescriptorSetTemplate::create_images(
-						5, 
+						6, 
 						VK_SHADER_STAGE_COMPUTE_BIT, 
 						std::vector<VkImageView>(textures.begin(), textures.end())))
 			{
@@ -438,7 +499,7 @@ namespace vulkan {
 		}
 
 		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
-					6,
+					7,
 					VK_SHADER_STAGE_COMPUTE_BIT,
 					_material_buffer))
 		{

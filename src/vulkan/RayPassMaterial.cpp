@@ -72,7 +72,7 @@ namespace vulkan {
 		auto id = std::to_string(_material->id());
 		_cg_buf_decl = "";
 
-		_cg_buf_decl += "layout(binding = 6) readonly buffer material_buffer" + id + "{\n";
+		_cg_buf_decl += "layout(binding = 7) readonly buffer material_buffer" + id + "{\n";
 
 		_cg_buf_decl += "\tMaterial" + id + " material" + id + "[];\n";
 		_cg_buf_decl += "};\n";

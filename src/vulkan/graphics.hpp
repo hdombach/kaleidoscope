@@ -48,6 +48,7 @@ namespace vulkan {
 			VkCommandPool command_pool() const;
 			VkQueue graphics_queue() const;
 			VkQueue present_queue() const;
+			VkQueue compute_queue() const;
 			ImageView const &compute_image_view() const;
 			SwapchainSupportDetails const &swapchain_support_details() const;
 			util::Result<uint32_t, KError> find_memory_type(

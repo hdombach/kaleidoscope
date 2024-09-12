@@ -78,6 +78,9 @@ namespace vulkan {
 	VkQueue Graphics::present_queue() const {
 		return _present_queue;
 	}
+	VkQueue Graphics::compute_queue() const {
+		return _compute_queue;
+	}
 	ImageView const &Graphics::compute_image_view() const {
 		return _compute_result_image_view;
 	}

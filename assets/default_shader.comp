@@ -2,6 +2,8 @@
 
 layout(set = 0, binding = 0, rgba8) uniform image2D result;
 
+layout(binding = 1, rgba16f) uniform image2D accumulator;
+
 /*VERTEX_DECL*/
 
 /*BVNODE_DECL*/
@@ -12,20 +14,20 @@ layout(set = 0, binding = 0, rgba8) uniform image2D result;
 
 /*UNIFORM_DECL*/
 
-layout(set = 0, binding = 1) uniform UniformBlock {
+layout(set = 0, binding = 2) uniform UniformBlock {
 	ComputeUniform u;
 } compute_uniform;
 
-layout(binding = 2) readonly buffer vertex_buffer {
+layout(binding = 3) readonly buffer vertex_buffer {
 	Vertex vertices[];
 };
-layout(binding = 3) readonly buffer mesh_buffer {
+layout(binding = 4) readonly buffer mesh_buffer {
 	BVNode bvnodes[];
 };
-layout(binding = 4) readonly buffer node_buffer {
+layout(binding = 5) readonly buffer node_buffer {
 	Node nodes[];
 };
-layout(binding = 5) uniform sampler2D textures[/*TEXTURE_COUNT*/];
+layout(binding = 6) uniform sampler2D textures[/*TEXTURE_COUNT*/];
 /*MATERIAL_BUFFERS*/
 
 float PI = 3.14159265358979;
@@ -253,25 +255,28 @@ vec3 raytrace(vec3 pos, vec3 dir, uvec4 seed) {
 	uint debug;
 	float dist = 3.402823466e+38;
 	vec3 absorbed = vec3(1.0);
-	vec3 light = vec3(0);
+	vec3 light = vec3(0.0);
 
 	for (int i = 0; i < 5; i++) {
 		if (intersect_nodes(pos, dir, uv, node_id, debug, normal, dist)) {
 			/*MATERIAL_CALLS*/
 			absorbed *= color.xyz;
-			pos += dir * (dist - 0.00001);
+			pos += dir * (dist - 0.0001);
 
-			vec3 refl_normal = normalize(rand_vec3(seed));
-			if (dot(refl_normal, normal) > 0) {
-				refl_normal *= -1;
+			if (dot(normal, dir) > 0) {
+				normal *= -1; //correct normal
 			}
-			dir = reflect(dir, refl_normal);
+			dir = normalize(rand_vec3(seed));
+			if (dot(dir, normal) < 0) {
+				dir *= -1;
+			}
 		} else {
 			//temp skybox for now
-			if (dot(dir, vec3(-0.1, 0.3, 1.0)) > 0.9) {
-				light = vec3(15);
+			if (dot(dir, vec3(0.3, 0.3, 1.0)) > 0.98) {
+				light = vec3(5);
+			} else {
+				light = vec3(0.5);
 			}
-			//light = vec3(1);
 			break;
 		}
 	}
@@ -309,16 +314,11 @@ void main() {
 	uint debug = 0;
 	vec3 normal;
 
-	vec4 color = imageLoad(result, dst);
-	vec3 newcolor = raytrace(position.xyz, dir.xyz, seed);
-	if (compute_uniform.u.ray_count == 1) {
-		color.xyz = newcolor;
-	} else {
-		color *= (compute_uniform.u.ray_count - 1);
-		color.xyz += raytrace(position.xyz, dir.xyz, seed);
-		color /= (compute_uniform.u.ray_count);
-	}
-
-	color.a = 1.0;
+	vec4 color = imageLoad(accumulator, dst);
+	color.xyz += raytrace(position.xyz, dir.xyz, seed);
+	imageStore(accumulator, dst, color);
+	color /= compute_uniform.u.ray_count;
+	//color.xyz = vec3(pow(color.x, 1/2.2), pow(color.y, 1/2.2), pow(color.z, 1/2.2));
+	color.w = 1.0;
 	imageStore(result, dst, color);
 }
