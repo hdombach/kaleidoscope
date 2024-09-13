@@ -68,6 +68,10 @@ vec3 rand_vec3(inout uvec4 s) {
 	return vec3(rand_float(s), rand_float(s), rand_float(s));
 }
 
+vec2 rand_vec2(inout uvec4 s) {
+	return vec2(rand_float(s), rand_float(s));
+}
+
 vec3 rand_in_sphere(inout uvec4 s) {
 	vec3 p;
 	do {
@@ -297,12 +301,21 @@ vec3 raytrace(vec3 pos, vec3 dir, inout uvec4 seed) {
 
 void main() {
 	ivec2 size = imageSize(result);
-	ivec2 dst;
 	uint index = (gl_GlobalInvocationID.x + compute_uniform.u.compute_index) % (size.x * size.y);
+
+	ivec2 dst;
 	dst.x = int(index % size.x);
 	dst.y = int(index / size.x);
-	vec2 uv = vec2(dst) / vec2(size);
 
+	uvec4 seed = compute_uniform.u.seed;
+	//uncoment to get a dither pattern
+	if (false) {
+		for (int i = 0; i < (dst.x % 2) * 2 + (dst.y % 2); i++) {
+			next(seed);
+		}
+	}
+
+	vec2 uv = (vec2(dst) + rand_vec2(seed)) / vec2(size);
 	vec4 dir = vec4(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, 2.0, 0.0);
 	dir.x *= compute_uniform.u.aspect;
 	dir.z = 1.0 / tan(compute_uniform.u.fovy * PI / 360.0f);
@@ -311,18 +324,10 @@ void main() {
 	vec2 tex_uv;
 	uint node_id = 0;
 
-
 	dst = size - dst;
 
 	vec4 position = vec4(0, 0, 0, 1) - compute_uniform.u.translation;
 
-	uvec4 seed = compute_uniform.u.seed;
-	//uncoment to get a dither pattern
-	if (true) {
-		for (int i = 0; i < (dst.x % 2) * 2 + (dst.y % 2); i++) {
-			next(seed);
-		}
-	}
 
 	uint debug = 0;
 	vec3 normal;
