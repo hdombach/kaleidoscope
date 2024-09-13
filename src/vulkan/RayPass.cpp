@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <vulkan/vulkan_core.h>
 #include <imgui_impl_vulkan.h>
+#include <random>
 
 #include "RayPass.hpp"
 #include "RayPassMaterial.hpp"
@@ -269,6 +270,10 @@ namespace vulkan {
 	}
 
 	void RayPass::submit(Node &node, uint32_t count, ComputeUniformBuffer uniform) {
+		auto rand = std::random_device();
+		auto dist = std::uniform_int_distribution<uint32_t>();
+		static glm::u32vec4 seed = {1919835750, 2912171293, 1124614627, 4259748986};
+
 		_update_buffers();
 		if (_descriptor_set.is_cleared()) {
 			_create_descriptor_sets();
@@ -290,8 +295,22 @@ namespace vulkan {
 
 		vkResetCommandBuffer(_command_buffer, 0);
 
+		uniform.seed = seed;
 		uniform.ray_count = _ray_count;
 		uniform.compute_index = _compute_index;
+
+		_compute_index += count;
+		uint32_t pixel_count = _result_image.width() * _result_image.height();
+		if (_compute_index > pixel_count) {
+			seed.x = dist(rand);
+			seed.y = dist(rand);
+			seed.z = dist(rand);
+			seed.w = dist(rand);
+			count = count - (_compute_index - pixel_count);
+			_compute_index = 0;
+			_ray_count++;
+		}
+
 		_mapped_uniform.set_value(uniform);
 
 		auto begin_info = VkCommandBufferBeginInfo{};
@@ -326,13 +345,6 @@ namespace vulkan {
 				0,
 				nullptr);
 		vkCmdDispatch(_command_buffer, count, 1, 1);
-		_compute_index += count;
-		uint32_t pixel_count = _result_image.width() * _result_image.height();
-		if (_compute_index > pixel_count) {
-			LOG_DEBUG << "pixel count is: " << pixel_count << std::endl;
-			_compute_index -= pixel_count;
-			_ray_count++;
-		}
 		if (vkEndCommandBuffer(_command_buffer) != VK_SUCCESS) {
 			LOG_ERROR << "Couldn't end command buffer" << std::endl;
 		}

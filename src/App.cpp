@@ -116,7 +116,14 @@ App::Ptr App::create(std::string const &name) {
 				result->_resource_manager->get_material("color"));
 		result->_scene->get_node_mut(id.value())->set_position({-1, -1, -1});
 	}
-
+	{
+		auto id = result->_scene->add_node(
+				result->_resource_manager->get_mesh("square"),
+				result->_resource_manager->get_material("color"));
+		result->_scene->get_node_mut(id.value())->set_position({-1, -0.8, -1});
+		result->_scene->get_node_mut(id.value())->resources().add_resource(types::ShaderResource::create_primitive("color", glm::vec3(0.2, 0.3, 1.0)));
+	}
+	
 
 
 	/*{
