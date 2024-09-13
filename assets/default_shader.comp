@@ -191,8 +191,8 @@ bool intersect_mesh(
 							uv += tuv.y * uv3;
 
 							normal = normalize(cross(t.v1 - t.v2, t.v1 - t.v3));
+							result = true;
 						}
-						result = true;
 					}
 				}
 				if (bvnodes[m].rchild != -1) {
@@ -213,8 +213,8 @@ bool intersect_mesh(
 							uv += tuv.y * uv3;
 
 							normal = normalize(cross(t.v1 - t.v2, t.v1 - t.v3));
+							result = true;
 						}
-						result = true;
 					}
 				}
 			}
