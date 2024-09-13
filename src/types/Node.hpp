@@ -2,6 +2,7 @@
 
 #include <glm/glm.hpp>
 #include <memory>
+#include <string>
 
 #include "Material.hpp"
 #include "../types/Mesh.hpp"
@@ -20,6 +21,7 @@ namespace vulkan {
 					types::Material const &material)
 			{
 				auto result = Ptr(new Node(id, mesh, material));
+				result->name() = "Node " + std::to_string(id);
 
 				result->_resources.add_resource(types::ShaderResource::create_primitive("position", result->_position));
 
@@ -31,6 +33,9 @@ namespace vulkan {
 			Node& operator=(const Node& other) = delete;
 			Node& operator=(Node&& other) = delete;
 
+			std::string const &name() const { return _name; }
+			std::string &name() { return _name; }
+
 			types::Mesh const &mesh() const { return _mesh; }
 
 			types::Material const &material() const { return _material; }
@@ -39,6 +44,7 @@ namespace vulkan {
 
 			glm::vec3 position() const { return _position; };
 			void set_position(glm::vec3 position) {
+				if (position == _position) return;
 				_position = position;
 				if (auto pos_resource = _resources.get("position")) {
 					pos_resource.value().set_vec3(position);
@@ -58,6 +64,8 @@ namespace vulkan {
 			uint32_t _id;
 			types::Mesh const &_mesh;
 			types::Material const &_material;
+
+			std::string _name;
 
 			glm::vec3 _position;
 

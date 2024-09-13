@@ -3,6 +3,7 @@
 #include "./types/ResourceManager.hpp"
 #include "./vulkan/UIRenderPipeline.hpp"
 #include "./ui/AppView.hpp"
+#include "ui/State.hpp"
 #include "vulkan/Scene.hpp"
 
 #define GLFW_INCLUDE_VULKAN
@@ -27,7 +28,7 @@ class App {
 		vulkan::Scene::Ptr _scene;
 		std::unique_ptr<vulkan::UIRenderPipeline> _ui_render_pipeline;
 		std::unique_ptr<types::ResourceManager> _resource_manager;
-		std::unique_ptr<ui::AppView> _app_view;
+		std::unique_ptr<ui::State> _view_state;
 
 		static std::string _prog_path;
 		static std::string _working_path;

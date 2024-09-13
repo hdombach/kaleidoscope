@@ -141,7 +141,7 @@ App::Ptr App::create(std::string const &name) {
 		result->_scene->add_node(std::move(new_node));
 	}*/
 
-	result->_app_view = std::unique_ptr<ui::AppView>(new ui::AppView(*result));
+	result->_view_state = ui::State::create(*result->_scene);
 
 	return std::unique_ptr<App>(result);
 }
@@ -149,7 +149,7 @@ App::Ptr App::create(std::string const &name) {
 App::~App() {
 	_scene.reset();
 	_resource_manager.reset();
-	_app_view.reset();
+	_view_state.reset();
 	_ui_render_pipeline.reset();
 	vulkan::Graphics::delete_default();
 	glfwTerminate();
@@ -171,14 +171,14 @@ void App::main_loop() {
 		}
 
 		_scene->update();
-		if (_app_view->showing_preview()) {
+		if (_view_state->showing_preview) {
 			_scene->render_preview();
 		} else {
 			_scene->render_raytrace();
 		}
 		_scene->render_preview();
 		_ui_render_pipeline->submit([&] {
-			_app_view->show();	
+				ui::AppView(*this, *_view_state);
 		});
 	}
 

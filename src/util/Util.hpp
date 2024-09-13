@@ -1,9 +1,12 @@
 #pragma once
 
-#include "format.hpp"
 #include <algorithm>
 #include <string>
 #include <memory>
+#include <array>
+#include <glm/fwd.hpp>
+
+#include "format.hpp"
 
 namespace util {
 	template<typename Contains, typename Element>
@@ -50,5 +53,12 @@ namespace util {
 			}
 			i++;
 		}
+	}
+
+	inline std::array<float, 3> as_array(glm::vec3 v) {
+		return {v.x, v.y, v.z};
+	}
+	inline glm::vec3 as_vec(std::array<float, 3> a) {
+		return {a[0], a[1], a[2]};
 	}
 }
