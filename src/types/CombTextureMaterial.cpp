@@ -24,8 +24,7 @@ namespace types {
 
 		result->_frag_shader_src =
 			"outColor = texture(primary_texture, fragTexCoord) * (texture(combine_texture, fragTexCoord) * comb_ratio + (1 - comb_ratio));\n"
-			"outColor.w = 1.0;\n"
-			"outColor.xyz = vec3(pow(outColor.x, 1/2.2), pow(outColor.y, 1/2.2), pow(outColor.z, 1/2.2));\n";
+			"outColor.w = 1.0;\n";
 
 		return result;
 	}

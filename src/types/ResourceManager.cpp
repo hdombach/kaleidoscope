@@ -79,8 +79,29 @@ namespace types {
 		return default_texture();
 	}
 
+	vulkan::Texture *ResourceManager::get_texture(uint32_t id) {
+		if (_textures.size() > id) {
+			return _textures[id];
+		}
+		return nullptr;
+	}
+
+	vulkan::Texture const *ResourceManager::get_texture(uint32_t id) const {
+		if (_textures.size() > id) {
+			return _textures[id];
+		}
+		return nullptr;
+	}
+
 	bool ResourceManager::has_texture(const std::string &name) const {
 		return _texture_map.count(name);
+	}
+
+	ResourceManager::texture_iterator ResourceManager::texture_begin() {
+		return texture_iterator(_textures.begin(), _textures.end(), util::ptr_exists<vulkan::Texture>);
+	}
+	ResourceManager::texture_iterator ResourceManager::texture_end() {
+		return texture_iterator(_textures.end(), _textures.end(), util::ptr_exists<vulkan::Texture>);
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_mesh_from_file(

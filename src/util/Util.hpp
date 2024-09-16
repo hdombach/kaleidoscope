@@ -66,4 +66,9 @@ namespace util {
 	inline bool exists(std::unique_ptr<T> const &ptr) {
 		return static_cast<bool>(ptr);
 	}
+
+	template<typename T>
+	inline bool ptr_exists(T const *ptr) {
+		return ptr;
+	}
 }

@@ -18,11 +18,13 @@ namespace vulkan {
 			VkDescriptorSet imgui_descriptor_set() override;
 			ImageView const &image_view() override;
 			uint32_t id() const override;
+			std::string const &name() const override { return _name; }
 
 		private:
 			StaticTexture() = default;
 
 		private:
+			std::string _name;
 			Image _texture;
 			ImageView _texture_view;
 			uint32_t _mip_levels;

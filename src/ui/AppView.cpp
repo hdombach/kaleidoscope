@@ -6,6 +6,7 @@
 #include "CameraView.hpp"
 #include "../App.hpp"
 #include "../util/Util.hpp"
+#include "../util/IterAdapter.hpp"
 #include "Misc.hpp"
 
 namespace ui {
@@ -66,12 +67,42 @@ namespace ui {
 	}
 
 	void SceneView(vulkan::Scene &scene, State &state) {
+		ImGui::Separator();
+		if (ImGui::BeginTabBar("##SceneTabs")) {
+			if (ImGui::BeginTabItem("Nodes")) {
+				state._scene_tab = State::Nodes;
+				NodesView(scene, state);
+				ImGui::EndTabItem();
+			}
+
+			if (ImGui::BeginTabItem("Textures")) {
+				state._scene_tab = State::Textures;
+				ImGui::Text("hello");
+				TexturesView(scene.resource_manager(), state);
+				ImGui::EndTabItem();
+			}
+			ImGui::EndTabBar();
+		}
+
+		ImGui::Begin("Selected");
+		switch (state._scene_tab) {
+			case State::Nodes:
+				NodeView(scene, scene.get_node_mut(state.selected_item), state);
+				break;
+			case State::Textures:
+				TextureView(scene.resource_manager(), scene.resource_manager().get_texture(state.selected_item), state);
+				break;
+			default:
+				ImGui::Text("Nothing selected");
+				break;
+		}
+		ImGui::End();
+	}
+
+	void NodesView(vulkan::Scene &scene, State &state) {
 		char name_buf[128];
 		char *name;
 		float width = 250;
-
-		ImGui::Separator();
-		ImGui::Text("Nodes");
 		ImGui::BeginChild("Node List", ImVec2(width, -ImGui::GetFrameHeightWithSpacing()), true);
 		for (auto &node : scene) {
 			if (node->name().empty()) {
@@ -81,39 +112,59 @@ namespace ui {
 				name = node->name().data();
 			}
 
-			if (ImGui::Selectable(name, state.selected_node == node->id())) {
-				state.selected_node = node->id();
+			if (ImGui::Selectable(name, state.selected_item == node->id())) {
+				state.selected_item = node->id();
 			}
 		}
 		ImGui::EndChild();
 		if (ImGui::Button("New node", ImVec2(width, 0))) {
 			if (auto id = scene.add_node(scene.resource_manager().default_mesh(), scene.resource_manager().default_material())) {
-				state.selected_node = id.value();
+				state.selected_item = id.value();
 			}
-			LOG_DEBUG << "created new node: " << state.selected_node << std::endl;
+			LOG_DEBUG << "created new node: " << state.selected_item << std::endl;
 		}
+	}
 
-		ImGui::Begin("Node");
-		if (scene.get_node_mut(state.selected_node)) {
-			NodeView(scene, *scene.get_node_mut(state.selected_node), state);
+	void NodeView(vulkan::Scene &scene, vulkan::Node *node, State &state) {
+		if (node) {
+			auto pos = util::as_array(node->position());
+			ImGui::PushID(node->id());
+			ImGui::Text("Node");
+			ui::InputText("Name", &node->name());
+			ImGui::DragFloat3("Position", pos.data(), 0.01f);
+			if (ImGui::Button("Delete")) {
+				scene.rem_node(node->id());
+			}
+			ImGui::PopID();
+			node->set_position(util::as_vec(pos));
 		} else {
 			ImGui::Text("No node selected");
 		}
-		ImGui::End();
+
 	}
 
-	void NodeView(vulkan::Scene &scene, vulkan::Node &node, State &state) {
-		auto pos = util::as_array(node.position());
+	void TexturesView(types::ResourceManager &resources, State &state) {
+		float width = 250;
 
-		ImGui::PushID(node.id());
-		ImGui::Text("Node");
-		ui::InputText("Name", &node.name());
-		ImGui::DragFloat3("Position", pos.data(), 0.01f);
-		if (ImGui::Button("Delete")) {
-			scene.rem_node(node.id());
+		ImGui::BeginChild("Texture List", ImVec2(width, -ImGui::GetFrameHeightWithSpacing()), true);
+		for (auto &texture : util::Adapt(resources.texture_begin(), resources.texture_end())) {
+			if (ImGui::Selectable(texture->name().data(), state.selected_item == texture->id())) {
+				state.selected_item = texture->id();
+			}
 		}
-		ImGui::PopID();
+		ImGui::EndChild();
+	}
 
-		node.set_position(util::as_vec(pos));
+	void TextureView(
+			types::ResourceManager &resources,
+			vulkan::Texture *texture,
+			State &state)
+	{
+		if (texture) {
+			ImGui::Text("%s", texture->name().data());
+			ImGui::Image(texture->imgui_descriptor_set(), ImVec2(250, 250));
+		} else {
+			ImGui::Text("No texture selected");
+		}
 	}
 }

@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
+#include <string>
 
 #include "../util/log.hpp"
 #include "ImageView.hpp"
@@ -18,6 +19,7 @@ namespace vulkan {
 			virtual VkDescriptorSet imgui_descriptor_set() = 0;
 			virtual ImageView const &image_view() = 0;
 			virtual uint32_t id() const = 0;
+			virtual std::string const &name() const = 0;
 
 			virtual bool is_resizable() const {
 				return false;

@@ -4,7 +4,8 @@
 namespace vulkan {
 	SceneTexture::SceneTexture(uint32_t id, Scene &scene):
 		_scene(scene),
-		_id(id)
+		_id(id),
+		_name("Internal Scene")
 	{ }
 
 	VkDescriptorSet SceneTexture::imgui_descriptor_set() {

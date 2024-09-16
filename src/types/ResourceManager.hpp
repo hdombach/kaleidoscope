@@ -10,6 +10,7 @@
 #include "../util/errors.hpp"
 #include "../util/result.hpp"
 #include "../util/Observer.hpp"
+#include "../util/filter_iterator.hpp"
 #include "../types/Mesh.hpp"
 #include "../vulkan/Texture.hpp"
 #include "../vulkan/Vertex.hpp"
@@ -23,9 +24,13 @@ namespace types {
 	 */
 	class ResourceManager {
 		public:
+			using TextureContainer = std::vector<vulkan::Texture *>;
+			using texture_iterator = util::filter_iterator<TextureContainer::iterator>;
+		public:
 			ResourceManager();
 			~ResourceManager();
 	
+			/*=========================== Textures =================================*/
 			util::Result<uint32_t, KError> add_texture_from_file(
 					std::string const &name,
 					std::string const &url);
@@ -34,8 +39,13 @@ namespace types {
 			vulkan::Texture const *default_texture() const;
 			vulkan::Texture *get_texture(std::string const &name);
 			vulkan::Texture const *get_texture(std::string const &name) const;
+			vulkan::Texture *get_texture(uint32_t id);
+			vulkan::Texture const *get_texture(uint32_t id) const;
 			bool has_texture(std::string const &name) const;
+			texture_iterator texture_begin();
+			texture_iterator texture_end();
 
+			/*========================= Meshes =====================================*/
 			util::Result<uint32_t, KError> add_mesh_from_file(
 					std::string const &name,
 					std::string const &url);
@@ -44,7 +54,6 @@ namespace types {
 			util::Result<uint32_t, KError> add_mesh_from_vertices(
 					std::string const &name,
 					std::vector<vulkan::Vertex> const &vertices);
-
 
 			Mesh *default_mesh();
 			Mesh const *default_mesh() const;
@@ -56,6 +65,7 @@ namespace types {
 			util::Result<void, KError> add_mesh_observer(util::Observer *observer);
 			util::Result<void, KError> rem_mesh_observer(util::Observer *observer);
 
+			/*========================= Materials ==================================*/
 			util::Result<uint32_t, KError> add_texture_material(
 					std::string const &name,
 					vulkan::Texture *texture);

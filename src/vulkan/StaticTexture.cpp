@@ -1,4 +1,5 @@
 #include <cmath>
+#include <filesystem>
 
 #include <vulkan/vulkan_core.h>
 #include <stb_image.h>
@@ -16,6 +17,7 @@ namespace vulkan {
 		result->_id = id;
 
 		int tex_width, texHeight, texChannels;
+		stbi_hdr_to_ldr_gamma(1.0f);
 		auto pixels = stbi_load(
 				url.c_str(),
 				&tex_width,
@@ -51,7 +53,7 @@ namespace vulkan {
 				tex_width, 
 				texHeight, 
 				result->_mip_levels, 
-				VK_FORMAT_R8G8B8A8_SRGB, 
+				VK_FORMAT_R8G8B8A8_UNORM, 
 				VK_IMAGE_TILING_OPTIMAL, 
 				VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
 					VK_IMAGE_USAGE_TRANSFER_DST_BIT |
@@ -63,7 +65,7 @@ namespace vulkan {
 
 		Graphics::DEFAULT->transition_image_layout(
 				result->_texture.value(),
-				VK_FORMAT_R8G8B8A8_SRGB,
+				VK_FORMAT_R8G8B8A8_UNORM,
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
 				result->_mip_levels);
@@ -78,22 +80,24 @@ namespace vulkan {
 		vkFreeMemory(Graphics::DEFAULT->device(), staging_buffer_memory, nullptr);
 
 		Graphics::DEFAULT->generate_mipmaps(result->_texture.value(),
-				VK_FORMAT_R8G8B8A8_SRGB,
+				VK_FORMAT_R8G8B8A8_UNORM,
 				tex_width,
 				texHeight,
 				result->_mip_levels);
 
 		auto image_view_res = result->_texture.create_image_view_full(
-				VK_FORMAT_R8G8B8A8_SRGB,
+				VK_FORMAT_R8G8B8A8_UNORM,
 				VK_IMAGE_ASPECT_COLOR_BIT,
 				result->_mip_levels);
 		TRY(image_view_res);
 		result->_texture_view = std::move(image_view_res.value());
 
-		ImGui_ImplVulkan_AddTexture(
+		result->_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
 				Graphics::DEFAULT->main_texture_sampler(),
 				result->_texture_view.value(),
-				VK_IMAGE_LAYOUT_GENERAL);
+				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+		result->_name = std::filesystem::path(url).filename();
 
 		return result;
 	}
