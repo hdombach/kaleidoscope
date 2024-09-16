@@ -48,9 +48,11 @@ namespace types {
 		if (_texture_map.count(name)) {
 			return KError::texture_exists(name);
 		}
+		auto path = util::env_file_path(url);
+		TRY(path);
 		auto texture = vulkan::StaticTexture::from_file(
 				_get_texture_id(),
-				util::env_file_path(url));
+				path.value());
 		TRY(texture);
 		_textures.push_back(texture.value());
 		_texture_map[name] = _textures.size() - 1;

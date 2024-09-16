@@ -1,6 +1,8 @@
 #include <cstdio>
 #include <glm/fwd.hpp>
 #include <imgui.h>
+#include <portable-file-dialogs.h>
+#include <filesystem>
 
 #include "AppView.hpp"
 #include "CameraView.hpp"
@@ -153,6 +155,11 @@ namespace ui {
 			}
 		}
 		ImGui::EndChild();
+		if (ImGui::Button("Add texture", ImVec2(width, 0))) {
+			auto urls = pfd::open_file("Select an image", ".", {"Image Files"}).result();
+			auto name = std::filesystem::path(urls[0]).filename();
+			resources.add_texture_from_file(name, urls[0]);
+		}
 	}
 
 	void TextureView(

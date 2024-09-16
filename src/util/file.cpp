@@ -9,10 +9,14 @@
 
 #include "file.hpp"
 #include "../App.hpp"
+#include "result.hpp"
 
 namespace util {
 
-	std::string env_file_path(std::string filename) {
+	util::Result<std::string, KError> env_file_path(std::string filename) {
+		if (std::filesystem::exists(filename)) {
+			return filename;
+		}
 		const char * envPathValue = std::getenv(ENV_PATH);
 		if (envPathValue == nullptr) {
 			envPathValue = "~";
@@ -33,10 +37,10 @@ namespace util {
 			full_path += "/" + filename;
 
 			if (std::filesystem::exists(full_path)) {
-				return full_path;
+				return {full_path};
 			}
 		}
-		throw std::runtime_error("Could not find file " + filename);
+		return KError::file_doesnt_exist(filename);
 	}
 
 	std::string readFile(std::ifstream &file) {
@@ -52,7 +56,8 @@ namespace util {
 	}
 
 	std::string readEnvFile(std::string filename) {
-		return readFile(env_file_path(filename));
+		//TODO: propagate error
+		return readFile(env_file_path(filename).value());
 	}
 
 	std::string readFile(std::filesystem::path path) {

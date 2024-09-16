@@ -27,6 +27,13 @@ KError KError::texture_exists(std::string texture_name) {
 			"Texture " + texture_name + " already exists");
 }
 
+KError KError::file_doesnt_exist(std::string file_name) {
+	return KError(
+			FILE_DOESNT_EXIST,
+			file_name,
+			"File " + file_name + " doesn't exist");
+}
+
 KError KError::invalid_image_file(std::string filename) {
 	return KError(
 			INVALID_IMAGE_FILE,

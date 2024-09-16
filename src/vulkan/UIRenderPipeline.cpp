@@ -127,7 +127,8 @@ namespace vulkan {
 		_io->ConfigFlags |= ImGuiConfigFlags_DockingEnable; //Allows imgui windows to be combined
 		_io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // allows imgui windows to be dragged outisde of main window
 		LOG_DEBUG << "Font path is " << App::working_path() << "/assets/Helvetica.ttc" << std::endl;
-		_io->Fonts->AddFontFromFileTTF(util::env_file_path("/../assets/Helvetica.ttc").c_str(), 14);
+		//TODO: error handling
+		_io->Fonts->AddFontFromFileTTF(util::env_file_path("/../assets/Helvetica.ttc").value().c_str(), 14);
 
 		ImGui::StyleColorsDark();
 

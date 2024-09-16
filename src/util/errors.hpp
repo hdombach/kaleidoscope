@@ -11,6 +11,7 @@ class KError {
 		enum Type {
 			UNKNOWN,
 			TEXTURE_EXISTS,
+			FILE_DOESNT_EXIST,
 			INVALID_IMAGE_FILE,
 			INVALID_MESH_FILE,
 			INVALID_NODE,
@@ -36,6 +37,7 @@ class KError {
 		Type type() const { return _type; }
 
 		static KError texture_exists(std::string texture_name);
+		static KError file_doesnt_exist(std::string file_name);
 		static KError invalid_image_file(std::string filename);
 		static KError invalid_mesh_file(std::string filename);
 		static KError invalid_node(uint32_t id);

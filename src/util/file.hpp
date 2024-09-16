@@ -1,10 +1,14 @@
 #pragma once
 
 #include <filesystem>
+
+#include "result.hpp"
+#include "errors.hpp"
+
 namespace util {
 	static const char * ENV_PATH = "KALEIDOSCOPE_PATH";
 
-	std::string env_file_path(std::string resource_name);
+	util::Result<std::string, KError> env_file_path(std::string resource_name);
 
 	std::string readEnvFile(std::string filename);
 
