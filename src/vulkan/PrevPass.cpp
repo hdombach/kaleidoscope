@@ -262,7 +262,9 @@ namespace vulkan {
 		current_uniform_buffer().set_value(uniform_buffer);
 
 
+		//TODO: pass the filter view
 		for (auto &node : nodes) {
+			if (!node) continue;
 			auto &mesh = _meshes[node->mesh().id()];
 			auto &material = _materials[node->material().id()];
 			auto &prev_node = _nodes[node->id()];

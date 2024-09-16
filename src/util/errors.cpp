@@ -1,3 +1,5 @@
+#include <string>
+
 #include "errors.hpp"
 
 KError::KError(Type type, std::string content, std::string desc):
@@ -37,6 +39,13 @@ KError KError::invalid_mesh_file(std::string filename) {
 			INVALID_MESH_FILE,
 			filename,
 			"File " + filename + " is not a valid mesh");
+}
+
+KError KError::invalid_node(uint32_t id) {
+	return KError(
+			INVALID_NODE,
+			"",
+			"Invalid node: " + std::to_string(id));
 }
 
 KError KError::mesh_already_exists(std::string mesh_name) {

@@ -13,6 +13,7 @@ class KError {
 			TEXTURE_EXISTS,
 			INVALID_IMAGE_FILE,
 			INVALID_MESH_FILE,
+			INVALID_NODE,
 			MESH_ALREADY_EXISTS,
 			MATERIAL_ALREADY_EXISTS,
 			INVALID_MEM_PROPERTY,
@@ -37,6 +38,7 @@ class KError {
 		static KError texture_exists(std::string texture_name);
 		static KError invalid_image_file(std::string filename);
 		static KError invalid_mesh_file(std::string filename);
+		static KError invalid_node(uint32_t id);
 		static KError mesh_already_exists(std::string mesh_name);
 		static KError material_already_exists(std::string material_name);
 		static KError invalid_mem_property();

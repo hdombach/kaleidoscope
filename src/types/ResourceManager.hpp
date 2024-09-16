@@ -65,8 +65,11 @@ namespace types {
 					vulkan::Texture *prim_texture,
 					vulkan::Texture *comb_texture);
 
+			types::Material *default_material();
+			types::Material const *default_material() const;
 			types::Material const *get_material(std::string const &name) const;
 			types::Material const *get_material(uint32_t id) const;
+			types::Material *get_material(uint32_t id);
 			bool has_material(std::string const &name) const;
 
 			util::Result<void, KError> add_material_observer(util::Observer *observer);
@@ -92,6 +95,7 @@ namespace types {
 			std::unordered_map<std::string, uint32_t> _material_map;
 			std::vector<std::unique_ptr<types::Material>> _materials;
 			uint32_t _default_mesh;
+			uint32_t _default_material;
 			std::list<util::Observer *> _mesh_observers;
 			std::list<util::Observer *> _material_observers;
 	};

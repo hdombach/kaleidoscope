@@ -61,4 +61,9 @@ namespace util {
 	inline glm::vec3 as_vec(std::array<float, 3> a) {
 		return {a[0], a[1], a[2]};
 	}
+
+	template<typename T>
+	inline bool exists(std::unique_ptr<T> const &ptr) {
+		return static_cast<bool>(ptr);
+	}
 }

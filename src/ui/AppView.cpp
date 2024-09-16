@@ -68,10 +68,11 @@ namespace ui {
 	void SceneView(vulkan::Scene &scene, State &state) {
 		char name_buf[128];
 		char *name;
+		float width = 250;
 
 		ImGui::Separator();
 		ImGui::Text("Nodes");
-		ImGui::BeginChild("Node List", ImVec2(150, 0), true);
+		ImGui::BeginChild("Node List", ImVec2(width, -ImGui::GetFrameHeightWithSpacing()), true);
 		for (auto &node : scene) {
 			if (node->name().empty()) {
 				snprintf(name_buf, sizeof(name_buf), "Node %d", node->id());
@@ -85,19 +86,32 @@ namespace ui {
 			}
 		}
 		ImGui::EndChild();
+		if (ImGui::Button("New node", ImVec2(width, 0))) {
+			if (auto id = scene.add_node(scene.resource_manager().default_mesh(), scene.resource_manager().default_material())) {
+				state.selected_node = id.value();
+			}
+			LOG_DEBUG << "created new node: " << state.selected_node << std::endl;
+		}
 
 		ImGui::Begin("Node");
-		NodeView(*scene.get_node_mut(state.selected_node), state);
+		if (scene.get_node_mut(state.selected_node)) {
+			NodeView(scene, *scene.get_node_mut(state.selected_node), state);
+		} else {
+			ImGui::Text("No node selected");
+		}
 		ImGui::End();
 	}
 
-	void NodeView(vulkan::Node &node, State &state) {
+	void NodeView(vulkan::Scene &scene, vulkan::Node &node, State &state) {
 		auto pos = util::as_array(node.position());
 
 		ImGui::PushID(node.id());
 		ImGui::Text("Node");
 		ui::InputText("Name", &node.name());
 		ImGui::DragFloat3("Position", pos.data(), 0.01f);
+		if (ImGui::Button("Delete")) {
+			scene.rem_node(node.id());
+		}
 		ImGui::PopID();
 
 		node.set_position(util::as_vec(pos));

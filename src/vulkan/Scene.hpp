@@ -8,6 +8,8 @@
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
 #include "../util/Observer.hpp"
+#include "../util/Util.hpp"
+#include "../util/filter_iterator.hpp"
 #include "../types/ResourceManager.hpp"
 #include "../types/Camera.hpp"
 #include "PrevPass.hpp"
@@ -23,8 +25,9 @@ namespace vulkan {
 		public:
 			using Ptr = std::unique_ptr<Scene>;
 			using Container = std::vector<Node::Ptr>;
-			using iterator = Container::iterator;
-			using const_iterator = Container::const_iterator;
+			using iterator = util::filter_iterator<Container::iterator>;
+			//using const_iterator = util::filter_iterator<Container::const_iterator>;
+			//using iterator = Container::iterator;
 
 			Scene(types::ResourceManager &resource_manager, PrevPass::Ptr preview_render_pass);
 
@@ -59,16 +62,28 @@ namespace vulkan {
 			util::Result<uint32_t, KError> add_node(
 					types::Mesh const *mesh,
 					types::Material const *material);
+			util::Result<void, KError> rem_node(uint32_t id);
 			//TODO: removing, identifiying node
 			types::ResourceManager &resource_manager();
 
 			util::Result<void, KError> add_node_observer(util::Observer *observer);
 			util::Result<void, KError> rem_node_observer(util::Observer *observer);
 
-			iterator begin() { return _nodes.begin(); }
-			iterator end() { return _nodes.end(); }
-			const_iterator begin() const { return _nodes.begin(); }
-			const_iterator end() const { return _nodes.end(); }
+			//iterator begin() { return _nodes.begin(); }
+			//iterator end() { return _nodes.end(); }
+
+			iterator begin() {
+				return iterator(_nodes.begin(), _nodes.end(), util::exists<vulkan::Node>);
+			}
+			iterator end() {
+				return iterator(_nodes.end(), _nodes.end(), util::exists<vulkan::Node>);
+			}
+			/*const_iterator begin() const {
+				return const_iterator(_nodes.begin(), _nodes.end(), util::exists<vulkan::Node>);
+			}
+			const_iterator end() const {
+				return const_iterator(_nodes.begin(), _nodes.end(), util::exists<vulkan::Node>);
+			}*/
 
 		private:
 			Scene() = default;

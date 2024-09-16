@@ -27,6 +27,12 @@ namespace types {
 		} else {
 			LOG_FATAL_ERROR << "Couldn't create default texture" << std::endl;
 		}
+
+		if (auto id = add_color_material("Default Material", glm::vec3(1.0, 0.0, 1.0))) {
+			_default_material = id;
+		} else {
+			LOG_FATAL_ERROR << "Couldn't create default material" << std::endl;
+		}
 	}
 
 	ResourceManager::~ResourceManager() {
@@ -179,6 +185,14 @@ namespace types {
 					comb_texture));
 	}
 
+	types::Material *ResourceManager::default_material() {
+		return get_material(_default_material);
+	}
+
+	types::Material const *ResourceManager::default_material() const {
+		return get_material(_default_material);
+	}
+
 	types::Material const *ResourceManager::get_material(std::string const &name) const {
 		if (has_material(name)) {
 			return get_material(_material_map.at(name));
@@ -192,6 +206,14 @@ namespace types {
 		}
 		return nullptr;
 	}
+
+	types::Material *ResourceManager::get_material(uint32_t id) {
+		if (id >= 0 && id < _materials.size()) {
+			return _materials[id].get();
+		}
+		return nullptr;
+	}
+
 
 	bool ResourceManager::has_material(std::string const &name) const {
 		return _material_map.count(name) > 0;

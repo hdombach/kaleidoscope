@@ -13,5 +13,5 @@ namespace ui {
 	glm::vec3 get_cam_movement();
 
 	void SceneView(vulkan::Scene &scene, State &state);
-	void NodeView(vulkan::Node &node, State &state);
+	void NodeView(vulkan::Scene &scene, vulkan::Node &node, State &state);
 }

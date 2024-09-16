@@ -85,7 +85,7 @@ namespace vulkan {
 	}
 
 	void Scene::update() {
-		for (auto &node : _nodes) {
+		for (auto &node : *this) {
 			if (node->dirty_bits()) {
 				update_node(node->id());
 				node->clear_dirty_bits();
@@ -117,6 +117,19 @@ namespace vulkan {
 			observer->obs_create(id);
 		}
 		return id;
+	}
+
+	util::Result<void, KError> Scene::rem_node(uint32_t id) {
+		if (!_nodes[id]) {
+			return KError::invalid_node(id);
+		}
+
+		for (auto &observer : _node_observers) {
+			observer->obs_remove(id);
+		}
+
+		_nodes[id].reset();
+		return {};
 	}
 
 	types::ResourceManager &Scene::resource_manager() {
