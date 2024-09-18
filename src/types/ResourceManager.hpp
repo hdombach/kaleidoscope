@@ -32,7 +32,6 @@ namespace types {
 	
 			/*=========================== Textures =================================*/
 			util::Result<uint32_t, KError> add_texture_from_file(
-					std::string const &name,
 					std::string const &url);
 
 			vulkan::Texture *default_texture();

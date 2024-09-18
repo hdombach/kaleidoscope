@@ -1,5 +1,6 @@
 
 #include <algorithm>
+#include <string>
 
 #include "../util/errors.hpp"
 #include "../util/result.hpp"
@@ -21,7 +22,7 @@
 namespace types {
 	ResourceManager::ResourceManager() {
 		//Can't use defaultTexture_ for holder because of const issues
-		auto res = add_texture_from_file("default", "assets/default.png");
+		auto res = add_texture_from_file("assets/default.png");
 		if (res) {
 			_default_texture = res.value();
 		} else {
@@ -42,18 +43,20 @@ namespace types {
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_texture_from_file(
-			const std::string &name,
 			const std::string &url)
 	{
-		if (get_texture(name)) {
-			return KError::texture_exists(name);
-		}
 		auto path = util::env_file_path(url);
 		TRY(path);
 		auto texture = vulkan::StaticTexture::from_file(
 				_get_texture_id(),
 				path.value());
 		TRY(texture);
+		int i = 1;
+		auto base_name = texture.value()->name();
+		while (get_texture(texture.value()->name())) {
+			texture.value()->set_name(base_name + "_" + std::to_string(i));
+			i++;
+		}
 		_textures.push_back(texture.value());
 		return {static_cast<uint32_t>(_textures.size() - 1)};
 	}

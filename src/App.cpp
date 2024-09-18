@@ -22,14 +22,14 @@ App::Ptr App::create(std::string const &name) {
 	result->_resource_manager = std::make_unique<types::ResourceManager>();
 
 	{
-		auto res = result->_resource_manager->add_texture_from_file("viking_room", "assets/viking_room.png");
+		auto res = result->_resource_manager->add_texture_from_file("assets/viking_room.png");
 		if (!res) {
 			LOG_ERROR << "Could not load example texture viking_room.png: " << res.value() << std::endl;
 		}
 	}
 
 	{
-		auto res = result->_resource_manager->add_texture_from_file("grunge", "assets/grunge.png");
+		auto res = result->_resource_manager->add_texture_from_file("assets/grunge.png");
 		if (!res) {
 			LOG_ERROR << "Could not load example texture \"grunge.png\": " << res.value() << std::endl;
 		}
