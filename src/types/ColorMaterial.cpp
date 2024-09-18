@@ -21,7 +21,7 @@ namespace types {
 					"object_transformation",
 					result->_object_transformation));
 
-		result->_resources.add_resource(types::ShaderResource::create_primitive(
+		result->_resources.add_resource(types::ShaderResource::create_color(
 					"color",
 					result->_color));
 

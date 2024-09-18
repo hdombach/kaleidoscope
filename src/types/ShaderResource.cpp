@@ -44,6 +44,12 @@ namespace types {
 		return result;
 	}
 
+ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
+	auto result = create_primitive(name, color);
+	result._type = Type::Color3;
+	return result;
+}
+
 	ShaderResource ShaderResource::create_image(
 			std::string name,
 			const vulkan::ImageView &image_view)
@@ -60,6 +66,7 @@ namespace types {
 			case Type::Mat4:
 			case Type::Vec3:
 			case Type::Float:
+			case Type::Color3:
 				return true;
 			default:
 				return false;

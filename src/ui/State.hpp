@@ -24,5 +24,6 @@ namespace ui {
 		SceneTab scene_tab = Nodes;
 		std::string selected_name = "";
 		bool dup_name_error;
+		uint32_t selected_shader_resource;
 	};
 }

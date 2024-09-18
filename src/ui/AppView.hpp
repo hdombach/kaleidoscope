@@ -7,6 +7,7 @@
 #include "State.hpp"
 #include "../types/Node.hpp"
 #include "../types/ResourceManager.hpp"
+#include "../types/ShaderResource.hpp"
 
 class App;
 namespace ui {
@@ -22,4 +23,15 @@ namespace ui {
 			types::ResourceManager &resources,
 			vulkan::Texture *texture,
 			State &state);
+
+	void ShaderResourcesView(
+			types::ShaderResources &shader_resources,
+			types::ResourceManager &resources,
+			State &state);
+	void ShaderResourceView(
+			types::ShaderResource &shader_resource,
+			types::ResourceManager &resources,
+			State &state);
+
+	void SelectTextureView(types::ResourceManager &resources, uint32_t &selected);
 }

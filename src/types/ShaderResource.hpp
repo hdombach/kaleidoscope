@@ -16,12 +16,14 @@ namespace types {
 				Image,
 				Mat4,
 				Vec3,
+				Color3,
 				Float,
 			};
 
 			static ShaderResource create_primitive(std::string name, float val);
 			static ShaderResource create_primitive(std::string name, glm::mat4 mat);
 			static ShaderResource create_primitive(std::string name, glm::vec3 vec);
+			static ShaderResource create_color(std::string name, glm::vec3 color);
 
 			static ShaderResource create_image(std::string name, vulkan::ImageView const &image_view);
 

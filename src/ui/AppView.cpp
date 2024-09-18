@@ -144,6 +144,7 @@ namespace ui {
 			}
 			ImGui::PopID();
 			node->set_position(util::as_vec(pos));
+			ShaderResourcesView(node->resources(), scene.resource_manager(), state);
 		} else {
 			ImGui::Text("No node selected");
 		}
@@ -191,6 +192,41 @@ namespace ui {
 			ImGui::Image(texture->imgui_descriptor_set(), ImVec2(250, 250));
 		} else {
 			ImGui::Text("No texture selected");
+		}
+	}
+
+	void ShaderResourcesView(
+			types::ShaderResources &shader_resources,
+			types::ResourceManager &resources,
+			State &state)
+	{
+		float width = 250;
+		ImGui::Text("Shader Resources");
+		ImGui::BeginChild("Resources", ImVec2(width, -ImGui::GetFrameHeightWithSpacing()), true);
+		for (auto &r : shader_resources) {
+			ShaderResourceView(r, resources, state);
+		}
+		ImGui::EndChild();
+	}
+
+	void ShaderResourceView(
+			types::ShaderResource &resource,
+			types::ResourceManager &resources,
+			State &state)
+	{
+		switch (resource.type()) {
+			case types::ShaderResource::Type::Image:
+				SelectTextureView(resources, state.selected_shader_resource);
+			default:
+				ImGui::Text("Unknown");
+		}
+	}
+
+	void SelectTextureView(types::ResourceManager &resources, uint32_t &selected) {
+		for (auto &t : util::Adapt(resources.texture_begin(), resources.texture_end())) {
+			if (ImGui::Selectable(t->name().data(), selected == t->id())) {
+				selected = t->id();
+			}
 		}
 	}
 }
