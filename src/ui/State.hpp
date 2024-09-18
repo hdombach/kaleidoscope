@@ -23,5 +23,6 @@ namespace ui {
 		int selected_item = -1;
 		SceneTab scene_tab = Nodes;
 		std::string selected_name = "";
+		bool dup_name_error;
 	};
 }

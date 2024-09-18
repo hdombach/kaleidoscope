@@ -99,12 +99,11 @@ namespace types {
 	}
 
 	util::Result<void, KError> ResourceManager::rename_texture(uint32_t id, const std::string &name) {
-		if (auto t = get_texture(id)) {
-			t->set_name(name);
-			return {};
-		} else {
+		if (get_texture(name)) {
 			return KError::name_already_exists(name);
 		}
+		get_texture(id)->set_name(name);
+		return {};
 	}
 
 	ResourceManager::texture_iterator ResourceManager::texture_begin() {

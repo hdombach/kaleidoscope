@@ -161,6 +161,7 @@ namespace ui {
 				} else {
 					state.selected_item = texture->id();
 					state.selected_name = texture->name();
+					state.dup_name_error = false;
 				}
 			}
 		}
@@ -179,11 +180,14 @@ namespace ui {
 	{
 		if (texture) {
 			if (ui::InputText("##SelectedName", &state.selected_name, ImGuiInputTextFlags_EnterReturnsTrue)) {
-				resources.rename_texture(texture->id(), state.selected_name);
+				state.dup_name_error = !resources.rename_texture(texture->id(), state.selected_name);
 			}
 			ImGui::SameLine();
 			if (ImGui::Button("Set Name")) {
 				resources.rename_texture(texture->id(), state.selected_name);
+			}
+			if (state.dup_name_error) {
+				ImGui::TextColored({1.0, 0.0, 0.0, 1.0}, "ERROR: Duplicate name");
 			}
 			ImGui::Image(texture->imgui_descriptor_set(), ImVec2(250, 250));
 		} else {
