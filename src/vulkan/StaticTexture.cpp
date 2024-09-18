@@ -97,7 +97,7 @@ namespace vulkan {
 				result->_texture_view.value(),
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-		result->_name = std::filesystem::path(url).filename();
+		result->_name = std::filesystem::path(url).stem();
 
 		return result;
 	}

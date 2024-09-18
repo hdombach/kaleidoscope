@@ -41,7 +41,7 @@ namespace types {
 			vulkan::Texture const *get_texture(std::string const &name) const;
 			vulkan::Texture *get_texture(uint32_t id);
 			vulkan::Texture const *get_texture(uint32_t id) const;
-			bool has_texture(std::string const &name) const;
+			util::Result<void, KError> rename_texture(uint32_t id, std::string const &name);
 			texture_iterator texture_begin();
 			texture_iterator texture_end();
 
@@ -96,7 +96,6 @@ namespace types {
 			uint32_t _get_material_id();
 			uint32_t _get_texture_id();
 
-			std::unordered_map<std::string, uint32_t> _texture_map;
 			std::vector<vulkan::Texture *> _textures;
 			uint32_t _default_texture;
 

@@ -17,6 +17,8 @@ class KError {
 			INVALID_NODE,
 			MESH_ALREADY_EXISTS,
 			MATERIAL_ALREADY_EXISTS,
+			TEXTURE_DOESNT_EXIST,
+			NAME_ALREADY_EXISTS,
 			INVALID_MEM_PROPERTY,
 			VK_ERROR,
 			SHADER_COMPILER_ERROR,
@@ -43,6 +45,8 @@ class KError {
 		static KError invalid_node(uint32_t id);
 		static KError mesh_already_exists(std::string mesh_name);
 		static KError material_already_exists(std::string material_name);
+		static KError texture_doesnt_exist(uint32_t id);
+		static KError name_already_exists(std::string name);
 		static KError invalid_mem_property();
 		static KError shader_compile_error(std::string msg);
 		static KError empty_buffer();

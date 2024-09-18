@@ -45,7 +45,7 @@ namespace types {
 			const std::string &name,
 			const std::string &url)
 	{
-		if (_texture_map.count(name)) {
+		if (get_texture(name)) {
 			return KError::texture_exists(name);
 		}
 		auto path = util::env_file_path(url);
@@ -55,7 +55,6 @@ namespace types {
 				path.value());
 		TRY(texture);
 		_textures.push_back(texture.value());
-		_texture_map[name] = _textures.size() - 1;
 		return {static_cast<uint32_t>(_textures.size() - 1)};
 	}
 
@@ -68,17 +67,21 @@ namespace types {
 	}
 
 	vulkan::Texture *ResourceManager::get_texture(const std::string &name) {
-		if (has_texture(name)) {
-			return _textures.at(_texture_map[name]);
+		for (auto t : _textures) {
+			if (t && t->name() == name) {
+				return t;
+			}
 		}
-		return default_texture();
+		return nullptr;
 	}
 
 	vulkan::Texture const *ResourceManager::get_texture(const std::string &name) const {
-		if (has_texture(name)) {
-			return _textures.at(_texture_map.at(name));
+		for (auto t : _textures) {
+			if (t && t->name() == name) {
+				return t;
+			}
 		}
-		return default_texture();
+		return nullptr;
 	}
 
 	vulkan::Texture *ResourceManager::get_texture(uint32_t id) {
@@ -95,8 +98,13 @@ namespace types {
 		return nullptr;
 	}
 
-	bool ResourceManager::has_texture(const std::string &name) const {
-		return _texture_map.count(name);
+	util::Result<void, KError> ResourceManager::rename_texture(uint32_t id, const std::string &name) {
+		if (auto t = get_texture(id)) {
+			t->set_name(name);
+			return {};
+		} else {
+			return KError::name_already_exists(name);
+		}
 	}
 
 	ResourceManager::texture_iterator ResourceManager::texture_begin() {

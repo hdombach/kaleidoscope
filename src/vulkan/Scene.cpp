@@ -94,11 +94,19 @@ namespace vulkan {
 	}
 
 	Node const *Scene::get_node(uint32_t id) const {
-		return _nodes[id].get();
+		if (id >= 0 && id < _nodes.size()) {
+			return _nodes[id].get();
+		} else {
+			return nullptr;
+		}
 	}
 
 	Node *Scene::get_node_mut(uint32_t id) {
-		return _nodes[id].get();
+		if (id >= 0 && id < _nodes.size()) {
+			return _nodes[id].get();
+		} else {
+			return nullptr;
+		}
 	}
 
 	util::Result<uint32_t, KError> Scene::add_node(

@@ -20,7 +20,8 @@ namespace ui {
 		vulkan::SceneTexture scene_texture;
 		bool showing_preview = true;
 		glm::vec2 prev_mouse_pos = glm::vec2(0);
-		int selected_item = 0;
-		SceneTab _scene_tab = Nodes;
+		int selected_item = -1;
+		SceneTab scene_tab = Nodes;
+		std::string selected_name = "";
 	};
 }

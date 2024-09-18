@@ -69,6 +69,20 @@ KError KError::material_already_exists(std::string material_name) {
 			"Material " + material_name + " already exists");
 }
 
+KError KError::texture_doesnt_exist(uint32_t id) {
+	return KError(
+			TEXTURE_DOESNT_EXIST,
+			std::to_string(id),
+			"Texture " + std::to_string(id) + " doesn't exist");
+}
+
+KError KError::name_already_exists(std::string name) {
+	return KError(
+			NAME_ALREADY_EXISTS,
+			name,
+			"Identifier " + name + " already exists");
+}
+
 KError KError::invalid_mem_property() {
 	return KError(
 			INVALID_MEM_PROPERTY,

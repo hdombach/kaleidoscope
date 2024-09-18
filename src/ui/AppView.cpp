@@ -72,13 +72,13 @@ namespace ui {
 		ImGui::Separator();
 		if (ImGui::BeginTabBar("##SceneTabs")) {
 			if (ImGui::BeginTabItem("Nodes")) {
-				state._scene_tab = State::Nodes;
+				state.scene_tab = State::Nodes;
 				NodesView(scene, state);
 				ImGui::EndTabItem();
 			}
 
 			if (ImGui::BeginTabItem("Textures")) {
-				state._scene_tab = State::Textures;
+				state.scene_tab = State::Textures;
 				ImGui::Text("hello");
 				TexturesView(scene.resource_manager(), state);
 				ImGui::EndTabItem();
@@ -87,7 +87,7 @@ namespace ui {
 		}
 
 		ImGui::Begin("Selected");
-		switch (state._scene_tab) {
+		switch (state.scene_tab) {
 			case State::Nodes:
 				NodeView(scene, scene.get_node_mut(state.selected_item), state);
 				break;
@@ -115,7 +115,12 @@ namespace ui {
 			}
 
 			if (ImGui::Selectable(name, state.selected_item == node->id())) {
-				state.selected_item = node->id();
+				if (state.selected_item == node->id()) {
+					state.selected_item = -1;
+				} else {
+					state.selected_item = node->id();
+					state.selected_name = node->name();
+				}
 			}
 		}
 		ImGui::EndChild();
@@ -151,7 +156,12 @@ namespace ui {
 		ImGui::BeginChild("Texture List", ImVec2(width, -ImGui::GetFrameHeightWithSpacing()), true);
 		for (auto &texture : util::Adapt(resources.texture_begin(), resources.texture_end())) {
 			if (ImGui::Selectable(texture->name().data(), state.selected_item == texture->id())) {
-				state.selected_item = texture->id();
+				if (state.selected_item == texture->id()) {
+					state.selected_item = -1;
+				} else {
+					state.selected_item = texture->id();
+					state.selected_name = texture->name();
+				}
 			}
 		}
 		ImGui::EndChild();
@@ -168,7 +178,13 @@ namespace ui {
 			State &state)
 	{
 		if (texture) {
-			ImGui::Text("%s", texture->name().data());
+			if (ui::InputText("##SelectedName", &state.selected_name, ImGuiInputTextFlags_EnterReturnsTrue)) {
+				resources.rename_texture(texture->id(), state.selected_name);
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Set Name")) {
+				resources.rename_texture(texture->id(), state.selected_name);
+			}
 			ImGui::Image(texture->imgui_descriptor_set(), ImVec2(250, 250));
 		} else {
 			ImGui::Text("No texture selected");

@@ -12,6 +12,7 @@ namespace vulkan {
 			ImageView const &image_view() override;
 			uint32_t id() const override;
 			std::string const &name() const override { return _name; }
+			void set_name(std::string const &name) override { _name = name; }
 
 			bool is_resizable() const override {
 				return true;
