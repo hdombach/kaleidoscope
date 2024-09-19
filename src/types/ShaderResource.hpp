@@ -44,6 +44,8 @@ namespace types {
 			util::Result<glm::mat4 const&, void> as_mat4() const;
 			util::Result<void, KError> set_vec3(glm::vec3 const &val);
 			util::Result<glm::vec3 const &, void> as_vec3() const;
+			util::Result<void, KError> set_color3(glm::vec3 const &vale);
+			util::Result<glm::vec3 const &, void> as_color3() const;
 			util::Result<void, KError> set_float(float val);
 			util::Result<float const &, void> as_float() const;
 
@@ -83,17 +85,14 @@ namespace types {
 
 			void add_resource(ShaderResource resource);
 
-			ShaderResource &get(size_t index) { return _resources[index]; }
-			ShaderResource const &get(size_t index) const { return _resources[index]; }
-
-			ShaderResource& operator[](size_t index) { return get(index); }
-			ShaderResource const& operator[](size_t index) const { return get(index); }
-
-			util::Result<ShaderResource&, void> get(std::string name);
 			util::Result<ShaderResource const&, void> get(std::string name) const;
 
-			ShaderResource& operator[](std::string name) { return get(name).value(); }
 			ShaderResource const & operator[](std::string name) const { return get(name).value(); }
+
+			void set_mat4(std::string const &name, glm::mat4 const &val);
+			void set_vec3(std::string const &name, glm::vec3 const &val);
+			void set_color3(std::string const &name, glm::vec3 const &val);
+			void set_float(std::string const &name, float &val);
 
 			bool contains(std::string name) const;
 

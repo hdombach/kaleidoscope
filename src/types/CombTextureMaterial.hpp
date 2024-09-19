@@ -26,9 +26,7 @@ namespace types {
 
 			float comb_ratio() const;
 			void set_comb_ratio(float ratio) {
-				if (auto comb_ratio = _resources.get("comb_ratio")) {
-					comb_ratio.value().set_float(ratio);
-				}
+				_resources.set_float("comb_ratio", ratio);
 			}
 		private:
 			CombTextureMaterial() = default;

@@ -46,9 +46,7 @@ namespace vulkan {
 			void set_position(glm::vec3 position) {
 				if (position == _position) return;
 				_position = position;
-				if (auto pos_resource = _resources.get("position")) {
-					pos_resource.value().set_vec3(position);
-				}
+				_resources.set_vec3("position", position);
 			}
 			types::ShaderResources const &resources() const { return _resources; }
 			types::ShaderResources &resources() { return _resources; }

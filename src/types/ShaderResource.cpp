@@ -120,6 +120,26 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		}
 	}
 
+	util::Result<void, KError> ShaderResource::set_color3(const glm::vec3 &val) {
+		if (type() == Type::Color3) {
+			if (val != _as_vec3) {
+				_set_dirty_bit();
+				_as_vec3 = val;
+			}
+			return {};
+		} else {
+			return KError::invalid_arg("Shader Resource is not a color");
+		}
+	}
+
+	util::Result<glm::vec3 const &, void> ShaderResource::as_color3() const {
+		if (type() == Type::Color3) {
+			return _as_vec3;
+		} else {
+			return {};
+		}
+	}
+
 	util::Result<void, KError> ShaderResource::set_float(float val) {
 		if (type() == Type::Float) {
 			if (val != _as_float) {
@@ -157,17 +177,6 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		_range = _calc_range();
 	}
 
-	util::Result<ShaderResource&, void> ShaderResources::get(std::string name) {
-		auto res = std::find_if(begin(), end(), [&name](ShaderResource &r) {
-				return r.name() == name;
-		});
-		if (res == end()) {
-			return {};
-		} else {
-			return res.base();
-		}
-	}
-
 	util::Result<ShaderResource const&, void> ShaderResources::get(std::string name) const {
 		auto res = std::find_if(begin(), end(), [&name](ShaderResource const &r) {
 				return r.name() == name;
@@ -177,6 +186,46 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		} else {
 			return res.base();
 		}
+	}
+
+	void ShaderResources::set_mat4(const std::string &name, const glm::mat4 &val) {
+		for (auto &resource : _resources) {
+			if (resource.name() == name) {
+				resource.set_mat4(val);
+				return;
+			}
+		}
+		add_resource(ShaderResource::create_primitive(name, val));
+	}
+
+	void ShaderResources::set_vec3(std::string const &name, glm::vec3 const &val) {
+		for (auto &resource : _resources) {
+			if (resource.name() == name) {
+				resource.set_vec3(val);
+				return;
+			}
+		}
+		add_resource(ShaderResource::create_primitive(name, val));
+	}
+
+	void ShaderResources::set_color3(const std::string &name, const glm::vec3 &val) {
+		for (auto &resource : _resources) {
+			if (resource.name() == name) {
+				resource.set_color3(val);
+				return;
+			}
+		}
+		add_resource(ShaderResource::create_primitive(name, val));
+	}
+
+	void ShaderResources::set_float(const std::string &name, float &val) {
+		for (auto &resource : _resources) {
+			if (resource.name() == name) {
+				resource.set_float(val);
+				return;
+			}
+		}
+		add_resource(ShaderResource::create_primitive(name, val));
 	}
 
 	bool ShaderResources::contains(std::string name) const {
