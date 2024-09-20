@@ -209,7 +209,7 @@ namespace ui {
 				ImGui::Text("%s:", r->name().data());
 				ImGui::TableNextColumn();
 				switch (r->type()) {
-					case types::ShaderResource::Type::Image:
+					case types::ShaderResource::Type::Texture:
 						SelectTextureView(
 								*r, 
 								shader_resources,

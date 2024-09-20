@@ -384,8 +384,8 @@ namespace vulkan {
 
 		for (auto &node : _nodes) {
 			for (auto &resource : node.get().material().resources().get()) {
-				if (auto image = resource->as_image()) {
-					auto v = image.value().value();
+				if (auto texture = resource->as_texture()) {
+					auto v = texture.value().image_view().value();
 					if (std::find(result.begin(), result.end(), v) == std::end(result)) {
 						result.push_back(v);
 					}

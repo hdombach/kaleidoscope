@@ -16,7 +16,7 @@ namespace vulkan {
 			~StaticTexture();
 
 			VkDescriptorSet imgui_descriptor_set() override;
-			ImageView const &image_view() override;
+			ImageView const &image_view() const override;
 			uint32_t id() const override;
 			void set_name(std::string const &name) override { _name = name; }
 			std::string const &name() const override { return _name; }

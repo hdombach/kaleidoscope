@@ -5,15 +5,15 @@
 
 #include <glm/glm.hpp>
 
-#include "../vulkan/ImageView.hpp"
 #include "../vulkan/MappedUniform.hpp"
+#include "../vulkan/Texture.hpp"
 
 namespace types {
 	class ShaderResource {
 		public:
 			enum class Type {
 				Unknown,
-				Image,
+				Texture,
 				Mat4,
 				Vec3,
 				Color3,
@@ -25,7 +25,7 @@ namespace types {
 			static ShaderResource create_primitive(std::string name, glm::vec3 vec);
 			static ShaderResource create_color(std::string name, glm::vec3 color);
 
-			static ShaderResource create_image(std::string name, vulkan::ImageView const &image_view);
+			static ShaderResource create_texture(std::string name, vulkan::Texture const &texture);
 
 			~ShaderResource() = default;
 
@@ -39,7 +39,7 @@ namespace types {
 			std::string const &declaration() const { return _declaration; }
 			size_t alignment() const { return _alignment; }
 
-			util::Result<vulkan::ImageView const &, void> as_image() const;
+			util::Result<vulkan::Texture const &, void> as_texture() const;
 			util::Result<void, KError> set_mat4(glm::mat4 const &val);
 			util::Result<glm::mat4, void> as_mat4() const;
 			util::Result<void, KError> set_vec3(glm::vec3 const &val);
@@ -64,7 +64,7 @@ namespace types {
 				float _as_float;
 				glm::mat4 _as_mat4;
 				glm::vec3 _as_vec3;
-				const vulkan::ImageView *_as_image;
+				const vulkan::Texture *_as_texture;
 			};
 
 			size_t _alignment;

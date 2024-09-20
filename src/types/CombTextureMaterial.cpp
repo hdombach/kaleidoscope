@@ -18,9 +18,9 @@ namespace types {
 		result->_resources.add_resource(
 				ShaderResource::create_primitive("comb_ratio", 0.75));
 		result->_resources.add_resource(
-				ShaderResource::create_image("primary_texture", prim_texture->image_view()));
+				ShaderResource::create_texture("primary_texture", *prim_texture));
 		result->_resources.add_resource(
-				ShaderResource::create_image("combine_texture", comb_texture->image_view()));
+				ShaderResource::create_texture("combine_texture", *comb_texture));
 
 		result->_frag_shader_src =
 			"outColor = texture(primary_texture, fragTexCoord) * (texture(combine_texture, fragTexCoord) * comb_ratio + (1 - comb_ratio));\n"

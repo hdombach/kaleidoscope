@@ -109,10 +109,10 @@ namespace vulkan {
 			_cg_frag_call += ", ";
 			if (resource->is_primitive()) {
 				_cg_frag_call += "material" + id + "[node_id]." + resource->name();
-			} else if (resource->type() == types::ShaderResource::Type::Image) {
+			} else if (resource->type() == types::ShaderResource::Type::Texture) {
 				int i = 0;
 				for (auto texture : textures) {
-					if (resource->as_image().value().value() == texture) {
+					if (resource->as_texture().value().image_view().value() == texture) {
 						break;
 					}
 					i++;

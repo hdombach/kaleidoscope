@@ -30,8 +30,8 @@ namespace vulkan {
 		auto images = std::vector<VkImageView>();
 
 		for (auto &resource : node->material().resources().get()) {
-			if (auto image = resource->as_image()) {
-				images.push_back(image.value().value());
+			if (auto texture = resource->as_texture()) {
+				images.push_back(texture.value().image_view().value());
 			}
 		}
 		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, result._uniform));

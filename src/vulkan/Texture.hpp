@@ -17,7 +17,7 @@ namespace vulkan {
 		public:
 			virtual ~Texture() = default;
 			virtual VkDescriptorSet imgui_descriptor_set() = 0;
-			virtual ImageView const &image_view() = 0;
+			virtual ImageView const &image_view() const = 0;
 			virtual uint32_t id() const = 0;
 			virtual void set_name(std::string const &name) = 0;
 			virtual std::string const &name() const = 0;

@@ -22,7 +22,7 @@ namespace types {
 		result->_resources.add_resource(
 				ShaderResource::create_primitive("object_transformation", result->_object_transformation));
 		result->_resources.add_resource(
-				ShaderResource::create_image("primary_texture", texture->image_view()));
+				ShaderResource::create_texture("primary_texture", *texture));
 
 		result->_frag_shader_src =
 			"outColor = texture(primary_texture, fragTexCoord);\n"

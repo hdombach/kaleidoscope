@@ -113,7 +113,7 @@ namespace vulkan {
 		return _imgui_descriptor_set;
 	}
 
-	ImageView const &StaticTexture::image_view() {
+	ImageView const &StaticTexture::image_view() const {
 		return _texture_view;
 	}
 

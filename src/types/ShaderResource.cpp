@@ -51,12 +51,12 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	return result;
 }
 
-	ShaderResource ShaderResource::create_image(
+	ShaderResource ShaderResource::create_texture(
 			std::string name,
-			const vulkan::ImageView &image_view)
+			const vulkan::Texture &texture)
 	{
-		auto result = ShaderResource(name, Type::Image);
-		result._as_image = &image_view;
+		auto result = ShaderResource(name, Type::Texture);
+		result._as_texture = &texture;
 		result._alignment = 0;
 		result._declaration = util::f("sampler2D ", name);
 		return result;
@@ -74,9 +74,9 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		}
 	}
 
-	util::Result<vulkan::ImageView const &, void> ShaderResource::as_image() const {
-		if (type() == Type::Image) {
-			return _as_image;
+	util::Result<vulkan::Texture const &, void> ShaderResource::as_texture() const {
+		if (type() == Type::Texture) {
+			return _as_texture;
 		} else {
 			return {};
 		}

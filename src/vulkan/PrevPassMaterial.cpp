@@ -26,7 +26,7 @@ namespace vulkan {
 		auto frag_source = std::string();
 		auto texture_names = std::vector<std::string>();
 		for (auto resource : material->resources().get()) {
-			if (resource->type() == types::ShaderResource::Type::Image) {
+			if (resource->type() == types::ShaderResource::Type::Texture) {
 				texture_names.push_back(resource->name());
 			}
 		}
@@ -48,7 +48,7 @@ namespace vulkan {
 
 		bool has_image = false;
 		for (auto &resource : material->resources().get()) {
-			if (resource->type() == types::ShaderResource::Type::Image) {
+			if (resource->type() == types::ShaderResource::Type::Texture) {
 				has_image = true;
 			}
 		}
@@ -349,7 +349,7 @@ namespace vulkan {
 			if (resource->is_primitive()) {
 				frag_main_call += "material_uniform.";
 				frag_main_call += resource->name();
-			} else if (resource->type() == types::ShaderResource::Type::Image) {
+			} else if (resource->type() == types::ShaderResource::Type::Texture) {
 				int i = 0;
 				while (textures[i] != resource->name()) {
 					i++;
