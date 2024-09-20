@@ -53,10 +53,10 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 
 	ShaderResource ShaderResource::create_texture(
 			std::string name,
-			const vulkan::Texture &texture)
+			const vulkan::Texture *texture)
 	{
 		auto result = ShaderResource(name, Type::Texture);
-		result._as_texture = &texture;
+		result._as_texture = texture;
 		result._alignment = 0;
 		result._declaration = util::f("sampler2D ", name);
 		return result;
@@ -71,6 +71,18 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 				return true;
 			default:
 				return false;
+		}
+	}
+
+	util::Result<void, KError> ShaderResource::set_texture(const vulkan::Texture *texture) {
+		if (type() == Type::Texture) {
+			if (texture != _as_texture) {
+				_set_dirty_bit();
+				_as_texture = texture;
+			}
+			return {};
+		} else {
+			return KError::invalid_arg("ShaderResource is not a texture");
 		}
 	}
 
@@ -227,6 +239,19 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		} else {
 			return nullptr;
 		}
+	}
+
+	void ShaderResources::set_texture(
+			const std::string &name,
+			const vulkan::Texture *texture)
+	{
+		for (auto &resource : _resources) {
+			if (resource.name() == name) {
+				resource.set_texture(texture);
+				return;
+			}
+		}
+		add_resource(ShaderResource::create_texture(name, texture));
 	}
 
 	void ShaderResources::set_mat4(const std::string &name, const glm::mat4 &val) {

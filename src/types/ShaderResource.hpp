@@ -25,7 +25,7 @@ namespace types {
 			static ShaderResource create_primitive(std::string name, glm::vec3 vec);
 			static ShaderResource create_color(std::string name, glm::vec3 color);
 
-			static ShaderResource create_texture(std::string name, vulkan::Texture const &texture);
+			static ShaderResource create_texture(std::string name, vulkan::Texture const *texture);
 
 			~ShaderResource() = default;
 
@@ -39,6 +39,7 @@ namespace types {
 			std::string const &declaration() const { return _declaration; }
 			size_t alignment() const { return _alignment; }
 
+			util::Result<void, KError> set_texture(const vulkan::Texture *texture);
 			util::Result<vulkan::Texture const &, void> as_texture() const;
 			util::Result<void, KError> set_mat4(glm::mat4 const &val);
 			util::Result<glm::mat4, void> as_mat4() const;
@@ -90,6 +91,7 @@ namespace types {
 
 			ShaderResource const & operator[](std::string name) const { return *get(name); }
 
+			void set_texture(std::string const &name, vulkan::Texture const *texture);
 			void set_mat4(std::string const &name, glm::mat4 const &val);
 			void set_vec3(std::string const &name, glm::vec3 const &val);
 			void set_color3(std::string const &name, glm::vec3 const &val);

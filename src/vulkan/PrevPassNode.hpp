@@ -40,5 +40,9 @@ namespace vulkan {
 			const vulkan::Node *_node;
 			DescriptorSets _descriptor_set;
 			Uniform _uniform;
+			PrevPass *_prev_pass;
+
+		private:
+			util::Result<void, KError> _create_descriptor_sets();
 	};
 }

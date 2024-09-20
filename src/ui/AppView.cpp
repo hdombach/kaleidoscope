@@ -247,10 +247,16 @@ namespace ui {
 			State &state)
 	{
 		std::string name = "##shader_resource_" + resource.name();
-		if (ImGui::BeginCombo(name.data(), resource_manager.get_texture(state.selected_shader_resource)->name().data())) {
+		if (resource.type() != types::ShaderResource::Type::Texture) {
+			return;
+		}
+		auto &texture = resource.as_texture().value();
+		if (ImGui::BeginCombo(name.data(), texture.name().data())) {
 			for (auto &t : util::Adapt(resource_manager.texture_begin(), resource_manager.texture_end())) {
-				if (ImGui::Selectable(t->name().data(), state.selected_shader_resource == t->id())) {
-					state.selected_shader_resource = t->id();
+				if (ImGui::Selectable(t->name().data(), texture.id() == t->id())) {
+					if (texture.id() != t->id()) {
+						resources.set_texture(resource.name(), t);
+					}
 				}
 			}
 			ImGui::EndCombo();

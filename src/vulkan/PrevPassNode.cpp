@@ -20,32 +20,9 @@ namespace vulkan {
 
 		result._id = node->id();
 		result._node = node;
+		result._prev_pass = &preview_pass;
 
-		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
-
-		auto uniform = node->material().resources().create_prim_uniform();
-		TRY(uniform);
-		result._uniform = std::move(uniform.value());
-
-		auto images = std::vector<VkImageView>();
-
-		for (auto &resource : node->material().resources().get()) {
-			if (auto texture = resource->as_texture()) {
-				images.push_back(texture.value().image_view().value());
-			}
-		}
-		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, result._uniform));
-		if (auto temp = DescriptorSetTemplate::create_images(1, VK_SHADER_STAGE_FRAGMENT_BIT, images)) {
-			descriptor_templates.push_back(temp.value());
-		}
-
-		auto descriptor_sets = DescriptorSets::create(
-			descriptor_templates,
-			1,
-			preview_pass.descriptor_pool());
-		TRY(descriptor_sets);
-		result._descriptor_set = std::move(descriptor_sets.value());
-
+		result._create_descriptor_sets();
 		//TODO: This can be optimized by sharing some descriptors between nodes.
 
 		return result;
@@ -58,6 +35,35 @@ namespace vulkan {
 	}
 
 	void PrevPassNode::update() {
-		_node->resources().update_prim_uniform(_uniform);
+		_create_descriptor_sets();
+	}
+
+	util::Result<void, KError> PrevPassNode::_create_descriptor_sets() {
+		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
+
+		auto uniform = _node->resources().create_prim_uniform();
+		TRY(uniform);
+		_uniform = std::move(uniform.value());
+
+		auto images = std::vector<VkImageView>();
+
+		for (auto &resource : _node->resources().get()) {
+			if (auto texture = resource->as_texture()) {
+				images.push_back(texture.value().image_view().value());
+			}
+		}
+		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, _uniform));
+		if (auto temp = DescriptorSetTemplate::create_images(1, VK_SHADER_STAGE_FRAGMENT_BIT, images)) {
+			descriptor_templates.push_back(temp.value());
+		}
+
+		auto descriptor_sets = DescriptorSets::create(
+			descriptor_templates,
+			1,
+			_prev_pass->descriptor_pool());
+		TRY(descriptor_sets);
+		_descriptor_set = std::move(descriptor_sets.value());
+
+		return {};
 	}
 }
