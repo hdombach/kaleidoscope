@@ -25,9 +25,9 @@ namespace vulkan {
 		auto vert_source = std::string();
 		auto frag_source = std::string();
 		auto texture_names = std::vector<std::string>();
-		for (auto resource : material->resources()) {
-			if (resource.type() == types::ShaderResource::Type::Image) {
-				texture_names.push_back(resource.name());
+		for (auto resource : material->resources().get()) {
+			if (resource->type() == types::ShaderResource::Type::Image) {
+				texture_names.push_back(resource->name());
 			}
 		}
 		_codegen(frag_source, vert_source, material, texture_names);
@@ -47,8 +47,8 @@ namespace vulkan {
 		layout_bindings[0].pImmutableSamplers = nullptr;
 
 		bool has_image = false;
-		for (auto &resource : material->resources()) {
-			if (resource.type() == types::ShaderResource::Type::Image) {
+		for (auto &resource : material->resources().get()) {
+			if (resource->type() == types::ShaderResource::Type::Image) {
 				has_image = true;
 			}
 		}
@@ -333,9 +333,9 @@ namespace vulkan {
 
 		frag_main_call += "frag_main(";
 		bool first = true;
-		for (auto &resource : material->resources()) {
-			if (resource.is_primitive()) {
-				material_uniform_content += "\t" + resource.declaration() + ";\n";
+		for (auto &resource : material->resources().get()) {
+			if (resource->is_primitive()) {
+				material_uniform_content += "\t" + resource->declaration() + ";\n";
 			}
 
 			if (first) {
@@ -345,16 +345,16 @@ namespace vulkan {
 				frag_main_call += ", ";
 			}
 
-			frag_main_args += "in " + resource.declaration();
-			if (resource.is_primitive()) {
+			frag_main_args += "in " + resource->declaration();
+			if (resource->is_primitive()) {
 				frag_main_call += "material_uniform.";
-				frag_main_call += resource.name();
-			} else if (resource.type() == types::ShaderResource::Type::Image) {
+				frag_main_call += resource->name();
+			} else if (resource->type() == types::ShaderResource::Type::Image) {
 				int i = 0;
-				while (textures[i] != resource.name()) {
+				while (textures[i] != resource->name()) {
 					i++;
 					if (i >= textures.size()) {
-						LOG_FATAL_ERROR << "INTERNAL: unknown texture name: " << resource.name() << std::endl;
+						LOG_FATAL_ERROR << "INTERNAL: unknown texture name: " << resource->name() << std::endl;
 						return;
 					}
 				}

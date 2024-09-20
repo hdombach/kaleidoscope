@@ -29,7 +29,7 @@ namespace ui {
 			types::ResourceManager &resources,
 			State &state);
 	void ShaderResourceView(
-			types::ShaderResource &shader_resource,
+			types::ShaderResource const &shader_resource,
 			types::ResourceManager &resources,
 			State &state);
 

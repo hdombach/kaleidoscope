@@ -55,9 +55,9 @@ namespace vulkan {
 
 	void RayPassMaterial::_create_struct_decl() {
 		_cg_struct_decl = util::f("struct Material", _material->id(), "{\n");
-		for (auto &resource : _material->resources()) {
-			if (resource.is_primitive()) {
-				_cg_struct_decl += "\t" + resource.declaration() + ";\n";
+		for (auto &resource : _material->resources().get()) {
+			if (resource->is_primitive()) {
+				_cg_struct_decl += "\t" + resource->declaration() + ";\n";
 			}
 		}
 
@@ -85,8 +85,8 @@ namespace vulkan {
 		_cg_frag_def += "void material" + id + "_main(inout vec4 outColor";
 		_cg_frag_def += ", inout vec2 fragTexCoord";
 		bool is_first = true;
-		for (auto &resource : _material->resources()) {
-			_cg_frag_def += ", in " + resource.declaration();
+		for (auto &resource : _material->resources().get()) {
+			_cg_frag_def += ", in " + resource->declaration();
 		}
 		_cg_frag_def += ") {\n";
 		
@@ -105,14 +105,14 @@ namespace vulkan {
 		_cg_frag_call = "";
 
 		_cg_frag_call += "material" + id + "_main(color, uv";
-		for (auto &resource : _material->resources()) {
+		for (auto &resource : _material->resources().get()) {
 			_cg_frag_call += ", ";
-			if (resource.is_primitive()) {
-				_cg_frag_call += "material" + id + "[node_id]." + resource.name();
-			} else if (resource.type() == types::ShaderResource::Type::Image) {
+			if (resource->is_primitive()) {
+				_cg_frag_call += "material" + id + "[node_id]." + resource->name();
+			} else if (resource->type() == types::ShaderResource::Type::Image) {
 				int i = 0;
 				for (auto texture : textures) {
-					if (resource.as_image().value().value() == texture) {
+					if (resource->as_image().value().value() == texture) {
 						break;
 					}
 					i++;

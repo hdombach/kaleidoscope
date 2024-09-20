@@ -29,8 +29,8 @@ namespace vulkan {
 
 		auto images = std::vector<VkImageView>();
 
-		for (auto &resource : node->material().resources()) {
-			if (auto image = resource.as_image()) {
+		for (auto &resource : node->material().resources().get()) {
+			if (auto image = resource->as_image()) {
 				images.push_back(image.value().value());
 			}
 		}
@@ -58,9 +58,6 @@ namespace vulkan {
 	}
 
 	void PrevPassNode::update() {
-		_node->material().resources().update_prim_uniform(
-				_uniform,
-				_node->resources().begin(),
-				_node->resources().end());
+		_node->resources().update_prim_uniform(_uniform);
 	}
 }

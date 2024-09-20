@@ -6,6 +6,7 @@
 #include "ShaderResource.hpp"
 #include "../vulkan/MappedUniform.hpp"
 #include "../util/format.hpp"
+#include "../util/log.hpp"
 
 namespace types {
 	ShaderResource ShaderResource::create_primitive(
@@ -92,7 +93,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 			return KError::invalid_arg("ShaderResource is not a mat4");
 		}
 	}
-	util::Result<glm::mat4 const &, void> ShaderResource::as_mat4() const {
+	util::Result<glm::mat4, void> ShaderResource::as_mat4() const {
 		if (type() == Type::Mat4) {
 			return _as_mat4;
 		} else {
@@ -172,19 +173,59 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		_dirty_bit = true;
 	}
 
+	ShaderResources::ShaderResources(ShaderResources const *parent):
+		_resources(),
+		_range(0),
+		_parent(parent)
+	{
+	}
+
 	void ShaderResources::add_resource(ShaderResource resource) {
+		for (auto &r : _resources) {
+			if (r.name() == resource.name()) {
+				return;
+			}
+		}
 		_resources.push_back(resource);
 		_range = _calc_range();
 	}
 
-	util::Result<ShaderResource const&, void> ShaderResources::get(std::string name) const {
-		auto res = std::find_if(begin(), end(), [&name](ShaderResource const &r) {
-				return r.name() == name;
+	std::vector<ShaderResource const *> ShaderResources::get() const {
+		auto result = std::vector<ShaderResource const *>();
+
+		auto c = this;
+		while (c) {
+			for (auto &new_r : c->_resources) {
+				bool found = false;
+				for (auto &r : result) {
+					if (r->name() == new_r.name()) {
+						found = true;
+					}
+				}
+				if (!found) {
+					result.push_back(&new_r);
+				}
+			}
+			c = c->_parent;
+		}
+
+		std::sort(result.begin(), result.end(), [](ShaderResource const *l, ShaderResource const *r) {
+			return l->name() > r->name();
 		});
-		if (res == end()) {
-			return {};
+
+		return result;
+	}
+
+	util::Result<ShaderResource const&, void> ShaderResources::get(std::string name) const {
+		for (auto &r : _resources) {
+			if (r.name() == name) {
+				return {r};
+			}
+		}
+		if (_parent) {
+			return _parent->get(name);
 		} else {
-			return res.base();
+			return {};
 		}
 	}
 
@@ -228,15 +269,6 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		add_resource(ShaderResource::create_primitive(name, val));
 	}
 
-	bool ShaderResources::contains(std::string name) const {
-		for (auto &resource : *this) {
-			if (resource.name() == name) {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	util::Result<vulkan::Uniform, KError> ShaderResources::create_prim_uniform() const {
 		int i = -1;
 		size_t uniform_s = 0;
@@ -256,46 +288,22 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	}
 
 	size_t ShaderResources::update_prim_uniform(vulkan::Uniform &uniform) const {
-		return update_prim_uniform(uniform, iterator(), iterator());
+		return update_prim_uniform(uniform.raw_value());
 	}
 
-	size_t ShaderResources::update_prim_uniform(
-			vulkan::Uniform &uniform,
-			const_iterator begin,
-			const_iterator end) const
-	{
-		return update_prim_uniform(uniform.raw_value(), begin, end);
-	}
-
-	size_t ShaderResources::update_prim_uniform(
-			void *data,
-			const_iterator begin,
-			const_iterator end) const
-	{
+	size_t ShaderResources::update_prim_uniform(void *data) const {
 		size_t cur_offset = 0;
-		for (auto &resource : _resources) {
-			if (resource.is_primitive()) {
-				auto r = std::find_if(
-						begin, end,
-						[&resource](ShaderResource const &r) {
-							//TODO: maybe throw a error if a type exists with different type
-							return r.name() == resource.name() && r.type() == resource.type();
-						});
-
+		for (auto resource : get()) {
+			if (resource->is_primitive()) {
 				auto value = static_cast<char *>(data) + cur_offset;
-				if (r == end) {
-					memcpy(value, resource.data(), resource.primitive_size());
-				} else {
-					memcpy(value, r->data(), resource.primitive_size());
-				}
-
-				cur_offset += resource.primitive_size();
-				cur_offset += _calc_alignment(resource.alignment(), cur_offset);
+				memcpy(value, resource->data(), resource->primitive_size());
+				
+				cur_offset += resource->primitive_size();
+				cur_offset += _calc_alignment(resource->alignment(), cur_offset);
 			}
 		}
 		cur_offset += _calc_alignment(16, cur_offset);
 		return cur_offset;
-
 	}
 
 	bool ShaderResources::dirty_bits() const {
@@ -322,10 +330,10 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 
 	size_t ShaderResources::_calc_range() const {
 		size_t result = 0;
-		for (auto &resource : _resources) {
-			if (resource.is_primitive()) {
-				result += resource.primitive_size();
-				result += _calc_alignment(resource.alignment(), result);
+		for (auto resource : get()) {
+			if (resource->is_primitive()) {
+				result += resource->primitive_size();
+				result += _calc_alignment(resource->alignment(), result);
 			}
 		}
 		return result;

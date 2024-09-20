@@ -6,6 +6,7 @@
 
 #include "Material.hpp"
 #include "../types/Mesh.hpp"
+#include "ShaderResource.hpp"
 
 namespace vulkan {
 	/**
@@ -22,6 +23,7 @@ namespace vulkan {
 			{
 				auto result = Ptr(new Node(id, mesh, material));
 				result->name() = "Node " + std::to_string(id);
+				result->_resources = types::ShaderResources(&material.resources());
 
 				result->_resources.add_resource(types::ShaderResource::create_primitive("position", result->_position));
 

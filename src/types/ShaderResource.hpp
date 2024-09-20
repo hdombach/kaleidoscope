@@ -41,7 +41,7 @@ namespace types {
 
 			util::Result<vulkan::ImageView const &, void> as_image() const;
 			util::Result<void, KError> set_mat4(glm::mat4 const &val);
-			util::Result<glm::mat4 const&, void> as_mat4() const;
+			util::Result<glm::mat4, void> as_mat4() const;
 			util::Result<void, KError> set_vec3(glm::vec3 const &val);
 			util::Result<glm::vec3 const &, void> as_vec3() const;
 			util::Result<void, KError> set_color3(glm::vec3 const &vale);
@@ -81,10 +81,11 @@ namespace types {
 			using iterator = Container::iterator;
 			using const_iterator = Container::const_iterator;
 
-			ShaderResources() = default;
+			ShaderResources(ShaderResources const *parent = nullptr);
 
 			void add_resource(ShaderResource resource);
 
+			std::vector<ShaderResource const *> get() const;
 			util::Result<ShaderResource const&, void> get(std::string name) const;
 
 			ShaderResource const & operator[](std::string name) const { return get(name).value(); }
@@ -94,13 +95,6 @@ namespace types {
 			void set_color3(std::string const &name, glm::vec3 const &val);
 			void set_float(std::string const &name, float &val);
 
-			bool contains(std::string name) const;
-
-			iterator begin() { return _resources.begin(); }
-			iterator end() { return _resources.end(); }
-			const_iterator begin() const { return _resources.begin(); }
-			const_iterator end() const { return _resources.end(); }
-
 			/* Number of resources */
 			size_t size() const { return _resources.size(); }
 
@@ -109,23 +103,17 @@ namespace types {
 
 			util::Result<vulkan::Uniform, KError> create_prim_uniform() const;
 			size_t update_prim_uniform(vulkan::Uniform &uniform) const;
-			size_t update_prim_uniform(
-					vulkan::Uniform &uniform,
-					const_iterator begin,
-					const_iterator end) const;
-			size_t update_prim_uniform(
-					void *data,
-					const_iterator begin,
-					const_iterator end) const;
+			size_t update_prim_uniform(void *data) const;
 
 			bool dirty_bits() const;
 			void clear_dirty_bits();
 		private:
 			Container _resources;
 			size_t _range;
+			ShaderResources const *_parent;
 
+		private:
 			static size_t _calc_alignment(size_t alignment, size_t cur_offset);
-
 			size_t _calc_range() const;
 	};
 }

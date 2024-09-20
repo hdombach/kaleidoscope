@@ -203,14 +203,14 @@ namespace ui {
 		float width = 250;
 		ImGui::Text("Shader Resources");
 		ImGui::BeginChild("Resources", ImVec2(width, -ImGui::GetFrameHeightWithSpacing()), true);
-		for (auto &r : shader_resources) {
-			ShaderResourceView(r, resources, state);
+		for (auto &r : shader_resources.get()) {
+			ShaderResourceView(*r, resources, state);
 		}
 		ImGui::EndChild();
 	}
 
 	void ShaderResourceView(
-			types::ShaderResource &resource,
+			types::ShaderResource const &resource,
 			types::ResourceManager &resources,
 			State &state)
 	{
@@ -218,7 +218,7 @@ namespace ui {
 			case types::ShaderResource::Type::Image:
 				SelectTextureView(resources, state.selected_shader_resource);
 			default:
-				ImGui::Text("Unknown");
+				ImGui::Text("Unknown: %s", resource.name().data());
 		}
 	}
 

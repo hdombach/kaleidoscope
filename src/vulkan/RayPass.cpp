@@ -383,8 +383,8 @@ namespace vulkan {
 		auto result = std::vector<VkImageView>();
 
 		for (auto &node : _nodes) {
-			for (auto &resource : node.get().material().resources()) {
-				if (auto image = resource.as_image()) {
+			for (auto &resource : node.get().material().resources().get()) {
+				if (auto image = resource->as_image()) {
 					auto v = image.value().value();
 					if (std::find(result.begin(), result.end(), v) == std::end(result)) {
 						result.push_back(v);
@@ -665,10 +665,7 @@ namespace vulkan {
 		size_t i = 0;
 		for (auto &node : _nodes) {
 			auto &n = node.get();
-			n.material().resources().update_prim_uniform(
-					buf.data() + i * max_material_range(),
-					n.resources().begin(),
-					n.resources().end());
+			n.resources().update_prim_uniform(buf.data() + i * max_material_range());
 			i++;
 		}
 		if (auto buffer = StaticBuffer::create(buf.data(), range)) {
