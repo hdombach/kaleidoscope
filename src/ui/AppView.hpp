@@ -28,10 +28,15 @@ namespace ui {
 			types::ShaderResources &shader_resources,
 			types::ResourceManager &resources,
 			State &state);
-	void ShaderResourceView(
-			types::ShaderResource const &shader_resource,
-			types::ResourceManager &resources,
+
+	void ShaderResourceFloatView(
+			types::ShaderResource const &resource,
+			types::ShaderResources &resources,
 			State &state);
 
-	void SelectTextureView(types::ResourceManager &resources, uint32_t &selected);
+	void SelectTextureView(
+			types::ShaderResource const &resource,
+			types::ShaderResources &resources,
+			types::ResourceManager &resources_manager,
+			State &state);
 }

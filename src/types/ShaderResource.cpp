@@ -153,7 +153,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		}
 	}
 
-	util::Result<float const &, void> ShaderResource::as_float() const {
+	util::Result<float, void> ShaderResource::as_float() const {
 		if (type() == Type::Float) {
 			return _as_float;
 		} else {
@@ -216,16 +216,16 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		return result;
 	}
 
-	util::Result<ShaderResource const&, void> ShaderResources::get(std::string name) const {
+	ShaderResource const *ShaderResources::get(std::string name) const {
 		for (auto &r : _resources) {
 			if (r.name() == name) {
-				return {r};
+				return &r;
 			}
 		}
 		if (_parent) {
 			return _parent->get(name);
 		} else {
-			return {};
+			return nullptr;
 		}
 	}
 

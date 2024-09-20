@@ -203,30 +203,50 @@ namespace ui {
 		float width = 250;
 		ImGui::Text("Shader Resources");
 		ImGui::BeginChild("Resources", ImVec2(width, -ImGui::GetFrameHeightWithSpacing()), true);
-		for (auto &r : shader_resources.get()) {
-			ShaderResourceView(*r, resources, state);
+		for (auto r : shader_resources.get()) {
+			switch (r->type()) {
+				case types::ShaderResource::Type::Image:
+					SelectTextureView(
+							*r, 
+							shader_resources,
+							resources,
+							state);
+					break;
+				case types::ShaderResource::Type::Float:
+					ShaderResourceFloatView(*r, shader_resources, state);
+					break;
+				default:
+					ImGui::Text("Unknown: %s", r->name().data());
+					break;
+			}
 		}
 		ImGui::EndChild();
 	}
 
-	void ShaderResourceView(
-			types::ShaderResource const &resource,
-			types::ResourceManager &resources,
+	void ShaderResourceFloatView(
+			const types::ShaderResource &resource,
+			types::ShaderResources &resources,
 			State &state)
 	{
-		switch (resource.type()) {
-			case types::ShaderResource::Type::Image:
-				SelectTextureView(resources, state.selected_shader_resource);
-			default:
-				ImGui::Text("Unknown: %s", resource.name().data());
+		float value = resource.as_float().value();
+		if (ImGui::DragFloat(resource.name().data(), &value, 0.01)) {
+			resources.set_float(resource.name(), value);
 		}
 	}
 
-	void SelectTextureView(types::ResourceManager &resources, uint32_t &selected) {
-		for (auto &t : util::Adapt(resources.texture_begin(), resources.texture_end())) {
-			if (ImGui::Selectable(t->name().data(), selected == t->id())) {
-				selected = t->id();
+	void SelectTextureView(
+			types::ShaderResource const &resource,
+			types::ShaderResources &resources,
+			types::ResourceManager &resource_manager,
+			State &state)
+	{
+		if (ImGui::BeginCombo(resource.name().data(), resource_manager.get_texture(state.selected_shader_resource)->name().data())) {
+			for (auto &t : util::Adapt(resource_manager.texture_begin(), resource_manager.texture_end())) {
+				if (ImGui::Selectable(t->name().data(), state.selected_shader_resource == t->id())) {
+					state.selected_shader_resource = t->id();
+				}
 			}
+			ImGui::EndCombo();
 		}
 	}
 }

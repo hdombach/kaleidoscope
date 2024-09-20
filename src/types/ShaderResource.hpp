@@ -47,7 +47,7 @@ namespace types {
 			util::Result<void, KError> set_color3(glm::vec3 const &vale);
 			util::Result<glm::vec3 const &, void> as_color3() const;
 			util::Result<void, KError> set_float(float val);
-			util::Result<float const &, void> as_float() const;
+			util::Result<float, void> as_float() const;
 
 			bool const dirty_bit() const { return _dirty_bit; }
 			void clear_dirty_bit() { _dirty_bit = false; }
@@ -86,9 +86,9 @@ namespace types {
 			void add_resource(ShaderResource resource);
 
 			std::vector<ShaderResource const *> get() const;
-			util::Result<ShaderResource const&, void> get(std::string name) const;
+			ShaderResource const *get(std::string name) const;
 
-			ShaderResource const & operator[](std::string name) const { return get(name).value(); }
+			ShaderResource const & operator[](std::string name) const { return *get(name); }
 
 			void set_mat4(std::string const &name, glm::mat4 const &val);
 			void set_vec3(std::string const &name, glm::vec3 const &val);
