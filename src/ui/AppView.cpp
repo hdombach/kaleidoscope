@@ -202,25 +202,30 @@ namespace ui {
 	{
 		float width = 250;
 		ImGui::Text("Shader Resources");
-		ImGui::BeginChild("Resources", ImVec2(width, -ImGui::GetFrameHeightWithSpacing()), true);
-		for (auto r : shader_resources.get()) {
-			switch (r->type()) {
-				case types::ShaderResource::Type::Image:
-					SelectTextureView(
-							*r, 
-							shader_resources,
-							resources,
-							state);
-					break;
-				case types::ShaderResource::Type::Float:
-					ShaderResourceFloatView(*r, shader_resources, state);
-					break;
-				default:
-					ImGui::Text("Unknown: %s", r->name().data());
-					break;
+		if (ImGui::BeginTable("Shader Resource", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
+			for (auto r : shader_resources.get()) {
+				ImGui::TableNextRow();
+				ImGui::TableNextColumn();
+				ImGui::Text("%s:", r->name().data());
+				ImGui::TableNextColumn();
+				switch (r->type()) {
+					case types::ShaderResource::Type::Image:
+						SelectTextureView(
+								*r, 
+								shader_resources,
+								resources,
+								state);
+						break;
+					case types::ShaderResource::Type::Float:
+						ShaderResourceFloatView(*r, shader_resources, state);
+						break;
+					default:
+						ImGui::Text("Unknown");
+						break;
+				}
 			}
+			ImGui::EndTable();
 		}
-		ImGui::EndChild();
 	}
 
 	void ShaderResourceFloatView(
@@ -229,7 +234,8 @@ namespace ui {
 			State &state)
 	{
 		float value = resource.as_float().value();
-		if (ImGui::DragFloat(resource.name().data(), &value, 0.01)) {
+		std::string name = "##shader_resource_" + resource.name();
+		if (ImGui::DragFloat(name.data(), &value, 0.01)) {
 			resources.set_float(resource.name(), value);
 		}
 	}
@@ -240,7 +246,8 @@ namespace ui {
 			types::ResourceManager &resource_manager,
 			State &state)
 	{
-		if (ImGui::BeginCombo(resource.name().data(), resource_manager.get_texture(state.selected_shader_resource)->name().data())) {
+		std::string name = "##shader_resource_" + resource.name();
+		if (ImGui::BeginCombo(name.data(), resource_manager.get_texture(state.selected_shader_resource)->name().data())) {
 			for (auto &t : util::Adapt(resource_manager.texture_begin(), resource_manager.texture_end())) {
 				if (ImGui::Selectable(t->name().data(), state.selected_shader_resource == t->id())) {
 					state.selected_shader_resource = t->id();
