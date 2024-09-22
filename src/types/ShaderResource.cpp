@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstring>
 #include <stdlib.h>
 
 #include <glm/glm.hpp>
@@ -319,9 +320,12 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		size_t cur_offset = 0;
 		for (auto resource : get()) {
 			cur_offset += _calc_alignment(resource->alignment(), cur_offset);
+			auto value = static_cast<char *>(data) + cur_offset;
 			if (resource->is_primitive()) {
-				auto value = static_cast<char *>(data) + cur_offset;
 				memcpy(value, resource->data(), resource->primitive_size());
+			} else if (auto texture = resource->as_texture()) {
+				uint32_t id = texture.value().id();
+				memcpy(value, &id, sizeof(id));
 			}
 			cur_offset += resource->primitive_size();
 		}
@@ -354,9 +358,10 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	size_t ShaderResources::_calc_range() const {
 		size_t result = 0;
 		for (auto resource : get()) {
-			result += resource->primitive_size();
 			result += _calc_alignment(resource->alignment(), result);
+			result += resource->primitive_size();
 		}
+		result += _calc_alignment(16, result);
 		return result;
 	}
 }

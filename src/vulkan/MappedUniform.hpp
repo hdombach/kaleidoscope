@@ -72,6 +72,7 @@ namespace vulkan {
 
 			void destroy() {
 				if (_buffer) {
+					Graphics::DEFAULT->wait_idle();
 					vkDestroyBuffer(Graphics::DEFAULT->device(), _buffer, nullptr);
 					_buffer = nullptr;
 				}

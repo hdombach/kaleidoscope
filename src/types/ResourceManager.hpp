@@ -25,7 +25,7 @@ namespace types {
 	class ResourceManager {
 		public:
 			using TextureContainer = std::vector<vulkan::Texture *>;
-			using texture_iterator = util::filter_iterator<TextureContainer::iterator>;
+			using texture_iterator = TextureContainer::iterator;
 		public:
 			ResourceManager();
 			~ResourceManager();

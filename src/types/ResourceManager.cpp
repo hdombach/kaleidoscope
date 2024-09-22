@@ -110,10 +110,10 @@ namespace types {
 	}
 
 	ResourceManager::texture_iterator ResourceManager::texture_begin() {
-		return texture_iterator(_textures.begin(), _textures.end(), util::ptr_exists<vulkan::Texture>);
+		return _textures.begin();
 	}
 	ResourceManager::texture_iterator ResourceManager::texture_end() {
-		return texture_iterator(_textures.end(), _textures.end(), util::ptr_exists<vulkan::Texture>);
+		return _textures.end();
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_mesh_from_file(

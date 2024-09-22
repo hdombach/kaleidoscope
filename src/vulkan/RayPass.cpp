@@ -16,6 +16,7 @@
 #include "../types/Node.hpp"
 #include "../util/file.hpp"
 #include "../util/Util.hpp"
+#include "../util/IterAdapter.hpp"
 
 namespace vulkan {
 	RayPass::MeshObserver::MeshObserver(RayPass &ray_pass):
@@ -290,7 +291,6 @@ namespace vulkan {
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
 		vkWaitForFences(Graphics::DEFAULT->device(), 1, &_pass_fence.value(), VK_TRUE, UINT64_MAX);
-
 		vkResetFences(Graphics::DEFAULT->device(), 1, &_pass_fence.value());
 
 		vkResetCommandBuffer(_command_buffer, 0);
@@ -381,15 +381,15 @@ namespace vulkan {
 
 	std::vector<VkImageView> RayPass::used_textures() const {
 		auto result = std::vector<VkImageView>();
+		auto container = util::Adapt(
+				_scene->resource_manager().texture_begin(),
+				_scene->resource_manager().texture_end());
 
-		for (auto &node : _nodes) {
-			for (auto &resource : node.get().material().resources().get()) {
-				if (auto texture = resource->as_texture()) {
-					auto v = texture.value().image_view().value();
-					if (std::find(result.begin(), result.end(), v) == std::end(result)) {
-						result.push_back(v);
-					}
-				}
+		for (auto t : container) {
+			if (t) {
+				result.push_back(t->image_view().value());
+			} else {
+				result.push_back(nullptr);
 			}
 		}
 
@@ -502,7 +502,7 @@ namespace vulkan {
 			if (auto images = DescriptorSetTemplate::create_images(
 						6, 
 						VK_SHADER_STAGE_COMPUTE_BIT, 
-						std::vector<VkImageView>(textures.begin(), textures.end())))
+						textures))
 			{
 				descriptor_templates.push_back(images.value());
 			} else {
@@ -596,6 +596,8 @@ namespace vulkan {
 
 		if (update) {
 			_create_descriptor_sets();
+			//TODO: Very slow as it doesn't need to be done every time
+			_create_pipeline();
 		}
 	}
 
