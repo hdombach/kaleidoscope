@@ -57,8 +57,9 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	{
 		auto result = ShaderResource(name, Type::Texture);
 		result._as_texture = texture;
-		result._alignment = 0;
+		result._primitive_size = sizeof(uint32_t);
 		result._declaration = util::f("sampler2D ", name);
+		result._alignment = 4;
 		return result;
 	}
 
@@ -297,11 +298,9 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	util::Result<vulkan::Uniform, KError> ShaderResources::create_prim_uniform() const {
 		int i = -1;
 		size_t uniform_s = 0;
-		for (auto &resource : _resources) {
-			if (resource.is_primitive()) {
-				uniform_s += resource.primitive_size();
-				uniform_s += _calc_alignment(resource.alignment(), uniform_s);
-			}
+		for (auto resource : get()) {
+			uniform_s += _calc_alignment(resource->alignment(), uniform_s);
+			uniform_s += resource->primitive_size();
 		}
 		// Structs need to be aligned to 16 bytes
 		uniform_s += _calc_alignment(16, uniform_s);
@@ -319,13 +318,12 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	size_t ShaderResources::update_prim_uniform(void *data) const {
 		size_t cur_offset = 0;
 		for (auto resource : get()) {
+			cur_offset += _calc_alignment(resource->alignment(), cur_offset);
 			if (resource->is_primitive()) {
 				auto value = static_cast<char *>(data) + cur_offset;
 				memcpy(value, resource->data(), resource->primitive_size());
-				
-				cur_offset += resource->primitive_size();
-				cur_offset += _calc_alignment(resource->alignment(), cur_offset);
 			}
+			cur_offset += resource->primitive_size();
 		}
 		cur_offset += _calc_alignment(16, cur_offset);
 		return cur_offset;
@@ -356,10 +354,8 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	size_t ShaderResources::_calc_range() const {
 		size_t result = 0;
 		for (auto resource : get()) {
-			if (resource->is_primitive()) {
-				result += resource->primitive_size();
-				result += _calc_alignment(resource->alignment(), result);
-			}
+			result += resource->primitive_size();
+			result += _calc_alignment(resource->alignment(), result);
 		}
 		return result;
 	}

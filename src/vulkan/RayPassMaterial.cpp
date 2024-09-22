@@ -58,6 +58,8 @@ namespace vulkan {
 		for (auto &resource : _material->resources().get()) {
 			if (resource->is_primitive()) {
 				_cg_struct_decl += "\t" + resource->declaration() + ";\n";
+			} else {
+				_cg_struct_decl += "\tuint " + resource->name() + ";\n";
 			}
 		}
 

@@ -336,6 +336,8 @@ namespace vulkan {
 		for (auto &resource : material->resources().get()) {
 			if (resource->is_primitive()) {
 				material_uniform_content += "\t" + resource->declaration() + ";\n";
+			} else if (resource->type() == types::ShaderResource::Type::Texture) {
+				material_uniform_content += "\tuint " + resource->name() + ";\n";
 			}
 
 			if (first) {
