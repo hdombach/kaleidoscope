@@ -34,6 +34,16 @@ namespace ui {
 			types::ShaderResources &resources,
 			State &state);
 
+	void ShaderResourceVec3View(
+			types::ShaderResource const &resource,
+			types::ShaderResources &resources,
+			State &state);
+
+	void ShaderResourceColorView(
+			types::ShaderResource const &resource,
+			types::ShaderResources &resources,
+			State &state);
+
 	void SelectTextureView(
 			types::ShaderResource const &resource,
 			types::ShaderResources &resources,

@@ -220,6 +220,12 @@ namespace ui {
 					case types::ShaderResource::Type::Float:
 						ShaderResourceFloatView(*r, shader_resources, state);
 						break;
+					case types::ShaderResource::Type::Vec3:
+						ShaderResourceVec3View(*r, shader_resources, state);
+						break;
+					case types::ShaderResource::Type::Color3:
+						ShaderResourceColorView(*r, shader_resources, state);
+						break;
 					default:
 						ImGui::Text("Unknown");
 						break;
@@ -239,6 +245,28 @@ namespace ui {
 		if (ImGui::DragFloat(name.data(), &value, 0.01)) {
 			resources.set_float(resource.name(), value);
 		}
+	}
+
+	void ShaderResourceVec3View(
+			const types::ShaderResource &resource,
+			types::ShaderResources &resources,
+			State &state)
+	{
+		auto v = util::as_array(resource.as_vec3().value());
+		std::string name = "##shader_resource_" + resource.name();
+		ImGui::DragFloat3(name.data(), v.data());
+		resources.set_vec3(resource.name(), util::as_vec(v));
+	}
+
+	void ShaderResourceColorView(
+			const types::ShaderResource &resource,
+			types::ShaderResources &resources,
+			State &state)
+	{
+		auto color = util::as_array(resource.as_color3().value());
+		std::string name = "##shader_resource_" + resource.name();
+		ImGui::ColorPicker3(name.data(), color.data());
+		resources.set_color3(resource.name(), util::as_vec(color));
 	}
 
 	void SelectTextureView(
