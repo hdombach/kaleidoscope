@@ -36,19 +36,22 @@ namespace vulkan {
 		return *this;
 	}
 
-	Semaphore::~Semaphore() {
+	void Semaphore::destroy() {
 		if (_semaphore) {
 			vkDestroySemaphore(Graphics::DEFAULT->device(), _semaphore, nullptr);
 			_semaphore = nullptr;
 		}
 	}
 
-
-	VkSemaphore& Semaphore::operator*() {
+	Semaphore::operator bool() const {
 		return _semaphore;
 	}
 
-	VkSemaphore const& Semaphore::operator*() const {
+	VkSemaphore& Semaphore::get() {
+		return _semaphore;
+	}
+
+	VkSemaphore const& Semaphore::get() const {
 		return _semaphore;
 	}
 

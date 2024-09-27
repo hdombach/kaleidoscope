@@ -17,13 +17,16 @@ namespace vulkan {
 			Fence& operator=(const Fence& other) = delete;
 			Fence& operator=(Fence&& other);
 
-			~Fence();
+			void destroy();
+			~Fence() { destroy(); }
 
-			VkFence& value();
-			VkFence const& value() const;
+			operator bool() const;
 
-			VkFence& operator*() { return value(); }
-			VkFence const& operator*() const { return value(); }
+			VkFence& get();
+			VkFence const& get() const;
+
+			VkFence& operator*() { return get(); }
+			VkFence const& operator*() const { return get(); }
 
 			VkResult wait();
 			VkResult reset();

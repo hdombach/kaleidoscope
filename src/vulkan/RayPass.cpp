@@ -290,8 +290,8 @@ namespace vulkan {
 		auto submit_info = VkSubmitInfo{};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-		vkWaitForFences(Graphics::DEFAULT->device(), 1, &_pass_fence.value(), VK_TRUE, UINT64_MAX);
-		vkResetFences(Graphics::DEFAULT->device(), 1, &_pass_fence.value());
+		vkWaitForFences(Graphics::DEFAULT->device(), 1, &_pass_fence.get(), VK_TRUE, UINT64_MAX);
+		vkResetFences(Graphics::DEFAULT->device(), 1, &_pass_fence.get());
 
 		vkResetCommandBuffer(_command_buffer, 0);
 

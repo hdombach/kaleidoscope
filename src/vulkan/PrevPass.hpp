@@ -121,8 +121,8 @@ namespace vulkan {
 			DescriptorSets _descriptor_sets;
 			VkRenderPass _render_pass;
 			std::vector<MappedGlobalUniform> _mapped_uniforms;
-			std::vector<Fence> _in_flight_fences;
-			std::vector<Semaphore> _render_finished_semaphores;
+			Fence _fence;
+			Semaphore _semaphore;
 			std::vector<VkCommandBuffer> _command_buffers;
 			DescriptorPool _descriptor_pool;
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;

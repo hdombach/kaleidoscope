@@ -35,18 +35,22 @@ namespace vulkan {
 		return *this;
 	}
 
-	Fence::~Fence() {
+	void Fence::destroy() {
 		if (_fence) {
 			vkDestroyFence(Graphics::DEFAULT->device(), _fence, nullptr);
 			_fence = nullptr;
 		}
 	}
 
-	VkFence& Fence::value() {
+	Fence::operator bool() const {
 		return _fence;
 	}
 
-	VkFence const& Fence::value() const {
+	VkFence& Fence::get() {
+		return _fence;
+	}
+
+	VkFence const& Fence::get() const {
 		return _fence;
 	}
 

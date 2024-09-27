@@ -18,11 +18,16 @@ namespace vulkan {
 			Semaphore& operator=(const Semaphore& other) = delete;
 			Semaphore& operator=(Semaphore&& other);
 
-			~Semaphore();
+			void destroy();
+			~Semaphore() { destroy(); }
 
-			VkSemaphore& operator*();
+			operator bool() const;
 
-			VkSemaphore const& operator*() const;
+			VkSemaphore& get();
+			VkSemaphore const& get() const ;
+
+			VkSemaphore& operator*() { return get(); }
+			VkSemaphore const& operator*() const { return get(); }
 
 		private:
 			Semaphore(VkSemaphore semaphore);

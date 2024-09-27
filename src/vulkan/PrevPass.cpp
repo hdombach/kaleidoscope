@@ -201,8 +201,8 @@ namespace vulkan {
 
 		_mapped_uniforms.clear();
 		
-		_in_flight_fences.clear();
-		_render_finished_semaphores.clear();
+		_fence.destroy();
+		_semaphore.destroy();
 	}
 
 	PrevPass::~PrevPass() {
@@ -210,11 +210,11 @@ namespace vulkan {
 	}
 
 	void PrevPass::render(std::vector<Node::Ptr> &nodes, types::Camera &camera) {
-		require(_in_flight_fences[_frame_index].wait());
+		_fence.wait();
 		auto submit_info = VkSubmitInfo{};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-		_in_flight_fences[_frame_index].reset();
+		_fence.reset();
 
 		auto command_buffer = _command_buffers[_frame_index];
 
@@ -314,7 +314,7 @@ namespace vulkan {
 		//submitInfo.signalSemaphoreCount = 1;
 		//submitInfo.pSignalSemaphores = &renderFinishedSemaphores_[_frame_index];
 
-		require(vkQueueSubmit(Graphics::DEFAULT->graphics_queue(), 1, &submit_info, *_in_flight_fences[_frame_index]));
+		require(vkQueueSubmit(Graphics::DEFAULT->graphics_queue(), 1, &submit_info, _fence.get()));
 
 		_frame_index = (_frame_index + 1) % FRAMES_IN_FLIGHT;
 
@@ -417,18 +417,18 @@ namespace vulkan {
 	}
 
 	util::Result<void, KError> PrevPass::_create_sync_objects() {
-		_render_finished_semaphores.resize(FRAMES_IN_FLIGHT);
-		_in_flight_fences.resize(FRAMES_IN_FLIGHT);
-
-		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-			auto semaphore = Semaphore::create();
-			TRY(semaphore);
-			_render_finished_semaphores[i] = std::move(semaphore.value());
-
-			auto fence = Fence::create();
-			TRY(fence);
-			_in_flight_fences[i] = std::move(fence.value());
+		if (auto semaphore = Semaphore::create()) {
+			_semaphore = std::move(semaphore.value());
+		} else {
+			return {semaphore.error()};
 		}
+
+		if (auto fence = Fence::create()) {
+			_fence = std::move(fence.value());
+		} else {
+			return {fence.error()};
+		}
+
 		return {};
 	}
 
