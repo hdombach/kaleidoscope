@@ -71,17 +71,17 @@ namespace vulkan {
 		_is_preview = is_preview;
 	}
 
-	void Scene::render_preview() {
-		_preview_render_pass->render(_nodes, camera());
+	VkSemaphore Scene::render_preview(VkSemaphore semaphore) {
+		return _preview_render_pass->render(_nodes, camera(), semaphore);
 	}
 
-	void Scene::render_raytrace() {
+	VkSemaphore Scene::render_raytrace(VkSemaphore semaphore) {
 		auto uniform_buffer = ComputeUniformBuffer{};
 		uniform_buffer.camera_rotation = camera().gen_rotate_mat();
 		uniform_buffer.camera_translation = glm::vec4(camera().position, 0.0);
 		uniform_buffer.aspect = static_cast<float>(camera().width) / static_cast<float>(camera().height);
 		uniform_buffer.fovy = camera().fovy;
-		_raytrace_render_pass->submit(*_nodes[0], 10000, uniform_buffer);
+		return _raytrace_render_pass->submit(*_nodes[0], 10000, uniform_buffer, semaphore);
 	}
 
 	void Scene::update() {

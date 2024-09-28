@@ -29,6 +29,7 @@ class App {
 		std::unique_ptr<vulkan::UIRenderPipeline> _ui_render_pipeline;
 		std::unique_ptr<types::ResourceManager> _resource_manager;
 		std::unique_ptr<ui::State> _view_state;
+		VkSemaphore _prev_semaphore;
 
 		static std::string _prog_path;
 		static std::string _working_path;

@@ -88,7 +88,7 @@ namespace vulkan {
 
 		auto semaphore = Semaphore::create();
 		TRY(semaphore);
-		result->_pass_semaphore = std::move(semaphore.value());
+		result->_semaphore = std::move(semaphore.value());
 
 		{
 			//Set up main texture
@@ -210,7 +210,7 @@ namespace vulkan {
 		_result_image = std::move(other._result_image);
 		_result_image_view = std::move(other._result_image_view);
 		_pass_fence = std::move(other._pass_fence);
-		_pass_semaphore = std::move(other._pass_semaphore);
+		_semaphore = std::move(other._semaphore);
 		_descriptor_pool = std::move(other._descriptor_pool);
 		_descriptor_set = std::move(other._descriptor_set);
 
@@ -246,7 +246,7 @@ namespace vulkan {
 		_result_image = std::move(other._result_image);
 		_result_image_view = std::move(other._result_image_view);
 		_pass_fence = std::move(other._pass_fence);
-		_pass_semaphore = std::move(other._pass_semaphore);
+		_semaphore = std::move(other._semaphore);
 		_descriptor_pool = std::move(other._descriptor_pool);
 		
 		_pipeline_layout = other._pipeline_layout;
@@ -270,7 +270,12 @@ namespace vulkan {
 		return _result_image_view;
 	}
 
-	void RayPass::submit(Node &node, uint32_t count, ComputeUniformBuffer uniform) {
+	VkSemaphore RayPass::submit(
+			Node &node,
+			uint32_t count,
+			ComputeUniformBuffer uniform,
+			VkSemaphore semaphore)
+	{
 		auto rand = std::random_device();
 		auto dist = std::uniform_int_distribution<uint32_t>();
 		static glm::u32vec4 seed = {1919835750, 2912171293, 1124614627, 4259748986};
@@ -283,7 +288,7 @@ namespace vulkan {
 			auto res = _create_pipeline();
 			if (!res) {
 				LOG_ERROR << "problem creating pipeline: " << res.error().desc() << " " << res.error().content() << std::endl;
-				return;
+				return nullptr;
 			}
 		}
 
@@ -349,15 +354,24 @@ namespace vulkan {
 			LOG_ERROR << "Couldn't end command buffer" << std::endl;
 		}
 
+		auto ray_semaphore = _semaphore.get();
+
 		submit_info.commandBufferCount = 1;
 		submit_info.pCommandBuffers = &_command_buffer;
-		submit_info.signalSemaphoreCount = 0;
-		submit_info.pSignalSemaphores = nullptr;
+		if (semaphore) {
+			VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT; 
+			submit_info.pWaitSemaphores = &semaphore;
+			submit_info.waitSemaphoreCount = 1;
+			submit_info.pWaitDstStageMask = &wait_stage;
+		}
+		submit_info.signalSemaphoreCount = 1;
+		submit_info.pSignalSemaphores = &ray_semaphore;
 
 		auto res = vkQueueSubmit(Graphics::DEFAULT->compute_queue(), 1, &submit_info, *_pass_fence);
 		if (res != VK_SUCCESS) {
 			LOG_ERROR << "Problem submitting queue" << std::endl;
 		}
+		return ray_semaphore;
 	}
 
 	MappedComputeUniform &RayPass::current_uniform_buffer() {

@@ -22,6 +22,7 @@ namespace vulkan {
 	UIRenderPipeline::UIRenderPipeline() {
 		_create_descriptor_pool();
 		_init_im_gui();
+		_semaphore = std::move(Semaphore::create().value());
 	}
 
 	UIRenderPipeline::~UIRenderPipeline() {
@@ -38,7 +39,11 @@ namespace vulkan {
 		vkDestroyDescriptorPool(Graphics::DEFAULT->device(), _descriptor_pool, nullptr);
 	}
 
-	void UIRenderPipeline::submit(std::function<void()> ui_callback) {
+	VkSemaphore UIRenderPipeline::submit(
+			std::function<void()> ui_callback,
+			VkSemaphore semaphore)
+	{
+		VkSemaphore result = nullptr;
 		glfwPollEvents();
 		if (_swapchain_rebuild) {
 			int width, height;
@@ -67,15 +72,15 @@ namespace vulkan {
 		ui_callback();
 
 		ImGui::Render();
-		auto mainDrawData = ImGui::GetDrawData();
-		const bool mainIsMinimized = (mainDrawData->DisplaySize.x <= 0.0f || mainDrawData->DisplaySize.y <= 0.0f);
+		auto main_draw_data = ImGui::GetDrawData();
+		const bool main_is_minimized = (main_draw_data->DisplaySize.x <= 0.0f || main_draw_data->DisplaySize.y <= 0.0f);
 		_window_data.ClearValue.color.float32[0] = _clear_color.x * _clear_color.w;
 		_window_data.ClearValue.color.float32[1] = _clear_color.y * _clear_color.w;
 		_window_data.ClearValue.color.float32[2] = _clear_color.z * _clear_color.w;
 		_window_data.ClearValue.color.float32[3] = _clear_color.w;
 
-		if (!mainIsMinimized) {
-			_render_frame(mainDrawData);
+		if (!main_is_minimized) {
+			result = _render_frame(main_draw_data, semaphore);
 		}
 
 		if (_io->ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
@@ -83,14 +88,15 @@ namespace vulkan {
 			ImGui::RenderPlatformWindowsDefault();
 		}
 
-		if (!mainIsMinimized) {
+		if (!main_is_minimized) {
 			_present_frame();
 		}
 
+		return result;
 	}
 
 	void UIRenderPipeline::_create_descriptor_pool() {
-		auto poolSizes = std::array<VkDescriptorPoolSize, 11>{{
+		auto pool_sizes = std::array<VkDescriptorPoolSize, 11>{{
 			{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
 			{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
 			{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
@@ -104,14 +110,14 @@ namespace vulkan {
 			{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
 		}};
 
-		auto poolInfo = VkDescriptorPoolCreateInfo{};
-		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-		poolInfo.maxSets = 1000 * poolSizes.size();
-		poolInfo.poolSizeCount = poolSizes.size();
-		poolInfo.pPoolSizes = poolSizes.data();
+		auto pool_info = VkDescriptorPoolCreateInfo{};
+		pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+		pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+		pool_info.maxSets = 1000 * pool_sizes.size();
+		pool_info.poolSizeCount = pool_sizes.size();
+		pool_info.pPoolSizes = pool_sizes.data();
 
-		require(vkCreateDescriptorPool(Graphics::DEFAULT->device(), &poolInfo, nullptr, &_descriptor_pool));
+		require(vkCreateDescriptorPool(Graphics::DEFAULT->device(), &pool_info, nullptr, &_descriptor_pool));
 	}
 
 	void UIRenderPipeline::_init_im_gui() {
@@ -205,22 +211,25 @@ namespace vulkan {
 				FRAMES_IN_FLIGHT);
 	}
 
-	void UIRenderPipeline::_render_frame(ImDrawData* drawData) {
+	VkSemaphore UIRenderPipeline::_render_frame(
+			ImDrawData* drawData,
+			VkSemaphore semaphore)
+	{
 		VkResult err;
 
-		auto imageAcquiredSemaphore =_window_data.FrameSemaphores[_window_data.SemaphoreIndex].ImageAcquiredSemaphore;
-		auto renderCompleteSemaphore = _window_data.FrameSemaphores[_window_data.SemaphoreIndex].RenderCompleteSemaphore;
+		auto image_acquired_semaphore =_window_data.FrameSemaphores[_window_data.SemaphoreIndex].ImageAcquiredSemaphore;
+		auto render_complete_semaphore = _window_data.FrameSemaphores[_window_data.SemaphoreIndex].RenderCompleteSemaphore;
 
 		err = vkAcquireNextImageKHR(
 				Graphics::DEFAULT->device(),
 				_window_data.Swapchain,
 				UINT64_MAX,
-				imageAcquiredSemaphore,
+				image_acquired_semaphore,
 				VK_NULL_HANDLE,
 				&_window_data.FrameIndex);
 		if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) {
 			_swapchain_rebuild = true;
-			return;
+			return nullptr;
 		}
 		require(err);
 
@@ -234,45 +243,60 @@ namespace vulkan {
 		require(vkResetFences(Graphics::DEFAULT->device(), 1, &frame->Fence));
 
 		require(vkResetCommandPool(Graphics::DEFAULT->device(), frame->CommandPool, 0));
-		auto bufferBeginInfo = VkCommandBufferBeginInfo{};
-		bufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		bufferBeginInfo.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-		require(vkBeginCommandBuffer(frame->CommandBuffer, &bufferBeginInfo));
+		auto buffer_begin_info = VkCommandBufferBeginInfo{};
+		buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		buffer_begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		require(vkBeginCommandBuffer(frame->CommandBuffer, &buffer_begin_info));
 
-		auto passBeginInfo = VkRenderPassBeginInfo{};
-		passBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		passBeginInfo.renderPass = _window_data.RenderPass;
-		passBeginInfo.framebuffer = frame->Framebuffer;
-		passBeginInfo.renderArea.extent.width = _window_data.Width;
-		passBeginInfo.renderArea.extent.height = _window_data.Height;
-		passBeginInfo.clearValueCount = 1;
-		passBeginInfo.pClearValues = &_window_data.ClearValue;
+		auto pass_begin_info = VkRenderPassBeginInfo{};
+		pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		pass_begin_info.renderPass = _window_data.RenderPass;
+		pass_begin_info.framebuffer = frame->Framebuffer;
+		pass_begin_info.renderArea.extent.width = _window_data.Width;
+		pass_begin_info.renderArea.extent.height = _window_data.Height;
+		pass_begin_info.clearValueCount = 1;
+		pass_begin_info.pClearValues = &_window_data.ClearValue;
 		vkCmdBeginRenderPass(
 				frame->CommandBuffer,
-				&passBeginInfo,
+				&pass_begin_info,
 				VK_SUBPASS_CONTENTS_INLINE);
 
 		ImGui_ImplVulkan_RenderDrawData(drawData, frame->CommandBuffer);
 
 		vkCmdEndRenderPass(frame->CommandBuffer);
 
-		VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-		auto submitInfo = VkSubmitInfo{};
-		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = &imageAcquiredSemaphore;
-		submitInfo.pWaitDstStageMask = &waitStage;
-		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &frame->CommandBuffer;
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &renderCompleteSemaphore;
+		auto wait_semaphores = std::vector<VkSemaphore>();
+		auto wait_stages = std::vector<VkPipelineStageFlags>();
+		wait_semaphores.push_back(image_acquired_semaphore);
+		wait_stages.push_back(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
+		if (semaphore) {
+			wait_semaphores.push_back(semaphore);
+			wait_stages.push_back(VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
+		}
+
+		auto semaphores = std::array<VkSemaphore,2>{
+			render_complete_semaphore,
+			_semaphore.get()
+		};
+
+		auto submit_info = VkSubmitInfo{};
+		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submit_info.waitSemaphoreCount = wait_semaphores.size();
+		submit_info.pWaitSemaphores = wait_semaphores.data();
+		submit_info.pWaitDstStageMask = wait_stages.data();
+		submit_info.commandBufferCount = 1;
+		submit_info.pCommandBuffers = &frame->CommandBuffer;
+		submit_info.signalSemaphoreCount = semaphores.size();
+		submit_info.pSignalSemaphores = semaphores.data();
 
 		require(vkEndCommandBuffer(frame->CommandBuffer));
 		require(vkQueueSubmit(
 					Graphics::DEFAULT->graphics_queue(),
 					1,
-					&submitInfo,
+					&submit_info,
 					frame->Fence));
+
+		return _semaphore.get();
 	}
 
 	void UIRenderPipeline::_present_frame() {

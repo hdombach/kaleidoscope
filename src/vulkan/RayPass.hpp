@@ -74,7 +74,11 @@ namespace vulkan {
 
 			VkDescriptorSet imgui_descriptor_set();
 			ImageView const &image_view();
-			void submit(Node &node, uint32_t count, ComputeUniformBuffer uniform);
+			VkSemaphore submit(
+					Node &node,
+					uint32_t count,
+					ComputeUniformBuffer uniform,
+					VkSemaphore semaphore);
 			MappedComputeUniform &current_uniform_buffer();
 
 			RayPassMesh &mesh(uint32_t id) { return _meshes[id]; }
@@ -120,7 +124,7 @@ namespace vulkan {
 			Image _accumulator_image;
 			ImageView _accumulator_image_view;
 			Fence _pass_fence;
-			Semaphore _pass_semaphore;
+			Semaphore _semaphore;
 			DescriptorPool _descriptor_pool;
 			DescriptorSets _descriptor_set;
 			VkDescriptorSet _imgui_descriptor_set;

@@ -65,7 +65,10 @@ namespace vulkan {
 					VkExtent2D size);
 			void destroy();
 			~PrevPass();
-			void render(std::vector<Node::Ptr> &nodes, types::Camera &camera);
+			VkSemaphore render(
+					std::vector<Node::Ptr> &nodes,
+					types::Camera &camera,
+					VkSemaphore semaphore);
 			void resize(VkExtent2D size);
 
 			VkExtent2D size() const;

@@ -209,7 +209,11 @@ namespace vulkan {
 		destroy();
 	}
 
-	void PrevPass::render(std::vector<Node::Ptr> &nodes, types::Camera &camera) {
+	VkSemaphore PrevPass::render(
+			std::vector<Node::Ptr> &nodes,
+			types::Camera &camera,
+			VkSemaphore semaphore)
+	{
 		_fence.wait();
 		auto submit_info = VkSubmitInfo{};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -306,18 +310,24 @@ namespace vulkan {
 		vkCmdEndRenderPass(command_buffer);
 		require(vkEndCommandBuffer(command_buffer));
 
+		VkSemaphore finish_semaphore = _semaphore.get();
 
 		auto wait_stages = std::array<VkPipelineStageFlags, 2>{VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 		submit_info.pWaitDstStageMask = wait_stages.data();
 		submit_info.commandBufferCount = 1;
 		submit_info.pCommandBuffers = &_command_buffers[_frame_index];
-		//submitInfo.signalSemaphoreCount = 1;
-		//submitInfo.pSignalSemaphores = &renderFinishedSemaphores_[_frame_index];
+		if (semaphore) {
+			submit_info.waitSemaphoreCount = 1;
+			submit_info.pWaitSemaphores = &semaphore;
+		}
+		submit_info.signalSemaphoreCount = 1;
+		submit_info.pSignalSemaphores = &finish_semaphore;
 
 		require(vkQueueSubmit(Graphics::DEFAULT->graphics_queue(), 1, &submit_info, _fence.get()));
 
 		_frame_index = (_frame_index + 1) % FRAMES_IN_FLIGHT;
 
+		return finish_semaphore;
 	}
 
 	void PrevPass::resize(VkExtent2D size) {

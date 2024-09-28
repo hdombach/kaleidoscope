@@ -45,8 +45,8 @@ namespace vulkan {
 			void resize(VkExtent2D new_size);
 
 			void set_is_preview(bool is_preview);
-			void render_preview();
-			void render_raytrace();
+			VkSemaphore render_preview(VkSemaphore semaphore);
+			VkSemaphore render_raytrace(VkSemaphore semaphore);
 			void update();
 
 			types::Camera& camera() { return _camera; }

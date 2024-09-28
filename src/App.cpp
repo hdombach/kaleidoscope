@@ -142,6 +142,7 @@ App::Ptr App::create(std::string const &name) {
 	}*/
 
 	result->_view_state = ui::State::create(*result->_scene);
+	result->_prev_semaphore = nullptr;
 
 	return std::unique_ptr<App>(result);
 }
@@ -176,16 +177,16 @@ void App::main_loop() {
 			}
 		}
 
+		VkSemaphore semaphore;
 		_scene->update();
 		if (_view_state->showing_preview) {
-			_scene->render_preview();
+			semaphore = _scene->render_preview(_prev_semaphore);
 		} else {
-			_scene->render_raytrace();
+			semaphore = _scene->render_raytrace(_prev_semaphore);
 		}
-		_scene->render_preview();
-		_ui_render_pipeline->submit([&] {
+		_prev_semaphore = _ui_render_pipeline->submit([&] {
 				ui::AppView(*this, *_view_state);
-		});
+		}, semaphore);
 	}
 
 	vulkan::Graphics::DEFAULT->wait_idle();
