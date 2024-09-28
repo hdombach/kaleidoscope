@@ -16,11 +16,12 @@ namespace ui {
 		auto mouse_raw = ImGui::GetMousePos();
 		auto cur_mouse_pos = glm::vec2(mouse_raw.x, mouse_raw.y);
 		auto mouse_offset = cur_mouse_pos - state.prev_mouse_pos;
+		auto scene_size = ImVec2(app.scene().camera().width, app.scene().camera().height);
 
 		ImGui::Begin("Viewport");
 
 		ImGui::Text("offsett: %f, %f", mouse_offset.x, mouse_offset.y);
-		TextureView::show(state.scene_texture);
+		TextureView(state.scene_texture, scene_size);
 		if (ImGui::IsItemHovered()) {
 			auto &camera = app.scene().camera();
 			if (ImGui::IsMouseDown(0)) {
@@ -80,7 +81,7 @@ namespace ui {
 			if (ImGui::BeginTabItem("Textures")) {
 				state.scene_tab = State::Textures;
 				ImGui::Text("hello");
-				TexturesView(scene.resource_manager(), state);
+				TexturesEditView(scene.resource_manager(), state);
 				ImGui::EndTabItem();
 			}
 			ImGui::EndTabBar();
@@ -92,7 +93,7 @@ namespace ui {
 				NodeView(scene, scene.get_node_mut(state.selected_item), state);
 				break;
 			case State::Textures:
-				TextureView(scene.resource_manager(), scene.resource_manager().get_texture(state.selected_item), state);
+				TextureEditView(scene.resource_manager(), scene.resource_manager().get_texture(state.selected_item), state);
 				break;
 			default:
 				ImGui::Text("Nothing selected");
@@ -151,7 +152,7 @@ namespace ui {
 
 	}
 
-	void TexturesView(types::ResourceManager &resources, State &state) {
+	void TexturesEditView(types::ResourceManager &resources, State &state) {
 		float width = 250;
 
 		ImGui::BeginChild("Texture List", ImVec2(width, -ImGui::GetFrameHeightWithSpacing()), true);
@@ -174,7 +175,7 @@ namespace ui {
 		}
 	}
 
-	void TextureView(
+	void TextureEditView(
 			types::ResourceManager &resources,
 			vulkan::Texture *texture,
 			State &state)

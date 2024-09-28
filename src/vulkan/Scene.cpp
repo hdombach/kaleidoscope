@@ -60,8 +60,6 @@ namespace vulkan {
 
 	void Scene::resize(VkExtent2D new_size) {
 		_preview_render_pass->resize(new_size);
-		_camera.width = new_size.width;
-		_camera.height = new_size.height;
 	}
 
 	void Scene::set_is_preview(bool is_preview) {

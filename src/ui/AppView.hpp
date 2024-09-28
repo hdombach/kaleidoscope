@@ -18,8 +18,8 @@ namespace ui {
 	void NodesView(vulkan::Scene &scene, State &state);
 	void NodeView(vulkan::Scene &scene, vulkan::Node *node, State &state);
 
-	void TexturesView(types::ResourceManager &resources, State &state);
-	void TextureView(
+	void TexturesEditView(types::ResourceManager &resources, State &state);
+	void TextureEditView(
 			types::ResourceManager &resources,
 			vulkan::Texture *texture,
 			State &state);
