@@ -90,56 +90,18 @@ App::Ptr App::create(std::string const &name) {
 
 	{
 		auto id = result->_scene->add_node(
-				result->_resource_manager->get_mesh("square"),
-				result->_resource_manager->get_material("viking_room"));
-		result->_scene->get_node_mut(id.value())->set_position({3, 2, 0});
-	}
-
-	{
-		auto id = result->_scene->add_node(
 				result->_resource_manager->get_mesh("viking_room"),
 				result->_resource_manager->get_material("grunge_comb"));
-		result->_scene->get_node_mut(id.value())->set_position({2, 1, 0});
+		result->_scene->get_node_mut(id.value())->set_position({0, 2.5, 0});
 		result->_scene->get_node_mut(id.value())->resources().add_resource(types::ShaderResource::create_primitive("comb_ratio", comb_ratio_value));
 	}
 	{
 		auto id = result->_scene->add_node(
 				result->_resource_manager->get_mesh("square"),
 				result->_resource_manager->get_material("color"));
-		result->_scene->get_node_mut(id.value())->set_position({1.6, 1.6, 0});
+		result->_scene->get_node_mut(id.value())->set_position({0, 3.0, 0});
 		result->_scene->get_node_mut(id.value())->resources().add_resource(types::ShaderResource::create_color("color", glm::vec3(0.2, 0.3, 1.0)));
 	}
-
-	{
-		auto id = result->_scene->add_node(
-				result->_resource_manager->get_mesh("square"),
-				result->_resource_manager->get_material("viking_room"));
-		result->_scene->get_node_mut(id.value())->set_position({0, 0, 0});
-	}
-
-	{
-		auto id = result->_scene->add_node(
-				result->_resource_manager->get_mesh("square"),
-				result->_resource_manager->get_material("color"));
-		result->_scene->get_node_mut(id.value())->set_position({-1, -1, -1});
-	}
-	{
-		auto id = result->_scene->add_node(
-				result->_resource_manager->get_mesh("square"),
-				result->_resource_manager->get_material("color"));
-		result->_scene->get_node_mut(id.value())->set_position({-1, -0.8, -1});
-		result->_scene->get_node_mut(id.value())->resources().add_resource(types::ShaderResource::create_color("color", glm::vec3(0.2, 0.3, 1.0)));
-	}
-	
-
-
-	/*{
-		auto new_node = vulkan::Node(
-				*(result->_resource_manager)->get_mesh("square"),
-				new vulkan::ColorMaterial(0, {0.8, 0.2, 0.2}));
-		new_node.set_position({0, 2, 0});
-		result->_scene->add_node(std::move(new_node));
-	}*/
 
 	result->_view_state = ui::State::create(*result->_scene);
 	result->_prev_semaphore = nullptr;
