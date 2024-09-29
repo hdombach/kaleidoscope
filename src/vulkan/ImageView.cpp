@@ -49,6 +49,7 @@ namespace vulkan {
 	}
 
 	ImageView& ImageView::operator=(ImageView&& other) {
+		destroy();
 		_image_view = other._image_view;
 		other._image_view = nullptr;
 		return *this;

@@ -109,6 +109,7 @@ namespace vulkan {
 	}
 
 	Image& Image::operator=(Image &&other) {
+		destroy();
 		_image = other._image;
 		other._image = nullptr;
 

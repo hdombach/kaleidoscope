@@ -30,6 +30,7 @@ namespace vulkan {
 		other._fence = nullptr;
 	}
 	Fence& Fence::operator=(Fence&& other) {
+		destroy();
 		_fence = other._fence;
 		other._fence = nullptr;
 		return *this;

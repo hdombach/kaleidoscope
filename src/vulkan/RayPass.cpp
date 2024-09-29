@@ -155,6 +155,8 @@ namespace vulkan {
 		_size = other._size;
 		_result_image = std::move(other._result_image);
 		_result_image_view = std::move(other._result_image_view);
+		_accumulator_image = std::move(other._accumulator_image);
+		_accumulator_image_view = std::move(other._accumulator_image_view);
 		_pass_fence = std::move(other._pass_fence);
 		_semaphore = std::move(other._semaphore);
 		_descriptor_pool = std::move(other._descriptor_pool);
@@ -174,15 +176,35 @@ namespace vulkan {
 
 		_mapped_uniform = std::move(other._mapped_uniform);
 
+		_mesh_observer = std::move(other._mesh_observer);
+
+		_material_observer = std::move(other._material_observer);
+
+		_node_observer = std::move(other._node_observer);
+
+		_vertex_dirty_bit = other._vertex_dirty_bit;
+		_node_dirty_bit = other._node_dirty_bit;
+		_material_dirty_bit = other._material_dirty_bit;
+
 		_vertex_buffer = std::move(other._vertex_buffer);
 
 		_bvnode_buffer = std::move(other._bvnode_buffer);
 
 		_node_buffer = std::move(other._node_buffer);
 
+		_material_buffer = std::move(other._material_buffer);
+
 		_meshes = std::move(other._meshes);
 
+		_nodes = std::move(other._nodes);
+
+		_materials = std::move(other._materials);
+
 		_scene = other._scene;
+
+		_compute_index = other._compute_index;
+		_ray_count = other._ray_count;
+		_clear_accumulator = other._clear_accumulator;
 	}
 
 	RayPass& RayPass::operator=(RayPass&& other) {
@@ -191,16 +213,45 @@ namespace vulkan {
 		_size = other._size;
 		_result_image = std::move(other._result_image);
 		_result_image_view = std::move(other._result_image_view);
+		_accumulator_image = std::move(other._accumulator_image);
+		_accumulator_image_view = std::move(other._accumulator_image_view);
 		_pass_fence = std::move(other._pass_fence);
 		_semaphore = std::move(other._semaphore);
 		_descriptor_pool = std::move(other._descriptor_pool);
-		
+		_descriptor_set = std::move(other._descriptor_set);
+
+		_imgui_descriptor_set = other._imgui_descriptor_set;
+		other._imgui_descriptor_set = nullptr;
 		_pipeline_layout = other._pipeline_layout;
 		other._pipeline_layout = nullptr;
-
 		_pipeline = other._pipeline;
 		other._pipeline = nullptr;
+		_command_buffer = other._command_buffer;
+		other._command_buffer = nullptr;
 
+		_mapped_uniform = std::move(other._mapped_uniform);
+		_mesh_observer = std::move(other._mesh_observer);
+		_material_observer = std::move(other._material_observer);
+		_node_observer = std::move(other._node_observer);
+
+		_vertex_dirty_bit = other._vertex_dirty_bit;
+		_node_dirty_bit = other._node_dirty_bit;
+		_material_dirty_bit = other._material_dirty_bit;
+
+		_vertex_buffer = std::move(other._vertex_buffer);
+		_bvnode_buffer = std::move(other._bvnode_buffer);
+		_node_buffer = std::move(other._node_buffer);
+		_material_buffer = std::move(other._material_buffer);
+
+		_meshes = std::move(other._meshes);
+		_nodes = std::move(other._nodes);
+		_materials = std::move(other._materials);
+
+		_scene = other._scene;
+		_compute_index = other._compute_index;
+		_ray_count = other._ray_count;
+		_clear_accumulator = other._clear_accumulator;
+		
 		return *this;
 	}
 

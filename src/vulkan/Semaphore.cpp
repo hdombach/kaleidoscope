@@ -31,6 +31,7 @@ namespace vulkan {
 		other._semaphore = nullptr;
 	}
 	Semaphore& Semaphore::operator=(Semaphore&& other) {
+		destroy();
 		_semaphore = other._semaphore;
 		other._semaphore = nullptr;
 		return *this;
