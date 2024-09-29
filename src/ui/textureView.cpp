@@ -1,7 +1,7 @@
 #include <glm/fwd.hpp>
 #include <imgui.h>
 
-#include "textureView.hpp"
+#include "TextureView.hpp"
 #include "../vulkan/Texture.hpp"
 
 namespace ui {

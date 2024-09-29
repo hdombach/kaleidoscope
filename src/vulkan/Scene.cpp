@@ -15,7 +15,7 @@ namespace vulkan {
 	{
 		auto scene = Scene::Ptr(new Scene());
 
-		auto raytrace_render_pass = RayPass::create(*scene, {1000, 1000});
+		auto raytrace_render_pass = RayPass::create(*scene, {500, 500});
 		TRY(raytrace_render_pass);
 
 		auto render_pass_res = PrevPass::create(
@@ -60,6 +60,7 @@ namespace vulkan {
 
 	void Scene::resize(VkExtent2D new_size) {
 		_preview_render_pass->resize(new_size);
+		_raytrace_render_pass->resize(new_size);
 	}
 
 	void Scene::set_is_preview(bool is_preview) {

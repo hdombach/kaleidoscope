@@ -88,6 +88,7 @@ namespace vulkan {
 			MaterialObserver &material_observer() { return _material_observer; }
 			NodeObserver &node_observer() { return _node_observer; }
 
+			void resize(VkExtent2D size);
 			size_t max_material_range() const;
 			std::vector<VkImageView> used_textures() const;
 			uint32_t compute_index() const { return _compute_index; }
@@ -110,6 +111,8 @@ namespace vulkan {
 			util::Result<void, KError> _create_descriptor_sets();
 			util::Result<void, KError> _create_pipeline();
 
+			void _cleanup_images();
+			util::Result<void, KError> _create_images();
 			void _update_buffers();
 			void _create_mesh_buffers();
 			void _create_node_buffers();

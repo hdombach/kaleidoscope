@@ -91,62 +91,8 @@ namespace vulkan {
 		result->_semaphore = std::move(semaphore.value());
 
 		{
-			//Set up main texture
-			auto image = Image::create(
-					result->_size.width, 
-					result->_size.height,
-					VK_FORMAT_R8G8B8A8_SRGB,
-					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-						| VK_IMAGE_USAGE_STORAGE_BIT
-						| VK_IMAGE_USAGE_SAMPLED_BIT);
-			TRY(image);
-			result->_result_image = std::move(image.value());
-
-			Graphics::DEFAULT->transition_image_layout(
-					result->_result_image.value(),
-					VK_FORMAT_R8G8B8A8_SRGB,
-					VK_IMAGE_LAYOUT_UNDEFINED,
-					VK_IMAGE_LAYOUT_GENERAL,
-					1);
-
-			auto image_view = result->_result_image.create_image_view_full(
-					VK_FORMAT_R8G8B8A8_SRGB, 
-					VK_IMAGE_ASPECT_COLOR_BIT, 
-					1);
-			TRY(image_view);
-			result->_result_image_view = std::move(image_view.value());
-
-			result->_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
-					Graphics::DEFAULT->main_texture_sampler(), 
-					result->_result_image_view.value(), 
-					VK_IMAGE_LAYOUT_GENERAL);
-		}
-
-		{
-			//Setup accumulator
-			auto image = Image::create(
-					result->_size.width,
-					result->_size.height,
-					VK_FORMAT_R16G16B16A16_SFLOAT,
-					VK_IMAGE_USAGE_STORAGE_BIT
-						| VK_IMAGE_USAGE_SAMPLED_BIT
-						| VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-			TRY(image);
-			result->_accumulator_image = std::move(image.value());
-
-			Graphics::DEFAULT->transition_image_layout(
-					result->_accumulator_image.value(), 
-					VK_FORMAT_R16G16B16A16_SFLOAT, 
-					VK_IMAGE_LAYOUT_UNDEFINED, 
-					VK_IMAGE_LAYOUT_GENERAL,
-					1);
-
-			auto image_view = result->_accumulator_image.create_image_view_full(
-					VK_FORMAT_R16G16B16A16_SFLOAT, 
-					VK_IMAGE_ASPECT_COLOR_BIT, 
-					1);
-			TRY(image_view);
-			result->_accumulator_image_view = std::move(image_view.value());
+			auto res = result->_create_images();
+			TRY(res);
 		}
 
 		auto buffer_res = MappedComputeUniform::create();
@@ -378,6 +324,14 @@ namespace vulkan {
 		return _mapped_uniform;
 	}
 
+	void RayPass::resize(VkExtent2D size) {
+		if (size.width == _size.width && size.height == _size.height) return;
+		_size = size;
+		_cleanup_images();
+		_create_images();
+		_create_descriptor_sets();
+	}
+
 	size_t RayPass::max_material_range() const {
 		size_t res = 0;
 
@@ -582,6 +536,76 @@ namespace vulkan {
 		}
 
 		LOG_DEBUG << "just created raypass pipeline " << _pipeline << std::endl;
+
+		return {};
+	}
+
+	void RayPass::_cleanup_images() {
+		_result_image_view.destroy();
+		_result_image.destroy();
+		_accumulator_image_view.destroy();
+		_accumulator_image.destroy();
+	}
+
+	util::Result<void, KError> RayPass::_create_images() {
+		{
+			LOG_DEBUG << "creating image with size: " << _size.width << ", " << _size.height << std::endl;
+			auto image = Image::create(
+					_size.width,
+					_size.height,
+					VK_FORMAT_R8G8B8A8_SRGB,
+					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+						| VK_IMAGE_USAGE_STORAGE_BIT
+						| VK_IMAGE_USAGE_SAMPLED_BIT);
+			TRY(image);
+			_result_image = std::move(image.value());
+
+			Graphics::DEFAULT->transition_image_layout(
+					_result_image.value(),
+					VK_FORMAT_R8G8B8A8_SRGB,
+					VK_IMAGE_LAYOUT_UNDEFINED,
+					VK_IMAGE_LAYOUT_GENERAL,
+					1);
+
+			auto image_view = _result_image.create_image_view_full(
+					VK_FORMAT_R8G8B8A8_SRGB, 
+					VK_IMAGE_ASPECT_COLOR_BIT, 
+					1);
+			TRY(image_view);
+			_result_image_view = std::move(image_view.value());
+
+			_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
+					Graphics::DEFAULT->main_texture_sampler(), 
+					_result_image_view.value(), 
+					VK_IMAGE_LAYOUT_GENERAL);
+		}
+
+		//Setup accumulator
+		{
+			auto image = Image::create(
+					_size.width,
+					_size.height,
+					VK_FORMAT_R16G16B16A16_SFLOAT,
+					VK_IMAGE_USAGE_STORAGE_BIT
+						| VK_IMAGE_USAGE_SAMPLED_BIT
+						| VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+			TRY(image);
+			_accumulator_image = std::move(image.value());
+
+			Graphics::DEFAULT->transition_image_layout(
+					_accumulator_image.value(), 
+					VK_FORMAT_R16G16B16A16_SFLOAT, 
+					VK_IMAGE_LAYOUT_UNDEFINED, 
+					VK_IMAGE_LAYOUT_GENERAL, 
+					1);
+
+			auto image_view = _accumulator_image.create_image_view_full(
+					VK_FORMAT_R16G16B16A16_SFLOAT, 
+					VK_IMAGE_ASPECT_COLOR_BIT, 
+					1);
+			TRY(image_view);
+			_accumulator_image_view = std::move(image_view.value());
+		}
 
 		return {};
 	}

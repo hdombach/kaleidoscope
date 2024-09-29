@@ -2,7 +2,7 @@
 
 #include <glm/fwd.hpp>
 
-#include "textureView.hpp"
+#include "TextureView.hpp"
 #include "../vulkan/SceneTexture.hpp"
 #include "State.hpp"
 #include "../types/Node.hpp"
