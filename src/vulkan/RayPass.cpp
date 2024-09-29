@@ -378,9 +378,7 @@ namespace vulkan {
 	void RayPass::resize(VkExtent2D size) {
 		if (size.width == _size.width && size.height == _size.height) return;
 		_size = size;
-		_cleanup_images();
-		_create_images();
-		_create_descriptor_sets();
+		_size_dirty_bit = true;
 	}
 
 	size_t RayPass::max_material_range() const {
@@ -600,7 +598,6 @@ namespace vulkan {
 
 	util::Result<void, KError> RayPass::_create_images() {
 		{
-			LOG_DEBUG << "creating image with size: " << _size.width << ", " << _size.height << std::endl;
 			auto image = Image::create(
 					_size.width,
 					_size.height,
@@ -680,6 +677,13 @@ namespace vulkan {
 		if (_material_dirty_bit) {
 			_create_material_buffers();
 			_material_dirty_bit = false;
+			update = true;
+		}
+
+		if (_size_dirty_bit) {
+			_cleanup_images();
+			_create_images();
+			_size_dirty_bit = false;
 			update = true;
 		}
 

@@ -101,6 +101,20 @@ namespace vulkan {
 				node->clear_dirty_bits();
 			}
 		}
+		if (_camera_dirty_bit) {
+			VkExtent2D new_size;
+			new_size.width = _camera.width;
+			new_size.height = _camera.height;
+			resize(new_size);
+		}
+	}
+
+	void Scene::set_camera(const types::Camera &camera) {
+		if (camera == _camera) return;
+		if (!_is_preview) return;
+		_camera_dirty_bit = true;
+
+		_camera = camera;
 	}
 
 	Node const *Scene::get_node(uint32_t id) const {

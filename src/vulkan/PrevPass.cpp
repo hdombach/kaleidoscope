@@ -211,7 +211,7 @@ namespace vulkan {
 
 	VkSemaphore PrevPass::render(
 			std::vector<Node::Ptr> &nodes,
-			types::Camera &camera,
+			types::Camera const &camera,
 			VkSemaphore semaphore)
 	{
 		_fence.wait();

@@ -22,9 +22,12 @@ namespace types {
 		public:
 			Camera();
 
-			glm::mat4 gen_raster_mat();
-			glm::mat4 gen_rotate_mat();
-			glm::mat4 gen_translate_mat();
+			bool operator==(const Camera &other) const;
+			bool operator!=(const Camera &other) const;
+
+			glm::mat4 gen_raster_mat() const;
+			glm::mat4 gen_rotate_mat() const;
+			glm::mat4 gen_translate_mat() const;
 
 			void rotate_drag(float deltax, float deltay);
 			inline void rotate_drag(glm::vec2 delta) {

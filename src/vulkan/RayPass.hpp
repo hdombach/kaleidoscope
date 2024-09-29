@@ -142,6 +142,7 @@ namespace vulkan {
 			bool _vertex_dirty_bit;
 			bool _node_dirty_bit;
 			bool _material_dirty_bit;
+			bool _size_dirty_bit = false;
 
 			StaticBuffer _vertex_buffer;
 			StaticBuffer _bvnode_buffer;

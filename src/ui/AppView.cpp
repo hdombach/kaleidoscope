@@ -18,17 +18,18 @@ namespace ui {
 		auto mouse_offset = cur_mouse_pos - state.prev_mouse_pos;
 		auto scene_size = ImVec2(app.scene().camera().width, app.scene().camera().height);
 		int render_rate = app.scene().render_rate();
+		auto camera = app.scene().camera();
 
 		ImGui::Begin("Viewport");
 
 		ImGui::Text("offsett: %f, %f", mouse_offset.x, mouse_offset.y);
 		TextureView(state.scene_texture, scene_size);
 		if (ImGui::IsItemHovered()) {
-			auto &camera = app.scene().camera();
 			if (ImGui::IsMouseDown(0)) {
 				camera.rotate_drag(mouse_offset * -0.004f);
 			}
 			camera.position += get_cam_movement() * camera.rotation * 0.01f;
+			app.scene().set_camera(camera);
 		}
 		ImGui::End();
 
@@ -36,12 +37,13 @@ namespace ui {
 		ImGui::Checkbox("Showing preview", &state.showing_preview);
 		ImGui::DragInt("Render rate", &render_rate, 200);
 		ImGui::Separator();
-		CameraView::show(app.scene().camera());
+		CameraView::show(camera);
 		SceneView(app.scene(), state);
 		ImGui::End();
 
 		app.scene().set_is_preview(state.showing_preview);
 		app.scene().set_render_rate(render_rate);
+		app.scene().set_camera(camera);
 		state.prev_mouse_pos = cur_mouse_pos;
 	}
 

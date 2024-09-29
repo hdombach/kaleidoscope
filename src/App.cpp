@@ -150,10 +150,6 @@ void App::main_loop() {
 				ui::AppView(*this, *_view_state);
 		}, semaphore);
 		//TODO: temp
-		VkExtent2D size;
-		size.width = _scene->camera().width;
-		size.height = _scene->camera().height;
-		_scene->resize(size);
 	}
 
 	vulkan::Graphics::DEFAULT->wait_idle();
