@@ -63,6 +63,17 @@ namespace vulkan {
 		_raytrace_render_pass->resize(new_size);
 	}
 
+	int Scene::render_rate() const {
+		return _render_rate;
+	}
+
+	void Scene::set_render_rate(int rate) {
+		if (rate < 200) {
+			rate = 200;
+		}
+		_render_rate = rate;
+	}
+
 	void Scene::set_is_preview(bool is_preview) {
 		if (_is_preview && !is_preview) {
 			_raytrace_render_pass->reset_counters();
@@ -80,7 +91,7 @@ namespace vulkan {
 		uniform_buffer.camera_translation = glm::vec4(camera().position, 0.0);
 		uniform_buffer.aspect = static_cast<float>(camera().width) / static_cast<float>(camera().height);
 		uniform_buffer.fovy = camera().fovy;
-		return _raytrace_render_pass->submit(*_nodes[0], 10000, uniform_buffer, semaphore);
+		return _raytrace_render_pass->submit(*_nodes[0], _render_rate, uniform_buffer, semaphore);
 	}
 
 	void Scene::update() {

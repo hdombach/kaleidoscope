@@ -17,6 +17,7 @@ namespace ui {
 		auto cur_mouse_pos = glm::vec2(mouse_raw.x, mouse_raw.y);
 		auto mouse_offset = cur_mouse_pos - state.prev_mouse_pos;
 		auto scene_size = ImVec2(app.scene().camera().width, app.scene().camera().height);
+		int render_rate = app.scene().render_rate();
 
 		ImGui::Begin("Viewport");
 
@@ -33,12 +34,14 @@ namespace ui {
 
 		ImGui::Begin("Settings");
 		ImGui::Checkbox("Showing preview", &state.showing_preview);
+		ImGui::DragInt("Render rate", &render_rate, 200);
 		ImGui::Separator();
 		CameraView::show(app.scene().camera());
 		SceneView(app.scene(), state);
 		ImGui::End();
 
 		app.scene().set_is_preview(state.showing_preview);
+		app.scene().set_render_rate(render_rate);
 		state.prev_mouse_pos = cur_mouse_pos;
 	}
 

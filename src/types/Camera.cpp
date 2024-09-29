@@ -13,8 +13,8 @@ namespace types {
 	Camera::Camera() {
 		position = glm::vec3(0, -1, 0);
 		rotation = glm::angleAxis(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		width = 100;
-		height = 100;
+		width = 500;
+		height = 500;
 		fovy = 45;
 		z_near = 0.01f;
 		z_far = 10.0f;

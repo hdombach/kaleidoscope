@@ -44,6 +44,8 @@ namespace vulkan {
 			VkExtent2D size() const;
 			void resize(VkExtent2D new_size);
 
+			int render_rate() const;
+			void set_render_rate(int rate);
 			void set_is_preview(bool is_preview);
 			VkSemaphore render_preview(VkSemaphore semaphore);
 			VkSemaphore render_raytrace(VkSemaphore semaphore);
@@ -97,6 +99,7 @@ namespace vulkan {
 			types::Camera _camera;
 			types::ResourceManager *_resource_manager;
 			bool _is_preview;
+			int _render_rate = 10000;
 			std::list<util::Observer *> _node_observers;
 	};
 }
