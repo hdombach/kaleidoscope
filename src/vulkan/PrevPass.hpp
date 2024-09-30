@@ -77,7 +77,6 @@ namespace vulkan {
 			VkRenderPass render_pass();
 			MappedGlobalUniform &current_uniform_buffer();
 			DescriptorPool &descriptor_pool() { return _descriptor_pool; };
-			int frame_index() { return _frame_index; };
 			VkDescriptorSetLayout global_descriptor_set_layout() { return _descriptor_sets.layout(); }
 			VkDescriptorSet global_descriptor_set(int frame_index) { return _descriptor_sets.descriptor_set(frame_index); }
 
@@ -117,19 +116,18 @@ namespace vulkan {
 			VkExtent2D _size;
 			Image _depth_image;
 			ImageView _depth_image_view;
-			std::vector<Image> _color_images;
-			std::vector<ImageView> _color_image_views;
-			std::vector<VkFramebuffer> _framebuffers;
-			std::vector<VkDescriptorSet> _imgui_descriptor_sets;
+			Image _color_image;
+			ImageView _color_image_view;
+			VkFramebuffer _framebuffer;
+			VkDescriptorSet _imgui_descriptor_set;
 			DescriptorSets _descriptor_sets;
 			VkRenderPass _render_pass;
-			std::vector<MappedGlobalUniform> _mapped_uniforms;
+			MappedGlobalUniform _mapped_uniform;
 			Fence _fence;
 			Semaphore _semaphore;
-			std::vector<VkCommandBuffer> _command_buffers;
+			VkCommandBuffer _command_buffer;
 			DescriptorPool _descriptor_pool;
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
-			int _frame_index;
 			uint32_t _mip_levels;
 
 			Scene *_scene;

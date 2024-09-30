@@ -153,21 +153,21 @@ namespace vulkan {
 		TRY(result->_create_images());
 
 		/* create descriptor sets */
-		for (size_t i = 0; i < FRAMES_IN_FLIGHT; ++i) {
-			auto buffer_res = MappedGlobalUniform::create();
-			TRY(buffer_res);
-			result->_mapped_uniforms.push_back(std::move(buffer_res.value()));
+		{
+			auto buffer = MappedGlobalUniform::create();
+			TRY(buffer);
+			result->_mapped_uniform = std::move(buffer.value());
 		}
 
 		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
 		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
 					0, 
 					VK_SHADER_STAGE_VERTEX_BIT, 
-					result->_mapped_uniforms));
+					result->_mapped_uniform));
 
 		auto descriptor_sets = DescriptorSets::create(
 				descriptor_templates, 
-				FRAMES_IN_FLIGHT, 
+				1, 
 				result->_descriptor_pool);
 		TRY(descriptor_sets);
 		result->_descriptor_sets = std::move(descriptor_sets.value());
@@ -199,7 +199,7 @@ namespace vulkan {
 			_render_pass = nullptr;
 		}
 
-		_mapped_uniforms.clear();
+		_mapped_uniform.destroy();
 		
 		_fence.destroy();
 		_semaphore.destroy();
@@ -220,7 +220,7 @@ namespace vulkan {
 
 		_fence.reset();
 
-		auto command_buffer = _command_buffers[_frame_index];
+		auto command_buffer = _command_buffer;
 
 		vkResetCommandBuffer(command_buffer, 0);
 
@@ -234,7 +234,7 @@ namespace vulkan {
 		auto render_pass_info = VkRenderPassBeginInfo{};
 		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		render_pass_info.renderPass = _render_pass;
-		render_pass_info.framebuffer = _framebuffers[_frame_index];
+		render_pass_info.framebuffer = _framebuffer;
 		render_pass_info.renderArea.offset = {0, 0};
 		render_pass_info.renderArea.extent = _size;
 
@@ -289,7 +289,7 @@ namespace vulkan {
 			vkCmdBindIndexBuffer(command_buffer, mesh.index_buffer(), 0, VK_INDEX_TYPE_UINT32);
 
 			auto descriptor_sets = std::array<VkDescriptorSet, 2>{
-				global_descriptor_set(_frame_index),
+				global_descriptor_set(0),
 				prev_node.descriptor_set().descriptor_set(0),
 			};
 
@@ -315,7 +315,7 @@ namespace vulkan {
 		auto wait_stages = std::array<VkPipelineStageFlags, 2>{VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 		submit_info.pWaitDstStageMask = wait_stages.data();
 		submit_info.commandBufferCount = 1;
-		submit_info.pCommandBuffers = &_command_buffers[_frame_index];
+		submit_info.pCommandBuffers = &_command_buffer;
 		if (semaphore) {
 			submit_info.waitSemaphoreCount = 1;
 			submit_info.pWaitSemaphores = &semaphore;
@@ -324,8 +324,6 @@ namespace vulkan {
 		submit_info.pSignalSemaphores = &finish_semaphore;
 
 		require(vkQueueSubmit(Graphics::DEFAULT->graphics_queue(), 1, &submit_info, _fence.get()));
-
-		_frame_index = (_frame_index + 1) % FRAMES_IN_FLIGHT;
 
 		return finish_semaphore;
 	}
@@ -340,18 +338,6 @@ namespace vulkan {
 			LOG_ERROR << res.error().desc() << std::endl;
 		}
 		//submit(); TODO
-
-		/*
-		 * When resize, the entire queue in the frame buffer is cleared. This causes
-		 * flickering when resizing the window since there is nothing to display.
-		 * My temporary solution is to move back the frame index so that it is more
-		 * immediately shown. Still cuases slight flickering though.
-		 * True solution is to resize the images used not delete and create again.
-		 */
-		_frame_index--;
-		if (_frame_index < 0) {
-			_frame_index = FRAMES_IN_FLIGHT - 1;
-		}
 	}
 
 	VkExtent2D PrevPass::size() const {
@@ -359,17 +345,17 @@ namespace vulkan {
 	}
 
 	VkDescriptorSet PrevPass::imgui_descriptor_set() {
-		return _imgui_descriptor_sets[_frame_index];
+		return _imgui_descriptor_set;
 	}
 
 	ImageView const &PrevPass::image_view() {
-		return _color_image_views[_frame_index];
+		return _color_image_view;
 	}
 	VkRenderPass PrevPass::render_pass() {
 		return _render_pass;
 	}
 	MappedGlobalUniform &PrevPass::current_uniform_buffer() {
-		return _mapped_uniforms[_frame_index];
+		return _mapped_uniform;
 	}
 
 	void PrevPass::mesh_create(uint32_t id) {
@@ -443,34 +429,33 @@ namespace vulkan {
 	}
 
 	void PrevPass::_create_command_buffers() {
-		_command_buffers.resize(FRAMES_IN_FLIGHT);
 		auto alloc_info = VkCommandBufferAllocateInfo{};
 		alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 		alloc_info.commandPool = Graphics::DEFAULT->command_pool();
 		alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		alloc_info.commandBufferCount = (uint32_t) _command_buffers.size();
+		alloc_info.commandBufferCount = 1;
 
-		require(vkAllocateCommandBuffers(Graphics::DEFAULT->device(), &alloc_info, _command_buffers.data()));
+		require(vkAllocateCommandBuffers(Graphics::DEFAULT->device(), &alloc_info, &_command_buffer));
 	}
 
 	util::Result<void, KError> PrevPass::_create_images() {
 		_cleanup_images();
 		/* create depth resources */
 		{
-			auto image_res = Image::create(
+			auto image = Image::create(
 					_size.width,
 					_size.height,
 					_depth_format(),
 					VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
-			TRY(image_res);
-			_depth_image = std::move(image_res.value());
+			TRY(image);
+			_depth_image = std::move(image.value());
 
-			auto image_view_res = _depth_image.create_image_view_full(
+			auto image_view = _depth_image.create_image_view_full(
 					_depth_format(), 
 					VK_IMAGE_ASPECT_DEPTH_BIT, 
 					1);
-			TRY(image_view_res);
-			_depth_image_view = std::move(image_view_res.value());
+			TRY(image_view);
+			_depth_image_view = std::move(image_view.value());
 
 			Graphics::DEFAULT->transition_image_layout(
 					_depth_image.value(),
@@ -480,69 +465,57 @@ namespace vulkan {
 					1);
 		}
 
-		if (_color_images.size() != 0) {
-			return KError::internal("_color_images in PreviewRenderPass must be of size 0");
-		}
-		if (_color_image_views.size()  != 0) {
-			return KError::internal("_color_image_views in PreviewRenderPass must be of size 0");
-		}
-		if (_framebuffers.size() != 0) {
-			return KError::internal("_framebuffers in PreviewRenderPass must be of size 0");
-		}
-		if (_imgui_descriptor_sets.size() != 0) {
-			return KError::internal("_imgui_descriptor_sets in PreviewRenderPass must be of size 0");
-		}
-		for (int i = 0; i < FRAMES_IN_FLIGHT; i++) {
-			auto image_res = Image::create(
+		/* Create main color resources */
+		{
+			auto image = Image::create(
 					_size.width,
 					_size.height,
 					_RESULT_IMAGE_FORMAT,
 					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 						| VK_IMAGE_USAGE_STORAGE_BIT
 						| VK_IMAGE_USAGE_SAMPLED_BIT);
-			TRY(image_res);
-			_color_images.push_back(std::move(image_res.value()));
+			TRY(image);
+			_color_image = std::move(image.value());
 
-			auto image_view_res = _color_images[i].create_image_view_full(
+			auto image_view = _color_image.create_image_view_full(
 					_RESULT_IMAGE_FORMAT,
 					VK_IMAGE_ASPECT_COLOR_BIT,
 					1);
-			TRY(image_view_res);
-			_color_image_views.push_back(std::move(image_view_res.value()));
+			TRY(image_view);
+			_color_image_view = std::move(image_view.value());
 
 			Graphics::DEFAULT->transition_image_layout(
-					_color_images[i].value(),
+					_color_image.value(),
 					_RESULT_IMAGE_FORMAT,
 					VK_IMAGE_LAYOUT_UNDEFINED,
 					VK_IMAGE_LAYOUT_GENERAL,
 					1);
-
-			auto attachments = std::array<VkImageView, 2>{
-				_color_image_views[i].value(),
-				_depth_image_view.value(),
-			};
-
-			auto framebuffer_info = VkFramebufferCreateInfo{};
-			framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebuffer_info.renderPass = _render_pass;
-			framebuffer_info.attachmentCount = attachments.size();
-			framebuffer_info.pAttachments = attachments.data();
-			framebuffer_info.width = _size.width;
-			framebuffer_info.height = _size.height;
-			framebuffer_info.layers = 1;
-
-			_framebuffers.push_back(nullptr);
-			auto res = vkCreateFramebuffer(
-					Graphics::DEFAULT->device(),
-					&framebuffer_info,
-					nullptr,
-					&_framebuffers[i]);
-
-			_imgui_descriptor_sets.push_back(ImGui_ImplVulkan_AddTexture(
-					Graphics::DEFAULT->main_texture_sampler(),
-					_color_image_views[i].value(),
-					VK_IMAGE_LAYOUT_GENERAL));
 		}
+
+		auto attachments = std::array<VkImageView, 2>{
+			_color_image_view.value(),
+			_depth_image_view.value(),
+		};
+
+		auto framebuffer_info = VkFramebufferCreateInfo{};
+		framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebuffer_info.renderPass = _render_pass;
+		framebuffer_info.attachmentCount = attachments.size();
+		framebuffer_info.pAttachments = attachments.data();
+		framebuffer_info.width = _size.width;
+		framebuffer_info.height = _size.height;
+		framebuffer_info.layers = 1;
+
+		auto res = vkCreateFramebuffer(
+				Graphics::DEFAULT->device(),
+				&framebuffer_info,
+				nullptr,
+				&_framebuffer);
+
+		_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
+				Graphics::DEFAULT->main_texture_sampler(),
+				_color_image_view.value(),
+				VK_IMAGE_LAYOUT_GENERAL);
 
 
 		return {};
@@ -551,18 +524,14 @@ namespace vulkan {
 	void PrevPass::_cleanup_images() {
 		_depth_image.destroy();
 		_depth_image_view.destroy();
-		_color_image_views.clear();
-		_color_images.clear();
+		_color_image_view.destroy();
+		_color_image.destroy();
 
-		for (auto framebuffer : _framebuffers) {
-			vkDestroyFramebuffer(Graphics::DEFAULT->device(), framebuffer, nullptr);
-		}
-		_framebuffers.clear();
+		vkDestroyFramebuffer(Graphics::DEFAULT->device(), _framebuffer, nullptr);
+		_framebuffer = nullptr;
 
-		for (auto descriptor_set : _imgui_descriptor_sets) {
-			ImGui_ImplVulkan_RemoveTexture(descriptor_set);
-		}
-		_imgui_descriptor_sets.clear();
+		ImGui_ImplVulkan_RemoveTexture(_imgui_descriptor_set);
+		_imgui_descriptor_set = nullptr;
 	}
 
 	VkFormat PrevPass::_depth_format() {
