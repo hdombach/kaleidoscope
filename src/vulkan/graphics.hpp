@@ -49,7 +49,6 @@ namespace vulkan {
 			VkQueue graphics_queue() const;
 			VkQueue present_queue() const;
 			VkQueue compute_queue() const;
-			ImageView const &compute_image_view() const;
 			SwapchainSupportDetails const &swapchain_support_details() const;
 			util::Result<uint32_t, KError> find_memory_type(
 					uint32_t type_filter,
@@ -106,17 +105,10 @@ namespace vulkan {
 			bool _is_device_suitable(VkPhysicalDevice device);
 			bool _check_device_extension_support(VkPhysicalDevice device);
 			util::Result<void, KError> _create_logical_device();
-			void _create_compute_descriptor_set_layout();
-			void _create_compute_pipeline();
 			void _create_command_pool();
 			void _create_descriptor_pool();
-			void _create_compute_descriptor_sets();
-			void _create_compute_command_buffers();
-			util::Result<void, KError> _create_sync_objects();
 			void _create_surface();
-			void _record_compute_command_buffer(VkCommandBuffer commandBuffer);
 			void _create_texture_sampler();
-			util::Result<void, KError> _create_compute_result_texture();
 
 			bool _check_validation_layer_support();
 			void _destroy();
@@ -200,19 +192,10 @@ namespace vulkan {
 			VkQueue _present_queue;
 			VkQueue _compute_queue;
 			VkSurfaceKHR _surface;
-			VkDescriptorSetLayout _compute_descriptor_set_layout;
 			VkDescriptorPool _descriptor_pool;
-			std::vector<VkDescriptorSet> _compute_descriptor_sets;
-			VkPipelineLayout _compute_pipeline_layout;
-			VkPipeline _compute_pipeline;
 			VkCommandPool _command_pool;
 			uint32_t _mip_levels;
 			VkSampler _texture_sampler;
-			Image _compute_result_image;
-			ImageView _compute_result_image_view;
-			std::vector<VkCommandBuffer> _compute_command_buffers;
-			std::vector<Semaphore> _compute_finished_semaphores;
-			std::vector<Fence> _compute_in_flight_fences;
 			SwapchainSupportDetails _swapchain_support_details;
 
 			//imgui stuff

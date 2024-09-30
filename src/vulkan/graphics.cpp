@@ -81,9 +81,6 @@ namespace vulkan {
 	VkQueue Graphics::compute_queue() const {
 		return _compute_queue;
 	}
-	ImageView const &Graphics::compute_image_view() const {
-		return _compute_result_image_view;
-	}
 	Graphics::SwapchainSupportDetails const &Graphics::swapchain_support_details() const {
 		return _swapchain_support_details;
 	}
@@ -180,18 +177,10 @@ namespace vulkan {
 		_present_queue(nullptr),
 		_compute_queue(nullptr),
 		_surface(nullptr),
-		_compute_descriptor_set_layout(nullptr),
 		_descriptor_pool(nullptr),
-		_compute_descriptor_sets(),
-		_compute_pipeline_layout(nullptr),
-		_compute_pipeline(nullptr),
 		_command_pool(nullptr),
 		_mip_levels(0),
 		_texture_sampler(nullptr),
-		_compute_result_image_view(),
-		_compute_command_buffers(),
-		_compute_finished_semaphores(),
-		_compute_in_flight_fences(),
 		_swapchain_support_details()
 	{}
 
@@ -213,14 +202,8 @@ namespace vulkan {
 		_pick_physical_device();
 		_create_logical_device();
 		_create_command_pool();
-		_create_compute_descriptor_set_layout();
-		//_create_compute_pipeline();
 		_create_texture_sampler();
-		_create_compute_result_texture();
 		_create_descriptor_pool();
-		_create_compute_descriptor_sets();
-		_create_compute_command_buffers();
-		_create_sync_objects();
 	}
 
 	util::Result<void, KError> Graphics::_create_instance() {
@@ -300,34 +283,10 @@ namespace vulkan {
 			_texture_sampler = nullptr;
 		}
 
-		_compute_result_image_view.destroy();
-		_compute_result_image.destroy();
-
-		if (_compute_descriptor_set_layout) {
-			vkDestroyDescriptorSetLayout(_device, _compute_descriptor_set_layout, nullptr);
-			_compute_descriptor_set_layout = nullptr;
-		}
-
-		vkFreeDescriptorSets(_device, _descriptor_pool, _compute_descriptor_sets.size(), _compute_descriptor_sets.data());
-		_compute_descriptor_sets.clear();
-
 		if (_descriptor_pool) {
 			vkDestroyDescriptorPool(_device, _descriptor_pool, nullptr);
 			_descriptor_pool = nullptr;
 		}
-
-		if (_compute_pipeline) {
-			vkDestroyPipeline(_device, _compute_pipeline, nullptr);
-			_compute_pipeline = nullptr;
-		}
-
-		if (_compute_pipeline_layout) {
-			vkDestroyPipelineLayout(_device, _compute_pipeline_layout, nullptr);
-			_compute_pipeline_layout = nullptr;
-		}
-
-		_compute_in_flight_fences.clear();
-		_compute_finished_semaphores.clear();
 
 		if (_command_pool) {
 			vkDestroyCommandPool(_device, _command_pool, nullptr);
@@ -486,33 +445,6 @@ namespace vulkan {
 		return {};
 	}
 
-	void Graphics::_create_compute_pipeline() {
-		auto computeShaderCode = util::readEnvFile("src/shaders/default_shader.comp.spv");
-
-		auto computeShaderModule = _create_shader_module(computeShaderCode);
-
-		auto computeShaderStageInfo = VkPipelineShaderStageCreateInfo{};
-		computeShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		computeShaderStageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		computeShaderStageInfo.module = computeShaderModule;
-		computeShaderStageInfo.pName = "main";
-
-		auto pipelineLayoutInfo = VkPipelineLayoutCreateInfo{};
-		pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipelineLayoutInfo.setLayoutCount = 1;
-		pipelineLayoutInfo.pSetLayouts = &_compute_descriptor_set_layout;
-
-		require(vkCreatePipelineLayout(_device, &pipelineLayoutInfo, nullptr, &_compute_pipeline_layout));
-
-		auto pipelineInfo = VkComputePipelineCreateInfo{};
-		pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-		pipelineInfo.layout = _compute_pipeline_layout;
-		pipelineInfo.stage = computeShaderStageInfo;
-
-		require(vkCreateComputePipelines(_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &_compute_pipeline));
-
-		vkDestroyShaderModule(_device, computeShaderModule, nullptr);
-	}
 	void Graphics::_create_command_pool() {
 		QueueFamilyIndices queueFamilyIndices = _find_queue_families(_physical_device);
 
@@ -546,100 +478,7 @@ namespace vulkan {
 			throw std::runtime_error("failed to create descriptor pool!");
 		}
 	}
-	void Graphics::_create_compute_descriptor_sets() {
-		auto layouts = std::vector<VkDescriptorSetLayout>(FRAMES_IN_FLIGHT, _compute_descriptor_set_layout);
-		auto allocInfo = VkDescriptorSetAllocateInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.descriptorPool = _descriptor_pool;
-		allocInfo.descriptorSetCount = static_cast<uint32_t>(FRAMES_IN_FLIGHT);
-		allocInfo.pSetLayouts = layouts.data();
 
-		_compute_descriptor_sets.resize(FRAMES_IN_FLIGHT);
-		require(vkAllocateDescriptorSets(_device, &allocInfo, _compute_descriptor_sets.data()));
-
-		std::array<VkWriteDescriptorSet, 1> descriptorWrites{};
-
-		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-			auto imageInfo = VkDescriptorImageInfo{};
-			imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-			imageInfo.imageView = _compute_result_image_view.value();
-
-
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = _compute_descriptor_sets[i];
-			descriptorWrites[0].dstBinding = 2;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pImageInfo = &imageInfo;
-
-			vkUpdateDescriptorSets(
-					_device,
-					static_cast<uint32_t>(descriptorWrites.size()),
-					descriptorWrites.data(),
-					0,
-					nullptr);
-		}
-	}
-	void Graphics::_create_compute_descriptor_set_layout() {
-		auto layoutBindings = std::array<VkDescriptorSetLayoutBinding, 1>{};
-		layoutBindings[0].binding = 2;
-		layoutBindings[0].descriptorCount = 1;
-		layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		layoutBindings[0].pImmutableSamplers = nullptr;
-		layoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-
-		auto layoutInfo = VkDescriptorSetLayoutCreateInfo{};
-		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = static_cast<uint32_t>(layoutBindings.size());
-		layoutInfo.pBindings = layoutBindings.data();
-
-		require(vkCreateDescriptorSetLayout(_device, &layoutInfo, nullptr, &_compute_descriptor_set_layout));
-	}
-	void Graphics::_create_compute_command_buffers() {
-		_compute_command_buffers.resize(FRAMES_IN_FLIGHT);
-
-		auto allocInfo = VkCommandBufferAllocateInfo{};
-		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		allocInfo.commandPool = _command_pool;
-		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		allocInfo.commandBufferCount = (uint32_t) _compute_command_buffers.size();
-
-		require(vkAllocateCommandBuffers(_device, &allocInfo, _compute_command_buffers.data()));
-	}
-	util::Result<void, KError> Graphics::_create_sync_objects() {
-		_compute_finished_semaphores.resize(FRAMES_IN_FLIGHT);
-		_compute_in_flight_fences.resize(FRAMES_IN_FLIGHT);
-
-		for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
-			auto semaphore = Semaphore::create(_device);
-			TRY(semaphore);
-			_compute_finished_semaphores[i] = std::move(semaphore.value());
-
-			auto fence = Fence::create(_device);
-			TRY(fence);
-			_compute_in_flight_fences[i] = std::move(fence.value());
-		}
-
-		return {};
-	}
-
-	void Graphics::_record_compute_command_buffer(VkCommandBuffer commandBuffer) {
-		auto beginInfo = VkCommandBufferBeginInfo{};
-		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-		require(vkBeginCommandBuffer(commandBuffer, &beginInfo));
-
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline);
-
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, _compute_pipeline_layout, 0, 1, &_compute_descriptor_sets[_current_frame], 0, nullptr);
-
-		//vkCmdDispatch(commandBuffer, mainRenderPipeline_->swapchainExtent().width, mainRenderPipeline_->swapchainExtent().height, 1);
-		vkCmdDispatch(commandBuffer, 10, 10, 1);
-
-
-		require(vkEndCommandBuffer(commandBuffer));
-	}
 	void Graphics::_create_texture_sampler() {
 		auto samplerInfo = VkSamplerCreateInfo{};
 		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -665,30 +504,6 @@ namespace vulkan {
 		require(vkCreateSampler(_device, &samplerInfo, nullptr, &_texture_sampler));
 	}
 
-	util::Result<void, KError> Graphics::_create_compute_result_texture() {
-		VkFormat image_format = VK_FORMAT_R8G8B8A8_SRGB;
-		auto compute_image_res = Image::create(
-				100,
-				100,
-				image_format,
-				VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-		TRY(compute_image_res);
-		_compute_result_image = std::move(compute_image_res.value());
-
-		auto image_view_res = _compute_result_image.create_image_view();
-		TRY(image_view_res);
-		_compute_result_image_view = std::move(image_view_res.value());
-		_transition_image_layout(
-				_compute_result_image.value(),
-				image_format,
-				VK_IMAGE_LAYOUT_UNDEFINED,
-				VK_IMAGE_LAYOUT_GENERAL,
-				1);
-
-		return {};
-	}
-
-	
 	QueueFamilyIndices Graphics::_find_queue_families(VkPhysicalDevice device) const {
 		QueueFamilyIndices indices;
 
