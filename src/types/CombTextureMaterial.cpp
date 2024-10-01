@@ -16,7 +16,7 @@ namespace types {
 		result->_resources.add_resource(
 				ShaderResource::create_primitive("object_transformation", glm::mat4(1.0)));
 		result->_resources.add_resource(
-				ShaderResource::create_primitive("comb_ratio", 0.75));
+				ShaderResource::create_primitive("comb_ratio", 0.75f));
 		result->_resources.add_resource(
 				ShaderResource::create_texture("primary_texture", prim_texture));
 		result->_resources.add_resource(

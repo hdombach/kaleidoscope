@@ -270,7 +270,7 @@ namespace vulkan {
 	VkSemaphore RayPass::submit(
 			Node &node,
 			uint32_t count,
-			ComputeUniformBuffer uniform,
+			ComputeUniform uniform,
 			VkSemaphore semaphore)
 	{
 		auto rand = std::random_device();
@@ -801,7 +801,7 @@ namespace vulkan {
 		util::replace_substr(source, "/*BVNODE_DECL*/\n", BVNode::declaration());
 		util::replace_substr(source, "/*NODE_DECL*/\n", RayPassNode::VImpl::declaration());
 		util::replace_substr(source, "/*RESOURCE_DECL*/", resource_decls);
-		util::replace_substr(source, "/*UNIFORM_DECL*/\n", ComputeUniformBuffer::declaration());
+		util::replace_substr(source, "/*UNIFORM_DECL*/\n", ComputeUniform::declaration());
 		util::replace_substr(source, "/*TEXTURE_COUNT*/", std::to_string(texture_count));
 		util::replace_substr(source, "/*MATERIAL_BUFFERS*/\n", material_bufs);
 		util::replace_substr(source, "/*MATERIAL_SRCS*/\n", material_srcs);

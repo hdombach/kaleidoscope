@@ -14,12 +14,14 @@ namespace types {
 			enum class Type {
 				Unknown,
 				Texture,
+				Uint,
 				Mat4,
 				Vec3,
 				Color3,
 				Float,
 			};
 
+			static ShaderResource create_primitive(std::string name, uint32_t val);
 			static ShaderResource create_primitive(std::string name, float val);
 			static ShaderResource create_primitive(std::string name, glm::mat4 mat);
 			static ShaderResource create_primitive(std::string name, glm::vec3 vec);
@@ -49,6 +51,8 @@ namespace types {
 			util::Result<glm::vec3 const &, void> as_color3() const;
 			util::Result<void, KError> set_float(float val);
 			util::Result<float, void> as_float() const;
+			util::Result<void, KError> set_uint32(uint32_t val);
+			util::Result<uint32_t, void> as_uint32() const;
 
 			bool const dirty_bit() const { return _dirty_bit; }
 			void clear_dirty_bit() { _dirty_bit = false; }
@@ -62,6 +66,7 @@ namespace types {
 			std::string _declaration;
 
 			union {
+				uint32_t _as_uint32;
 				float _as_float;
 				glm::mat4 _as_mat4;
 				glm::vec3 _as_vec3;
@@ -96,6 +101,7 @@ namespace types {
 			void set_vec3(std::string const &name, glm::vec3 const &val);
 			void set_color3(std::string const &name, glm::vec3 const &val);
 			void set_float(std::string const &name, float &val);
+			void set_uint32(std::string const &name, uint32_t &val);
 
 			/* Number of resources */
 			size_t size() const { return _resources.size(); }

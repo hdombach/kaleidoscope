@@ -11,6 +11,7 @@ layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec2 fragTexCoord;
 
 layout(location = 0) out vec4 outColor;
+layout(location = 1) out uint outNode;
 
 void frag_main(/*FRAG_MAIN_ARGS*/) {
 	/*FRAG_MAIN_SRC*/
@@ -18,4 +19,5 @@ void frag_main(/*FRAG_MAIN_ARGS*/) {
 
 void main() {
 	/*FRAG_MAIN_CALL*/
+	outNode = material_uniform.node_id; /* hard coded by ShaderResource */
 }

@@ -141,6 +141,7 @@ void App::main_loop() {
 
 		VkSemaphore semaphore;
 		_scene->update();
+		_scene->set_selected_node(_view_state->selected_node());
 		if (_view_state->showing_preview) {
 			semaphore = _scene->render_preview(_prev_semaphore);
 		} else {

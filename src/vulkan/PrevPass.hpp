@@ -11,7 +11,7 @@
 #include "Image.hpp"
 #include "ImageView.hpp"
 #include "Texture.hpp"
-#include "UniformBuffer.hpp"
+#include "Uniforms.hpp"
 #include "PrevPassMesh.hpp"
 #include "PrevPassMaterial.hpp"
 #include "PrevPassNode.hpp"
@@ -75,10 +75,10 @@ namespace vulkan {
 			VkDescriptorSet imgui_descriptor_set();
 			ImageView const &image_view();
 			VkRenderPass render_pass();
-			MappedGlobalUniform &current_uniform_buffer();
+			MappedPrevPassUniform &current_uniform_buffer();
 			DescriptorPool &descriptor_pool() { return _descriptor_pool; };
-			VkDescriptorSetLayout global_descriptor_set_layout() { return _descriptor_sets.layout(); }
-			VkDescriptorSet global_descriptor_set(int frame_index) { return _descriptor_sets.descriptor_set(frame_index); }
+			VkDescriptorSetLayout global_descriptor_set_layout() { return _global_descriptor_set.layout(); }
+			VkDescriptorSet global_descriptor_set(int frame_index) { return _global_descriptor_set.descriptor_set(frame_index); }
 
 			MaterialObserver &material_observer() { return _material_observer; }
 			MeshObserver &mesh_observer() { return _mesh_observer; }
@@ -105,6 +105,9 @@ namespace vulkan {
 			void _cleanup_images();
 			static VkFormat _depth_format();
 
+			util::Result<void, KError> _create_overlay_pipeline();
+			void _destroy_overlay_pipeline();
+
 		private:
 			std::vector<PrevPassMesh> _meshes;
 			std::vector<PrevPassMaterial> _materials;
@@ -113,21 +116,29 @@ namespace vulkan {
 			MaterialObserver _material_observer;
 			NodeObserver _node_observer;
 
+			MappedOverlayUniform _mapped_overlay_uniform;
+			VkPipelineLayout _overlay_pipeline_layout;
+			VkPipeline _overlay_pipeline;
+			DescriptorSets _overlay_descriptor_set;
+
 			VkExtent2D _size;
 			Image _depth_image;
 			ImageView _depth_image_view;
 			Image _color_image;
 			ImageView _color_image_view;
+			Image _node_image;
+			ImageView _node_image_view;
 			VkFramebuffer _framebuffer;
 			VkDescriptorSet _imgui_descriptor_set;
-			DescriptorSets _descriptor_sets;
+			DescriptorSets _global_descriptor_set;
 			VkRenderPass _render_pass;
-			MappedGlobalUniform _mapped_uniform;
+			MappedPrevPassUniform _mapped_uniform;
 			Fence _fence;
 			Semaphore _semaphore;
 			VkCommandBuffer _command_buffer;
 			DescriptorPool _descriptor_pool;
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
+			const static VkFormat _NODE_IMAGE_FORMAT = VK_FORMAT_R16_UINT;
 			uint32_t _mip_levels;
 
 			Scene *_scene;

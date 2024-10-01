@@ -12,6 +12,19 @@
 namespace types {
 	ShaderResource ShaderResource::create_primitive(
 			std::string name,
+			uint32_t val)
+	{
+		auto result = ShaderResource(name, Type::Uint);
+		result._as_float = val;
+		result._primitive_size = sizeof(uint32_t);
+		result._declaration = util::f("uint ", name);
+		result._alignment = 4;
+		return result;
+
+	}
+
+	ShaderResource ShaderResource::create_primitive(
+			std::string name,
 			float val)
 	{
 		auto result = ShaderResource(name, Type::Float);
@@ -66,6 +79,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 
 	bool ShaderResource::is_primitive() const {
 		switch (_type) {
+			case Type::Uint:
 			case Type::Mat4:
 			case Type::Vec3:
 			case Type::Float:
@@ -175,6 +189,27 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		}
 	}
 
+	util::Result<void, KError> ShaderResource::set_uint32(uint32_t val) {
+		if (type() == Type::Uint) {
+			if (val != _as_uint32) {
+				_set_dirty_bit();
+				_as_uint32 = val;
+			}
+			return {};
+		} else {
+			return KError::invalid_arg("ShaderResource is not a float");
+		}
+	}
+
+	util::Result<uint32_t, void> ShaderResource::as_uint32() const {
+		if (type() == Type::Uint) {
+			return _as_uint32;
+		} else {
+			return {};
+		}
+	}
+
+
 	ShaderResource::ShaderResource(std::string &name, Type type):
 		_name(name),
 		_primitive_size(0),
@@ -192,6 +227,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		_range(0),
 		_parent(parent)
 	{
+		add_resource(ShaderResource::create_primitive("node_id", static_cast<uint32_t>(0)));
 	}
 
 	void ShaderResources::add_resource(ShaderResource resource) {
@@ -290,6 +326,16 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		for (auto &resource : _resources) {
 			if (resource.name() == name) {
 				resource.set_float(val);
+				return;
+			}
+		}
+		add_resource(ShaderResource::create_primitive(name, val));
+	}
+
+	void ShaderResources::set_uint32(const std::string &name, uint32_t &val) {
+		for (auto &resource : _resources) {
+			if (resource.name() == name) {
+				resource.set_uint32(val);
 				return;
 			}
 		}

@@ -17,6 +17,13 @@ namespace ui {
 		static std::unique_ptr<State> create(vulkan::Scene &scene) {
 			return std::unique_ptr<State>(new State{vulkan::SceneTexture(0, scene)});
 		}
+		uint32_t selected_node() {
+			if (scene_tab == Nodes) {
+				return selected_item;
+			}
+			return 0;
+		}
+
 		vulkan::SceneTexture scene_texture;
 		bool showing_preview = true;
 		glm::vec2 prev_mouse_pos = glm::vec2(0);

@@ -7,7 +7,7 @@
 #include "../util/Util.hpp"
 #include "Scene.hpp"
 #include "PrevPass.hpp"
-#include "UniformBuffer.hpp"
+#include "Uniforms.hpp"
 
 namespace vulkan {
 	util::Result<Scene::Ptr, KError> Scene::create(
@@ -86,7 +86,7 @@ namespace vulkan {
 	}
 
 	VkSemaphore Scene::render_raytrace(VkSemaphore semaphore) {
-		auto uniform_buffer = ComputeUniformBuffer{};
+		auto uniform_buffer = ComputeUniform{};
 		uniform_buffer.camera_rotation = camera().gen_rotate_mat();
 		uniform_buffer.camera_translation = glm::vec4(camera().position, 0.0);
 		uniform_buffer.aspect = static_cast<float>(camera().width) / static_cast<float>(camera().height);

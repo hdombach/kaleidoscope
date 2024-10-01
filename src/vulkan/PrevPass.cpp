@@ -10,10 +10,12 @@
 #include "PrevPassMaterial.hpp"
 #include "PrevPassNode.hpp"
 #include "Scene.hpp"
+#include "Uniforms.hpp"
 #include "defs.hpp"
 #include "error.hpp"
 #include "graphics.hpp"
 #include "../util/log.hpp"
+#include "../util/file.hpp"
 #include "imgui_impl_vulkan.h"
 
 namespace vulkan {
@@ -107,15 +109,35 @@ namespace vulkan {
 		depth_attachment_ref.attachment = 1;
 		depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
+		auto node_attachment = VkAttachmentDescription{};
+		node_attachment.format = _NODE_IMAGE_FORMAT;
+		node_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		node_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		node_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		node_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		node_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		node_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		node_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		auto node_attachment_ref = VkAttachmentReference{};
+		node_attachment_ref.attachment = 2;
+		node_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		auto color_attachment_refs = std::array<VkAttachmentReference, 2>{
+			color_attachment_ref,
+			node_attachment_ref,
+		};
+
 		auto subpass = VkSubpassDescription{};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &color_attachment_ref;
+		subpass.colorAttachmentCount = color_attachment_refs.size();
+		subpass.pColorAttachments = color_attachment_refs.data();
 		subpass.pDepthStencilAttachment = &depth_attachment_ref;
 
-		auto attachments = std::array<VkAttachmentDescription, 2>{
+		auto attachments = std::array<VkAttachmentDescription, 3>{
 			color_attachment,
 			depth_attachment,
+			node_attachment,
 		};
 
 		auto render_pass_info = VkRenderPassCreateInfo{};
@@ -150,11 +172,19 @@ namespace vulkan {
 			return {res};
 		}
 
-		TRY(result->_create_images());
+		{
+			auto res = result->_create_images();
+			TRY(res);
+		}
+
+		{
+			auto res = result->_create_overlay_pipeline();
+			TRY(res);
+		}
 
 		/* create descriptor sets */
 		{
-			auto buffer = MappedGlobalUniform::create();
+			auto buffer = MappedPrevPassUniform::create();
 			TRY(buffer);
 			result->_mapped_uniform = std::move(buffer.value());
 		}
@@ -170,7 +200,7 @@ namespace vulkan {
 				1, 
 				result->_descriptor_pool);
 		TRY(descriptor_sets);
-		result->_descriptor_sets = std::move(descriptor_sets.value());
+		result->_global_descriptor_set = std::move(descriptor_sets.value());
 
 		result->_mesh_observer = MeshObserver(*result);
 		result->_material_observer = MaterialObserver(*result);
@@ -193,11 +223,12 @@ namespace vulkan {
 		_nodes.clear();
 		_meshes.clear();
 		_materials.clear();
-		_descriptor_sets.destroy();
+		_global_descriptor_set.destroy();
 		if (_render_pass) {
 			vkDestroyRenderPass(Graphics::DEFAULT->device(), _render_pass, nullptr);
 			_render_pass = nullptr;
 		}
+		_destroy_overlay_pipeline();
 
 		_mapped_uniform.destroy();
 		
@@ -238,9 +269,10 @@ namespace vulkan {
 		render_pass_info.renderArea.offset = {0, 0};
 		render_pass_info.renderArea.extent = _size;
 
-		auto clear_values = std::array<VkClearValue, 2>{};
+		auto clear_values = std::array<VkClearValue, 3>{};
 		clear_values[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
 		clear_values[1].depthStencil = {1.0f, 0};
+		clear_values[2].color = {{0}};
 
 		render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
 		render_pass_info.pClearValues = clear_values.data();
@@ -261,9 +293,9 @@ namespace vulkan {
 		scissor.extent = _size;
 		vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-		auto uniform_buffer = GlobalUniformBuffer{};
-		uniform_buffer.camera_transformation = camera.gen_raster_mat();
-		current_uniform_buffer().set_value(uniform_buffer);
+		auto uniform = GlobalPrevPassUniform{};
+		uniform.camera_transformation = camera.gen_raster_mat();
+		current_uniform_buffer().set_value(uniform);
 
 
 		//TODO: pass the filter view
@@ -304,10 +336,36 @@ namespace vulkan {
 					nullptr);
 
 			vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(mesh.index_count()), 1, 0, 0, 0);
-
 		}
 
 		vkCmdEndRenderPass(command_buffer);
+
+		// Overlay
+		{
+			auto uniform = OverlayUniform{};
+			uniform.selected_node = _scene->selected_node();
+			_mapped_overlay_uniform.set_value(uniform);
+
+			vkCmdBindPipeline(
+					command_buffer,
+					VK_PIPELINE_BIND_POINT_COMPUTE,
+					_overlay_pipeline);
+
+			auto descriptor_set = _overlay_descriptor_set.descriptor_set(0);
+
+			vkCmdBindDescriptorSets(
+					command_buffer,
+					VK_PIPELINE_BIND_POINT_COMPUTE,
+					_overlay_pipeline_layout,
+					0,
+					1,
+					&descriptor_set,
+					0,
+					nullptr);
+
+			vkCmdDispatch(_command_buffer, _size.width, _size.height, 1);
+		}
+
 		require(vkEndCommandBuffer(command_buffer));
 
 		VkSemaphore finish_semaphore = _semaphore.get();
@@ -337,7 +395,12 @@ namespace vulkan {
 		if (!res) {
 			LOG_ERROR << res.error().desc() << std::endl;
 		}
-		//submit(); TODO
+
+		_destroy_overlay_pipeline();
+		res = _create_overlay_pipeline();
+		if (!res) {
+			LOG_ERROR << res.error().desc() << std::endl;
+		}
 	}
 
 	VkExtent2D PrevPass::size() const {
@@ -354,7 +417,7 @@ namespace vulkan {
 	VkRenderPass PrevPass::render_pass() {
 		return _render_pass;
 	}
-	MappedGlobalUniform &PrevPass::current_uniform_buffer() {
+	MappedPrevPassUniform &PrevPass::current_uniform_buffer() {
 		return _mapped_uniform;
 	}
 
@@ -492,9 +555,37 @@ namespace vulkan {
 					1);
 		}
 
-		auto attachments = std::array<VkImageView, 2>{
+		/* Create node resources */
+		{
+			auto image = Image::create(
+					_size.width,
+					_size.height,
+					_NODE_IMAGE_FORMAT,
+					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+						| VK_IMAGE_USAGE_STORAGE_BIT
+						| VK_IMAGE_USAGE_SAMPLED_BIT);
+			TRY(image);
+			_node_image = std::move(image.value());
+
+			auto image_view = _node_image.create_image_view_full(
+					_NODE_IMAGE_FORMAT,
+					VK_IMAGE_ASPECT_COLOR_BIT,
+					1);
+			TRY(image_view);
+			_node_image_view = std::move(image_view.value());
+
+			Graphics::DEFAULT->transition_image_layout(
+					_node_image.value(), 
+					_NODE_IMAGE_FORMAT, 
+					VK_IMAGE_LAYOUT_UNDEFINED, 
+					VK_IMAGE_LAYOUT_GENERAL, 
+					1);
+		}
+
+		auto attachments = std::array<VkImageView, 3>{
 			_color_image_view.value(),
 			_depth_image_view.value(),
+			_node_image_view.value(),
 		};
 
 		auto framebuffer_info = VkFramebufferCreateInfo{};
@@ -539,5 +630,92 @@ namespace vulkan {
 				{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}, 
 				VK_IMAGE_TILING_OPTIMAL, 
 				VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT);
+	}
+
+	util::Result<void, KError> PrevPass::_create_overlay_pipeline() {
+		auto buffer = MappedOverlayUniform::create();
+		TRY(buffer);
+		_mapped_overlay_uniform = std::move(buffer.value());
+
+		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
+		descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
+					0,
+					VK_SHADER_STAGE_COMPUTE_BIT,
+					_color_image_view));
+		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
+					1,
+					VK_SHADER_STAGE_COMPUTE_BIT,
+					_mapped_overlay_uniform));
+		descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
+					2,
+					VK_SHADER_STAGE_COMPUTE_BIT,
+					_node_image_view));
+
+		auto descriptor_sets = DescriptorSets::create(
+				descriptor_templates,
+				1,
+				_descriptor_pool);
+		TRY(descriptor_sets);
+		_overlay_descriptor_set = std::move(descriptor_sets.value());
+
+		auto source_code = util::readEnvFile("assets/overlay_shader.comp");
+		util::replace_substr(source_code, "/*OVERLAY_UNIFORM_CONTENT*/\n", OverlayUniform::declaration_content());
+		auto compute_shader = Shader::from_source_code(source_code, Shader::Type::Compute);
+		if (!compute_shader) {
+			util::add_strnum(source_code);
+			LOG_DEBUG << "\n" << source_code << std::endl;
+			LOG_ERROR << compute_shader.error() << std::endl;
+			return compute_shader.error();
+		}
+
+		auto compute_shader_stage_info = VkPipelineShaderStageCreateInfo{};
+		compute_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		compute_shader_stage_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		compute_shader_stage_info.module = compute_shader.value().shader_module();
+		compute_shader_stage_info.pName = "main";
+
+		auto pipeline_layout_info = VkPipelineLayoutCreateInfo{};
+		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipeline_layout_info.setLayoutCount = 1;
+		pipeline_layout_info.pSetLayouts = _overlay_descriptor_set.layout_ptr();
+
+		auto res = vkCreatePipelineLayout(
+				Graphics::DEFAULT->device(),
+				&pipeline_layout_info,
+				nullptr,
+				&_overlay_pipeline_layout);
+		if (res != VK_SUCCESS) {
+			return {res};
+		}
+
+		auto pipeline_info = VkComputePipelineCreateInfo{};
+		pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipeline_info.layout = _overlay_pipeline_layout;
+		pipeline_info.stage = compute_shader_stage_info;
+
+		res = vkCreateComputePipelines(
+				Graphics::DEFAULT->device(),
+				VK_NULL_HANDLE,
+				1,
+				&pipeline_info,
+				nullptr,
+				&_overlay_pipeline);
+		if (res != VK_SUCCESS) {
+			return {res};
+		}
+
+		return {};
+	}
+
+	void PrevPass::_destroy_overlay_pipeline() {
+		vkDestroyPipelineLayout(
+				Graphics::DEFAULT->device(),
+				_overlay_pipeline_layout, 
+				nullptr);
+		vkDestroyPipeline(
+				Graphics::DEFAULT->device(), 
+				_overlay_pipeline, 
+				nullptr);
+		_overlay_descriptor_set.destroy();
 	}
 }

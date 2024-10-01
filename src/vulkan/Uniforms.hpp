@@ -7,11 +7,20 @@
 #include "MappedUniform.hpp"
 
 namespace vulkan {
-	struct GlobalUniformBuffer {
+	struct GlobalPrevPassUniform {
 		alignas(16) glm::mat4 camera_transformation;
 	};
 
-	struct ComputeUniformBuffer {
+	struct OverlayUniform {
+		alignas(4) uint32_t selected_node;
+
+		static constexpr const char *declaration_content() {
+			return
+				"\tuint selected_node;\n";
+		}
+	};
+
+	struct ComputeUniform {
 		alignas(16) glm::mat4 camera_rotation;
 		alignas(4) glm::vec4 camera_translation;
 		alignas(4) float aspect;
@@ -34,6 +43,7 @@ namespace vulkan {
 		}
 	};
 
-	using MappedGlobalUniform = MappedUniform<GlobalUniformBuffer>;
-	using MappedComputeUniform = MappedUniform<ComputeUniformBuffer>;
+	using MappedPrevPassUniform = MappedUniform<GlobalPrevPassUniform>;
+	using MappedComputeUniform = MappedUniform<ComputeUniform>;
+	using MappedOverlayUniform = MappedUniform<OverlayUniform>;
 }

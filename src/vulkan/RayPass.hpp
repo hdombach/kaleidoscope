@@ -10,7 +10,7 @@
 #include "ImageView.hpp"
 #include "Semaphore.hpp"
 #include "Texture.hpp"
-#include "UniformBuffer.hpp"
+#include "Uniforms.hpp"
 #include "RayPassMesh.hpp"
 #include "RayPassNode.hpp"
 #include "RayPassMaterial.hpp"
@@ -77,7 +77,7 @@ namespace vulkan {
 			VkSemaphore submit(
 					Node &node,
 					uint32_t count,
-					ComputeUniformBuffer uniform,
+					ComputeUniform uniform,
 					VkSemaphore semaphore);
 			MappedComputeUniform &current_uniform_buffer();
 

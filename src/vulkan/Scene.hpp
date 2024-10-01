@@ -51,6 +51,8 @@ namespace vulkan {
 			VkSemaphore render_raytrace(VkSemaphore semaphore);
 			void update();
 
+			void set_selected_node(uint32_t n) { _selected_node = n; }
+			uint32_t selected_node() { return _selected_node; }
 			void set_camera(types::Camera const &camera);
 			types::Camera const& camera() const { return _camera; }
 			Node const *get_node(uint32_t id) const;
@@ -102,5 +104,6 @@ namespace vulkan {
 			bool _is_preview;
 			int _render_rate = 10000;
 			std::list<util::Observer *> _node_observers;
+			uint32_t _selected_node;
 	};
 }
