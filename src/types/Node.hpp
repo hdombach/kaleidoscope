@@ -26,6 +26,7 @@ namespace vulkan {
 				result->_resources = types::ShaderResources(&material.resources());
 
 				result->_resources.add_resource(types::ShaderResource::create_primitive("position", result->_position));
+				result->_resources.set_uint32("node_id", id);
 
 				return std::move(result);
 			}

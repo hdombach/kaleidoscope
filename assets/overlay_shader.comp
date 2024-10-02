@@ -9,9 +9,25 @@ layout(set = 0, binding = 2, r32ui) uniform uimage2D node_id;
 void main() {
 	vec4 color = imageLoad(result, ivec2(gl_GlobalInvocationID.xy));
 
-	uvec4 node = imageLoad(node_id, ivec2(gl_GlobalInvocationID.xy));
 
-	color.x += node.x * 0.1;
+	uint max = -1;
+
+	if (overlay_uniform.selected_node < max) {
+		uint sel = overlay_uniform.selected_node;
+		ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
+		uvec4 node = imageLoad(node_id, pos);
+		if (node.x != sel) {
+			uint highlight = 0;
+			highlight += uint(imageLoad(node_id, pos + ivec2(0, 1)).x == sel);
+			highlight += uint(imageLoad(node_id, pos + ivec2(0, -1)).x == sel);
+			highlight += uint(imageLoad(node_id, pos + ivec2(1, 0)).x == sel);
+			highlight += uint(imageLoad(node_id, pos + ivec2(-1, 0)).x == sel);
+			if (highlight > 0) {
+				color = vec4(1.0, 1.0, 1.0, 1.0);
+			}
+		}
+	}
+
 
 	imageStore(result, ivec2(gl_GlobalInvocationID.xy), color);
 }
