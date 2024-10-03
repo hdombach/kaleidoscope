@@ -254,7 +254,8 @@ bool intersect_mesh(
 
 bool intersect_nodes(vec3 ray_pos, vec3 ray_dir, inout vec2 uv, inout uint node_id, inout uint debug, inout vec3 normal, inout float dist) {
 	bool result = false;
-	for (uint n = 0; n < nodes.length(); n++) {
+	//Assuming first node is not being used.
+	for (uint n = 1; n < nodes.length(); n++) {
 		if (intersect_mesh(ray_pos.xyz - nodes[n].position, ray_dir, nodes[n].mesh_id, debug, uv, dist, normal)) {
 			node_id = n;
 			result = true;

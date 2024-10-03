@@ -1,7 +1,6 @@
 #include <cstdio>
 #include <glm/fwd.hpp>
 #include <imgui.h>
-#include <limits>
 #include <portable-file-dialogs.h>
 #include <filesystem>
 
@@ -166,7 +165,7 @@ namespace ui {
 			if (!texture) continue;
 			if (ImGui::Selectable(texture->name().data(), state.selected_item == texture->id())) {
 				if (state.selected_item == texture->id()) {
-					state.selected_item = std::numeric_limits<uint32_t>::max();
+					state.selected_item = 0;
 				} else {
 					state.selected_item = texture->id();
 					state.selected_name = texture->name();

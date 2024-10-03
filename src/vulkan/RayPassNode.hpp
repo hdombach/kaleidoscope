@@ -36,6 +36,8 @@ namespace vulkan {
 
 			VImpl vimpl() const;
 
+			operator bool() const { return _node; }
+
 			Node const &get() const { return *_node; }
 
 		private:

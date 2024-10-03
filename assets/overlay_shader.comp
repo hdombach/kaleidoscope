@@ -10,9 +10,7 @@ void main() {
 	vec4 color = imageLoad(result, ivec2(gl_GlobalInvocationID.xy));
 
 
-	uint max = -1;
-
-	if (overlay_uniform.selected_node < max) {
+	if (overlay_uniform.selected_node > 0) {
 		uint sel = overlay_uniform.selected_node;
 		ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
 		uvec4 node = imageLoad(node_id, pos);

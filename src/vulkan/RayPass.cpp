@@ -312,7 +312,7 @@ namespace vulkan {
 			_compute_index = 0;
 			_ray_count++;
 		}
-
+		
 		_mapped_uniform.set_value(uniform);
 
 		auto begin_info = VkCommandBufferBeginInfo{};
@@ -759,8 +759,10 @@ namespace vulkan {
 		auto buf = std::vector<char>(range);
 		size_t i = 0;
 		for (auto &node : _nodes) {
-			auto &n = node.get();
-			n.resources().update_prim_uniform(buf.data() + i * max_material_range());
+			if (node) {
+				auto &n = node.get();
+				n.resources().update_prim_uniform(buf.data() + i * max_material_range());
+			}
 			i++;
 		}
 		if (auto buffer = StaticBuffer::create(buf.data(), range)) {

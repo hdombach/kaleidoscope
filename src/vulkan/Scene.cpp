@@ -35,6 +35,8 @@ namespace vulkan {
 		scene->add_node_observer(&scene->_raytrace_render_pass->node_observer());
 		resource_manager.add_mesh_observer(&scene->_raytrace_render_pass->mesh_observer());
 		resource_manager.add_material_observer(&scene->_raytrace_render_pass->material_observer());
+
+		scene->_nodes.push_back(nullptr);
 		return scene;
 	}
 
