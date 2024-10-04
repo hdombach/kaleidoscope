@@ -168,11 +168,17 @@ namespace types {
 
 
 	Mesh const *ResourceManager::get_mesh(uint32_t id) const {
-		return _meshes[id].get();
+		if (_meshes.size() > id) {
+			return _meshes[id].get();
+		}
+		return nullptr;
 	}
 
 	Mesh *ResourceManager::get_mesh(uint32_t id) {
-		return _meshes[id].get();
+		if (_meshes.size() > id) {
+			return _meshes[id].get();
+		}
+		return nullptr;
 	}
 
 	bool ResourceManager::has_mesh(const std::string &name) const {
@@ -259,8 +265,19 @@ namespace types {
 	}
 
 	types::Material const *ResourceManager::get_material(std::string const &name) const {
-		if (has_material(name)) {
-			return get_material(_material_map.at(name));
+		for (auto &m : _materials) {
+			if (m->name() == name) {
+				return m.get();
+			}
+		}
+		return nullptr;
+	}
+
+	types::Material *ResourceManager::get_material(std::string const &name) {
+		for (auto &m : _materials) {
+			if (m->name() == name) {
+				return m.get();
+			}
 		}
 		return nullptr;
 	}
@@ -281,7 +298,26 @@ namespace types {
 
 
 	bool ResourceManager::has_material(std::string const &name) const {
-		return _material_map.count(name) > 0;
+		for (auto &m : _materials) {
+			if (m->name() == name) return true;
+		}
+		return false;
+	}
+
+	util::Result<void, KError> ResourceManager::rename_material(uint32_t id, const std::string &name) {
+		if (get_material(name)) {
+			return KError::name_already_exists(name);
+		}
+		get_material(id)->set_name(name);
+		return {};
+	}
+
+	ResourceManager::material_iterator ResourceManager::material_begin() {
+		return _materials.begin();
+	}
+
+	ResourceManager::material_iterator ResourceManager::material_end() {
+		return _materials.end();
 	}
 
 	util::Result<void, KError> ResourceManager::add_material_observer(util::Observer *observer) {
@@ -326,12 +362,12 @@ namespace types {
 			const std::string &name,
 			std::unique_ptr<types::Material> &&material)
 	{
-		if (_material_map.count(name)) {
+		if (has_material(name)) {
 			return KError::material_already_exists(name);
 		}
 		auto id = material->id();
+		material->set_name(name);
 		_materials.push_back(std::move(material));
-		_material_map[name] = id;
 		for (auto &material_observer: _material_observers) {
 			material_observer->obs_create(id);
 		}

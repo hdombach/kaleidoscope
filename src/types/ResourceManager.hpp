@@ -29,6 +29,9 @@ namespace types {
 
 			using MeshContainer = std::vector<std::unique_ptr<Mesh>>;
 			using mesh_iterator = MeshContainer::iterator;
+
+			using MaterialContainer = std::vector<std::unique_ptr<Material>>;
+			using material_iterator = MaterialContainer::iterator;
 		public:
 			ResourceManager();
 			~ResourceManager();
@@ -84,9 +87,13 @@ namespace types {
 			types::Material *default_material();
 			types::Material const *default_material() const;
 			types::Material const *get_material(std::string const &name) const;
+			types::Material *get_material(std::string const &name);
 			types::Material const *get_material(uint32_t id) const;
 			types::Material *get_material(uint32_t id);
 			bool has_material(std::string const &name) const;
+			util::Result<void, KError> rename_material(uint32_t id, std::string const &name);
+			material_iterator material_begin();
+			material_iterator material_end();
 
 			util::Result<void, KError> add_material_observer(util::Observer *observer);
 			util::Result<void, KError> rem_material_observer(util::Observer *observer);
@@ -106,7 +113,6 @@ namespace types {
 			uint32_t _default_texture;
 
 			MeshContainer _meshes;
-			std::unordered_map<std::string, uint32_t> _material_map;
 			std::vector<std::unique_ptr<types::Material>> _materials;
 			uint32_t _default_mesh;
 			uint32_t _default_material;

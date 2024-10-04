@@ -58,4 +58,13 @@ namespace ui {
 			types::ResourceManager &resources,
 			types::Mesh *mesh,
 			State &state);
+
+	void MaterialListView(
+			types::ResourceManager &resources,
+			State &state);
+
+	void MaterialSelectedView(
+			types::ResourceManager &resources,
+			types::Material *material,
+			State &state);
 }

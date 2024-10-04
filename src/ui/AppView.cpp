@@ -95,6 +95,13 @@ namespace ui {
 				MeshListView(scene.resource_manager(), state);
 				ImGui::EndTabItem();
 			}
+
+			if (ImGui::BeginTabItem("Materials")) {
+				state.scene_tab = State::Materials;
+				MaterialListView(scene.resource_manager(), state);
+				ImGui::EndTabItem();
+			}
+
 			ImGui::EndTabBar();
 		}
 
@@ -108,6 +115,9 @@ namespace ui {
 				break;
 			case State::Meshes:
 				MeshSelectedView(scene.resource_manager(), scene.resource_manager().get_mesh(state.selected_item), state);
+				break;
+			case State::Materials:
+				MaterialSelectedView(scene.resource_manager(), scene.resource_manager().get_material(state.selected_item), state);
 				break;
 			default:
 				ImGui::Text("Nothing selected");
@@ -318,11 +328,13 @@ namespace ui {
 		for (auto &mesh : util::Adapt(resources.mesh_begin(), resources.mesh_end())) {
 			if (!mesh) continue;
 			if (ImGui::Selectable(mesh->name().data(), state.selected_item == mesh->id())) {
-				state.selected_item = 0;
-			} else {
-				state.selected_item = mesh->id();
-				state.selected_name = mesh->name();
-				state.dup_name_error = false;
+				if (state.selected_item == mesh->id()) {
+					state.selected_item = 0;
+				} else {
+					state.selected_item = mesh->id();
+					state.selected_name = mesh->name();
+					state.dup_name_error = false;
+				}
 			}
 		}
 		ImGui::EndChild();
@@ -349,8 +361,53 @@ namespace ui {
 			if (state.dup_name_error) {
 				ImGui::TextColored({1.0, 0.0, 0.0, 1.0}, "ERROR: Duplicate name");
 			}
+			ImGui::Text("No mesh preview");
 		} else {
-			ImGui::Text("No texture selected");
+			ImGui::Text("No mesh selected");
+		}
+	}
+
+	void MaterialListView(
+			types::ResourceManager &resources,
+			State &state)
+	{
+		float width = 250;
+
+		ImGui::BeginChild("Material List", ImVec2(width, -ImGui::GetFrameHeightWithSpacing()), true);
+		for (auto &material : util::Adapt(resources.material_begin(), resources.material_end())) {
+			if (!material) continue;
+			if (ImGui::Selectable(material->name().data(), state.selected_item == material->id())) {
+				if (state.selected_item == material->id()) {
+					state.selected_item = 0;
+				} else {
+					state.selected_item = material->id();
+					state.selected_name = material->name();
+					state.dup_name_error = false;
+				}
+			}
+		}
+		ImGui::EndChild();
+	}
+
+	void MaterialSelectedView(
+			types::ResourceManager &resources,
+			types::Material *material,
+			State &state)
+	{
+		if (material) {
+			if (ui::InputText("##SelectedName", &state.selected_name, ImGuiInputTextFlags_EnterReturnsTrue)) {
+				state.dup_name_error = !resources.rename_material(material->id(), state.selected_name);
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Set Name")) {
+				resources.rename_material(material->id(), state.selected_name);
+			}
+			if (state.dup_name_error) {
+				ImGui::TextColored({1.0, 0.0, 0.0, 1.0}, "ERROR: Duplicate name");
+			}
+			ImGui::Text("No preview right now");
+		} else {
+			ImGui::Text("No material selected");
 		}
 	}
 }
