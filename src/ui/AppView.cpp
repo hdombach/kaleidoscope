@@ -86,7 +86,13 @@ namespace ui {
 			if (ImGui::BeginTabItem("Textures")) {
 				state.scene_tab = State::Textures;
 				ImGui::Text("hello");
-				TexturesEditView(scene.resource_manager(), state);
+				TextureListView(scene.resource_manager(), state);
+				ImGui::EndTabItem();
+			}
+
+			if (ImGui::BeginTabItem("Meshes")) {
+				state.scene_tab = State::Meshes;
+				MeshListView(scene.resource_manager(), state);
 				ImGui::EndTabItem();
 			}
 			ImGui::EndTabBar();
@@ -98,7 +104,10 @@ namespace ui {
 				NodeView(scene, scene.get_node_mut(state.selected_item), state);
 				break;
 			case State::Textures:
-				TextureEditView(scene.resource_manager(), scene.resource_manager().get_texture(state.selected_item), state);
+				TextureSelectedView(scene.resource_manager(), scene.resource_manager().get_texture(state.selected_item), state);
+				break;
+			case State::Meshes:
+				MeshSelectedView(scene.resource_manager(), scene.resource_manager().get_mesh(state.selected_item), state);
 				break;
 			default:
 				ImGui::Text("Nothing selected");
@@ -157,7 +166,7 @@ namespace ui {
 
 	}
 
-	void TexturesEditView(types::ResourceManager &resources, State &state) {
+	void TextureListView(types::ResourceManager &resources, State &state) {
 		float width = 250;
 
 		ImGui::BeginChild("Texture List", ImVec2(width, -ImGui::GetFrameHeightWithSpacing()), true);
@@ -180,7 +189,7 @@ namespace ui {
 		}
 	}
 
-	void TextureEditView(
+	void TextureSelectedView(
 			types::ResourceManager &resources,
 			vulkan::Texture *texture,
 			State &state)
@@ -296,6 +305,52 @@ namespace ui {
 				}
 			}
 			ImGui::EndCombo();
+		}
+	}
+
+	void MeshListView(
+			types::ResourceManager &resources,
+			State &state)
+	{
+		float width = 250;
+
+		ImGui::BeginChild("Mesh List", ImVec2(width, -ImGui::GetFrameHeightWithSpacing()), true);
+		for (auto &mesh : util::Adapt(resources.mesh_begin(), resources.mesh_end())) {
+			if (!mesh) continue;
+			if (ImGui::Selectable(mesh->name().data(), state.selected_item == mesh->id())) {
+				state.selected_item = 0;
+			} else {
+				state.selected_item = mesh->id();
+				state.selected_name = mesh->name();
+				state.dup_name_error = false;
+			}
+		}
+		ImGui::EndChild();
+		//TODO: add mesh
+	}
+
+	void MeshSelectedView(
+			types::ResourceManager &resources,
+			types::Mesh *mesh,
+			State &state)
+	{
+		if (mesh) {
+			if (ui::InputText(
+						"##SelectedName",
+						&state.selected_name,
+						ImGuiInputTextFlags_EnterReturnsTrue))
+			{
+				state.dup_name_error = !resources.rename_mesh(mesh->id(), state.selected_name);
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Set Name")) {
+				resources.rename_mesh(mesh->id(), state.selected_name);
+			}
+			if (state.dup_name_error) {
+				ImGui::TextColored({1.0, 0.0, 0.0, 1.0}, "ERROR: Duplicate name");
+			}
+		} else {
+			ImGui::Text("No texture selected");
 		}
 	}
 }

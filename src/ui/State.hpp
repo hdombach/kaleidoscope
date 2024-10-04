@@ -12,6 +12,7 @@ namespace ui {
 			Nothing,
 			Nodes,
 			Textures,
+			Meshes,
 		};
 
 		static std::unique_ptr<State> create(vulkan::Scene &scene) {

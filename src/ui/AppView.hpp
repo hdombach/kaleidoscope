@@ -18,8 +18,8 @@ namespace ui {
 	void NodesView(vulkan::Scene &scene, State &state);
 	void NodeView(vulkan::Scene &scene, vulkan::Node *node, State &state);
 
-	void TexturesEditView(types::ResourceManager &resources, State &state);
-	void TextureEditView(
+	void TextureListView(types::ResourceManager &resources, State &state);
+	void TextureSelectedView(
 			types::ResourceManager &resources,
 			vulkan::Texture *texture,
 			State &state);
@@ -48,5 +48,14 @@ namespace ui {
 			types::ShaderResource const &resource,
 			types::ShaderResources &resources,
 			types::ResourceManager &resources_manager,
+			State &state);
+
+	void MeshListView(
+			types::ResourceManager &resources,
+			State &state);
+
+	void MeshSelectedView(
+			types::ResourceManager &resources,
+			types::Mesh *mesh,
 			State &state);
 }

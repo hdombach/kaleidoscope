@@ -92,4 +92,11 @@ namespace types {
 	size_t StaticMesh::size() const {
 		return _vertices.size();
 	}
+
+	void StaticMesh::set_name(const std::string &name) {
+		_name = name;
+	}
+	std::string const &StaticMesh::name() const {
+		return _name;
+	}
 }

@@ -148,27 +148,59 @@ namespace types {
 		return _meshes[_default_mesh].get();
 	}
 
-	Mesh *ResourceManager::update_mesh(const std::string &name) {
-		//TODO: update mshes
-		if (has_mesh(name)) {
-			return _meshes[_mesh_map.at(name)].get();
+	Mesh const *ResourceManager::get_mesh(const std::string &name) const {
+		for (auto &m : _meshes) {
+			if (m->name() == name) {
+				return m.get();
+			}
 		}
-		return default_mesh();
+		return nullptr;
 	}
 
-	Mesh const *ResourceManager::get_mesh(const std::string &name) const {
-		if (has_mesh(name)) {
-			return _meshes[_mesh_map.at(name)].get();
+	Mesh *ResourceManager::get_mesh(const std::string &name) {
+		for (auto &m : _meshes) {
+			if (m->name() == name) {
+				return m.get();
+			}
 		}
-		return default_mesh();
+		return nullptr;
 	}
+
 
 	Mesh const *ResourceManager::get_mesh(uint32_t id) const {
 		return _meshes[id].get();
 	}
 
+	Mesh *ResourceManager::get_mesh(uint32_t id) {
+		return _meshes[id].get();
+	}
+
 	bool ResourceManager::has_mesh(const std::string &name) const {
-		return _mesh_map.count(name);
+		for (auto &m : _meshes) {
+			if (m->name() == name) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	util::Result<void, KError> ResourceManager::rename_mesh(
+			uint32_t id,
+			const std::string &name)
+	{
+		if (get_mesh(name)) {
+			return KError::name_already_exists(name);
+		}
+		get_mesh(id)->set_name(name);
+		return {};
+	}
+
+	ResourceManager::mesh_iterator ResourceManager::mesh_begin() {
+		return _meshes.begin();
+	}
+
+	ResourceManager::mesh_iterator ResourceManager::mesh_end() {
+		return _meshes.end();
 	}
 
 	util::Result<void, KError> ResourceManager::add_mesh_observer(util::Observer *observer) {
@@ -278,12 +310,12 @@ namespace types {
 			const std::string &name,
 			std::unique_ptr<Mesh> &&mesh)
 	{
-		if (_mesh_map.count(name)) {
+		if (has_mesh(name)) {
 			return KError::mesh_already_exists(name);
 		}
 		auto id = mesh->id();
+		mesh->set_name(name);
 		_meshes.push_back(std::move(mesh));
-		_mesh_map[name] = id;
 		for (auto &mesh_observer: _mesh_observers) {
 			mesh_observer->obs_create(id);
 		}

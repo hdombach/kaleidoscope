@@ -29,15 +29,18 @@ namespace types {
 			void destroy();
 			~StaticMesh();
 
-			const_iterator begin() const;
-			const_iterator end() const;
-			uint32_t id() const;
-			size_t size() const;
+			const_iterator begin() const override;
+			const_iterator end() const override;
+			uint32_t id() const override;
+			size_t size() const override;
+			void set_name(std::string const &name) override;
+			std::string const &name() const override;
 
 		private:
 			StaticMesh() = default;
 
 			std::vector<vulkan::Vertex> _vertices;
 			uint32_t _id;
+			std::string _name;
 	};
 }

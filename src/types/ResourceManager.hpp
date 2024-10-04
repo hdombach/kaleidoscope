@@ -26,6 +26,9 @@ namespace types {
 		public:
 			using TextureContainer = std::vector<vulkan::Texture *>;
 			using texture_iterator = TextureContainer::iterator;
+
+			using MeshContainer = std::vector<std::unique_ptr<Mesh>>;
+			using mesh_iterator = MeshContainer::iterator;
 		public:
 			ResourceManager();
 			~ResourceManager();
@@ -56,10 +59,14 @@ namespace types {
 
 			Mesh *default_mesh();
 			Mesh const *default_mesh() const;
-			Mesh *update_mesh(std::string const &name);
 			Mesh const *get_mesh(std::string const &name) const;
+			Mesh *get_mesh(std::string const &name);
 			Mesh const *get_mesh(uint32_t id) const;
+			Mesh *get_mesh(uint32_t id);
 			bool has_mesh(std::string const &name) const;
+			util::Result<void, KError> rename_mesh(uint32_t id, std::string const &name);
+			mesh_iterator mesh_begin();
+			mesh_iterator mesh_end();
 
 			util::Result<void, KError> add_mesh_observer(util::Observer *observer);
 			util::Result<void, KError> rem_mesh_observer(util::Observer *observer);
@@ -98,8 +105,7 @@ namespace types {
 			std::vector<vulkan::Texture *> _textures;
 			uint32_t _default_texture;
 
-			std::unordered_map<std::string, uint32_t> _mesh_map;
-			std::vector<std::unique_ptr<Mesh>> _meshes;
+			MeshContainer _meshes;
 			std::unordered_map<std::string, uint32_t> _material_map;
 			std::vector<std::unique_ptr<types::Material>> _materials;
 			uint32_t _default_mesh;
