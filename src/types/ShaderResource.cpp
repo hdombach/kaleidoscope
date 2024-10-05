@@ -343,7 +343,6 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	}
 
 	util::Result<vulkan::Uniform, KError> ShaderResources::create_prim_uniform() const {
-		int i = -1;
 		size_t uniform_s = 0;
 		for (auto resource : get()) {
 			uniform_s += _calc_alignment(resource->alignment(), uniform_s);

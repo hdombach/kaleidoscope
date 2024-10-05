@@ -163,6 +163,28 @@ namespace ui {
 			ImGui::PushID(node->id());
 			ImGui::Text("Node");
 			ui::InputText("Name", &node->name());
+			if (ImGui::BeginCombo("Mesh", node->mesh().name().data())) {
+				auto meshes = util::Adapt(scene.resource_manager().mesh_begin(), scene.resource_manager().mesh_end());
+				for (auto &mesh : meshes) {
+					if (!mesh) continue;
+					if (ImGui::Selectable(mesh->name().data(), mesh->id() == node->mesh().id())) {
+						node->set_mesh(*mesh);
+					}
+				}
+				ImGui::EndCombo();
+			}
+
+			if (ImGui::BeginCombo("Material", node->material().name().data())) {
+				auto materials = util::Adapt(scene.resource_manager().material_begin(), scene.resource_manager().material_end());
+				for (auto &material : materials) {
+					if (!material) continue;
+					if (ImGui::Selectable(material->name().data(), material->id() == node->material().id())) {
+						node->set_material(*material);
+					}
+				}
+				ImGui::EndCombo();
+			}
+
 			ImGui::DragFloat3("Position", pos.data(), 0.01f);
 			if (ImGui::Button("Delete")) {
 				scene.rem_node(node->id());

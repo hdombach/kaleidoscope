@@ -21,12 +21,10 @@ namespace vulkan {
 					types::Mesh const &mesh,
 					types::Material const &material)
 			{
-				auto result = Ptr(new Node(id, mesh, material));
+				auto result = Ptr(new Node(id));
 				result->name() = "Node " + std::to_string(id);
-				result->_resources = types::ShaderResources(&material.resources());
-
-				result->_resources.add_resource(types::ShaderResource::create_primitive("position", result->_position));
-				result->_resources.set_uint32("node_id", id);
+				result->set_mesh(mesh);
+				result->set_material(material);
 
 				return std::move(result);
 			}
@@ -39,9 +37,21 @@ namespace vulkan {
 			std::string const &name() const { return _name; }
 			std::string &name() { return _name; }
 
-			types::Mesh const &mesh() const { return _mesh; }
+			types::Mesh const &mesh() const { return *_mesh; }
+			void set_mesh(types::Mesh const &mesh) {
+				_dirty_bity = true;
+				_mesh = &mesh;
+			}
 
-			types::Material const &material() const { return _material; }
+			types::Material const &material() const { return *_material; }
+			void set_material(types::Material const &material) {
+				_dirty_bity = true;
+				_material = &material;
+
+				_resources = types::ShaderResources(&material.resources());
+				_resources.add_resource(types::ShaderResource::create_primitive("position", _position));
+				_resources.set_uint32("node_id", _id);
+			}
 
 			uint32_t id() const { return _id; }
 
@@ -55,27 +65,30 @@ namespace vulkan {
 			types::ShaderResources &resources() { return _resources; }
 
 			bool dirty_bits() const {
-				return _resources.dirty_bits();
+				return _resources.dirty_bits() || _dirty_bity;
 			}
 			void clear_dirty_bits() {
 				_resources.clear_dirty_bits();
+				_dirty_bity = false;
 			}
 
 		private:
 			uint32_t _id;
-			types::Mesh const &_mesh;
-			types::Material const &_material;
+			types::Mesh const *_mesh;
+			types::Material const *_material;
 
 			std::string _name;
 
 			glm::vec3 _position;
 
 			types::ShaderResources _resources;
+			
+			bool _dirty_bity;
 
-			Node(uint32_t id, types::Mesh const &mesh, types::Material const &material):
+			Node(uint32_t id):
 				_id(id),
-				_mesh(mesh),
-				_material(material)
+				_mesh(nullptr),
+				_material(nullptr)
 		{}
 	};
 }
