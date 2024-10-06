@@ -256,7 +256,9 @@ bool intersect_nodes(vec3 ray_pos, vec3 ray_dir, inout vec2 uv, inout uint node_
 	bool result = false;
 	//Assuming first node is not being used.
 	for (uint n = 1; n < nodes.length(); n++) {
-		if (intersect_mesh(ray_pos.xyz - nodes[n].position, ray_dir, nodes[n].mesh_id, debug, uv, dist, normal)) {
+		vec4 pos = nodes[n].object_transformation * vec4(ray_pos.xyz, 1.0);
+		vec4 dir = nodes[n].object_transformation * vec4(ray_dir.xyz, 0.0); // what black magic is this
+		if (intersect_mesh(pos.xyz, dir.xyz, nodes[n].mesh_id, debug, uv, dist, normal)) {
 			node_id = n;
 			result = true;
 		}

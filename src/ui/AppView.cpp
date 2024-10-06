@@ -18,13 +18,13 @@ namespace ui {
 		auto mouse_offset = cur_mouse_pos - state.prev_mouse_pos;
 		auto scene_size = ImVec2(app.scene().camera().width, app.scene().camera().height);
 		int render_rate = app.scene().render_rate();
-		auto camera = app.scene().camera();
 
 		ImGui::Begin("Viewport");
 
 		ImGui::Text("offsett: %f, %f", mouse_offset.x, mouse_offset.y);
 		TextureView(state.scene_texture, scene_size);
 		if (ImGui::IsItemHovered()) {
+			auto camera = app.scene().camera();
 			if (ImGui::IsMouseDown(0)) {
 				camera.rotate_drag(mouse_offset * -0.004f);
 			}
@@ -37,13 +37,11 @@ namespace ui {
 		ImGui::Checkbox("Showing preview", &state.showing_preview);
 		ImGui::DragInt("Render rate", &render_rate, 200);
 		ImGui::Separator();
-		CameraView::show(camera);
 		SceneView(app.scene(), state);
 		ImGui::End();
 
 		app.scene().set_is_preview(state.showing_preview);
 		app.scene().set_render_rate(render_rate);
-		app.scene().set_camera(camera);
 		state.prev_mouse_pos = cur_mouse_pos;
 	}
 
@@ -77,6 +75,14 @@ namespace ui {
 	void SceneView(vulkan::Scene &scene, State &state) {
 		ImGui::Separator();
 		if (ImGui::BeginTabBar("##SceneTabs")) {
+			if (ImGui::BeginTabItem("Camera")) {
+				auto camera = scene.camera();
+				state.scene_tab = State::Camera;
+				CameraView::show(camera);
+				scene.set_camera(camera);
+				ImGui::EndTabItem();
+			}
+
 			if (ImGui::BeginTabItem("Nodes")) {
 				state.scene_tab = State::Nodes;
 				NodesView(scene, state);
@@ -160,6 +166,8 @@ namespace ui {
 	void NodeView(vulkan::Scene &scene, vulkan::Node *node, State &state) {
 		if (node) {
 			auto pos = util::as_array(node->position());
+			auto rotation = util::as_array(node->rotation());
+			auto scale = util::as_array(node->scale());
 			ImGui::PushID(node->id());
 			ImGui::Text("Node");
 			ui::InputText("Name", &node->name());
@@ -186,11 +194,15 @@ namespace ui {
 			}
 
 			ImGui::DragFloat3("Position", pos.data(), 0.01f);
+			ImGui::DragFloat3("Rotation", rotation.data(), 0.01f);
+			ImGui::DragFloat3("Scale", scale.data(), 0.01f);
 			if (ImGui::Button("Delete")) {
 				scene.rem_node(node->id());
 			}
 			ImGui::PopID();
 			node->set_position(util::as_vec(pos));
+			node->set_rotation(util::as_vec(rotation));
+			node->set_scale(util::as_vec(scale));
 			ShaderResourcesView(node->resources(), scene.resource_manager(), state);
 		} else {
 			ImGui::Text("No node selected");

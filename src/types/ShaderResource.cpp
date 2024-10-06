@@ -228,6 +228,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		_parent(parent)
 	{
 		add_resource(ShaderResource::create_primitive("node_id", static_cast<uint32_t>(0)));
+		add_resource(ShaderResource::create_primitive("object_transformation", glm::mat4(1.0)));
 	}
 
 	void ShaderResources::add_resource(ShaderResource resource) {

@@ -9,7 +9,7 @@ namespace vulkan {
 			0,
 			0, // References the empty mesh
 			0, // Not sure if this matters
-			glm::vec3(0)
+			glm::mat4(1.0)
 		};
 	}
 
@@ -18,7 +18,7 @@ namespace vulkan {
 			<< "\"node_id\":" << node_id << ","
 			<< "\"mesh_id\":" << mesh_id << ","
 			<< "\"material_id\":" << material_id << ","
-			<< "\"position\":" << position
+			<< "\"object_transformation\":" << object_transformation
 			<< "}";
 	}
 	RayPassNode RayPassNode::create(const Node *node, const RayPass *ray_pass) {
@@ -36,7 +36,7 @@ namespace vulkan {
 				_node->id(),
 					_ray_pass->mesh(_node->mesh().id()).bvnode_id(),
 					_node->material().id(),
-					_node->position(),
+					_node->get_matrix_inverse(),
 			};
 		} else {
 			return VImpl::create_empty();

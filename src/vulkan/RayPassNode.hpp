@@ -14,7 +14,7 @@ namespace vulkan {
 				alignas(4) uint32_t node_id;
 				alignas(4) uint32_t mesh_id;
 				alignas(4) uint32_t material_id;
-				alignas(16) glm::vec3 position;
+				alignas(16) glm::mat4 object_transformation;
 
 				static VImpl create_empty();
 
@@ -24,7 +24,7 @@ namespace vulkan {
 					"\tuint node_id;\n"
 					"\tuint mesh_id;\n"
 					"\tuint material_id;\n"
-					"\tvec3 position;\n"
+					"\tmat4 object_transformation;\n"
 					"};\n";
 				}
 

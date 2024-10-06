@@ -19,7 +19,7 @@ layout(location = 1) out vec2 fragTexCoord;
 void main() {
 	gl_Position = global_uniform.camera_transformation *
 		material_uniform.object_transformation *
-		vec4(inPosition + material_uniform.position, 1.0);
+		vec4(inPosition, 1.0);
 
 	fragColor = inColor;
 	fragTexCoord = inTexCoord;

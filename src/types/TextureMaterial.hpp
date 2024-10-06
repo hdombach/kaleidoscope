@@ -28,7 +28,6 @@ namespace types {
 
 			ShaderResources _resources;
 
-			glm::mat4 _object_transformation;
 			glm::vec3 _default_position;
 	};
 

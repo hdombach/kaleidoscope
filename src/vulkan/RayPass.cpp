@@ -462,6 +462,7 @@ namespace vulkan {
 	void RayPass::node_update(uint32_t id) {
 		_nodes[id] = RayPassNode::create(_scene->get_node(id), this);
 		_node_dirty_bit = true;
+		LOG_DEBUG << "node update" << std::endl;
 	}
 
 	void RayPass::node_remove(uint32_t id) {}
@@ -668,6 +669,7 @@ namespace vulkan {
 		}
 
 		if (_node_dirty_bit) {
+			LOG_DEBUG << "update node buffers " << std::endl;
 			_create_node_buffers();
 			_node_dirty_bit = false;
 			_material_dirty_bit = true;

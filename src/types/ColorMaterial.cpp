@@ -13,14 +13,9 @@ namespace types {
 
 		result->_id = id;
 		result->_color = color;
-		result->_object_transformation = glm::mat4(1.0);
 
 		result->_resources.add_resource(types::ShaderResource::create_primitive(
 					"position", result->_default_position));
-		result->_resources.add_resource(types::ShaderResource::create_primitive(
-					"object_transformation",
-					result->_object_transformation));
-
 		result->_resources.add_resource(types::ShaderResource::create_color(
 					"color",
 					result->_color));
