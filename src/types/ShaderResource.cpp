@@ -320,7 +320,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 				return;
 			}
 		}
-		add_resource(ShaderResource::create_primitive(name, val));
+		add_resource(ShaderResource::create_color(name, val));
 	}
 
 	void ShaderResources::set_float(const std::string &name, float &val) {

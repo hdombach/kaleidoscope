@@ -3,7 +3,6 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtx/euler_angles.hpp>
-#include <limits>
 #include <memory>
 #include <string>
 
