@@ -3,6 +3,7 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtx/euler_angles.hpp>
+#include <limits>
 #include <memory>
 #include <string>
 
@@ -85,8 +86,15 @@ namespace vulkan {
 				return result;
 			}
 			glm::mat4 get_matrix_inverse() const {
+				auto s = _scale;
+				auto small = 0.000001;
+				//Get rid of the divide by 0 error
+				if (s.x == 0) { s.x = small; }
+				if (s.y == 0) { s.y = small; }
+				if (s.z == 0) { s.z = small; }
+
 				auto result = glm::mat4(1.0);
-				result = glm::scale(result, glm::vec3(1.0) / _scale);
+				result = glm::scale(result, glm::vec3(1.0) / s);
 				result *= glm::inverse(glm::eulerAngleYXZ(_rotation.y, _rotation.x, _rotation.z));
 				result = glm::translate(result, -_position);
 				return result;
