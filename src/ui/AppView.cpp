@@ -228,7 +228,7 @@ namespace ui {
 		}
 		ImGui::EndChild();
 		if (ImGui::Button("Add texture", ImVec2(width, 0))) {
-			auto urls = pfd::open_file("Select an image", ".", {"Image Files"}).result();
+			auto urls = pfd::open_file("Select an image", ".", {"Image Files", "*.png *.jpg *.jpeg *.bmp"}).result();
 			resources.add_texture_from_file(urls[0]);
 		}
 	}
@@ -372,7 +372,10 @@ namespace ui {
 			}
 		}
 		ImGui::EndChild();
-		//TODO: add mesh
+		if (ImGui::Button("Add Object", ImVec2(width, 0))) {
+			auto urls = pfd::open_file("Select a mesh", ".", {"Object file", "*.obj"}).result();
+			resources.add_mesh_from_file(urls[0]);
+		}
 	}
 
 	void MeshSelectedView(

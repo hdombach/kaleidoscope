@@ -18,8 +18,8 @@ namespace types {
 			using Ptr = std::unique_ptr<StaticMesh>;
 
 			static util::Result<Ptr, KError> from_file(uint32_t id, std::string const &url);
-			static Ptr create_square(uint32_t id);
-			static Ptr from_vertices(uint32_t id, std::vector<vulkan::Vertex> const &vertices);
+			static Ptr create_square(std::string const &name, uint32_t id);
+			static Ptr from_vertices(std::string const &name, uint32_t id, std::vector<vulkan::Vertex> const &vertices);
 
 			StaticMesh(const StaticMesh& other) = delete;
 			StaticMesh(StaticMesh &&other) = default;

@@ -52,7 +52,6 @@ namespace types {
 
 			/*========================= Meshes =====================================*/
 			util::Result<uint32_t, KError> add_mesh_from_file(
-					std::string const &name,
 					std::string const &url);
 			util::Result<uint32_t, KError> add_mesh_square(
 					std::string const &name);
@@ -100,7 +99,6 @@ namespace types {
 
 		private:
 			util::Result<uint32_t, KError> _add_mesh(
-					std::string const &name,
 					std::unique_ptr<Mesh> &&mesh);
 			util::Result<uint32_t, KError> _add_material(
 					std::string const &name,

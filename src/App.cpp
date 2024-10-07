@@ -36,7 +36,7 @@ App::Ptr App::create(std::string const &name) {
 	}
 
 	{
-		auto res = result->_resource_manager->add_mesh_from_file("viking_room", "assets/viking_room.obj");
+		auto res = result->_resource_manager->add_mesh_from_file("assets/viking_room.obj");
 		if (!res) {
 			LOG_ERROR << res.error().desc() << std::endl;
 		}

@@ -117,25 +117,34 @@ namespace types {
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_mesh_from_file(
-			std::string const &name,
 			std::string const &url)
 	{
-		auto res = StaticMesh::from_file(_get_mesh_id(), url);
-		TRY(res);
-		return _add_mesh(name, util::cast<Mesh, StaticMesh>(std::move(res.value())));
+		auto path = util::env_file_path(url);
+		TRY(path);
+		auto mesh = StaticMesh::from_file(_get_mesh_id(), path.value());
+		TRY(mesh);
+		int i = 1;
+		auto base_name = mesh.value()->name();
+		while (get_mesh(mesh.value()->name())) {
+			mesh.value()->set_name(base_name + "_" + std::to_string(i));
+			i++;
+		}
+
+		return _add_mesh(std::move(mesh.value()));
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_mesh_square(
 			std::string const &name)
 	{
-		return _add_mesh(name, StaticMesh::create_square(_get_mesh_id()));
+		return _add_mesh(StaticMesh::create_square(name, _get_mesh_id()));
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_mesh_from_vertices(
 			std::string const &name,
 			std::vector<vulkan::Vertex> const &vertices)
 	{
-		return _add_mesh(name, StaticMesh::from_vertices(
+		return _add_mesh(StaticMesh::from_vertices(
+					name,
 					_get_mesh_id(),
 					vertices));
 	}
@@ -343,14 +352,12 @@ namespace types {
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::_add_mesh(
-			const std::string &name,
 			std::unique_ptr<Mesh> &&mesh)
 	{
-		if (has_mesh(name)) {
-			return KError::mesh_already_exists(name);
+		if (has_mesh(mesh->name())) {
+			return KError::mesh_already_exists(mesh->name());
 		}
 		auto id = mesh->id();
-		mesh->set_name(name);
 		_meshes.push_back(std::move(mesh));
 		for (auto &mesh_observer: _mesh_observers) {
 			mesh_observer->obs_create(id);

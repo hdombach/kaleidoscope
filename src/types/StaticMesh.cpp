@@ -1,6 +1,7 @@
 #include <tiny_obj_loader.h>
 #include <vector>
 #include <unordered_map>
+#include <filesystem>
 
 #include "StaticMesh.hpp"
 
@@ -40,11 +41,11 @@ namespace types {
 				vertices.push_back(vertex);
 			}
 		}
-
-		return from_vertices(id, vertices);
+		auto name = std::filesystem::path(url).stem();
+		return from_vertices(name, id, vertices);
 	}
 
-	StaticMesh::Ptr StaticMesh::create_square(uint32_t id) {
+	StaticMesh::Ptr StaticMesh::create_square(std::string const &name, uint32_t id) {
 		auto vertices = std::vector<vulkan::Vertex>{
 			{{0.0, 0.2, 1.0}, {0.0, 0.0, 0.0}, {0.0, 1.0}},
 			{{0.0, 0.1, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0}},
@@ -55,10 +56,11 @@ namespace types {
 			{{1.0, 0.4, 1.0}, {0.0, 0.0, 0.0}, {1.0, 1.0}},
 		};
 
-		return from_vertices(id, vertices);
+		return from_vertices(name, id, vertices);
 	}
 
 	StaticMesh::Ptr StaticMesh::from_vertices(
+			std::string const &name,
 			uint32_t id,
 			std::vector<vulkan::Vertex> const &vertices)
 	{
@@ -66,6 +68,7 @@ namespace types {
 
 		result->_id = id;
 		result->_vertices = vertices;
+		result->_name = name;
 		return result;
 	}
 
