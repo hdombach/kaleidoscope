@@ -182,6 +182,11 @@ namespace vulkan {
 			TRY(res);
 		}
 
+		{
+			auto res = result->_create_de_pipeline();
+			TRY(res);
+		}
+
 		/* create descriptor sets */
 		{
 			auto buffer = MappedPrevPassUniform::create();
@@ -229,6 +234,7 @@ namespace vulkan {
 			_render_pass = nullptr;
 		}
 		_destroy_overlay_pipeline();
+		_destroy_de_pipeline();
 
 		_mapped_uniform.destroy();
 		
@@ -305,6 +311,8 @@ namespace vulkan {
 			auto &material = _materials[node->material().id()];
 			auto &prev_node = _nodes[node->id()];
 
+			if (mesh.is_de()) continue;
+
 			auto size = glm::vec2{_size.width, _size.height};
 			/*node.material().preview_impl()->update_uniform(
 					_frame_index, 
@@ -366,6 +374,35 @@ namespace vulkan {
 			vkCmdDispatch(_command_buffer, _size.width, _size.height, 1);
 		}
 
+		// DE
+		{
+			auto uniform = ComputeUniform{};
+			uniform.camera_rotation = camera.gen_rotate_mat();
+			uniform.camera_translation = glm::vec4(camera.position, 0.0);
+			uniform.aspect = static_cast<float>(camera.width) / static_cast<float>(camera.height);
+			uniform.fovy = camera.fovy;
+			_mapped_de_uniform.set_value(uniform);
+
+			vkCmdBindPipeline(
+					command_buffer,
+					VK_PIPELINE_BIND_POINT_COMPUTE,
+					_de_pipeline);
+
+			auto descriptor_set = _de_descriptor_set.descriptor_set(0);
+
+			vkCmdBindDescriptorSets(
+					command_buffer,
+					VK_PIPELINE_BIND_POINT_COMPUTE,
+					_de_pipeline_layout,
+					0,
+					1,
+					&descriptor_set,
+					0,
+					nullptr);
+
+			vkCmdDispatch(_command_buffer, _size.width, _size.height, 1);
+		}
+
 		require(vkEndCommandBuffer(command_buffer));
 
 		VkSemaphore finish_semaphore = _semaphore.get();
@@ -398,6 +435,12 @@ namespace vulkan {
 
 		_destroy_overlay_pipeline();
 		res = _create_overlay_pipeline();
+		if (!res) {
+			LOG_ERROR << res.error().desc() << std::endl;
+		}
+
+		_destroy_de_pipeline();
+		res = _create_de_pipeline();
 		if (!res) {
 			LOG_ERROR << res.error().desc() << std::endl;
 		}
@@ -509,7 +552,8 @@ namespace vulkan {
 					_size.width,
 					_size.height,
 					_depth_format(),
-					VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+					VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+						| VK_IMAGE_USAGE_SAMPLED_BIT);
 			TRY(image);
 			_depth_image = std::move(image.value());
 
@@ -717,5 +761,99 @@ namespace vulkan {
 				_overlay_pipeline, 
 				nullptr);
 		_overlay_descriptor_set.destroy();
+	}
+
+	util::Result<void, KError> PrevPass::_create_de_pipeline() {
+		auto buffer = MappedComputeUniform::create();
+		TRY(buffer);
+		_mapped_de_uniform = std::move(buffer.value());
+		
+		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
+		descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
+					0,
+					VK_SHADER_STAGE_COMPUTE_BIT, 
+					_color_image_view));
+
+		descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
+					1, 
+					VK_SHADER_STAGE_COMPUTE_BIT, 
+					_node_image_view));
+
+		descriptor_templates.push_back(DescriptorSetTemplate::create_image(
+					2, 
+					VK_SHADER_STAGE_COMPUTE_BIT, 
+					_depth_image_view));
+
+		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
+					3,
+					VK_SHADER_STAGE_COMPUTE_BIT,
+					_mapped_de_uniform));
+
+		auto descriptor_sets = DescriptorSets::create(
+				descriptor_templates,
+				1,
+				_descriptor_pool);
+		TRY(descriptor_sets);
+		_de_descriptor_set = std::move(descriptor_sets.value());
+
+		auto source_code = util::readEnvFile("assets/de_shader.comp");
+		util::replace_substr(source_code, "/*UNIFORM_DECL*/\n", ComputeUniform::declaration());
+		auto compute_shader = Shader::from_source_code(source_code, Shader::Type::Compute);
+		if (!compute_shader) {
+			util::add_strnum(source_code);
+			LOG_DEBUG << "\n" << source_code << std::endl;
+			LOG_DEBUG << compute_shader.error() << std::endl;
+			return compute_shader.error();
+		}
+
+		auto compute_shader_stage_info = VkPipelineShaderStageCreateInfo{};
+		compute_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		compute_shader_stage_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		compute_shader_stage_info.module = compute_shader.value().shader_module();
+		compute_shader_stage_info.pName = "main";
+
+		auto pipeline_layout_info = VkPipelineLayoutCreateInfo{};
+		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipeline_layout_info.setLayoutCount = 1;
+		pipeline_layout_info.pSetLayouts = _de_descriptor_set.layout_ptr();
+
+		auto res = vkCreatePipelineLayout(
+				Graphics::DEFAULT->device(),
+				&pipeline_layout_info,
+				nullptr,
+				&_de_pipeline_layout);
+		if (res != VK_SUCCESS) {
+			return {res};
+		}
+
+		auto pipeline_info = VkComputePipelineCreateInfo{};
+		pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipeline_info.layout = _de_pipeline_layout;
+		pipeline_info.stage = compute_shader_stage_info;
+
+		res = vkCreateComputePipelines(
+				Graphics::DEFAULT->device(),
+				VK_NULL_HANDLE,
+				1,
+				&pipeline_info,
+				nullptr,
+				&_de_pipeline);
+		if (res !=VK_SUCCESS) {
+			return {res};
+		}
+
+		return {};
+	}
+
+	void PrevPass::_destroy_de_pipeline() {
+		vkDestroyPipelineLayout(
+				Graphics::DEFAULT->device(),
+				_de_pipeline_layout,
+				nullptr);
+		vkDestroyPipeline(
+				Graphics::DEFAULT->device(),
+				_de_pipeline,
+				nullptr);
+		_de_descriptor_set.destroy();
 	}
 }

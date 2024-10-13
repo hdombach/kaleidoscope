@@ -22,6 +22,7 @@ namespace vulkan {
 
 		PrevPassMesh result;
 
+		result._mesh = mesh;
 		result._id = mesh->id();
 		result._vertex_buffer_range = VkDeviceSize(sizeof(Vertex) * vertices.size());
 
@@ -152,6 +153,14 @@ namespace vulkan {
 		_index_buffer_range = other._index_buffer_range;
 
 		return *this;
+	}
+
+	bool PrevPassMesh::exists() const {
+		return _mesh;
+	}
+
+	bool PrevPassMesh::is_de() {
+		return _mesh->has_de();
 	}
 
 	uint32_t PrevPassMesh::id() const {

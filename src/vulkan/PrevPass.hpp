@@ -108,6 +108,9 @@ namespace vulkan {
 			util::Result<void, KError> _create_overlay_pipeline();
 			void _destroy_overlay_pipeline();
 
+			util::Result<void, KError> _create_de_pipeline();
+			void _destroy_de_pipeline();
+
 		private:
 			std::vector<PrevPassMesh> _meshes;
 			std::vector<PrevPassMaterial> _materials;
@@ -120,6 +123,11 @@ namespace vulkan {
 			VkPipelineLayout _overlay_pipeline_layout;
 			VkPipeline _overlay_pipeline;
 			DescriptorSets _overlay_descriptor_set;
+
+			MappedComputeUniform _mapped_de_uniform;
+			VkPipelineLayout _de_pipeline_layout;
+			VkPipeline _de_pipeline;
+			DescriptorSets _de_descriptor_set;
 
 			VkExtent2D _size;
 			Image _depth_image;

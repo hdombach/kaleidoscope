@@ -23,6 +23,8 @@ namespace vulkan {
 			bool exists() const;
 			operator bool() { return exists(); }
 
+			bool is_de();
+
 			uint32_t id() const;
 			VkBuffer vertex_buffer() const;
 			VkBuffer index_buffer() const;
