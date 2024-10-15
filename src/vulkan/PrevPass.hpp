@@ -99,6 +99,9 @@ namespace vulkan {
 
 			PrevPass(Scene &scene, VkExtent2D size);
 
+			util::Result<void, KError> _create_render_pass();
+			void _destroy_render_pass();
+
 			util::Result<void, KError> _create_sync_objects();
 			void _create_command_buffers();
 			util::Result<void, KError> _create_images();

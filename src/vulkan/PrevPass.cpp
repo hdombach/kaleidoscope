@@ -80,96 +80,9 @@ namespace vulkan {
 		result->_create_command_buffers();
 		result->_descriptor_pool = DescriptorPool::create();
 
-		/* Create render pass */
-		auto color_attachment = VkAttachmentDescription{};
-		color_attachment.format = _RESULT_IMAGE_FORMAT;
-		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		color_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-		auto color_attachment_ref = VkAttachmentReference{};
-		color_attachment_ref.attachment = 0;
-		color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		auto depth_attachment = VkAttachmentDescription{};
-		depth_attachment.format = _depth_format();
-		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		auto depth_attachment_ref = VkAttachmentReference{};
-		depth_attachment_ref.attachment = 1;
-		depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		auto node_attachment = VkAttachmentDescription{};
-		node_attachment.format = _NODE_IMAGE_FORMAT;
-		node_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		node_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		node_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		node_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		node_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		node_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		node_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-		auto node_attachment_ref = VkAttachmentReference{};
-		node_attachment_ref.attachment = 2;
-		node_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		auto color_attachment_refs = std::array<VkAttachmentReference, 2>{
-			color_attachment_ref,
-			node_attachment_ref,
-		};
-
-		auto subpass = VkSubpassDescription{};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = color_attachment_refs.size();
-		subpass.pColorAttachments = color_attachment_refs.data();
-		subpass.pDepthStencilAttachment = &depth_attachment_ref;
-
-		auto attachments = std::array<VkAttachmentDescription, 3>{
-			color_attachment,
-			depth_attachment,
-			node_attachment,
-		};
-
-		auto render_pass_info = VkRenderPassCreateInfo{};
-		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		render_pass_info.attachmentCount = static_cast<uint32_t>(attachments.size());
-		render_pass_info.pAttachments = attachments.data();
-		render_pass_info.subpassCount = 1;
-		render_pass_info.pSubpasses = &subpass;
-
-		auto dependency = VkSubpassDependency{};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
-			VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
-			VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-		render_pass_info.dependencyCount = 1;
-		render_pass_info.pDependencies = &dependency;
-
-		auto res = vkCreateRenderPass(
-				Graphics::DEFAULT->device(),
-				&render_pass_info,
-				nullptr,
-				&result->_render_pass);
-
-		if (res != VK_SUCCESS) {
-			return {res};
+		{
+			auto res = result->_create_render_pass();
+			TRY(res);
 		}
 
 		{
@@ -214,13 +127,6 @@ namespace vulkan {
 		return result;
 	}
 
-	PrevPass::PrevPass(
-			Scene &scene, VkExtent2D size):
-		_scene(&scene),
-		_size(size)
-	{
-	}
-
 	void PrevPass::destroy() {
 		LOG_MEMORY << "Deconstructing main render pipeline" << std::endl;
 
@@ -229,10 +135,7 @@ namespace vulkan {
 		_meshes.clear();
 		_materials.clear();
 		_global_descriptor_set.destroy();
-		if (_render_pass) {
-			vkDestroyRenderPass(Graphics::DEFAULT->device(), _render_pass, nullptr);
-			_render_pass = nullptr;
-		}
+		_destroy_render_pass();
 		_destroy_overlay_pipeline();
 		_destroy_de_pipeline();
 
@@ -516,6 +419,115 @@ namespace vulkan {
 
 	void PrevPass::node_remove(uint32_t id) {
 		_nodes[id].destroy();
+	}
+
+	PrevPass::PrevPass(Scene &scene, VkExtent2D size):
+		_scene(&scene),
+		_size(size)
+	{
+	}
+
+	util::Result<void, KError> PrevPass::_create_render_pass() {
+		/* Create render pass */
+		auto color_attachment = VkAttachmentDescription{};
+		color_attachment.format = _RESULT_IMAGE_FORMAT;
+		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		color_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		auto color_attachment_ref = VkAttachmentReference{};
+		color_attachment_ref.attachment = 0;
+		color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		auto depth_attachment = VkAttachmentDescription{};
+		depth_attachment.format = _depth_format();
+		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		auto depth_attachment_ref = VkAttachmentReference{};
+		depth_attachment_ref.attachment = 1;
+		depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		auto node_attachment = VkAttachmentDescription{};
+		node_attachment.format = _NODE_IMAGE_FORMAT;
+		node_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		node_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		node_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		node_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		node_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		node_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		node_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		auto node_attachment_ref = VkAttachmentReference{};
+		node_attachment_ref.attachment = 2;
+		node_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		auto color_attachment_refs = std::array<VkAttachmentReference, 2>{
+			color_attachment_ref,
+			node_attachment_ref,
+		};
+
+		auto subpass = VkSubpassDescription{};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = color_attachment_refs.size();
+		subpass.pColorAttachments = color_attachment_refs.data();
+		subpass.pDepthStencilAttachment = &depth_attachment_ref;
+
+		auto attachments = std::array<VkAttachmentDescription, 3>{
+			color_attachment,
+			depth_attachment,
+			node_attachment,
+		};
+
+		auto render_pass_info = VkRenderPassCreateInfo{};
+		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		render_pass_info.attachmentCount = static_cast<uint32_t>(attachments.size());
+		render_pass_info.pAttachments = attachments.data();
+		render_pass_info.subpassCount = 1;
+		render_pass_info.pSubpasses = &subpass;
+
+		auto dependency = VkSubpassDependency{};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcAccessMask = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
+			VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
+			VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+		render_pass_info.dependencyCount = 1;
+		render_pass_info.pDependencies = &dependency;
+
+		auto res = vkCreateRenderPass(
+				Graphics::DEFAULT->device(),
+				&render_pass_info,
+				nullptr,
+				&_render_pass);
+
+		if (res != VK_SUCCESS) {
+			return {res};
+		}
+
+		return {};
+	}
+
+	void PrevPass::_destroy_render_pass() {
+		if (_render_pass) {
+			vkDestroyRenderPass(Graphics::DEFAULT->device(), _render_pass, nullptr);
+			_render_pass = nullptr;
+		}
 	}
 
 	util::Result<void, KError> PrevPass::_create_sync_objects() {
