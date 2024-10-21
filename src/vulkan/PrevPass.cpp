@@ -87,12 +87,7 @@ namespace vulkan {
 		}
 
 		{
-			auto res = result->_create_test_render_pass();
-			TRY(res);
-		}
-
-		{
-			auto res = result->_create_test_pipeline();
+			auto res = result->_create_de_render_pass();
 			TRY(res);
 		}
 
@@ -147,10 +142,9 @@ namespace vulkan {
 		_materials.clear();
 		_global_descriptor_set.destroy();
 		_destroy_render_pass();
-		_destroy_test_render_pass();
-		_destroy_test_pipeline();
-		_destroy_overlay_pipeline();
+		_destroy_de_render_pass();
 		_destroy_de_pipeline();
+		_destroy_overlay_pipeline();
 
 		_mapped_uniform.destroy();
 		
@@ -268,10 +262,17 @@ namespace vulkan {
 		}
 
 		// Test render pass
-		{
+		if (1) {
+			auto uniform = ComputeUniform{};
+			uniform.camera_rotation = camera.gen_rotate_mat();
+			uniform.camera_translation = glm::vec4(camera.position, 0.0);
+			uniform.aspect = static_cast<float>(camera.width) / static_cast<float>(camera.height);
+			uniform.fovy = camera.fovy;
+			_mapped_de_uniform.set_value(uniform);
+
 			auto render_pass_info = VkRenderPassBeginInfo{};
 			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			render_pass_info.renderPass = _test_render_pass;
+			render_pass_info.renderPass = _de_render_pass;
 			render_pass_info.framebuffer = _framebuffer;
 			render_pass_info.renderArea.offset = {0, 0};
 			render_pass_info.renderArea.extent = _size;
@@ -286,7 +287,19 @@ namespace vulkan {
 
 			vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-			vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _test_pipeline);
+			vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _de_pipeline);
+
+			auto descriptor_set = _de_descriptor_set.descriptor_set(0);
+
+			vkCmdBindDescriptorSets(
+					command_buffer,
+					VK_PIPELINE_BIND_POINT_GRAPHICS,
+					_de_pipeline_layout,
+					0,
+					1,
+					&descriptor_set,
+					0,
+					nullptr);
 
 			vkCmdDraw(command_buffer, 6, 1, 0, 0);
 
@@ -320,7 +333,7 @@ namespace vulkan {
 		}
 
 		// DE
-		{
+		if (0) {
 			auto uniform = ComputeUniform{};
 			uniform.camera_rotation = camera.gen_rotate_mat();
 			uniform.camera_translation = glm::vec4(camera.position, 0.0);
@@ -386,6 +399,7 @@ namespace vulkan {
 
 		_destroy_de_pipeline();
 		res = _create_de_pipeline();
+
 		if (!res) {
 			LOG_ERROR << res.error().desc() << std::endl;
 		}
@@ -572,7 +586,18 @@ namespace vulkan {
 		}
 	}
 
-	util::Result<void, KError> PrevPass::_create_test_pipeline() {
+	util::Result<void, KError> PrevPass::_create_de_pipeline() {
+		auto buffer = MappedComputeUniform::create();
+		TRY(buffer);
+		_mapped_de_uniform = std::move(buffer.value());
+
+		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
+
+		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
+					3,
+					VK_SHADER_STAGE_FRAGMENT_BIT,
+					_mapped_de_uniform));
+
 		auto vert_source_code = util::readEnvFile("assets/unit_square.vert");
 		auto vert_shader = Shader::from_source_code(vert_source_code, Shader::Type::Vertex);
 		if (!vert_shader) {
@@ -582,7 +607,15 @@ namespace vulkan {
 			return vert_shader.error();
 		}
 
-		auto frag_source_code = util::readEnvFile("assets/test_pass.frag");
+		auto descriptor_sets = DescriptorSets::create(
+				descriptor_templates,
+				1,
+				_descriptor_pool);
+		TRY(descriptor_sets);
+		_de_descriptor_set = std::move(descriptor_sets.value());
+
+		auto frag_source_code = util::readEnvFile("assets/de_shader.frag");
+		util::replace_substr(frag_source_code, "/*UNIFORM_DECL*/\n", ComputeUniform::declaration());
 		auto frag_shader = Shader::from_source_code(frag_source_code, Shader::Type::Fragment);
 		if (!frag_shader) {
 			util::add_strnum(frag_source_code);
@@ -721,8 +754,8 @@ namespace vulkan {
 
 		auto pipeline_layout_info = VkPipelineLayoutCreateInfo{};
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipeline_layout_info.setLayoutCount = 0;
-		pipeline_layout_info.pSetLayouts = nullptr;
+		pipeline_layout_info.setLayoutCount = 1;
+		pipeline_layout_info.pSetLayouts = _de_descriptor_set.layout_ptr();
 		pipeline_layout_info.pushConstantRangeCount = 0;
 		pipeline_layout_info.pPushConstantRanges = nullptr;
 
@@ -730,7 +763,7 @@ namespace vulkan {
 				Graphics::DEFAULT->device(),
 				&pipeline_layout_info,
 				nullptr,
-				&_test_pipeline_layout);
+				&_de_pipeline_layout);
 		if (res != VK_SUCCESS) {
 			return {res};
 		}
@@ -760,7 +793,7 @@ namespace vulkan {
 		pipeline_info.pDepthStencilState = &depth_stencil;
 		pipeline_info.pColorBlendState = &color_blending;
 		pipeline_info.pDynamicState = &dynamic_state;
-		pipeline_info.layout = _test_pipeline_layout;
+		pipeline_info.layout = _de_pipeline_layout;
 		pipeline_info.renderPass = _render_pass;
 		pipeline_info.subpass = 0;
 		pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
@@ -772,7 +805,7 @@ namespace vulkan {
 				1,
 				&pipeline_info, 
 				nullptr, 
-				&_test_pipeline);
+				&_de_pipeline);
 
 		if (res == VK_SUCCESS) {
 			return {};
@@ -781,18 +814,19 @@ namespace vulkan {
 		}
 	}
 
-	void PrevPass::_destroy_test_pipeline() {
+	void PrevPass::_destroy_de_pipeline() {
+		_de_descriptor_set.destroy();
 		vkDestroyPipelineLayout(
 				Graphics::DEFAULT->device(), 
-				_test_pipeline_layout, 
+				_de_pipeline_layout, 
 				nullptr);
 		vkDestroyPipeline(
 				Graphics::DEFAULT->device(), 
-				_test_pipeline, 
+				_de_pipeline, 
 				nullptr);
 	}
 
-	util::Result<void, KError> PrevPass::_create_test_render_pass() {
+	util::Result<void, KError> PrevPass::_create_de_render_pass() {
 		auto color_attachment = VkAttachmentDescription{};
 		color_attachment.format = _RESULT_IMAGE_FORMAT;
 		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -878,7 +912,7 @@ namespace vulkan {
 				Graphics::DEFAULT->device(),
 				&render_pass_info,
 				nullptr,
-				&_test_render_pass);
+				&_de_render_pass);
 
 		if (res != VK_SUCCESS) {
 			return {res};
@@ -887,10 +921,10 @@ namespace vulkan {
 		return {};
 	}
 
-	void PrevPass::_destroy_test_render_pass() {
-		if (_test_render_pass) {
-			vkDestroyRenderPass(Graphics::DEFAULT->device(), _test_render_pass, nullptr);
-			_test_render_pass = nullptr;
+	void PrevPass::_destroy_de_render_pass() {
+		if (_de_render_pass) {
+			vkDestroyRenderPass(Graphics::DEFAULT->device(), _de_render_pass, nullptr);
+			_de_render_pass = nullptr;
 		}
 	}
 
@@ -1137,99 +1171,5 @@ namespace vulkan {
 				_overlay_pipeline, 
 				nullptr);
 		_overlay_descriptor_set.destroy();
-	}
-
-	util::Result<void, KError> PrevPass::_create_de_pipeline() {
-		auto buffer = MappedComputeUniform::create();
-		TRY(buffer);
-		_mapped_de_uniform = std::move(buffer.value());
-		
-		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
-		descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
-					0,
-					VK_SHADER_STAGE_COMPUTE_BIT, 
-					_color_image_view));
-
-		descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
-					1, 
-					VK_SHADER_STAGE_COMPUTE_BIT, 
-					_node_image_view));
-
-		descriptor_templates.push_back(DescriptorSetTemplate::create_image(
-					2, 
-					VK_SHADER_STAGE_COMPUTE_BIT, 
-					_depth_image_view));
-
-		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
-					3,
-					VK_SHADER_STAGE_COMPUTE_BIT,
-					_mapped_de_uniform));
-
-		auto descriptor_sets = DescriptorSets::create(
-				descriptor_templates,
-				1,
-				_descriptor_pool);
-		TRY(descriptor_sets);
-		_de_descriptor_set = std::move(descriptor_sets.value());
-
-		auto source_code = util::readEnvFile("assets/de_shader.comp");
-		util::replace_substr(source_code, "/*UNIFORM_DECL*/\n", ComputeUniform::declaration());
-		auto compute_shader = Shader::from_source_code(source_code, Shader::Type::Compute);
-		if (!compute_shader) {
-			util::add_strnum(source_code);
-			LOG_DEBUG << "\n" << source_code << std::endl;
-			LOG_DEBUG << compute_shader.error() << std::endl;
-			return compute_shader.error();
-		}
-
-		auto compute_shader_stage_info = VkPipelineShaderStageCreateInfo{};
-		compute_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		compute_shader_stage_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		compute_shader_stage_info.module = compute_shader.value().shader_module();
-		compute_shader_stage_info.pName = "main";
-
-		auto pipeline_layout_info = VkPipelineLayoutCreateInfo{};
-		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipeline_layout_info.setLayoutCount = 1;
-		pipeline_layout_info.pSetLayouts = _de_descriptor_set.layout_ptr();
-
-		auto res = vkCreatePipelineLayout(
-				Graphics::DEFAULT->device(),
-				&pipeline_layout_info,
-				nullptr,
-				&_de_pipeline_layout);
-		if (res != VK_SUCCESS) {
-			return {res};
-		}
-
-		auto pipeline_info = VkComputePipelineCreateInfo{};
-		pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-		pipeline_info.layout = _de_pipeline_layout;
-		pipeline_info.stage = compute_shader_stage_info;
-
-		res = vkCreateComputePipelines(
-				Graphics::DEFAULT->device(),
-				VK_NULL_HANDLE,
-				1,
-				&pipeline_info,
-				nullptr,
-				&_de_pipeline);
-		if (res !=VK_SUCCESS) {
-			return {res};
-		}
-
-		return {};
-	}
-
-	void PrevPass::_destroy_de_pipeline() {
-		vkDestroyPipelineLayout(
-				Graphics::DEFAULT->device(),
-				_de_pipeline_layout,
-				nullptr);
-		vkDestroyPipeline(
-				Graphics::DEFAULT->device(),
-				_de_pipeline,
-				nullptr);
-		_de_descriptor_set.destroy();
 	}
 }
