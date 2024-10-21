@@ -7,6 +7,7 @@
 #include <glm/ext/matrix_transform.hpp>
 
 #include "PrevPass.hpp"
+#include "Initializers.hpp"
 #include "PrevPassMaterial.hpp"
 #include "PrevPassNode.hpp"
 #include "Scene.hpp"
@@ -86,6 +87,16 @@ namespace vulkan {
 		}
 
 		{
+			auto res = result->_create_test_render_pass();
+			TRY(res);
+		}
+
+		{
+			auto res = result->_create_test_pipeline();
+			TRY(res);
+		}
+
+		{
 			auto res = result->_create_images();
 			TRY(res);
 		}
@@ -136,6 +147,8 @@ namespace vulkan {
 		_materials.clear();
 		_global_descriptor_set.destroy();
 		_destroy_render_pass();
+		_destroy_test_render_pass();
+		_destroy_test_pipeline();
 		_destroy_overlay_pipeline();
 		_destroy_de_pipeline();
 
@@ -171,23 +184,6 @@ namespace vulkan {
 
 		require(vkBeginCommandBuffer(command_buffer, &begin_info));
 
-		auto render_pass_info = VkRenderPassBeginInfo{};
-		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-		render_pass_info.renderPass = _render_pass;
-		render_pass_info.framebuffer = _framebuffer;
-		render_pass_info.renderArea.offset = {0, 0};
-		render_pass_info.renderArea.extent = _size;
-
-		auto clear_values = std::array<VkClearValue, 3>{};
-		clear_values[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-		clear_values[1].depthStencil = {1.0f, 0};
-		clear_values[2].color = {{0}};
-
-		render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
-		render_pass_info.pClearValues = clear_values.data();
-
-		vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-
 		auto viewport = VkViewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
@@ -202,54 +198,100 @@ namespace vulkan {
 		scissor.extent = _size;
 		vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
-		auto uniform = GlobalPrevPassUniform{};
-		uniform.camera_transformation = camera.gen_raster_mat();
-		current_uniform_buffer().set_value(uniform);
+		// Primary render of meshes
+		{
+			auto render_pass_info = VkRenderPassBeginInfo{};
+			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			render_pass_info.renderPass = _render_pass;
+			render_pass_info.framebuffer = _framebuffer;
+			render_pass_info.renderArea.offset = {0, 0};
+			render_pass_info.renderArea.extent = _size;
+
+			auto clear_values = std::array<VkClearValue, 3>{};
+			clear_values[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+			clear_values[1].depthStencil = {1.0f, 0};
+			clear_values[2].color = {{0}};
+
+			render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
+			render_pass_info.pClearValues = clear_values.data();
+
+			vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+
+			auto uniform = GlobalPrevPassUniform{};
+			uniform.camera_transformation = camera.gen_raster_mat();
+			current_uniform_buffer().set_value(uniform);
 
 
-		//TODO: pass the filter view
-		for (auto &node : nodes) {
-			if (!node) continue;
-			auto &mesh = _meshes[node->mesh().id()];
-			auto &material = _materials[node->material().id()];
-			auto &prev_node = _nodes[node->id()];
+			//TODO: pass the filter view
+			for (auto &node : nodes) {
+				if (!node) continue;
+				auto &mesh = _meshes[node->mesh().id()];
+				auto &material = _materials[node->material().id()];
+				auto &prev_node = _nodes[node->id()];
 
-			if (mesh.is_de()) continue;
+				if (mesh.is_de()) continue;
 
-			auto size = glm::vec2{_size.width, _size.height};
-			/*node.material().preview_impl()->update_uniform(
-					_frame_index, 
-					node.position(), 
-					size);*/
-			vkCmdBindPipeline(
-					command_buffer, 
-					VK_PIPELINE_BIND_POINT_GRAPHICS, 
-					material.pipeline());
+				auto size = glm::vec2{_size.width, _size.height};
+				/*node.material().preview_impl()->update_uniform(
+						_frame_index, 
+						node.position(), 
+						size);*/
+				vkCmdBindPipeline(
+						command_buffer, 
+						VK_PIPELINE_BIND_POINT_GRAPHICS, 
+						material.pipeline());
 
-			VkBuffer vertex_buffers[] = {mesh.vertex_buffer()};
-			VkDeviceSize offsets[] = {0};
-			vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
-			vkCmdBindIndexBuffer(command_buffer, mesh.index_buffer(), 0, VK_INDEX_TYPE_UINT32);
+				VkBuffer vertex_buffers[] = {mesh.vertex_buffer()};
+				VkDeviceSize offsets[] = {0};
+				vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
+				vkCmdBindIndexBuffer(command_buffer, mesh.index_buffer(), 0, VK_INDEX_TYPE_UINT32);
 
-			auto descriptor_sets = std::array<VkDescriptorSet, 2>{
-				global_descriptor_set(0),
-				prev_node.descriptor_set().descriptor_set(0),
-			};
+				auto descriptor_sets = std::array<VkDescriptorSet, 2>{
+					global_descriptor_set(0),
+					prev_node.descriptor_set().descriptor_set(0),
+				};
 
-			vkCmdBindDescriptorSets(
-					command_buffer, 
-					VK_PIPELINE_BIND_POINT_GRAPHICS, 
-					material.pipeline_layout(),
-					0,
-					descriptor_sets.size(),
-					descriptor_sets.data(),
-					0,
-					nullptr);
+				vkCmdBindDescriptorSets(
+						command_buffer, 
+						VK_PIPELINE_BIND_POINT_GRAPHICS, 
+						material.pipeline_layout(),
+						0,
+						descriptor_sets.size(),
+						descriptor_sets.data(),
+						0,
+						nullptr);
 
-			vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(mesh.index_count()), 1, 0, 0, 0);
+				vkCmdDrawIndexed(command_buffer, static_cast<uint32_t>(mesh.index_count()), 1, 0, 0, 0);
+			}
+
+			vkCmdEndRenderPass(command_buffer);
 		}
 
-		vkCmdEndRenderPass(command_buffer);
+		// Test render pass
+		{
+			auto render_pass_info = VkRenderPassBeginInfo{};
+			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			render_pass_info.renderPass = _test_render_pass;
+			render_pass_info.framebuffer = _framebuffer;
+			render_pass_info.renderArea.offset = {0, 0};
+			render_pass_info.renderArea.extent = _size;
+
+			auto clear_values = std::array<VkClearValue, 3>{};
+			clear_values[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
+			clear_values[1].depthStencil = {1.0f, 0};
+			clear_values[2].color = {{0}};
+
+			render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
+			render_pass_info.pClearValues = clear_values.data();
+
+			vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+
+			vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _test_pipeline);
+
+			vkCmdDraw(command_buffer, 6, 1, 0, 0);
+
+			vkCmdEndRenderPass(command_buffer);
+		}
 
 		// Overlay
 		{
@@ -527,6 +569,328 @@ namespace vulkan {
 		if (_render_pass) {
 			vkDestroyRenderPass(Graphics::DEFAULT->device(), _render_pass, nullptr);
 			_render_pass = nullptr;
+		}
+	}
+
+	util::Result<void, KError> PrevPass::_create_test_pipeline() {
+		auto vert_source_code = util::readEnvFile("assets/unit_square.vert");
+		auto vert_shader = Shader::from_source_code(vert_source_code, Shader::Type::Vertex);
+		if (!vert_shader) {
+			util::add_strnum(vert_source_code);
+			LOG_DEBUG << "\n" << vert_source_code << std::endl;
+			LOG_ERROR << vert_shader.error() << std::endl;
+			return vert_shader.error();
+		}
+
+		auto frag_source_code = util::readEnvFile("assets/test_pass.frag");
+		auto frag_shader = Shader::from_source_code(frag_source_code, Shader::Type::Fragment);
+		if (!frag_shader) {
+			util::add_strnum(frag_source_code);
+			LOG_DEBUG << "\n" << frag_source_code << std::endl;
+			LOG_ERROR << frag_shader.error() << std::endl;
+			return frag_shader.error();
+		}
+
+		auto shader_stage_infos = std::array<VkPipelineShaderStageCreateInfo, 2>();
+
+		shader_stage_infos[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		shader_stage_infos[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+		shader_stage_infos[0].module = vert_shader.value().shader_module();
+		shader_stage_infos[0].pName = "main";
+
+		shader_stage_infos[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		shader_stage_infos[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+		shader_stage_infos[1].module = frag_shader.value().shader_module();
+		shader_stage_infos[1].pName = "main";
+
+		auto vertex_input_info = VkPipelineVertexInputStateCreateInfo{};
+
+		auto vertex_binding_description = VkVertexInputBindingDescription{};
+		vertex_binding_description.binding = 0;
+		vertex_binding_description.stride = sizeof(glm::vec4);
+		vertex_binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+		auto vertex_attribute_descriptions = std::array<VkVertexInputAttributeDescription, 1>();
+		vertex_attribute_descriptions[0].binding = 0;
+		vertex_attribute_descriptions[0].location = 0;
+		vertex_attribute_descriptions[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		vertex_attribute_descriptions[0].offset = 0;
+
+		vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		vertex_input_info.vertexBindingDescriptionCount = 1;
+		vertex_input_info.pVertexBindingDescriptions = &vertex_binding_description;
+		vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(
+				vertex_attribute_descriptions.size());
+		vertex_input_info.pVertexAttributeDescriptions = vertex_attribute_descriptions.data();
+
+		auto input_assembly = VkPipelineInputAssemblyStateCreateInfo{};
+		input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+		input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		input_assembly.primitiveRestartEnable = VK_FALSE;
+
+		auto viewport = VkViewport{};
+		viewport.x = 0.0f;
+		viewport.width = (float) 100;
+		viewport.height = (float) 100;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+
+		auto scissor = VkRect2D{};
+		scissor.offset = {0, 0};
+		scissor.extent = VkExtent2D{100, 100};
+
+		auto viewport_state = VkPipelineViewportStateCreateInfo{};
+		viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+		viewport_state.viewportCount = 1;
+		viewport_state.pViewports = &viewport;
+		viewport_state.scissorCount = 1;
+		viewport_state.pScissors = &scissor;
+
+		auto rasterizer = VkPipelineRasterizationStateCreateInfo{};
+		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		rasterizer.depthClampEnable = VK_FALSE;
+		rasterizer.rasterizerDiscardEnable = VK_FALSE;
+		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+		rasterizer.lineWidth = 1.0f;
+		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterizer.depthBiasEnable = VK_FALSE;
+		rasterizer.depthBiasConstantFactor = 0.0f;
+		rasterizer.depthBiasClamp = 0.0f;
+		rasterizer.depthBiasSlopeFactor = 0.0f;
+
+		auto multisampling = VkPipelineMultisampleStateCreateInfo{};
+		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+		multisampling.sampleShadingEnable = VK_FALSE;
+		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+		multisampling.minSampleShading = 1.0f;
+		multisampling.pSampleMask = nullptr;
+		multisampling.alphaToCoverageEnable = VK_FALSE;
+		multisampling.alphaToOneEnable = VK_FALSE;
+
+		auto color_blend_attachment = VkPipelineColorBlendAttachmentState{};
+		color_blend_attachment.colorWriteMask = 
+			VK_COLOR_COMPONENT_R_BIT |
+			VK_COLOR_COMPONENT_G_BIT |
+			VK_COLOR_COMPONENT_B_BIT |
+			VK_COLOR_COMPONENT_A_BIT;
+		color_blend_attachment.blendEnable = VK_TRUE;
+		color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_DST_ALPHA;
+		color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
+		color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+		auto node_blend_attachment = VkPipelineColorBlendAttachmentState{};
+		node_blend_attachment.colorWriteMask = 
+			VK_COLOR_COMPONENT_R_BIT |
+			VK_COLOR_COMPONENT_A_BIT;
+		node_blend_attachment.blendEnable = VK_FALSE;
+		node_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+		node_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+		node_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
+		node_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		node_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		node_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
+		auto color_attachments = std::array<VkPipelineColorBlendAttachmentState, 2>{
+			color_blend_attachment,
+			node_blend_attachment,
+		};
+
+		auto color_blending = VkPipelineColorBlendStateCreateInfo{};
+		color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		color_blending.logicOpEnable = VK_FALSE;
+		color_blending.logicOp = VK_LOGIC_OP_COPY;
+		color_blending.attachmentCount = color_attachments.size();
+		color_blending.pAttachments = color_attachments.data();
+		color_blending.blendConstants[0] = 0.0f;
+		color_blending.blendConstants[1] = 0.0f;
+		color_blending.blendConstants[2] = 0.0f;
+		color_blending.blendConstants[3] = 0.0f;
+
+		auto dynamic_states = std::array<VkDynamicState, 2>{
+			VK_DYNAMIC_STATE_VIEWPORT,
+			VK_DYNAMIC_STATE_SCISSOR,
+		};
+
+		auto dynamic_state = VkPipelineDynamicStateCreateInfo{};
+		dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamic_state.dynamicStateCount = static_cast<uint32_t>(dynamic_states.size());
+		dynamic_state.pDynamicStates = dynamic_states.data();
+
+		auto pipeline_layout_info = VkPipelineLayoutCreateInfo{};
+		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipeline_layout_info.setLayoutCount = 0;
+		pipeline_layout_info.pSetLayouts = nullptr;
+		pipeline_layout_info.pushConstantRangeCount = 0;
+		pipeline_layout_info.pPushConstantRanges = nullptr;
+
+		auto res = vkCreatePipelineLayout(
+				Graphics::DEFAULT->device(),
+				&pipeline_layout_info,
+				nullptr,
+				&_test_pipeline_layout);
+		if (res != VK_SUCCESS) {
+			return {res};
+		}
+
+		auto depth_stencil = VkPipelineDepthStencilStateCreateInfo{};
+		depth_stencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		depth_stencil.depthTestEnable = VK_TRUE;
+		depth_stencil.depthWriteEnable = VK_TRUE;
+		depth_stencil.depthCompareOp = VK_COMPARE_OP_LESS;
+		depth_stencil.depthBoundsTestEnable = VK_FALSE;
+		depth_stencil.minDepthBounds = 0.0f;
+		depth_stencil.maxDepthBounds = 1.0f;
+		depth_stencil.stencilTestEnable = VK_FALSE;
+		depth_stencil.front = {};
+		depth_stencil.back = {};
+
+
+		auto pipeline_info = VkGraphicsPipelineCreateInfo{};
+		pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		pipeline_info.stageCount = shader_stage_infos.size();
+		pipeline_info.pStages = shader_stage_infos.data();
+		pipeline_info.pVertexInputState = &vertex_input_info;
+		pipeline_info.pInputAssemblyState = &input_assembly;
+		pipeline_info.pViewportState = &viewport_state;
+		pipeline_info.pRasterizationState = &rasterizer;
+		pipeline_info.pMultisampleState = &multisampling;
+		pipeline_info.pDepthStencilState = &depth_stencil;
+		pipeline_info.pColorBlendState = &color_blending;
+		pipeline_info.pDynamicState = &dynamic_state;
+		pipeline_info.layout = _test_pipeline_layout;
+		pipeline_info.renderPass = _render_pass;
+		pipeline_info.subpass = 0;
+		pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
+		pipeline_info.basePipelineIndex = -1;
+
+		res = vkCreateGraphicsPipelines(
+				Graphics::DEFAULT->device(), 
+				VK_NULL_HANDLE, 
+				1,
+				&pipeline_info, 
+				nullptr, 
+				&_test_pipeline);
+
+		if (res == VK_SUCCESS) {
+			return {};
+		} else {
+			return {res};
+		}
+	}
+
+	void PrevPass::_destroy_test_pipeline() {
+		vkDestroyPipelineLayout(
+				Graphics::DEFAULT->device(), 
+				_test_pipeline_layout, 
+				nullptr);
+		vkDestroyPipeline(
+				Graphics::DEFAULT->device(), 
+				_test_pipeline, 
+				nullptr);
+	}
+
+	util::Result<void, KError> PrevPass::_create_test_render_pass() {
+		auto color_attachment = VkAttachmentDescription{};
+		color_attachment.format = _RESULT_IMAGE_FORMAT;
+		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		color_attachment.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
+		color_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		auto depth_attachment = VkAttachmentDescription{};
+		depth_attachment.format = _depth_format();
+		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		auto node_attachment = VkAttachmentDescription{};
+		node_attachment.format = _NODE_IMAGE_FORMAT;
+		node_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		node_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		node_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		node_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		node_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		node_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		node_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		auto color_attachment_ref = VkAttachmentReference{};
+		color_attachment_ref.attachment = 0;
+		color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		auto depth_attachment_ref = VkAttachmentReference{};
+		depth_attachment_ref.attachment = 1;
+		depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		auto node_attachment_ref = VkAttachmentReference{};
+		node_attachment_ref.attachment = 2;
+		node_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		auto attachment_refs = std::array<VkAttachmentReference, 2>{
+			color_attachment_ref,
+			node_attachment_ref,
+		};
+
+		auto subpass = VkSubpassDescription{};
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = attachment_refs.size();
+		subpass.pColorAttachments = attachment_refs.data();
+		subpass.pDepthStencilAttachment = &depth_attachment_ref;
+
+		auto attachments = std::array<VkAttachmentDescription, 3>{
+			color_attachment,
+			depth_attachment,
+			node_attachment,
+		};
+
+		auto render_pass_info = VkRenderPassCreateInfo{};
+		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		render_pass_info.attachmentCount = static_cast<uint32_t>(attachments.size());
+		render_pass_info.pAttachments = attachments.data();
+		render_pass_info.subpassCount = 1;
+		render_pass_info.pSubpasses = &subpass;
+
+		auto dependency = VkSubpassDependency{};
+		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.dstSubpass = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
+		dependency.srcAccessMask = 0;
+		dependency.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
+			VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
+		dependency.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
+			VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
+		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+		render_pass_info.dependencyCount = 1;
+		render_pass_info.pDependencies = &dependency;
+
+		auto res = vkCreateRenderPass(
+				Graphics::DEFAULT->device(),
+				&render_pass_info,
+				nullptr,
+				&_test_render_pass);
+
+		if (res != VK_SUCCESS) {
+			return {res};
+		}
+
+		return {};
+	}
+
+	void PrevPass::_destroy_test_render_pass() {
+		if (_test_render_pass) {
+			vkDestroyRenderPass(Graphics::DEFAULT->device(), _test_render_pass, nullptr);
+			_test_render_pass = nullptr;
 		}
 	}
 

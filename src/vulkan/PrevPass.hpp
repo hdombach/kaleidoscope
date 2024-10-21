@@ -102,6 +102,11 @@ namespace vulkan {
 			util::Result<void, KError> _create_render_pass();
 			void _destroy_render_pass();
 
+			util::Result<void, KError> _create_test_pipeline();
+			void _destroy_test_pipeline();
+			util::Result<void, KError> _create_test_render_pass();
+			void _destroy_test_render_pass();
+
 			util::Result<void, KError> _create_sync_objects();
 			void _create_command_buffers();
 			util::Result<void, KError> _create_images();
@@ -121,6 +126,11 @@ namespace vulkan {
 			MeshObserver _mesh_observer;
 			MaterialObserver _material_observer;
 			NodeObserver _node_observer;
+
+			VkPipelineLayout _test_pipeline_layout;
+			VkPipeline _test_pipeline;
+			VkRenderPass _test_render_pass;
+			DescriptorSets _test_descriptor_sets;
 
 			MappedOverlayUniform _mapped_overlay_uniform;
 			VkPipelineLayout _overlay_pipeline_layout;
