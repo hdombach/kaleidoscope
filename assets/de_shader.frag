@@ -94,6 +94,6 @@ void main() {
 		color.w = 1.0;
 		outColor = color;
 	} else {
-		outColor = vec4(0.0, 0.0, 0.0, 1.0);
+		outColor = vec4(0.0, 0.0, 0.0, 0.0);
 	}
 }
