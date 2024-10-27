@@ -57,6 +57,10 @@ namespace types {
 		return glm::translate(glm::mat4(1.0), position);
 	}
 
+	float Camera::get_aspect() const {
+		return static_cast<float>(width) / static_cast<float>(height);
+	}
+
 	void Camera::rotate_drag(float deltax, float deltay) {
 		auto rotation_start = glm::vec3(0, 0, 1);
 		auto rotation_end = glm::vec3(deltax, deltay, 1);

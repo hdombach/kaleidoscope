@@ -28,6 +28,7 @@ namespace types {
 			glm::mat4 gen_raster_mat() const;
 			glm::mat4 gen_rotate_mat() const;
 			glm::mat4 gen_translate_mat() const;
+			float get_aspect() const;
 
 			void rotate_drag(float deltax, float deltay);
 			inline void rotate_drag(glm::vec2 delta) {

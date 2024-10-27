@@ -7,12 +7,10 @@
 #include <glm/ext/matrix_transform.hpp>
 
 #include "PrevPass.hpp"
-#include "Initializers.hpp"
 #include "PrevPassMaterial.hpp"
 #include "PrevPassNode.hpp"
 #include "Scene.hpp"
 #include "Uniforms.hpp"
-#include "defs.hpp"
 #include "error.hpp"
 #include "graphics.hpp"
 #include "../util/log.hpp"
@@ -101,23 +99,18 @@ namespace vulkan {
 			TRY(res);
 		}
 
-		{
-			auto res = result->_create_de_pipeline();
-			TRY(res);
-		}
-
 		/* create descriptor sets */
 		{
 			auto buffer = MappedPrevPassUniform::create();
 			TRY(buffer);
-			result->_mapped_uniform = std::move(buffer.value());
+			result->_prev_pass_uniform = std::move(buffer.value());
 		}
 
 		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
 		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
 					0, 
-					VK_SHADER_STAGE_VERTEX_BIT, 
-					result->_mapped_uniform));
+					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 
+					result->_prev_pass_uniform));
 
 		auto descriptor_sets = DescriptorSets::create(
 				descriptor_templates, 
@@ -125,6 +118,11 @@ namespace vulkan {
 				result->_descriptor_pool);
 		TRY(descriptor_sets);
 		result->_global_descriptor_set = std::move(descriptor_sets.value());
+
+		{
+			auto res = result->_create_de_pipeline();
+			TRY(res);
+		}
 
 		result->_mesh_observer = MeshObserver(*result);
 		result->_material_observer = MaterialObserver(*result);
@@ -146,7 +144,7 @@ namespace vulkan {
 		_destroy_de_pipeline();
 		_destroy_overlay_pipeline();
 
-		_mapped_uniform.destroy();
+		_prev_pass_uniform.destroy();
 		
 		_fence.destroy();
 		_semaphore.destroy();
@@ -211,10 +209,7 @@ namespace vulkan {
 
 			vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-			auto uniform = GlobalPrevPassUniform{};
-			uniform.camera_transformation = camera.gen_raster_mat();
-			current_uniform_buffer().set_value(uniform);
-
+			_prev_pass_uniform.set_value(GlobalPrevPassUniform::create(camera));
 
 			//TODO: pass the filter view
 			for (auto &node : nodes) {
@@ -263,13 +258,6 @@ namespace vulkan {
 
 		// Test render pass
 		if (1) {
-			auto uniform = ComputeUniform{};
-			uniform.camera_rotation = camera.gen_rotate_mat();
-			uniform.camera_translation = glm::vec4(camera.position, 0.0);
-			uniform.aspect = static_cast<float>(camera.width) / static_cast<float>(camera.height);
-			uniform.fovy = camera.fovy;
-			_mapped_de_uniform.set_value(uniform);
-
 			auto render_pass_info = VkRenderPassBeginInfo{};
 			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			render_pass_info.renderPass = _de_render_pass;
@@ -289,15 +277,17 @@ namespace vulkan {
 
 			vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _de_pipeline);
 
-			auto descriptor_set = _de_descriptor_set.descriptor_set(0);
+			auto descriptor_sets = std::array<VkDescriptorSet, 1>{
+				global_descriptor_set(0)
+			};
 
 			vkCmdBindDescriptorSets(
 					command_buffer,
 					VK_PIPELINE_BIND_POINT_GRAPHICS,
 					_de_pipeline_layout,
 					0,
-					1,
-					&descriptor_set,
+					descriptor_sets.size(),
+					descriptor_sets.data(),
 					0,
 					nullptr);
 
@@ -323,35 +313,6 @@ namespace vulkan {
 					command_buffer,
 					VK_PIPELINE_BIND_POINT_COMPUTE,
 					_overlay_pipeline_layout,
-					0,
-					1,
-					&descriptor_set,
-					0,
-					nullptr);
-
-			vkCmdDispatch(_command_buffer, _size.width, _size.height, 1);
-		}
-
-		// DE
-		if (0) {
-			auto uniform = ComputeUniform{};
-			uniform.camera_rotation = camera.gen_rotate_mat();
-			uniform.camera_translation = glm::vec4(camera.position, 0.0);
-			uniform.aspect = static_cast<float>(camera.width) / static_cast<float>(camera.height);
-			uniform.fovy = camera.fovy;
-			_mapped_de_uniform.set_value(uniform);
-
-			vkCmdBindPipeline(
-					command_buffer,
-					VK_PIPELINE_BIND_POINT_COMPUTE,
-					_de_pipeline);
-
-			auto descriptor_set = _de_descriptor_set.descriptor_set(0);
-
-			vkCmdBindDescriptorSets(
-					command_buffer,
-					VK_PIPELINE_BIND_POINT_COMPUTE,
-					_de_pipeline_layout,
 					0,
 					1,
 					&descriptor_set,
@@ -418,9 +379,6 @@ namespace vulkan {
 	}
 	VkRenderPass PrevPass::render_pass() {
 		return _render_pass;
-	}
-	MappedPrevPassUniform &PrevPass::current_uniform_buffer() {
-		return _mapped_uniform;
 	}
 
 	void PrevPass::mesh_create(uint32_t id) {
@@ -587,17 +545,6 @@ namespace vulkan {
 	}
 
 	util::Result<void, KError> PrevPass::_create_de_pipeline() {
-		auto buffer = MappedComputeUniform::create();
-		TRY(buffer);
-		_mapped_de_uniform = std::move(buffer.value());
-
-		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
-
-		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
-					3,
-					VK_SHADER_STAGE_FRAGMENT_BIT,
-					_mapped_de_uniform));
-
 		auto vert_source_code = util::readEnvFile("assets/unit_square.vert");
 		auto vert_shader = Shader::from_source_code(vert_source_code, Shader::Type::Vertex);
 		if (!vert_shader) {
@@ -607,15 +554,8 @@ namespace vulkan {
 			return vert_shader.error();
 		}
 
-		auto descriptor_sets = DescriptorSets::create(
-				descriptor_templates,
-				1,
-				_descriptor_pool);
-		TRY(descriptor_sets);
-		_de_descriptor_set = std::move(descriptor_sets.value());
-
 		auto frag_source_code = util::readEnvFile("assets/de_shader.frag");
-		util::replace_substr(frag_source_code, "/*UNIFORM_DECL*/\n", ComputeUniform::declaration());
+		util::replace_substr(frag_source_code, "/*GLOBAL_UNIFORM_CONTENT*/\n", GlobalPrevPassUniform::declaration_content());
 		auto frag_shader = Shader::from_source_code(frag_source_code, Shader::Type::Fragment);
 		if (!frag_shader) {
 			util::add_strnum(frag_source_code);
@@ -755,7 +695,7 @@ namespace vulkan {
 		auto pipeline_layout_info = VkPipelineLayoutCreateInfo{};
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 		pipeline_layout_info.setLayoutCount = 1;
-		pipeline_layout_info.pSetLayouts = _de_descriptor_set.layout_ptr();
+		pipeline_layout_info.pSetLayouts = _global_descriptor_set.layout_ptr();
 		pipeline_layout_info.pushConstantRangeCount = 0;
 		pipeline_layout_info.pPushConstantRanges = nullptr;
 
@@ -815,7 +755,6 @@ namespace vulkan {
 	}
 
 	void PrevPass::_destroy_de_pipeline() {
-		_de_descriptor_set.destroy();
 		vkDestroyPipelineLayout(
 				Graphics::DEFAULT->device(), 
 				_de_pipeline_layout, 

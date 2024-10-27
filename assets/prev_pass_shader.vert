@@ -1,7 +1,7 @@
 #version 450
 
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
-	mat4 camera_transformation;
+	/*GLOBAL_UNIFORM_CONTENT*/
 } global_uniform;
 
 layout(set = 1, binding = 0) uniform MaterialUniformBuffer {

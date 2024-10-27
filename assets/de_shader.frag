@@ -5,6 +5,16 @@ layout(location = 1) in vec2 fragTexCoord;
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out uint outNode;
 
+layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
+	/*GLOBAL_UNIFORM_CONTENT*/
+} global_uniform;
+
+
+layout(set = 1, binding = 0, rgba8) uniform image2D result;
+layout(set = 1, binding = 1, r32ui) uniform uimage2D node_id;
+layout(set = 1, binding = 2, r8) uniform image2D depth;
+
+
 /*UNIFORM_DECL*/
 
 /*DE_FUNC*/
@@ -60,26 +70,18 @@ bool de_intersect(vec3 pos, vec3 dir, inout float d, inout int iterations) {
 
 float PI = 3.14159265358979;
 
-layout(set = 0, binding = 0, rgba8) uniform image2D result;
-layout(set = 0, binding = 1, r32ui) uniform uimage2D node_id;
-layout(set = 0, binding = 2, r8) uniform image2D depth;
-layout(set = 0, binding = 3) uniform UniformBlock {
-	ComputeUniform u;
-} compute_uniform;
-
-
 void main() {
 	vec2 uv = fragTexCoord;
 
 	vec4 dir = vec4(1.0 - uv.x * 2.0, uv.y * 2.0 - 1.0, 2.0, 0.0);
-	dir.x *= compute_uniform.u.aspect;
-	dir.z = 1.0 / tan(compute_uniform.u.fovy * PI / 360.0f);
-	dir = normalize(dir) * -1 * compute_uniform.u.rotation;
+	dir.x *= global_uniform.aspect;
+	dir.z = 1.0 / tan(global_uniform.fovy * PI / 360.0f);
+	dir = normalize(dir) * -1 * global_uniform.camera_rotation;
 	vec2 intr_uv;
 	vec2 tex_uv;
 	uint node_id = 0;
 
-	vec4 position = vec4(0, 0, 0, 1) - compute_uniform.u.translation;
+	vec4 position = vec4(0, 0, 0, 1) - global_uniform.camera_translation;
 
 
 	uint debug = 0;

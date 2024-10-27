@@ -75,7 +75,6 @@ namespace vulkan {
 			VkDescriptorSet imgui_descriptor_set();
 			ImageView const &image_view();
 			VkRenderPass render_pass();
-			MappedPrevPassUniform &current_uniform_buffer();
 			DescriptorPool &descriptor_pool() { return _descriptor_pool; };
 			VkDescriptorSetLayout global_descriptor_set_layout() { return _global_descriptor_set.layout(); }
 			VkDescriptorSet global_descriptor_set(int frame_index) { return _global_descriptor_set.descriptor_set(frame_index); }
@@ -124,11 +123,9 @@ namespace vulkan {
 			MaterialObserver _material_observer;
 			NodeObserver _node_observer;
 
-			MappedComputeUniform _mapped_de_uniform;
 			VkPipelineLayout _de_pipeline_layout;
 			VkPipeline _de_pipeline;
 			VkRenderPass _de_render_pass;
-			DescriptorSets _de_descriptor_set;
 
 			MappedOverlayUniform _mapped_overlay_uniform;
 			VkPipelineLayout _overlay_pipeline_layout;
@@ -146,7 +143,7 @@ namespace vulkan {
 			VkDescriptorSet _imgui_descriptor_set;
 			DescriptorSets _global_descriptor_set;
 			VkRenderPass _render_pass;
-			MappedPrevPassUniform _mapped_uniform;
+			MappedPrevPassUniform _prev_pass_uniform;
 			Fence _fence;
 			Semaphore _semaphore;
 			VkCommandBuffer _command_buffer;
