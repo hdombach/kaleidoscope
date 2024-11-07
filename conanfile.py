@@ -21,6 +21,3 @@ class MainRecipe(ConanFile):
         for dep in self.dependencies.values():
             for srcdir in dep.cpp_info.srcdirs:
                 copy(self, "*", srcdir, self.build_folder)
-
-    def layout(self):
-        cmake_layout(self)
