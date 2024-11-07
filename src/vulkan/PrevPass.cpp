@@ -374,8 +374,8 @@ namespace vulkan {
 		return _imgui_descriptor_set;
 	}
 
-	ImageView const &PrevPass::image_view() {
-		return _color_image_view;
+	VkImageView PrevPass::image_view() {
+		return _color_image.image_view();
 	}
 	VkRenderPass PrevPass::render_pass() {
 		return _render_pass;
@@ -898,23 +898,17 @@ namespace vulkan {
 		/* create depth resources */
 		{
 			auto image = Image::create(
-					_size.width,
-					_size.height,
+					_size,
 					_depth_format(),
 					VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
-						| VK_IMAGE_USAGE_SAMPLED_BIT);
+						| VK_IMAGE_USAGE_SAMPLED_BIT,
+					VK_IMAGE_ASPECT_DEPTH_BIT,
+					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 			TRY(image);
 			_depth_image = std::move(image.value());
 
-			auto image_view = _depth_image.create_image_view_full(
-					_depth_format(), 
-					VK_IMAGE_ASPECT_DEPTH_BIT, 
-					1);
-			TRY(image_view);
-			_depth_image_view = std::move(image_view.value());
-
 			Graphics::DEFAULT->transition_image_layout(
-					_depth_image.value(),
+					_depth_image.image(),
 					_depth_format(),
 					VK_IMAGE_LAYOUT_UNDEFINED,
 					VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
@@ -924,8 +918,7 @@ namespace vulkan {
 		/* Create main color resources */
 		{
 			auto image = Image::create(
-					_size.width,
-					_size.height,
+					_size,
 					_RESULT_IMAGE_FORMAT,
 					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 						| VK_IMAGE_USAGE_STORAGE_BIT
@@ -933,15 +926,8 @@ namespace vulkan {
 			TRY(image);
 			_color_image = std::move(image.value());
 
-			auto image_view = _color_image.create_image_view_full(
-					_RESULT_IMAGE_FORMAT,
-					VK_IMAGE_ASPECT_COLOR_BIT,
-					1);
-			TRY(image_view);
-			_color_image_view = std::move(image_view.value());
-
 			Graphics::DEFAULT->transition_image_layout(
-					_color_image.value(),
+					_color_image.image(),
 					_RESULT_IMAGE_FORMAT,
 					VK_IMAGE_LAYOUT_UNDEFINED,
 					VK_IMAGE_LAYOUT_GENERAL,
@@ -951,8 +937,7 @@ namespace vulkan {
 		/* Create node resources */
 		{
 			auto image = Image::create(
-					_size.width,
-					_size.height,
+					_size,
 					_NODE_IMAGE_FORMAT,
 					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 						| VK_IMAGE_USAGE_STORAGE_BIT
@@ -960,15 +945,8 @@ namespace vulkan {
 			TRY(image);
 			_node_image = std::move(image.value());
 
-			auto image_view = _node_image.create_image_view_full(
-					_NODE_IMAGE_FORMAT,
-					VK_IMAGE_ASPECT_COLOR_BIT,
-					1);
-			TRY(image_view);
-			_node_image_view = std::move(image_view.value());
-
 			Graphics::DEFAULT->transition_image_layout(
-					_node_image.value(), 
+					_node_image.image(), 
 					_NODE_IMAGE_FORMAT, 
 					VK_IMAGE_LAYOUT_UNDEFINED, 
 					VK_IMAGE_LAYOUT_GENERAL, 
@@ -976,9 +954,9 @@ namespace vulkan {
 		}
 
 		auto attachments = std::array<VkImageView, 3>{
-			_color_image_view.value(),
-			_depth_image_view.value(),
-			_node_image_view.value(),
+			_color_image.image_view(),
+			_depth_image.image_view(),
+			_node_image.image_view(),
 		};
 
 		auto framebuffer_info = VkFramebufferCreateInfo{};
@@ -998,7 +976,7 @@ namespace vulkan {
 
 		_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
 				Graphics::DEFAULT->main_texture_sampler(),
-				_color_image_view.value(),
+				_color_image.image_view(),
 				VK_IMAGE_LAYOUT_GENERAL);
 
 
@@ -1007,9 +985,8 @@ namespace vulkan {
 
 	void PrevPass::_cleanup_images() {
 		_depth_image.destroy();
-		_depth_image_view.destroy();
-		_color_image_view.destroy();
 		_color_image.destroy();
+		_node_image.destroy();
 
 		vkDestroyFramebuffer(Graphics::DEFAULT->device(), _framebuffer, nullptr);
 		_framebuffer = nullptr;
@@ -1034,7 +1011,7 @@ namespace vulkan {
 		descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
 					0,
 					VK_SHADER_STAGE_COMPUTE_BIT,
-					_color_image_view));
+					_color_image.image_view()));
 		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
 					1,
 					VK_SHADER_STAGE_COMPUTE_BIT,
@@ -1042,7 +1019,7 @@ namespace vulkan {
 		descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
 					2,
 					VK_SHADER_STAGE_COMPUTE_BIT,
-					_node_image_view));
+					_node_image.image_view()));
 
 		auto descriptor_sets = DescriptorSets::create(
 				descriptor_templates,

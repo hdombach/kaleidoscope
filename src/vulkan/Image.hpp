@@ -6,7 +6,6 @@
 
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
-#include "ImageView.hpp"
 
 namespace vulkan {
 	/**
@@ -15,19 +14,16 @@ namespace vulkan {
 	class Image {
 		public:
 			static util::Result<Image, KError> create(
-					uint32_t width,
-					uint32_t height,
+					VkExtent2D size,
 					VkFormat format,
 					VkImageUsageFlags usage);
 
-			static util::Result<Image, KError> create_full(
-					uint32_t width,
-					uint32_t height,
-					uint32_t mip_levels,
+			static util::Result<Image, KError> create(
+					VkExtent2D size,
 					VkFormat format,
-					VkImageTiling tiling,
 					VkImageUsageFlags usage,
-					VkMemoryPropertyFlags properties);
+					VkImageAspectFlagBits aspect,
+					VkMemoryPropertyFlagBits memory_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 			Image();
 
@@ -36,29 +32,22 @@ namespace vulkan {
 			Image& operator=(const Image& other) = delete;
 			Image& operator=(Image &&other);
 
+			bool empty() const;
+
 			void destroy();
 			~Image();
 
-			VkImage& value();
-			VkImage const& value() const;
+			VkImage image() const;
+			VkImageView image_view() const;
 
-			VkImage& operator*() { return value(); }
-			VkImage const& operator*() const { return value(); }
-
-			util::Result<ImageView, KError> create_image_view();
-			util::Result<ImageView, KError> create_image_view_full(
-					VkFormat format,
-					VkImageAspectFlagBits aspect,
-					uint32_t mip_levels);
-
-			uint32_t width() const { return _width; }
-			uint32_t height() const { return _height; }
+			uint32_t width() const { return _size.width; }
+			uint32_t height() const { return _size.height; }
 
 		private:
 			VkImage _image;
+			VkImageView _image_view;
 			VkDeviceMemory _image_memory;
-			uint32_t _width;
-			uint32_t _height;
+			VkExtent2D _size;
 	};
 
 }

@@ -1,6 +1,4 @@
-#include <algorithm>
 #include <memory>
-#include <unordered_map>
 #include <vulkan/vulkan_core.h>
 #include <imgui_impl_vulkan.h>
 #include <random>
@@ -154,9 +152,7 @@ namespace vulkan {
 	{
 		_size = other._size;
 		_result_image = std::move(other._result_image);
-		_result_image_view = std::move(other._result_image_view);
 		_accumulator_image = std::move(other._accumulator_image);
-		_accumulator_image_view = std::move(other._accumulator_image_view);
 		_pass_fence = std::move(other._pass_fence);
 		_semaphore = std::move(other._semaphore);
 		_descriptor_pool = std::move(other._descriptor_pool);
@@ -212,9 +208,7 @@ namespace vulkan {
 
 		_size = other._size;
 		_result_image = std::move(other._result_image);
-		_result_image_view = std::move(other._result_image_view);
 		_accumulator_image = std::move(other._accumulator_image);
-		_accumulator_image_view = std::move(other._accumulator_image_view);
 		_pass_fence = std::move(other._pass_fence);
 		_semaphore = std::move(other._semaphore);
 		_descriptor_pool = std::move(other._descriptor_pool);
@@ -263,8 +257,8 @@ namespace vulkan {
 	VkDescriptorSet RayPass::imgui_descriptor_set() {
 		return _imgui_descriptor_set;
 	}
-	ImageView const &RayPass::image_view() {
-		return _result_image_view;
+	VkImageView RayPass::image_view() {
+		return _result_image.image_view();
 	}
 
 	VkSemaphore RayPass::submit(
@@ -332,7 +326,7 @@ namespace vulkan {
 			range.baseArrayLayer = 0;
 			range.layerCount = 1;
 			range.levelCount = 1;
-			vkCmdClearColorImage(_command_buffer, _accumulator_image.value(), VK_IMAGE_LAYOUT_GENERAL, &clear_color, 1, &range);
+			vkCmdClearColorImage(_command_buffer, _accumulator_image.image(), VK_IMAGE_LAYOUT_GENERAL, &clear_color, 1, &range);
 			LOG_DEBUG << "Cleared accumulator" << std::endl;
 		}
 		vkCmdBindPipeline(_command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, _pipeline);
@@ -404,7 +398,7 @@ namespace vulkan {
 
 		for (auto t : container) {
 			if (t) {
-				result.push_back(t->image_view().value());
+				result.push_back(t->image_view());
 			} else {
 				result.push_back(nullptr);
 			}
@@ -473,12 +467,12 @@ namespace vulkan {
 		descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
 					0, 
 					VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-					_result_image_view));
+					_result_image.image_view()));
 
 		descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
 					1, 
 					VK_SHADER_STAGE_COMPUTE_BIT, 
-					_accumulator_image_view));
+					_accumulator_image.image_view()));
 
 		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(
 					2,
@@ -590,17 +584,16 @@ namespace vulkan {
 	}
 
 	void RayPass::_cleanup_images() {
-		_result_image_view.destroy();
 		_result_image.destroy();
-		_accumulator_image_view.destroy();
+		_result_image.destroy();
+		_accumulator_image.destroy();
 		_accumulator_image.destroy();
 	}
 
 	util::Result<void, KError> RayPass::_create_images() {
 		{
 			auto image = Image::create(
-					_size.width,
-					_size.height,
+					_size,
 					VK_FORMAT_R8G8B8A8_SRGB,
 					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 						| VK_IMAGE_USAGE_STORAGE_BIT
@@ -609,30 +602,22 @@ namespace vulkan {
 			_result_image = std::move(image.value());
 
 			Graphics::DEFAULT->transition_image_layout(
-					_result_image.value(),
+					_result_image.image(),
 					VK_FORMAT_R8G8B8A8_SRGB,
 					VK_IMAGE_LAYOUT_UNDEFINED,
 					VK_IMAGE_LAYOUT_GENERAL,
 					1);
 
-			auto image_view = _result_image.create_image_view_full(
-					VK_FORMAT_R8G8B8A8_SRGB, 
-					VK_IMAGE_ASPECT_COLOR_BIT, 
-					1);
-			TRY(image_view);
-			_result_image_view = std::move(image_view.value());
-
 			_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
 					Graphics::DEFAULT->main_texture_sampler(), 
-					_result_image_view.value(), 
+					_result_image.image_view(), 
 					VK_IMAGE_LAYOUT_GENERAL);
 		}
 
 		//Setup accumulator
 		{
 			auto image = Image::create(
-					_size.width,
-					_size.height,
+					_size,
 					VK_FORMAT_R16G16B16A16_SFLOAT,
 					VK_IMAGE_USAGE_STORAGE_BIT
 						| VK_IMAGE_USAGE_SAMPLED_BIT
@@ -641,18 +626,11 @@ namespace vulkan {
 			_accumulator_image = std::move(image.value());
 
 			Graphics::DEFAULT->transition_image_layout(
-					_accumulator_image.value(), 
+					_accumulator_image.image(), 
 					VK_FORMAT_R16G16B16A16_SFLOAT, 
 					VK_IMAGE_LAYOUT_UNDEFINED, 
 					VK_IMAGE_LAYOUT_GENERAL, 
 					1);
-
-			auto image_view = _accumulator_image.create_image_view_full(
-					VK_FORMAT_R16G16B16A16_SFLOAT, 
-					VK_IMAGE_ASPECT_COLOR_BIT, 
-					1);
-			TRY(image_view);
-			_accumulator_image_view = std::move(image_view.value());
 		}
 
 		return {};

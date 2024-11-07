@@ -1,7 +1,7 @@
 #include <vulkan/vulkan_core.h>
 #include "ImageView.hpp"
 #include "graphics.hpp"
-
+/*
 namespace vulkan {
 	util::Result<ImageView, KError> ImageView::create(VkImage image) {
 		return create_full(
@@ -73,4 +73,4 @@ namespace vulkan {
 	VkImageView const& ImageView::value() const {
 		return _image_view;
 	}
-}
+}*/

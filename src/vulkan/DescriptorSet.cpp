@@ -1,12 +1,11 @@
 #include "DescriptorSet.hpp"
 #include <vulkan/vulkan_core.h>
-#include "../util/log.hpp"
 
 namespace vulkan {
 	DescriptorSetTemplate DescriptorSetTemplate::create_image(
 			uint32_t binding,
 			VkShaderStageFlags stage_flags,
-			ImageView const &image_view)
+			VkImageView image_view)
 	{
 		auto result = DescriptorSetTemplate{};
 		result._layout_binding.binding = binding;
@@ -15,7 +14,7 @@ namespace vulkan {
 		result._layout_binding.stageFlags = stage_flags;
 		result._layout_binding.pImmutableSamplers = nullptr;
 
-		result._image_views = std::vector<VkImageView>{image_view.value()};
+		result._image_views = std::vector<VkImageView>{image_view};
 
 		return result;
 	}
@@ -46,7 +45,7 @@ namespace vulkan {
 	DescriptorSetTemplate DescriptorSetTemplate::create_image_target(
 			uint32_t binding,
 			VkShaderStageFlags stage_flags,
-			ImageView const &image_view)
+			VkImageView image_view)
 	{
 		auto result = DescriptorSetTemplate{};
 		result._layout_binding.binding = binding;
@@ -55,7 +54,7 @@ namespace vulkan {
 		result._layout_binding.stageFlags = stage_flags;
 		result._layout_binding.pImmutableSamplers = nullptr;
 
-		result._image_views = std::vector<VkImageView>{image_view.value()};
+		result._image_views = std::vector<VkImageView>{image_view};
 
 		return result;
 	}

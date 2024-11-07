@@ -39,7 +39,7 @@ namespace vulkan {
 			static util::Result<Ptr, KError> create(types::ResourceManager &resource_manager);
 
 			VkDescriptorSet imgui_descriptor_set();
-			ImageView const &image_view();
+			VkImageView image_view();
 
 			VkExtent2D size() const;
 			void resize(VkExtent2D new_size);

@@ -49,7 +49,7 @@ namespace vulkan {
 
 		for (auto &resource : _node->resources().get()) {
 			if (auto texture = resource->as_texture()) {
-				images.push_back(texture.value().image_view().value());
+				images.push_back(texture.value().image_view());
 			}
 		}
 		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, _uniform));

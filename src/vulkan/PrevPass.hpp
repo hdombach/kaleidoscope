@@ -9,8 +9,6 @@
 #include "DescriptorPool.hpp"
 #include "DescriptorSet.hpp"
 #include "Image.hpp"
-#include "ImageView.hpp"
-#include "Texture.hpp"
 #include "Uniforms.hpp"
 #include "PrevPassMesh.hpp"
 #include "PrevPassMaterial.hpp"
@@ -19,7 +17,6 @@
 #include "../util/errors.hpp"
 #include "../util/Observer.hpp"
 #include "../types/Camera.hpp"
-#include "../types/ShaderResource.hpp"
 
 namespace vulkan {
 	class Node;
@@ -73,7 +70,7 @@ namespace vulkan {
 
 			VkExtent2D size() const;
 			VkDescriptorSet imgui_descriptor_set();
-			ImageView const &image_view();
+			VkImageView image_view();
 			VkRenderPass render_pass();
 			DescriptorPool &descriptor_pool() { return _descriptor_pool; };
 			VkDescriptorSetLayout global_descriptor_set_layout() { return _global_descriptor_set.layout(); }
@@ -134,11 +131,8 @@ namespace vulkan {
 
 			VkExtent2D _size;
 			Image _depth_image;
-			ImageView _depth_image_view;
 			Image _color_image;
-			ImageView _color_image_view;
 			Image _node_image;
-			ImageView _node_image_view;
 			VkFramebuffer _framebuffer;
 			VkDescriptorSet _imgui_descriptor_set;
 			DescriptorSets _global_descriptor_set;

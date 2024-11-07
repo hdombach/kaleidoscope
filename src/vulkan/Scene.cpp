@@ -48,7 +48,7 @@ namespace vulkan {
 		}
 	}
 
-	ImageView const &Scene::image_view() {
+	VkImageView Scene::image_view() {
 		if (_is_preview) {
 			return _preview_render_pass->image_view();
 		} else {

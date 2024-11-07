@@ -2,7 +2,7 @@
 
 #include "../util/result.hpp"
 #include "../util/errors.hpp"
-
+/*
 namespace vulkan {
 	class ImageView {
 		public:
@@ -35,4 +35,4 @@ namespace vulkan {
 		private:
 			VkImageView _image_view;
 	};
-}
+}*/

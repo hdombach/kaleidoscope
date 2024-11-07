@@ -61,7 +61,7 @@ namespace vulkan {
 			static DescriptorSetTemplate create_image(
 					uint32_t binding,
 					VkShaderStageFlags stage_flags,
-					ImageView const &image_view);
+					VkImageView image_view);
 
 			static util::Result<DescriptorSetTemplate, KError> create_images(
 					uint32_t binding,
@@ -71,7 +71,7 @@ namespace vulkan {
 			static DescriptorSetTemplate create_image_target(
 					uint32_t binding,
 					VkShaderStageFlags stage_flags,
-					ImageView const &image_view);
+					VkImageView image_view);
 
 			static util::Result<DescriptorSetTemplate, KError> create_storage_buffer(
 					uint32_t binding,

@@ -27,8 +27,7 @@ namespace vulkan {
 
 		auto image_size = (VkDeviceSize) tex_width * texHeight * 4;
 
-		result->_mip_levels = static_cast<uint32_t>(
-				std::floor(std::log2(std::max(tex_width, texHeight))));
+		result->_mip_levels = 1;
 
 		if (!pixels) {
 			return KError::invalid_image_file(url);
@@ -48,53 +47,50 @@ namespace vulkan {
 		memcpy(data, pixels, static_cast<size_t>(image_size));
 		vkUnmapMemory(Graphics::DEFAULT->device(), staging_buffer_memory);
 		stbi_image_free(pixels);
-		
-		auto texture_res = Image::create_full(
-				tex_width, 
-				texHeight, 
-				result->_mip_levels, 
-				VK_FORMAT_R8G8B8A8_UNORM, 
-				VK_IMAGE_TILING_OPTIMAL, 
-				VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-					VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-					VK_IMAGE_USAGE_SAMPLED_BIT,
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+	
+		{
+			auto size = VkExtent2D{
+				static_cast<uint32_t>(tex_width),
+					static_cast<uint32_t>(texHeight)
+			};
+			auto image = Image::create(
+					size,
+					VK_FORMAT_R8G8B8A8_UNORM,
+					VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+					| VK_IMAGE_USAGE_TRANSFER_DST_BIT
+					| VK_IMAGE_USAGE_SAMPLED_BIT,
+					VK_IMAGE_ASPECT_COLOR_BIT,
+					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+			TRY(image);
 
-		TRY(texture_res);
-		result->_texture = std::move(texture_res.value());
+			result->_image = std::move(image.value());
+		}
 
 		Graphics::DEFAULT->transition_image_layout(
-				result->_texture.value(),
+				result->_image.image(),
 				VK_FORMAT_R8G8B8A8_UNORM,
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				result->_mip_levels);
+				1);
 
 		Graphics::DEFAULT->copy_buffer_to_image(
 				staging_buffer,
-				result->_texture.value(),
+				result->_image.image(),
 				static_cast<uint32_t>(tex_width),
 				static_cast<uint32_t>(texHeight));
 
 		vkDestroyBuffer(Graphics::DEFAULT->device(), staging_buffer, nullptr);
 		vkFreeMemory(Graphics::DEFAULT->device(), staging_buffer_memory, nullptr);
 
-		Graphics::DEFAULT->generate_mipmaps(result->_texture.value(),
+		Graphics::DEFAULT->generate_mipmaps(result->_image.image(),
 				VK_FORMAT_R8G8B8A8_UNORM,
 				tex_width,
 				texHeight,
 				result->_mip_levels);
 
-		auto image_view_res = result->_texture.create_image_view_full(
-				VK_FORMAT_R8G8B8A8_UNORM,
-				VK_IMAGE_ASPECT_COLOR_BIT,
-				result->_mip_levels);
-		TRY(image_view_res);
-		result->_texture_view = std::move(image_view_res.value());
-
 		result->_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
 				Graphics::DEFAULT->main_texture_sampler(),
-				result->_texture_view.value(),
+				result->_image.image_view(),
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
 		result->_name = std::filesystem::path(url).stem();
@@ -103,8 +99,7 @@ namespace vulkan {
 	}
 
 	StaticTexture::~StaticTexture() {
-		_texture.destroy();
-		_texture_view.destroy();
+		_image.destroy();
 
 		ImGui_ImplVulkan_RemoveTexture(_imgui_descriptor_set);
 	}
@@ -113,8 +108,8 @@ namespace vulkan {
 		return _imgui_descriptor_set;
 	}
 
-	ImageView const &StaticTexture::image_view() const {
-		return _texture_view;
+	VkImageView StaticTexture::image_view() const {
+		return _image.image_view();
 	}
 
 	uint32_t StaticTexture::id() const {

@@ -7,9 +7,7 @@
 #include "DescriptorSet.hpp"
 #include "Fence.hpp"
 #include "Image.hpp"
-#include "ImageView.hpp"
 #include "Semaphore.hpp"
-#include "Texture.hpp"
 #include "Uniforms.hpp"
 #include "RayPassMesh.hpp"
 #include "RayPassNode.hpp"
@@ -73,7 +71,7 @@ namespace vulkan {
 			~RayPass();
 
 			VkDescriptorSet imgui_descriptor_set();
-			ImageView const &image_view();
+			VkImageView image_view();
 			VkSemaphore submit(
 					Node &node,
 					uint32_t count,
@@ -123,9 +121,7 @@ namespace vulkan {
 		private:
 			VkExtent2D _size;
 			Image _result_image;
-			ImageView _result_image_view;
 			Image _accumulator_image;
-			ImageView _accumulator_image_view;
 			Fence _pass_fence;
 			Semaphore _semaphore;
 			DescriptorPool _descriptor_pool;

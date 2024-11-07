@@ -12,7 +12,7 @@ namespace vulkan {
 		return _scene.imgui_descriptor_set();
 	}
 
-	ImageView const &SceneTexture::image_view() const {
+	VkImageView SceneTexture::image_view() const {
 		return _scene.image_view();
 	}
 
