@@ -72,7 +72,7 @@ namespace vulkan {
 
 		//Nodes need to be created first.
 		auto descriptor_layouts = std::vector<VkDescriptorSetLayout>{
-			result._render_pass->global_descriptor_set_layout(),
+			result._render_pass->shared_descriptor_set_layout(),
 			descriptor_layout.value().layout(),
 		};
 

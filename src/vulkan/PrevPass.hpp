@@ -73,8 +73,8 @@ namespace vulkan {
 			VkImageView image_view();
 			VkRenderPass render_pass();
 			DescriptorPool &descriptor_pool() { return _descriptor_pool; };
-			VkDescriptorSetLayout global_descriptor_set_layout() { return _global_descriptor_set.layout(); }
-			VkDescriptorSet global_descriptor_set(int frame_index) { return _global_descriptor_set.descriptor_set(frame_index); }
+			VkDescriptorSetLayout shared_descriptor_set_layout() { return _shared_descriptor_set.layout(); }
+			VkDescriptorSet shared_descriptor_set() { return _shared_descriptor_set.descriptor_set(0); }
 
 			MaterialObserver &material_observer() { return _material_observer; }
 			MeshObserver &mesh_observer() { return _mesh_observer; }
@@ -95,22 +95,30 @@ namespace vulkan {
 
 			PrevPass(Scene &scene, VkExtent2D size);
 
-			util::Result<void, KError> _create_render_pass();
-			void _destroy_render_pass();
-
-			util::Result<void, KError> _create_de_pipeline();
-			void _destroy_de_pipeline();
-			util::Result<void, KError> _create_de_render_pass();
-			void _destroy_de_render_pass();
-
-			util::Result<void, KError> _create_sync_objects();
-			void _create_command_buffers();
-			util::Result<void, KError> _create_images();
-			void _cleanup_images();
-			static VkFormat _depth_format();
+			util::Result<void, KError> _create_prim_render_pass();
+			void _destroy_prim_render_pass();
 
 			util::Result<void, KError> _create_overlay_pipeline();
 			void _destroy_overlay_pipeline();
+
+			util::Result<void, KError> _create_de_render_pass();
+			void _destroy_de_render_pass();
+
+			util::Result<void, KError> _create_de_pipeline();
+			void _destroy_de_pipeline();
+
+			util::Result<void, KError> _create_images();
+			void _cleanup_images();
+
+			util::Result<void, KError> _create_shared_descriptor_set();
+			void _destroy_shared_descriptor_set();
+
+			util::Result<void, KError> _create_framebuffers();
+			void _destroy_framebuffers();
+
+			util::Result<void, KError> _create_sync_objects();
+			void _create_command_buffers();
+			static VkFormat _depth_format();
 
 		private:
 			std::vector<PrevPassMesh> _meshes;
@@ -120,31 +128,35 @@ namespace vulkan {
 			MaterialObserver _material_observer;
 			NodeObserver _node_observer;
 
+			VkExtent2D _size;
+			Image _depth_image;
+			Image _color_image;
+			Image _node_image;
+
+			DescriptorSets _shared_descriptor_set;
+
+			VkRenderPass _prim_render_pass;
+			VkFramebuffer _prim_framebuffer;
+			MappedPrevPassUniform _prim_uniform;
+
 			VkPipelineLayout _de_pipeline_layout;
 			VkPipeline _de_pipeline;
 			VkRenderPass _de_render_pass;
+			VkFramebuffer _de_framebuffer;
 
 			MappedOverlayUniform _mapped_overlay_uniform;
 			VkPipelineLayout _overlay_pipeline_layout;
 			VkPipeline _overlay_pipeline;
 			DescriptorSets _overlay_descriptor_set;
 
-			VkExtent2D _size;
-			Image _depth_image;
-			Image _color_image;
-			Image _node_image;
-			VkFramebuffer _framebuffer;
 			VkDescriptorSet _imgui_descriptor_set;
-			DescriptorSets _global_descriptor_set;
-			VkRenderPass _render_pass;
-			MappedPrevPassUniform _prev_pass_uniform;
 			Fence _fence;
 			Semaphore _semaphore;
 			VkCommandBuffer _command_buffer;
 			DescriptorPool _descriptor_pool;
+
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
 			const static VkFormat _NODE_IMAGE_FORMAT = VK_FORMAT_R16_UINT;
-			uint32_t _mip_levels;
 
 			Scene *_scene;
 	};
