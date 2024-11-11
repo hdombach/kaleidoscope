@@ -88,10 +88,7 @@ namespace vulkan {
 		TRY(semaphore);
 		result->_semaphore = std::move(semaphore.value());
 
-		{
-			auto res = result->_create_images();
-			TRY(res);
-		}
+		TRY(result->_create_images());
 
 		auto buffer_res = MappedComputeUniform::create();
 		TRY(buffer_res);

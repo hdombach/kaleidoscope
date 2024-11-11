@@ -6,6 +6,7 @@
 #include <string>
 #include <type_traits>
 #include <variant>
+#include <type_traits>
 
 namespace util {
 	/*
@@ -185,6 +186,7 @@ namespace util {
 				throw std::runtime_error(std::to_string(result.error()));
 			}
 		}
-
-#define TRY(result) if (!result) return {result.error()};
 }
+
+#define TRY(result) try { return {(result).error()}; } catch (...) {}
+

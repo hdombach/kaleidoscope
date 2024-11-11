@@ -62,8 +62,8 @@ namespace vulkan {
 					VK_IMAGE_ASPECT_COLOR_BIT,
 					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 			TRY(image);
-
 			result->_image = std::move(image.value());
+
 		}
 
 		Graphics::DEFAULT->transition_image_layout(

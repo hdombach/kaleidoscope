@@ -79,41 +79,14 @@ namespace vulkan {
 		result->_create_command_buffers();
 		result->_descriptor_pool = DescriptorPool::create();
 
-		{
-			auto res = result->_create_images();
-			TRY(res);
-		}
+		TRY(result->_create_images());
+		TRY(result->_create_shared_descriptor_set());
 
-
-		{
-			auto res = result->_create_shared_descriptor_set();
-			TRY(res);
-		}
-
-		{
-			auto res = result->_create_prim_render_pass();
-			TRY(res);
-		}
-
-		{
-			auto res = result->_create_de_render_pass();
-			TRY(res);
-		}
-
-		{
-			auto res = result->_create_de_pipeline();
-			TRY(res);
-		}
-
-		{
-			auto res = result->_create_overlay_pipeline();
-			TRY(res);
-		}
-
-		{
-			auto res = result->_create_framebuffers();
-			TRY(res);
-		}
+		TRY(result->_create_prim_render_pass());
+		TRY(result->_create_de_render_pass());
+		TRY(result->_create_de_pipeline());
+		TRY(result->_create_overlay_pipeline());
+		TRY(result->_create_framebuffers());
 
 		result->_mesh_observer = MeshObserver(*result);
 		result->_material_observer = MaterialObserver(*result);

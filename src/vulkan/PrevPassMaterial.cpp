@@ -76,15 +76,14 @@ namespace vulkan {
 			descriptor_layout.value().layout(),
 		};
 
-		auto res = _create_pipeline(
+		TRY(_create_pipeline(
 				vert_shader.value(), 
 				frag_shader.value(), 
 				*result._render_pass,
 				descriptor_layouts,
 				&result._pipeline,
-				&result._pipeline_layout);
+				&result._pipeline_layout));
 		LOG_MEMORY << "Just created a pipeline " << result._pipeline << std::endl;
-		TRY(res);
 		return result;
 	}
 
