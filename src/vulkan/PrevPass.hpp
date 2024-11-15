@@ -130,6 +130,7 @@ namespace vulkan {
 
 			VkExtent2D _size;
 			Image _depth_image;
+			Image _depth_buf_image;
 			Image _color_image;
 			Image _node_image;
 
@@ -143,6 +144,7 @@ namespace vulkan {
 			VkPipeline _de_pipeline;
 			VkRenderPass _de_render_pass;
 			VkFramebuffer _de_framebuffer;
+			DescriptorSets _de_descriptor_set;
 
 			MappedOverlayUniform _mapped_overlay_uniform;
 			VkPipelineLayout _overlay_pipeline_layout;
@@ -157,6 +159,7 @@ namespace vulkan {
 
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
 			const static VkFormat _NODE_IMAGE_FORMAT = VK_FORMAT_R16_UINT;
+			const static VkFormat _DEPTH_BUF_IMAGE_FORMAT = VK_FORMAT_R8_SRGB;
 
 			Scene *_scene;
 	};

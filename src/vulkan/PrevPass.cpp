@@ -165,6 +165,7 @@ namespace vulkan {
 			clear_values[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
 			clear_values[1].depthStencil = {1.0f, 0};
 			clear_values[2].color = {{0}};
+			//clear_values[3].color = {{0.0f}};
 
 			render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
 			render_pass_info.pClearValues = clear_values.data();
@@ -223,7 +224,7 @@ namespace vulkan {
 			auto render_pass_info = VkRenderPassBeginInfo{};
 			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			render_pass_info.renderPass = _de_render_pass;
-			render_pass_info.framebuffer = _prim_framebuffer;
+			render_pass_info.framebuffer = _de_framebuffer;
 			render_pass_info.renderArea.offset = {0, 0};
 			render_pass_info.renderArea.extent = _size;
 
@@ -239,8 +240,9 @@ namespace vulkan {
 
 			vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _de_pipeline);
 
-			auto descriptor_sets = std::array<VkDescriptorSet, 1>{
+			auto descriptor_sets = std::array<VkDescriptorSet, 2>{
 				shared_descriptor_set(),
+				_de_descriptor_set.descriptor_set(0),
 			};
 
 			vkCmdBindDescriptorSets(
@@ -328,12 +330,11 @@ namespace vulkan {
 
 		_destroy_de_pipeline();
 		_destroy_de_render_pass();
-		res = _create_de_pipeline();
+		res = _create_de_render_pass();
 		if (!res) {
 			LOG_ERROR << res.error().desc() << std::endl;
 		}
-
-		res = _create_de_render_pass();
+		res = _create_de_pipeline();
 		if (!res) {
 			LOG_ERROR << res.error().desc() << std::endl;
 		}
@@ -459,9 +460,25 @@ namespace vulkan {
 		node_attachment_ref.attachment = 2;
 		node_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+		/*auto depth_buf_attachment = VkAttachmentDescription{};
+		depth_buf_attachment.format = _DEPTH_BUF_IMAGE_FORMAT;
+		depth_buf_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		depth_buf_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depth_buf_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		depth_buf_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depth_buf_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depth_buf_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depth_buf_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		auto depth_buf_attachment_ref = VkAttachmentReference{};
+		depth_buf_attachment_ref.attachment = 2;
+		depth_buf_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;*/
+
+
 		auto color_attachment_refs = std::array<VkAttachmentReference, 2>{
 			color_attachment_ref,
 			node_attachment_ref,
+			//depth_buf_attachment_ref,
 		};
 
 		auto subpass = VkSubpassDescription{};
@@ -474,6 +491,7 @@ namespace vulkan {
 			color_attachment,
 			depth_attachment,
 			node_attachment,
+			//depth_buf_attachment,
 		};
 
 		auto render_pass_info = VkRenderPassCreateInfo{};
@@ -616,16 +634,6 @@ namespace vulkan {
 		color_attachment.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
 		color_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
 
-		auto depth_attachment = VkAttachmentDescription{};
-		depth_attachment.format = _depth_format();
-		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
 		auto node_attachment = VkAttachmentDescription{};
 		node_attachment.format = _NODE_IMAGE_FORMAT;
 		node_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -640,12 +648,8 @@ namespace vulkan {
 		color_attachment_ref.attachment = 0;
 		color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-		auto depth_attachment_ref = VkAttachmentReference{};
-		depth_attachment_ref.attachment = 1;
-		depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
 		auto node_attachment_ref = VkAttachmentReference{};
-		node_attachment_ref.attachment = 2;
+		node_attachment_ref.attachment = 1;
 		node_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		auto attachment_refs = std::array<VkAttachmentReference, 2>{
@@ -657,11 +661,10 @@ namespace vulkan {
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
 		subpass.colorAttachmentCount = attachment_refs.size();
 		subpass.pColorAttachments = attachment_refs.data();
-		subpass.pDepthStencilAttachment = &depth_attachment_ref;
+		subpass.pDepthStencilAttachment = nullptr;
 
-		auto attachments = std::array<VkAttachmentDescription, 3>{
+		auto attachments = std::array<VkAttachmentDescription, 2>{
 			color_attachment,
-			depth_attachment,
 			node_attachment,
 		};
 
@@ -711,6 +714,20 @@ namespace vulkan {
 
 
 	util::Result<void, KError> PrevPass::_create_de_pipeline() {
+		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
+		descriptor_templates.push_back(DescriptorSetTemplate::create_image(
+					0,
+					VK_SHADER_STAGE_FRAGMENT_BIT,
+					_depth_buf_image.image_view(),
+					VK_IMAGE_LAYOUT_GENERAL));
+
+		auto descriptor_sets = DescriptorSets::create(
+				descriptor_templates,
+				1,
+				_descriptor_pool);
+		TRY(descriptor_sets);
+		_de_descriptor_set = std::move(descriptor_sets.value());
+
 		auto vert_source_code = util::readEnvFile("assets/unit_square.vert");
 		auto vert_shader = Shader::from_source_code(vert_source_code, Shader::Type::Vertex);
 		if (!vert_shader) {
@@ -858,11 +875,16 @@ namespace vulkan {
 		dynamic_state.dynamicStateCount = static_cast<uint32_t>(dynamic_states.size());
 		dynamic_state.pDynamicStates = dynamic_states.data();
 
+		auto descriptor_set_layouts = std::array<VkDescriptorSetLayout, 2>{
+			shared_descriptor_set_layout(),
+			_de_descriptor_set.layout(),
+		};
+
 		auto dset_layout = shared_descriptor_set_layout();
 		auto pipeline_layout_info = VkPipelineLayoutCreateInfo{};
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipeline_layout_info.setLayoutCount = 1;
-		pipeline_layout_info.pSetLayouts = &dset_layout;
+		pipeline_layout_info.setLayoutCount = descriptor_set_layouts.size();
+		pipeline_layout_info.pSetLayouts = descriptor_set_layouts.data();
 		pipeline_layout_info.pushConstantRangeCount = 0;
 		pipeline_layout_info.pPushConstantRanges = nullptr;
 
@@ -897,11 +919,11 @@ namespace vulkan {
 		pipeline_info.pViewportState = &viewport_state;
 		pipeline_info.pRasterizationState = &rasterizer;
 		pipeline_info.pMultisampleState = &multisampling;
-		pipeline_info.pDepthStencilState = &depth_stencil;
+		//pipeline_info.pDepthStencilState = &depth_stencil;
 		pipeline_info.pColorBlendState = &color_blending;
 		pipeline_info.pDynamicState = &dynamic_state;
 		pipeline_info.layout = _de_pipeline_layout;
-		pipeline_info.renderPass = _prim_render_pass;
+		pipeline_info.renderPass = _de_render_pass;
 		pipeline_info.subpass = 0;
 		pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
 		pipeline_info.basePipelineIndex = -1;
@@ -992,6 +1014,25 @@ namespace vulkan {
 					1);
 		}
 
+		/* depth buf */
+		{
+			auto image = Image::create(
+					_size,
+					_DEPTH_BUF_IMAGE_FORMAT,
+					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+						| VK_IMAGE_USAGE_STORAGE_BIT
+						| VK_IMAGE_USAGE_SAMPLED_BIT);
+			TRY(image);
+			_depth_buf_image = std::move(image.value());
+
+			Graphics::DEFAULT->transition_image_layout(
+					_depth_buf_image.image(), 
+					_DEPTH_BUF_IMAGE_FORMAT, 
+					VK_IMAGE_LAYOUT_UNDEFINED, 
+					VK_IMAGE_LAYOUT_GENERAL, 
+					1);
+		}
+
 		_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
 				Graphics::DEFAULT->main_texture_sampler(),
 				_color_image.image_view(),
@@ -1005,6 +1046,7 @@ namespace vulkan {
 		_depth_image.destroy();
 		_color_image.destroy();
 		_node_image.destroy();
+		_depth_buf_image.destroy();
 
 		ImGui_ImplVulkan_RemoveTexture(_imgui_descriptor_set);
 		_imgui_descriptor_set = nullptr;
@@ -1038,29 +1080,59 @@ namespace vulkan {
 	}
 
 	util::Result<void, KError> PrevPass::_create_framebuffers() {
-		auto attachments = std::array<VkImageView, 3>{
-			_color_image.image_view(),
-			_depth_image.image_view(),
-			_node_image.image_view(),
-		};
+		{
+			auto attachments = std::array<VkImageView, 3>{
+				_color_image.image_view(),
+				_depth_image.image_view(),
+				_node_image.image_view(),
+				//_depth_buf_image.image_view(),
+			};
 
-		auto framebuffer_info = VkFramebufferCreateInfo{};
-		framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebuffer_info.renderPass = _prim_render_pass;
-		framebuffer_info.attachmentCount = attachments.size();
-		framebuffer_info.pAttachments = attachments.data();
-		framebuffer_info.width = _size.width;
-		framebuffer_info.height = _size.height;
-		framebuffer_info.layers = 1;
+			auto framebuffer_info = VkFramebufferCreateInfo{};
+			framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			framebuffer_info.renderPass = _prim_render_pass;
+			framebuffer_info.attachmentCount = attachments.size();
+			framebuffer_info.pAttachments = attachments.data();
+			framebuffer_info.width = _size.width;
+			framebuffer_info.height = _size.height;
+			framebuffer_info.layers = 1;
 
-		auto res = vkCreateFramebuffer(
-				Graphics::DEFAULT->device(),
-				&framebuffer_info,
-				nullptr,
-				&_prim_framebuffer);
+			auto res = vkCreateFramebuffer(
+					Graphics::DEFAULT->device(),
+					&framebuffer_info,
+					nullptr,
+					&_prim_framebuffer);
 
-		if (res != VK_SUCCESS) {
-			return {res};
+			if (res != VK_SUCCESS) {
+				return {res};
+			}
+		}
+
+		{
+			auto attachments = std::array<VkImageView, 2>{
+				_color_image.image_view(),
+				_node_image.image_view(),
+			};
+
+			auto framebuffer_info = VkFramebufferCreateInfo{};
+			framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			framebuffer_info.renderPass = _de_render_pass;
+			framebuffer_info.attachmentCount = attachments.size();
+			framebuffer_info.pAttachments = attachments.data();
+			framebuffer_info.width = _size.width;
+			framebuffer_info.height = _size.height;
+			framebuffer_info.layers = 1;
+
+			auto res = vkCreateFramebuffer(
+					Graphics::DEFAULT->device(),
+					&framebuffer_info,
+					nullptr,
+					&_de_framebuffer);
+
+			if (res != VK_SUCCESS) {
+				return {res};
+			}
+
 		}
 
 		return {};
@@ -1069,6 +1141,10 @@ namespace vulkan {
 	void PrevPass::_destroy_framebuffers() {
 		vkDestroyFramebuffer(Graphics::DEFAULT->device(), _prim_framebuffer, nullptr);
 		_prim_framebuffer = nullptr;
+
+		vkDestroyFramebuffer(Graphics::DEFAULT->device(), _de_framebuffer, nullptr);
+		_de_framebuffer = nullptr;
+
 	}
 
 	util::Result<void, KError> PrevPass::_create_sync_objects() {

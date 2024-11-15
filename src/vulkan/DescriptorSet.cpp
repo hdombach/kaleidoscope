@@ -15,9 +15,30 @@ namespace vulkan {
 		result._layout_binding.pImmutableSamplers = nullptr;
 
 		result._image_views = std::vector<VkImageView>{image_view};
+		result._image_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 		return result;
 	}
+
+	DescriptorSetTemplate DescriptorSetTemplate::create_image(
+			uint32_t binding,
+			VkShaderStageFlags stage_flags,
+			VkImageView image_view,
+			VkImageLayout image_layout)
+	{
+		auto result = DescriptorSetTemplate{};
+		result._layout_binding.binding = binding;
+		result._layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		result._layout_binding.descriptorCount = 1;
+		result._layout_binding.stageFlags = stage_flags;
+		result._layout_binding.pImmutableSamplers = nullptr;
+
+		result._image_views = std::vector<VkImageView>{image_view};
+		result._image_layout = image_layout;
+
+		return result;
+	}
+
 
 	util::Result<DescriptorSetTemplate, KError> DescriptorSetTemplate::create_images(
 			uint32_t binding,
@@ -38,6 +59,7 @@ namespace vulkan {
 		for (auto &image_view : image_views) {
 			result._image_views.push_back(image_view);
 		}
+		result._image_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 		return result;
 	}
@@ -55,6 +77,7 @@ namespace vulkan {
 		result._layout_binding.pImmutableSamplers = nullptr;
 
 		result._image_views = std::vector<VkImageView>{image_view};
+		result._image_layout = VK_IMAGE_LAYOUT_GENERAL;
 
 		return result;
 	}
@@ -241,7 +264,7 @@ namespace vulkan {
 					auto &image_infos = write_buffer_infos[write_i].image_infos;
 					for (auto image_view : templ.image_views()) {
 						auto image_info = VkDescriptorImageInfo{};
-						image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+						image_info.imageLayout = templ.image_layout();
 						image_info.imageView = image_view;
 						image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
 						image_infos.push_back(image_info);
@@ -252,7 +275,7 @@ namespace vulkan {
 					auto &image_infos = write_buffer_infos[write_i].image_infos;
 					for (auto image_view : templ.image_views()) {
 						auto image_info = VkDescriptorImageInfo{};
-						image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+						image_info.imageLayout = templ.image_layout();
 						image_info.imageView = image_view;
 						image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
 						image_infos.push_back(image_info);

@@ -248,9 +248,22 @@ namespace vulkan {
 		node_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 		node_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
+		auto depth_buf_blend_attachment = VkPipelineColorBlendAttachmentState{};
+		node_blend_attachment.colorWriteMask = 
+			VK_COLOR_COMPONENT_R_BIT |
+			VK_COLOR_COMPONENT_A_BIT;
+		node_blend_attachment.blendEnable = VK_FALSE;
+		node_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+		node_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+		node_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
+		node_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		node_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		node_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
 		auto color_attachments = std::array<VkPipelineColorBlendAttachmentState, 2>{
 			color_blend_attachment,
 			node_blend_attachment,
+			//depth_buf_blend_attachment,
 		};
 
 		auto color_blending = VkPipelineColorBlendStateCreateInfo{};
