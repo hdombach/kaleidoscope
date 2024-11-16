@@ -161,11 +161,11 @@ namespace vulkan {
 			render_pass_info.renderArea.offset = {0, 0};
 			render_pass_info.renderArea.extent = _size;
 
-			auto clear_values = std::array<VkClearValue, 3>{};
+			auto clear_values = std::array<VkClearValue, 4>{};
 			clear_values[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
 			clear_values[1].depthStencil = {1.0f, 0};
 			clear_values[2].color = {{0}};
-			//clear_values[3].color = {{0.0f}};
+			clear_values[3].color = {{0.0f}};
 
 			render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
 			render_pass_info.pClearValues = clear_values.data();
@@ -261,7 +261,7 @@ namespace vulkan {
 		}
 
 		// Overlay
-		{
+		if (1) {
 			auto uniform = OverlayUniform{};
 			uniform.selected_node = _scene->selected_node();
 			_mapped_overlay_uniform.set_value(uniform);
@@ -460,7 +460,7 @@ namespace vulkan {
 		node_attachment_ref.attachment = 2;
 		node_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-		/*auto depth_buf_attachment = VkAttachmentDescription{};
+		auto depth_buf_attachment = VkAttachmentDescription{};
 		depth_buf_attachment.format = _DEPTH_BUF_IMAGE_FORMAT;
 		depth_buf_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
 		depth_buf_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -471,14 +471,14 @@ namespace vulkan {
 		depth_buf_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
 
 		auto depth_buf_attachment_ref = VkAttachmentReference{};
-		depth_buf_attachment_ref.attachment = 2;
-		depth_buf_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;*/
+		depth_buf_attachment_ref.attachment = 3;
+		depth_buf_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 
-		auto color_attachment_refs = std::array<VkAttachmentReference, 2>{
+		auto color_attachment_refs = std::array<VkAttachmentReference, 3>{
 			color_attachment_ref,
 			node_attachment_ref,
-			//depth_buf_attachment_ref,
+			depth_buf_attachment_ref,
 		};
 
 		auto subpass = VkSubpassDescription{};
@@ -487,11 +487,11 @@ namespace vulkan {
 		subpass.pColorAttachments = color_attachment_refs.data();
 		subpass.pDepthStencilAttachment = &depth_attachment_ref;
 
-		auto attachments = std::array<VkAttachmentDescription, 3>{
+		auto attachments = std::array<VkAttachmentDescription, 4>{
 			color_attachment,
 			depth_attachment,
 			node_attachment,
-			//depth_buf_attachment,
+			depth_buf_attachment,
 		};
 
 		auto render_pass_info = VkRenderPassCreateInfo{};
@@ -1081,11 +1081,11 @@ namespace vulkan {
 
 	util::Result<void, KError> PrevPass::_create_framebuffers() {
 		{
-			auto attachments = std::array<VkImageView, 3>{
+			auto attachments = std::array<VkImageView, 4>{
 				_color_image.image_view(),
 				_depth_image.image_view(),
 				_node_image.image_view(),
-				//_depth_buf_image.image_view(),
+				_depth_buf_image.image_view(),
 			};
 
 			auto framebuffer_info = VkFramebufferCreateInfo{};

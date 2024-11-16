@@ -14,7 +14,7 @@ layout(location = 1) in vec2 fragTexCoord;
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out uint outNode;
-//layout(location = 2) out float outDepth;
+layout(location = 2) out float outDepth;
 
 void frag_main(/*FRAG_MAIN_ARGS*/) {
 	/*FRAG_MAIN_SRC*/
@@ -30,6 +30,6 @@ void main() {
 	/*FRAG_MAIN_CALL*/
 	outColor.r = linearDepth(gl_FragCoord.z);
 	outNode = material_uniform.node_id; /* hard coded by ShaderResource */
-	//outDepth.x = linearDepth(gl_FragCoord.z);
+	outDepth = linearDepth(gl_FragCoord.z);
 	//outColor.x = outDepth.x;
 }

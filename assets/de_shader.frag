@@ -9,7 +9,7 @@ layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
 	/*GLOBAL_UNIFORM_CONTENT*/
 } global_uniform;
 
-//layout(set = 1, binding = 0) uniform sampler2D depthSampler;
+layout(set = 1, binding = 0) uniform sampler2D depthSampler;
 
 
 /*UNIFORM_DECL*/
@@ -90,7 +90,7 @@ void main() {
 	float d;
 	if (de_intersect(position.xyz, dir.xyz, d, iterations)) {
 		color.xyz = vec3(float(iterations) / 40.0);
-		//color.x = texture(depthSampler, uv).x;
+		color.x = texture(depthSampler, uv).x;
 		color.w = 1.0;
 		outColor = color;
 	} else {
