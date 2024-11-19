@@ -20,16 +20,9 @@ void frag_main(/*FRAG_MAIN_ARGS*/) {
 	/*FRAG_MAIN_SRC*/
 }
 
-float linearDepth(float depth)
-{
-	float z = depth * 2.0f - 1.0f; 
-	return (2.0f * global_uniform.z_near * global_uniform.z_far) / (global_uniform.z_far + global_uniform.z_near - z * (global_uniform.z_far - global_uniform.z_near));	
-}
-
 void main() {
 	/*FRAG_MAIN_CALL*/
-	outColor.r = linearDepth(gl_FragCoord.z);
 	outNode = material_uniform.node_id; /* hard coded by ShaderResource */
-	outDepth = linearDepth(gl_FragCoord.z);
-	//outColor.x = outDepth.x;
+	//Do I know why this works? no.
+	outDepth = gl_FragCoord.z / gl_FragCoord.w / global_uniform.z_far;
 }

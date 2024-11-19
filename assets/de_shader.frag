@@ -47,8 +47,8 @@ float de(vec3 pos) {
 	return 0.5 * log(r) * r / dr;
 }
 
-bool de_intersect(vec3 pos, vec3 dir, inout float d, inout int iterations) {
-	float step;
+bool de_intersect(vec3 pos, vec3 dir, inout float d, inout int iterations, inout vec3 closest_pos) {
+	float step, smallest = 1000;
 	iterations = 0;
 	d = 0;
 	do {
@@ -58,8 +58,12 @@ bool de_intersect(vec3 pos, vec3 dir, inout float d, inout int iterations) {
 		}
 		iterations++;
 		pos += dir * step;
+		if (step < smallest) {
+			smallest = step;
+			closest_pos = pos;
+		}
 		d += step;
-		if (length(pos) > 2) return false;
+		if (length(pos) > 2.0) return false;
 	} while (true);
 	return false;
 }
@@ -85,15 +89,25 @@ void main() {
 	vec3 normal;
 
 	vec4 color;
+	vec4 hit_pos = vec4(0.0, 0.0, 0.0, 1.0);
 
 	int iterations;
-	float d;
-	if (de_intersect(position.xyz, dir.xyz, d, iterations)) {
-		color.xyz = vec3(float(iterations) / 40.0);
-		color.x = texture(depthSampler, uv).x;
-		color.w = 1.0;
-		outColor = color;
+	float d = 0;
+	float cur_depth = texture(depthSampler, uv).x;
+	if (de_intersect(position.xyz, dir.xyz, d, iterations, hit_pos.xyz)) {
+
+		hit_pos.w = 1.0;
+		hit_pos = global_uniform.camera_transformation * hit_pos;
+		d = hit_pos.z / global_uniform.z_far;
+
+		if (cur_depth > d) {
+			color.xyz = vec3(float(iterations) / 40.0);
+			color.w = 1.0;
+		} else {
+			color.w = 0.0;
+		}
 	} else {
-		outColor = vec4(0.0, 0.0, 0.0, 0.0);
+		color = vec4(0.0, 0.0, 0, 0.0);
 	}
+	outColor = color;
 }
