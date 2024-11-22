@@ -275,7 +275,7 @@ namespace vulkan {
 		if (!_pipeline) {
 			auto res = _create_pipeline();
 			if (!res) {
-				LOG_ERROR << "problem creating pipeline: " << res.error().desc() << " " << res.error().content() << std::endl;
+				LOG_ERROR << "problem creating pipeline: " << res.error() << std::endl;
 				return nullptr;
 			}
 		}

@@ -314,29 +314,29 @@ namespace vulkan {
 		_size = size;
 		auto res = _create_images();
 		if (!res) {
-			LOG_ERROR << res.error().desc() << std::endl;
+			LOG_ERROR << res.error() << std::endl;
 		}
 
 		res = _create_framebuffers();
 		if (!res) {
-			LOG_ERROR << res.error().desc() << std::endl;
+			LOG_ERROR << res.error() << std::endl;
 		}
 
 		_destroy_overlay_pipeline();
 		res = _create_overlay_pipeline();
 		if (!res) {
-			LOG_ERROR << res.error().desc() << std::endl;
+			LOG_ERROR << res.error() << std::endl;
 		}
 
 		_destroy_de_pipeline();
 		_destroy_de_render_pass();
 		res = _create_de_render_pass();
 		if (!res) {
-			LOG_ERROR << res.error().desc() << std::endl;
+			LOG_ERROR << res.error() << std::endl;
 		}
 		res = _create_de_pipeline();
 		if (!res) {
-			LOG_ERROR << res.error().desc() << std::endl;
+			LOG_ERROR << res.error() << std::endl;
 		}
 
 	}
@@ -364,7 +364,7 @@ namespace vulkan {
 		if (auto mesh = PrevPassMesh::create(*_scene, _scene->resource_manager().get_mesh(id))) {
 			_meshes[id] = std::move(mesh.value());
 		} else {
-			LOG_ERROR << "Couldn't create preview mesh: " << mesh.error().desc() << std::endl;
+			LOG_ERROR << "Couldn't create preview mesh: " << mesh.error() << std::endl;
 		}
 	}
 
@@ -381,7 +381,7 @@ namespace vulkan {
 		if (auto material = PrevPassMaterial::create(*_scene, *this, _scene->resource_manager().get_material(id))) {
 			_materials[id] = std::move(material.value());
 		} else {
-			LOG_ERROR << "Couldn't create preview material: " << material.error().desc() << ", " << material.error().content() << std::endl;
+			LOG_ERROR << "Couldn't create preview material: " << material.error() << std::endl;
 		}
 	}
 
@@ -398,7 +398,7 @@ namespace vulkan {
 		if (auto node = PrevPassNode::create(*_scene, *this, _scene->get_node(id))) {
 			_nodes[id] = std::move(node.value());
 		} else {
-			LOG_ERROR << "Couldn't create preview node: " << node.error().desc() << std::endl;
+			LOG_ERROR << "Couldn't create preview node: " << node.error() << std::endl;
 		}
 	}
 

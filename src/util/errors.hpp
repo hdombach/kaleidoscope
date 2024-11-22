@@ -31,10 +31,12 @@ class KError {
 		KError(VkResult result);
 
 		/** @brief Long description that can be printed*/
-		virtual std::string const &desc() const;
+		std::string const &desc_part() const;
 
 		/** @brief Detail like texture name or filename */
-		virtual std::string const &content() const;
+		std::string const &content_part() const;
+
+		std::string str() const { return desc_part() + ": " + content_part(); }
 
 		Type type() const { return _type; }
 
@@ -62,6 +64,6 @@ class KError {
 };
 
 inline std::ostream &operator <<(std::ostream &os, KError const &error) {
-	os << error.desc() << ": " << error.content();
+	os << error.str();
 	return os;
 }

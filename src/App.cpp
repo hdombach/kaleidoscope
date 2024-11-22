@@ -38,14 +38,14 @@ App::Ptr App::create(std::string const &name) {
 	{
 		auto res = result->_resource_manager->add_mesh_from_file("assets/viking_room.obj");
 		if (!res) {
-			LOG_ERROR << res.error().desc() << std::endl;
+			LOG_ERROR << res.error() << std::endl;
 		}
 	}
 
 	{
 		auto res = result->_resource_manager->add_mesh_square("square");
 		if (!res) {
-			LOG_ERROR << res.error().desc() << std::endl;
+			LOG_ERROR << res.error() << std::endl;
 		}
 	}
 
@@ -54,7 +54,7 @@ App::Ptr App::create(std::string const &name) {
 				"viking_room",
 				result->_resource_manager->get_texture("viking_room"));
 		if (!res) {
-			LOG_ERROR << res.error().desc() << std::endl;
+			LOG_ERROR << res.error() << std::endl;
 		}
 	}
 
@@ -63,7 +63,7 @@ App::Ptr App::create(std::string const &name) {
 				"grunge",
 				result->_resource_manager->get_texture("grunge"));
 		if (!res) {
-			LOG_ERROR << res.error().desc() << std::endl;
+			LOG_ERROR << res.error() << std::endl;
 		}
 	}
 
@@ -72,20 +72,20 @@ App::Ptr App::create(std::string const &name) {
 				result->_resource_manager->get_texture("viking_room"), 
 				result->_resource_manager->get_texture("grunge")))
 	{ } else {
-		LOG_ERROR << res.error().desc() << std::endl;
+		LOG_ERROR << res.error() << std::endl;
 	}
 
 	{
 		auto res = result->_resource_manager->add_color_material("color", glm::vec3(0.5, 0.1, 0.2));
 		if (!res) {
-			LOG_ERROR << res.error().desc() << std::endl;
+			LOG_ERROR << res.error() << std::endl;
 		}
 	}
 
 	if (auto scene = vulkan::Scene::create(*(result->_resource_manager))) {
 		result->_scene = std::move(scene.value());
 	} else {
-		LOG_ERROR << scene.error().desc() << std::endl;
+		LOG_ERROR << scene.error() << std::endl;
 	}
 
 	{
