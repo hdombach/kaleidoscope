@@ -5,10 +5,10 @@
 
 #include "PrevPass.hpp"
 #include "PrevPassMaterial.hpp"
-#include "../vulkan/Vertex.hpp"
-#include "../util/file.hpp"
-#include "../util/Util.hpp"
-#include "../types/Material.hpp"
+#include "vulkan/Vertex.hpp"
+#include "util/file.hpp"
+#include "util/Util.hpp"
+#include "types/Material.hpp"
 
 namespace vulkan {
 	util::Result<PrevPassMaterial, KError> PrevPassMaterial::create(

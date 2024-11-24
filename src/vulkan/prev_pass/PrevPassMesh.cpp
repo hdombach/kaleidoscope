@@ -2,7 +2,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "PrevPassMesh.hpp"
-#include "graphics.hpp"
+#include "vulkan/graphics.hpp"
 
 namespace vulkan {
 	util::Result<PrevPassMesh, KError> PrevPassMesh::create(

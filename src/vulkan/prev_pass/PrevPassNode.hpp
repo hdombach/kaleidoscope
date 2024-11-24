@@ -2,12 +2,11 @@
 
 #include <glm/glm.hpp>
 
-#include "../util/result.hpp"
-#include "../util/errors.hpp"
-#include "../vulkan/DescriptorSet.hpp"
-
-#include "MappedUniform.hpp"
-#include "../types/Node.hpp"
+#include "vulkan/DescriptorSet.hpp"
+#include "vulkan/MappedUniform.hpp"
+#include "util/result.hpp"
+#include "util/errors.hpp"
+#include "types/Node.hpp"
 
 namespace vulkan {
 	class Scene;

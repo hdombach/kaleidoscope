@@ -4,7 +4,7 @@
 #include <vector>
 #include <ostream>
 
-#include "../types/Mesh.hpp"
+#include "types/Mesh.hpp"
 //#include "BVNode.hpp"
 
 namespace vulkan {

@@ -3,20 +3,20 @@
 #include <memory>
 #include <set>
 
-#include "DescriptorPool.hpp"
-#include "DescriptorSet.hpp"
-#include "Fence.hpp"
-#include "Image.hpp"
-#include "Semaphore.hpp"
-#include "Uniforms.hpp"
 #include "RayPassMesh.hpp"
 #include "RayPassNode.hpp"
 #include "RayPassMaterial.hpp"
-#include "StaticBuffer.hpp"
+#include "vulkan/DescriptorPool.hpp"
+#include "vulkan/DescriptorSet.hpp"
+#include "vulkan/Fence.hpp"
+#include "vulkan/Image.hpp"
+#include "vulkan/Semaphore.hpp"
+#include "vulkan/Uniforms.hpp"
+#include "vulkan/StaticBuffer.hpp"
 
-#include "../types/Node.hpp"
+#include "types/Node.hpp"
 
-#include "../util/Observer.hpp"
+#include "util/Observer.hpp"
 
 namespace vulkan {
 	class Scene;

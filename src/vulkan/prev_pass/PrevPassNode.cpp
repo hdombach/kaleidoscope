@@ -1,14 +1,14 @@
 #include <cstring>
 #include <vector>
 
-#include "../util/result.hpp"
-#include "../types/Node.hpp"
-#include "../types/ShaderResource.hpp"
-
 #include "PrevPass.hpp"
 #include "PrevPassNode.hpp"
-#include "DescriptorSet.hpp"
 #include "PrevPass.hpp"
+#include "vulkan/DescriptorSet.hpp"
+#include "util/result.hpp"
+#include "types/Node.hpp"
+#include "types/ShaderResource.hpp"
+
 
 namespace vulkan {
 	util::Result<PrevPassNode, KError> PrevPassNode::create(

@@ -6,7 +6,7 @@
 
 #include "../util/Util.hpp"
 #include "Scene.hpp"
-#include "PrevPass.hpp"
+#include "prev_pass/PrevPass.hpp"
 #include "Uniforms.hpp"
 
 namespace vulkan {

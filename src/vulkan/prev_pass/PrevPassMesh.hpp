@@ -2,9 +2,9 @@
 
 #include <vulkan/vulkan.h>
 
-#include "../util/result.hpp"
-#include "../util/errors.hpp"
-#include "../types/Mesh.hpp"
+#include "util/result.hpp"
+#include "util/errors.hpp"
+#include "types/Mesh.hpp"
 
 namespace vulkan {
 	class Scene;

@@ -1,7 +1,7 @@
 #include "RayPassNode.hpp"
 #include "RayPassMesh.hpp"
 #include "RayPass.hpp"
-#include "../util/format.hpp"
+#include "util/format.hpp"
 
 namespace vulkan {
 	RayPassNode::VImpl RayPassNode::VImpl::create_empty() {

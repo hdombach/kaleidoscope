@@ -7,14 +7,14 @@
 #include "RayPassMaterial.hpp"
 #include "RayPassMesh.hpp"
 #include "RayPassNode.hpp"
-#include "Shader.hpp"
-#include "graphics.hpp"
-#include "Scene.hpp"
-#include "Vertex.hpp"
-#include "../types/Node.hpp"
-#include "../util/file.hpp"
-#include "../util/Util.hpp"
-#include "../util/IterAdapter.hpp"
+#include "vulkan/Shader.hpp"
+#include "vulkan/graphics.hpp"
+#include "vulkan/Scene.hpp"
+#include "vulkan/Vertex.hpp"
+#include "types/Node.hpp"
+#include "util/file.hpp"
+#include "util/Util.hpp"
+#include "util/IterAdapter.hpp"
 
 namespace vulkan {
 	RayPass::MeshObserver::MeshObserver(RayPass &ray_pass):

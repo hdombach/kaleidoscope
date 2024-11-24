@@ -70,6 +70,7 @@ include_directories(${HEADERS})
 
 add_executable(kaleidoscope ${SOURCES})
 target_include_directories(kaleidoscope PRIVATE ${INCLUDE_DIRS})
+target_include_directories(kaleidoscope PRIVATE src)
 target_link_libraries(kaleidoscope PUBLIC ${Vulkan_LIBRARIES})
 target_link_libraries(kaleidoscope PUBLIC glfw)
 target_link_libraries(kaleidoscope PUBLIC stb::stb)

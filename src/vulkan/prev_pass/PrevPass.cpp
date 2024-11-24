@@ -5,17 +5,17 @@
 #include <glm/fwd.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
+#include "imgui_impl_vulkan.h"
 
 #include "PrevPass.hpp"
 #include "PrevPassMaterial.hpp"
 #include "PrevPassNode.hpp"
-#include "Scene.hpp"
-#include "Uniforms.hpp"
-#include "error.hpp"
-#include "graphics.hpp"
-#include "../util/log.hpp"
-#include "../util/file.hpp"
-#include "imgui_impl_vulkan.h"
+#include "vulkan/Scene.hpp"
+#include "vulkan/Uniforms.hpp"
+#include "vulkan/error.hpp"
+#include "vulkan/graphics.hpp"
+#include "util/log.hpp"
+#include "util/file.hpp"
 
 namespace vulkan {
 	/************************ Observers *********************************/

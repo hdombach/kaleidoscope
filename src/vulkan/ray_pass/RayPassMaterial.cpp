@@ -1,7 +1,7 @@
 #include "RayPassMaterial.hpp"
-#include "../types/Material.hpp"
 #include "RayPass.hpp"
-#include "../util/Util.hpp"
+#include "types/Material.hpp"
+#include "util/Util.hpp"
 
 namespace vulkan {
 	RayPassMaterial::RayPassMaterial():

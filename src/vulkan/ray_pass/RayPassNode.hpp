@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <ostream>
 
-#include "../types/Node.hpp"
+#include "types/Node.hpp"
 
 namespace vulkan {
 	class RayPass;

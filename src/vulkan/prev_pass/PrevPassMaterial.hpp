@@ -1,10 +1,9 @@
 #pragma once
 
-#include "../util/result.hpp"
-#include "../util/errors.hpp"
-#include "../types/Material.hpp"
-#include "../vulkan/DescriptorSet.hpp"
-#include "Shader.hpp"
+#include "vulkan/Shader.hpp"
+#include "util/result.hpp"
+#include "util/errors.hpp"
+#include "types/Material.hpp"
 
 namespace vulkan {
 	class Scene;

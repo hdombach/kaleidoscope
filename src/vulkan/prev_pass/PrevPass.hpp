@@ -1,22 +1,21 @@
 #pragma once
 
-#include <functional>
 #include <memory>
 #include <vector>
 
 #include <vulkan/vulkan_core.h>
 
-#include "DescriptorPool.hpp"
-#include "DescriptorSet.hpp"
-#include "Image.hpp"
-#include "Uniforms.hpp"
 #include "PrevPassMesh.hpp"
 #include "PrevPassMaterial.hpp"
 #include "PrevPassNode.hpp"
-#include "../util/result.hpp"
-#include "../util/errors.hpp"
-#include "../util/Observer.hpp"
-#include "../types/Camera.hpp"
+#include "vulkan/DescriptorPool.hpp"
+#include "vulkan/DescriptorSet.hpp"
+#include "vulkan/Image.hpp"
+#include "vulkan/Uniforms.hpp"
+#include "util/result.hpp"
+#include "util/errors.hpp"
+#include "util/Observer.hpp"
+#include "types/Camera.hpp"
 
 namespace vulkan {
 	class Node;

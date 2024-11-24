@@ -1,7 +1,7 @@
 #include "RayPassMesh.hpp"
-#include "../types/Axis.hpp"
-#include "../util/log.hpp"
-#include "../util/format.hpp"
+#include "types/Axis.hpp"
+#include "util/log.hpp"
+#include "util/format.hpp"
 
 namespace vulkan {
 

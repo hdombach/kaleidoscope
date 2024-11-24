@@ -12,8 +12,8 @@
 #include "../util/filter_iterator.hpp"
 #include "../types/ResourceManager.hpp"
 #include "../types/Camera.hpp"
-#include "PrevPass.hpp"
-#include "RayPass.hpp"
+#include "prev_pass/PrevPass.hpp"
+#include "ray_pass/RayPass.hpp"
 #include "../types/Node.hpp"
 
 namespace vulkan {
