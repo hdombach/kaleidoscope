@@ -1,4 +1,3 @@
-#include <cstring>
 #include <vector>
 
 #include "PrevPass.hpp"
@@ -11,6 +10,10 @@
 
 
 namespace vulkan {
+	PrevPassNode::VImpl PrevPassNode::VImpl::create_empty() {
+		return {0, glm::vec3()};
+	}
+
 	util::Result<PrevPassNode, KError> PrevPassNode::create(
 			Scene &scene,
 			PrevPass &preview_pass,
@@ -36,6 +39,17 @@ namespace vulkan {
 
 	void PrevPassNode::update() {
 		_create_descriptor_sets();
+	}
+
+	PrevPassNode::VImpl PrevPassNode::vimpl() {
+		return VImpl{
+			_node->mesh().id(),
+			_node->position(),
+		};
+	}
+
+	bool PrevPassNode::is_de() {
+		return _node->mesh().has_de();
 	}
 
 	util::Result<void, KError> PrevPassNode::_create_descriptor_sets() {

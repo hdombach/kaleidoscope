@@ -14,6 +14,21 @@ namespace vulkan {
 
 	class PrevPassNode {
 		public:
+			struct VImpl {
+				alignas(4) uint32_t mesh_id;
+				alignas(16) glm::vec3 position;
+
+				static VImpl create_empty();
+
+				static constexpr const char *declaration() {
+					return
+						"struct Node {\n"
+						"\tuint mesh_id;\n"
+						"\tvec3 position;\n"
+						"};\n";
+				};
+			} __attribute__((packed));
+
 			PrevPassNode() = default;
 
 			static util::Result<PrevPassNode, KError> create(
@@ -30,9 +45,15 @@ namespace vulkan {
 
 			~PrevPassNode() { destroy(); }
 
+			operator bool() { return _node; }
+
 			DescriptorSets &descriptor_set() { return _descriptor_set; }
 
 			void update();
+
+			VImpl vimpl();
+
+			bool is_de();
 
 		private:
 			uint32_t _id;

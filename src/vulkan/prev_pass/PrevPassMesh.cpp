@@ -26,79 +26,86 @@ namespace vulkan {
 		result._id = mesh->id();
 		result._vertex_buffer_range = VkDeviceSize(sizeof(Vertex) * vertices.size());
 
-		VkBuffer staging_buffer;
-		VkDeviceMemory staging_buffer_memory;
-		Graphics::DEFAULT->create_buffer(
-				result._vertex_buffer_range,
-				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-				staging_buffer,
-				staging_buffer_memory);
+		if (vertices.size() > 0) {
+			VkBuffer staging_buffer;
+			VkDeviceMemory staging_buffer_memory;
+			Graphics::DEFAULT->create_buffer(
+					result._vertex_buffer_range,
+					VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+					staging_buffer,
+					staging_buffer_memory);
 
-		void *data;
-		vkMapMemory(
-				Graphics::DEFAULT->device(),
-				staging_buffer_memory,
-				0,
-				result._vertex_buffer_range,
-				0,
-				&data);
-		memcpy(
-				data,
-				vertices.data(),
-				static_cast<size_t>(result._vertex_buffer_range));
-		vkUnmapMemory(
-				Graphics::DEFAULT->device(),
-				staging_buffer_memory);
+			void *data;
+			vkMapMemory(
+					Graphics::DEFAULT->device(),
+					staging_buffer_memory,
+					0,
+					result._vertex_buffer_range,
+					0,
+					&data);
+			memcpy(
+					data,
+					vertices.data(),
+					static_cast<size_t>(result._vertex_buffer_range));
+			vkUnmapMemory(
+					Graphics::DEFAULT->device(),
+					staging_buffer_memory);
 
-		Graphics::DEFAULT->create_buffer(
-				result._vertex_buffer_range, 
-				VK_BUFFER_USAGE_TRANSFER_DST_BIT
-				| VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
-				| VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-				result._vertex_buffer, 
-				result._vertex_buffer_memory);
+			Graphics::DEFAULT->create_buffer(
+					result._vertex_buffer_range, 
+					VK_BUFFER_USAGE_TRANSFER_DST_BIT
+					| VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
+					| VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+					result._vertex_buffer, 
+					result._vertex_buffer_memory);
 
-		Graphics::DEFAULT->copy_buffer(
-				staging_buffer, 
-				result._vertex_buffer, 
-				result._vertex_buffer_range);
+			Graphics::DEFAULT->copy_buffer(
+					staging_buffer, 
+					result._vertex_buffer, 
+					result._vertex_buffer_range);
 
-		vkDestroyBuffer(Graphics::DEFAULT->device(), staging_buffer, nullptr);
-		vkFreeMemory(Graphics::DEFAULT->device(), staging_buffer_memory, nullptr);
+			vkDestroyBuffer(Graphics::DEFAULT->device(), staging_buffer, nullptr);
+			vkFreeMemory(Graphics::DEFAULT->device(), staging_buffer_memory, nullptr);
+		}
 
 		result._index_buffer_range = sizeof(uint32_t) * indices.size();
 
-		Graphics::DEFAULT->create_buffer(
-				result._index_buffer_range, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
-				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
-				staging_buffer, 
-				staging_buffer_memory);
+		if (indices.size() > 0) {
+			VkBuffer staging_buffer;
+			VkDeviceMemory staging_buffer_memory;
+			Graphics::DEFAULT->create_buffer(
+					result._index_buffer_range, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+					VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+					staging_buffer, 
+					staging_buffer_memory);
 
-		vkMapMemory(
-				Graphics::DEFAULT->device(),
-				staging_buffer_memory,
-				0,
-				result._index_buffer_range,
-				0,
-				&data);
-		memcpy(data, indices.data(), static_cast<size_t>(result._index_buffer_range));
-		vkUnmapMemory(Graphics::DEFAULT->device(), staging_buffer_memory);
+			void *data;
+			vkMapMemory(
+					Graphics::DEFAULT->device(),
+					staging_buffer_memory,
+					0,
+					result._index_buffer_range,
+					0,
+					&data);
+			memcpy(data, indices.data(), static_cast<size_t>(result._index_buffer_range));
+			vkUnmapMemory(Graphics::DEFAULT->device(), staging_buffer_memory);
 
-		Graphics::DEFAULT->create_buffer(
-				result._index_buffer_range, 
-				VK_BUFFER_USAGE_TRANSFER_DST_BIT
-				| VK_BUFFER_USAGE_INDEX_BUFFER_BIT
-				| VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
-				result._index_buffer, 
-				result._index_buffer_memory);
+			Graphics::DEFAULT->create_buffer(
+					result._index_buffer_range, 
+					VK_BUFFER_USAGE_TRANSFER_DST_BIT
+					| VK_BUFFER_USAGE_INDEX_BUFFER_BIT
+					| VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
+					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+					result._index_buffer, 
+					result._index_buffer_memory);
 
-		Graphics::DEFAULT->copy_buffer(staging_buffer, result._index_buffer, result._index_buffer_range);
+			Graphics::DEFAULT->copy_buffer(staging_buffer, result._index_buffer, result._index_buffer_range);
 
-		vkDestroyBuffer(Graphics::DEFAULT->device(), staging_buffer, nullptr);
-		vkFreeMemory(Graphics::DEFAULT->device(), staging_buffer_memory, nullptr);
+			vkDestroyBuffer(Graphics::DEFAULT->device(), staging_buffer, nullptr);
+			vkFreeMemory(Graphics::DEFAULT->device(), staging_buffer_memory, nullptr);
+		}
 
 		result._index_count = indices.size();
 

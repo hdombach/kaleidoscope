@@ -10,6 +10,7 @@
 #include "PrevPass.hpp"
 #include "PrevPassMaterial.hpp"
 #include "PrevPassNode.hpp"
+#include "util/Util.hpp"
 #include "vulkan/Scene.hpp"
 #include "vulkan/Uniforms.hpp"
 #include "vulkan/error.hpp"
@@ -84,6 +85,7 @@ namespace vulkan {
 
 		TRY(result->_create_prim_render_pass());
 		TRY(result->_create_de_render_pass());
+		TRY(result->_create_de_buffers());
 		TRY(result->_create_de_pipeline());
 		TRY(result->_create_overlay_pipeline());
 		TRY(result->_create_framebuffers());
@@ -105,6 +107,7 @@ namespace vulkan {
 		_materials.clear();
 		_destroy_shared_descriptor_set();
 		_destroy_prim_render_pass();
+		_destroy_de_buffers();
 		_destroy_de_render_pass();
 		_destroy_de_pipeline();
 		_destroy_overlay_pipeline();
@@ -366,6 +369,11 @@ namespace vulkan {
 		} else {
 			LOG_ERROR << "Couldn't create preview mesh: " << mesh.error() << std::endl;
 		}
+		LOG_DEBUG << "HIIIIIIIIIIIIIIIIIIIII" << std::endl;
+		_destroy_de_buffers();
+		_create_de_buffers();
+		_destroy_de_pipeline();
+		_create_de_pipeline();
 	}
 
 	void PrevPass::mesh_update(uint32_t id) { }
@@ -396,10 +404,18 @@ namespace vulkan {
 			_nodes.push_back(PrevPassNode());
 		}
 		if (auto node = PrevPassNode::create(*_scene, *this, _scene->get_node(id))) {
+			LOG_DEBUG << "Created node. de: " << node.value().is_de() << std::endl;
 			_nodes[id] = std::move(node.value());
 		} else {
 			LOG_ERROR << "Couldn't create preview node: " << node.error() << std::endl;
 		}
+
+		//TODO: need to update de references
+		_destroy_de_buffers();
+		_create_de_buffers();
+		_destroy_de_pipeline();
+		_create_de_pipeline();
+
 	}
 
 	void PrevPass::node_update(uint32_t id) {
@@ -721,6 +737,16 @@ namespace vulkan {
 					_depth_buf_image.image_view(),
 					VK_IMAGE_LAYOUT_GENERAL));
 
+		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
+					1,
+					VK_SHADER_STAGE_FRAGMENT_BIT,
+					_de_node_buffer))
+		{
+			descriptor_templates.push_back(buffer.value());
+		} else {
+			LOG_ERROR << "Problem creating de node buffer: " << buffer.error() << std::endl;
+		}
+
 		auto descriptor_sets = DescriptorSets::create(
 				descriptor_templates,
 				1,
@@ -737,8 +763,7 @@ namespace vulkan {
 			return vert_shader.error();
 		}
 
-		auto frag_source_code = util::readEnvFile("assets/de_shader.frag");
-		util::replace_substr(frag_source_code, "/*GLOBAL_UNIFORM_CONTENT*/\n", GlobalPrevPassUniform::declaration_content());
+		auto frag_source_code = _codegen_de();
 		auto frag_shader = Shader::from_source_code(frag_source_code, Shader::Type::Fragment);
 		if (!frag_shader) {
 			util::add_strnum(frag_source_code);
@@ -952,6 +977,37 @@ namespace vulkan {
 				Graphics::DEFAULT->device(), 
 				_de_pipeline, 
 				nullptr);
+	}
+
+	util::Result<void, KError> PrevPass::_create_de_buffers() {
+		LOG_DEBUG << "start of create de" << std::endl;
+		auto nodes = std::vector<PrevPassNode::VImpl>();
+		for (auto &node : _nodes) {
+			if (node && node.is_de()) {
+				LOG_DEBUG << "created de thing" << std::endl;
+				nodes.push_back(node.vimpl());
+			}
+		}
+
+		if (nodes.empty()) {
+			LOG_DEBUG << "empty node buffer" << std::endl;
+			nodes.push_back(PrevPassNode::VImpl::create_empty());
+		}
+
+		if (auto buffer = StaticBuffer::create(nodes)) {
+			_de_node_buffer = std::move(buffer.value());
+		} else {
+			if (buffer.error().type() != KError::Type::EMPTY_BUFFER) {
+				LOG_ERROR << buffer.error() << std::endl;
+			}
+			return buffer.error();
+		}
+
+		return {};
+	}
+
+	void PrevPass::_destroy_de_buffers() {
+		_de_node_buffer.destroy();
 	}
 
 	util::Result<void, KError> PrevPass::_create_images() {
@@ -1179,5 +1235,12 @@ namespace vulkan {
 				{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT}, 
 				VK_IMAGE_TILING_OPTIMAL, 
 				VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT);
+	}
+
+	std::string PrevPass::_codegen_de() {
+		auto source_code = util::readEnvFile("assets/de_shader.frag");
+		util::replace_substr(source_code, "/*GLOBAL_UNIFORM_CONTENT*/\n", GlobalPrevPassUniform::declaration_content());
+		util::replace_substr(source_code, "/*NODE_BUFFER_DECL*/\n", PrevPassNode::VImpl::declaration());
+		return source_code;
 	}
 }

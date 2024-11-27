@@ -104,7 +104,10 @@ namespace vulkan {
 			void _destroy_de_render_pass();
 
 			util::Result<void, KError> _create_de_pipeline();
-			void _destroy_de_pipeline();
+			void _destroy_de_pipeline(); 
+
+			util::Result<void, KError> _create_de_buffers();
+			void _destroy_de_buffers();
 
 			util::Result<void, KError> _create_images();
 			void _cleanup_images();
@@ -118,6 +121,8 @@ namespace vulkan {
 			util::Result<void, KError> _create_sync_objects();
 			void _create_command_buffers();
 			static VkFormat _depth_format();
+
+			static std::string _codegen_de();
 
 		private:
 			std::vector<PrevPassMesh> _meshes;
@@ -144,6 +149,7 @@ namespace vulkan {
 			VkRenderPass _de_render_pass;
 			VkFramebuffer _de_framebuffer;
 			DescriptorSets _de_descriptor_set;
+			StaticBuffer _de_node_buffer;
 
 			MappedOverlayUniform _mapped_overlay_uniform;
 			VkPipelineLayout _overlay_pipeline_layout;

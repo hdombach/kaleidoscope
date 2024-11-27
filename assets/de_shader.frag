@@ -1,5 +1,7 @@
 #version 450
 
+/*NODE_BUFFER_DECL*/
+
 layout(location = 1) in vec2 fragTexCoord;
 
 layout(location = 0) out vec4 outColor;
@@ -11,8 +13,9 @@ layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
 
 layout(set = 1, binding = 0) uniform sampler2D depthSampler;
 
-
-/*UNIFORM_DECL*/
+layout(set = 1, binding = 1) readonly buffer node_buffer {
+	Node nodes[];
+};
 
 /*DE_FUNC*/
 
@@ -68,6 +71,24 @@ bool de_intersect(vec3 pos, vec3 dir, inout float d, inout int iterations, inout
 	return false;
 }
 
+bool intersect_nodes(vec3 pos, vec3 dir, inout float d, inout int iterations, inout vec3 closest_pos) {
+	uint n = 1;
+	d = global_uniform.z_far;
+	float temp_d = 0;
+	vec3 temp_pos;
+	bool hit = false;
+	for (uint n = 1; n < nodes.length(); n++) {
+		return de_intersect(pos + nodes[n].position, dir, d, iterations, closest_pos);
+		if (de_intersect(pos + nodes[n].position, dir, temp_d, iterations, temp_pos)) {
+			hit = true;
+			if (temp_d < d) {
+				d = temp_d;
+				closest_pos = temp_pos;
+			}
+		}
+	}
+	return hit;
+}
 
 float PI = 3.14159265358979;
 
@@ -94,7 +115,7 @@ void main() {
 	int iterations;
 	float d = 0;
 	float cur_depth = texture(depthSampler, uv).x;
-	if (de_intersect(position.xyz, dir.xyz, d, iterations, hit_pos.xyz)) {
+	if (intersect_nodes(position.xyz, dir.xyz, d, iterations, hit_pos.xyz)) {
 
 		hit_pos.w = 1.0;
 		hit_pos = global_uniform.camera_transformation * hit_pos;

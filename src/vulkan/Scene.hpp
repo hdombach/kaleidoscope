@@ -97,6 +97,10 @@ namespace vulkan {
 			PrevPass::Ptr _preview_render_pass;
 			RayPass::Ptr _raytrace_render_pass;
 
+			/**
+			 * @brief List of abstract nodes
+			 * First element is reserved for unused id
+			 */
 			std::vector<Node::Ptr> _nodes;
 			types::Camera _camera;
 			bool _camera_dirty_bit = false;

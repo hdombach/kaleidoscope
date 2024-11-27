@@ -9,7 +9,7 @@ namespace types {
 		public:
 			using Ptr = std::unique_ptr<MandelbulbMesh>;
 
-			static Ptr create();
+			static Ptr create(std::string const &name, uint32_t id);
 
 			MandelbulbMesh(const MandelbulbMesh& other) = delete;
 			MandelbulbMesh(MandelbulbMesh &&other) = default;

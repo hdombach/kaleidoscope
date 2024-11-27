@@ -50,6 +50,13 @@ App::Ptr App::create(std::string const &name) {
 	}
 
 	{
+		auto res = result->_resource_manager->add_mesh_mandelbulb("mandelbulb");
+		if (!res) {
+			LOG_ERROR << res.error() << std::endl;
+		}
+	}
+
+	{
 		auto res = result->_resource_manager->add_texture_material(
 				"viking_room",
 				result->_resource_manager->get_texture("viking_room"));
@@ -101,6 +108,12 @@ App::Ptr App::create(std::string const &name) {
 				result->_resource_manager->get_material("color"));
 		result->_scene->get_node_mut(id.value())->set_position({0, 3.0, 0});
 		result->_scene->get_node_mut(id.value())->resources().add_resource(types::ShaderResource::create_color("color", glm::vec3(0.2, 0.3, 1.0)));
+	}
+
+	{
+		auto id = result->_scene->add_node(
+				result->_resource_manager->get_mesh("mandelbulb"), 
+				result->_resource_manager->get_material("color"));
 	}
 
 	result->_view_state = ui::State::create(*result->_scene);

@@ -5,6 +5,7 @@
 
 #include "PrevPass.hpp"
 #include "PrevPassMaterial.hpp"
+#include "PrevPassCodegen.hpp"
 #include "vulkan/Vertex.hpp"
 #include "util/file.hpp"
 #include "util/Util.hpp"
@@ -366,18 +367,13 @@ namespace vulkan {
 				"/*GLOBAL_UNIFORM_CONTENT*/", 
 				GlobalPrevPassUniform::declaration_content());
 
-		auto material_uniform_content = std::string();
+		auto material_uniform_content = prev_pass::cg_uniform_content(material->resources());
 		auto frag_main_args = std::string();
 		auto frag_main_call = std::string();
 
 		frag_main_call += "frag_main(";
 		bool first = true;
 		for (auto &resource : material->resources().get()) {
-			if (resource->is_primitive()) {
-				material_uniform_content += "\t" + resource->declaration() + ";\n";
-			} else if (resource->type() == types::ShaderResource::Type::Texture) {
-				material_uniform_content += "\tuint " + resource->name() + ";\n";
-			}
 
 			if (first) {
 				first = false;

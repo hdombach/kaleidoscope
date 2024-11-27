@@ -58,6 +58,8 @@ namespace types {
 			util::Result<uint32_t, KError> add_mesh_from_vertices(
 					std::string const &name,
 					std::vector<vulkan::Vertex> const &vertices);
+			util::Result<uint32_t, KError> add_mesh_mandelbulb(
+					std::string const &name);
 
 			Mesh *default_mesh();
 			Mesh const *default_mesh() const;

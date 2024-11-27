@@ -2,20 +2,21 @@
 #include <algorithm>
 #include <string>
 
-#include "../util/errors.hpp"
-#include "../util/result.hpp"
-#include "../util/file.hpp"
-#include "../util/Util.hpp"
-#include "../util/log.hpp"
+#include "util/errors.hpp"
+#include "util/result.hpp"
+#include "util/file.hpp"
+#include "util/Util.hpp"
+#include "util/log.hpp"
 
-#include "../vulkan/StaticTexture.hpp"
-#include "../vulkan/Texture.hpp"
-#include "../types/TextureMaterial.hpp"
-#include "../types/CombTextureMaterial.hpp"
-#include "../types/ColorMaterial.hpp"
+#include "vulkan/StaticTexture.hpp"
+#include "vulkan/Texture.hpp"
+#include "types/TextureMaterial.hpp"
+#include "types/CombTextureMaterial.hpp"
+#include "types/ColorMaterial.hpp"
 
-#include "../types/StaticMesh.hpp"
-#include "../types/Mesh.hpp"
+#include "types/MandelbulbMesh.hpp"
+#include "types/StaticMesh.hpp"
+#include "types/Mesh.hpp"
 
 #include "ResourceManager.hpp"
 
@@ -147,6 +148,12 @@ namespace types {
 					name,
 					_get_mesh_id(),
 					vertices));
+	}
+
+	util::Result<uint32_t, KError> ResourceManager::add_mesh_mandelbulb(
+			std::string const &name) 
+	{
+		return _add_mesh(MandelbulbMesh::create(name, _get_mesh_id()));
 	}
 
 	Mesh *ResourceManager::default_mesh() {

@@ -1,8 +1,10 @@
 #include "MandelbulbMesh.hpp"
 
 namespace types {
-	MandelbulbMesh::Ptr MandelbulbMesh::create() {
+	MandelbulbMesh::Ptr MandelbulbMesh::create(std::string const &name, uint32_t id) {
 		auto result = MandelbulbMesh::Ptr(new MandelbulbMesh());
+		result->set_name(name);
+		result->_id = id;
 		result->_de =
 			"float de(vec3 pos, inout float depth) {\n"
 			"	vec3 z = pos;\n"
