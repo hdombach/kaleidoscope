@@ -7,10 +7,11 @@
 #include <list>
 #include <memory>
 
-#include "../util/errors.hpp"
-#include "../util/result.hpp"
-#include "../util/Observer.hpp"
-#include "../util/filter_iterator.hpp"
+#include "util/errors.hpp"
+#include "util/result.hpp"
+#include "util/Observer.hpp"
+#include "util/filter_iterator.hpp"
+#include "util/IterAdapter.hpp"
 #include "../types/Mesh.hpp"
 #include "../vulkan/Texture.hpp"
 #include "../vulkan/Vertex.hpp"
@@ -25,13 +26,16 @@ namespace types {
 	class ResourceManager {
 		public:
 			using TextureContainer = std::vector<vulkan::Texture *>;
-			using texture_iterator = TextureContainer::iterator;
+			using texture_iterator = util::filter_iterator<TextureContainer::iterator>;
+			using const_texture_iterator = util::filter_iterator<TextureContainer::const_iterator>;
 
 			using MeshContainer = std::vector<std::unique_ptr<Mesh>>;
-			using mesh_iterator = MeshContainer::iterator;
+			using mesh_iterator = util::filter_iterator<MeshContainer::iterator>;
+			using const_mesh_iterator = util::filter_iterator<MeshContainer::const_iterator>;
 
 			using MaterialContainer = std::vector<std::unique_ptr<Material>>;
-			using material_iterator = MaterialContainer::iterator;
+			using material_iterator = util::filter_iterator<MaterialContainer::iterator>;
+			using const_material_iterator = util::filter_iterator<MaterialContainer::const_iterator>;
 		public:
 			ResourceManager();
 			~ResourceManager();
@@ -49,6 +53,20 @@ namespace types {
 			util::Result<void, KError> rename_texture(uint32_t id, std::string const &name);
 			texture_iterator texture_begin();
 			texture_iterator texture_end();
+			/**
+			 * @brief An iterator that only contains valid textures
+			 */
+			auto textures() { return util::Adapt(texture_begin(), texture_end()); }
+			const_texture_iterator texture_begin() const;
+			const_texture_iterator texture_end() const;
+			/**
+			 * @brief A const iterator that only contains valid textures
+			 */
+			auto textures() const { return util::Adapt(texture_begin(), texture_end()); }
+			/**
+			 * @brief Underlying container containing unallocated textures as well
+			 */
+			TextureContainer const &texture_container() const;
 
 			/*========================= Meshes =====================================*/
 			util::Result<uint32_t, KError> add_mesh_from_file(
@@ -71,6 +89,20 @@ namespace types {
 			util::Result<void, KError> rename_mesh(uint32_t id, std::string const &name);
 			mesh_iterator mesh_begin();
 			mesh_iterator mesh_end();
+			/**
+			 * @brief An iterator that only contains valid meshes
+			 */
+			auto meshes() { return util::Adapt(mesh_begin(), mesh_end()); }
+			const_mesh_iterator mesh_begin() const;
+			const_mesh_iterator mesh_end() const;
+			/**
+			 * @brief A const iterator that only contains valid meshes
+			 */
+			auto meshes() const { return util::Adapt(mesh_begin(), mesh_end()); }
+			/**
+			 * @brief Underlying container containg unallocated meshes as well
+			 */
+			MeshContainer const &mesh_container() const;
 
 			util::Result<void, KError> add_mesh_observer(util::Observer *observer);
 			util::Result<void, KError> rem_mesh_observer(util::Observer *observer);
@@ -95,6 +127,20 @@ namespace types {
 			util::Result<void, KError> rename_material(uint32_t id, std::string const &name);
 			material_iterator material_begin();
 			material_iterator material_end();
+			/**
+			 * @brief An iterator that only contains valid materials
+			 */
+			auto materials() { return util::Adapt(material_begin(), material_end()); }
+			const_material_iterator material_begin() const;
+			const_material_iterator material_end() const;
+			/**
+			 * @brief A const iterator that only contains valid materials
+			 */
+			auto materials() const { return util::Adapt(material_begin(), material_end()); }
+			/**
+			 * @brief Underlying container containing unallocated materials as well
+			 */
+			MaterialContainer const &material_container() const;
 
 			util::Result<void, KError> add_material_observer(util::Observer *observer);
 			util::Result<void, KError> rem_material_observer(util::Observer *observer);

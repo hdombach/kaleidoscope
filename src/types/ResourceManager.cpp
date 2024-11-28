@@ -74,8 +74,8 @@ namespace types {
 	}
 
 	vulkan::Texture *ResourceManager::get_texture(const std::string &name) {
-		for (auto t : _textures) {
-			if (t && t->name() == name) {
+		for (auto t : textures()) {
+			if (t->name() == name) {
 				return t;
 			}
 		}
@@ -83,8 +83,8 @@ namespace types {
 	}
 
 	vulkan::Texture const *ResourceManager::get_texture(const std::string &name) const {
-		for (auto t : _textures) {
-			if (t && t->name() == name) {
+		for (auto t : textures()) {
+			if (t->name() == name) {
 				return t;
 			}
 		}
@@ -114,10 +114,19 @@ namespace types {
 	}
 
 	ResourceManager::texture_iterator ResourceManager::texture_begin() {
-		return _textures.begin();
+		return texture_iterator(_textures.begin(), _textures.end(), util::ptr_exists<vulkan::Texture>);
 	}
 	ResourceManager::texture_iterator ResourceManager::texture_end() {
-		return _textures.end();
+		return texture_iterator(_textures.end(), _textures.end(), util::ptr_exists<vulkan::Texture>);
+	}
+	ResourceManager::const_texture_iterator ResourceManager::texture_begin() const {
+		return const_texture_iterator(_textures.begin(), _textures.end(), util::ptr_exists<vulkan::Texture>);
+	}
+	ResourceManager::const_texture_iterator ResourceManager::texture_end() const {
+		return const_texture_iterator(_textures.end(), _textures.end(), util::ptr_exists<vulkan::Texture>);
+	}
+	ResourceManager::TextureContainer const &ResourceManager::texture_container() const {
+		return _textures;
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_mesh_from_file(
@@ -168,8 +177,8 @@ namespace types {
 	}
 
 	Mesh const *ResourceManager::get_mesh(const std::string &name) const {
-		for (auto &m : _meshes) {
-			if (m && m->name() == name) {
+		for (auto &m : meshes()) {
+			if (m->name() == name) {
 				return m.get();
 			}
 		}
@@ -177,8 +186,8 @@ namespace types {
 	}
 
 	Mesh *ResourceManager::get_mesh(const std::string &name) {
-		for (auto &m : _meshes) {
-			if (m && m->name() == name) {
+		for (auto &m : meshes()) {
+			if (m->name() == name) {
 				return m.get();
 			}
 		}
@@ -201,8 +210,8 @@ namespace types {
 	}
 
 	bool ResourceManager::has_mesh(const std::string &name) const {
-		for (auto &m : _meshes) {
-			if (m && m->name() == name) {
+		for (auto &m : meshes()) {
+			if (m->name() == name) {
 				return true;
 			}
 		}
@@ -221,22 +230,30 @@ namespace types {
 	}
 
 	ResourceManager::mesh_iterator ResourceManager::mesh_begin() {
-		return _meshes.begin();
+		return mesh_iterator(_meshes.begin(), _meshes.end(), util::exists<Mesh>);
 	}
 
 	ResourceManager::mesh_iterator ResourceManager::mesh_end() {
-		return _meshes.end();
+		return mesh_iterator(_meshes.end(), _meshes.end(), util::exists<Mesh>);
 	}
+	ResourceManager::const_mesh_iterator ResourceManager::mesh_begin() const {
+		return const_mesh_iterator(_meshes.begin(), _meshes.end(), util::exists<Mesh>);
+	}
+	ResourceManager::const_mesh_iterator ResourceManager::mesh_end() const {
+		return const_mesh_iterator(_meshes.end(), _meshes.end(), util::exists<Mesh>);
+	}
+	ResourceManager::MeshContainer const &ResourceManager::mesh_container() const {
+		return _meshes;
+	}
+	
 
 	util::Result<void, KError> ResourceManager::add_mesh_observer(util::Observer *observer) {
 		if (util::contains(_mesh_observers, observer)) {
 			return KError::internal("Mesh observer already exists");
 		}
 		_mesh_observers.push_back(observer);
-		for (auto &mesh : _meshes) {
-			if (mesh) {
-				observer->obs_create(mesh->id());
-			}
+		for (auto &mesh : meshes()) {
+			observer->obs_create(mesh->id());
 		}
 		return {};
 	}
@@ -286,8 +303,8 @@ namespace types {
 	}
 
 	types::Material const *ResourceManager::get_material(std::string const &name) const {
-		for (auto &m : _materials) {
-			if (m && m->name() == name) {
+		for (auto &m : materials()) {
+			if (m->name() == name) {
 				return m.get();
 			}
 		}
@@ -295,8 +312,8 @@ namespace types {
 	}
 
 	types::Material *ResourceManager::get_material(std::string const &name) {
-		for (auto &m : _materials) {
-			if (m && m->name() == name) {
+		for (auto &m : materials()) {
+			if (m->name() == name) {
 				return m.get();
 			}
 		}
@@ -319,8 +336,8 @@ namespace types {
 
 
 	bool ResourceManager::has_material(std::string const &name) const {
-		for (auto &m : _materials) {
-			if (m && m->name() == name) return true; }
+		for (auto &m : materials()) {
+			if (m->name() == name) return true; }
 		return false;
 	}
 
@@ -333,11 +350,20 @@ namespace types {
 	}
 
 	ResourceManager::material_iterator ResourceManager::material_begin() {
-		return _materials.begin();
+		return material_iterator(_materials.begin(), _materials.end(), util::exists<Material>);
 	}
 
 	ResourceManager::material_iterator ResourceManager::material_end() {
-		return _materials.end();
+		return material_iterator(_materials.end(), _materials.end(), util::exists<Material>);
+	}
+	ResourceManager::const_material_iterator ResourceManager::material_begin() const {
+		return const_material_iterator(_materials.begin(), _materials.end(), util::exists<Material>);
+	}
+	ResourceManager::const_material_iterator ResourceManager::material_end() const {
+		return const_material_iterator(_materials.end(), _materials.end(), util::exists<Material>);
+	}
+	ResourceManager::MaterialContainer const &ResourceManager::material_container() const {
+		return _materials;
 	}
 
 	util::Result<void, KError> ResourceManager::add_material_observer(util::Observer *observer) {
@@ -345,10 +371,8 @@ namespace types {
 			return KError::internal("Material observer already exists");
 		}
 		_material_observers.push_back(observer);
-		for (auto &material : _materials) {
-			if (material) {
-				observer->obs_create(material->id());
-			}
+		for (auto &material : materials()) {
+			observer->obs_create(material->id());
 		}
 		return {};
 	}
