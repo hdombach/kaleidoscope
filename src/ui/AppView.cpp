@@ -169,7 +169,7 @@ namespace ui {
 			auto rotation = util::as_array(node->rotation());
 			auto scale = util::as_array(node->scale());
 			ImGui::PushID(node->id());
-			ImGui::Text("Node");
+			ImGui::Text("Node (id: %d)", node->id());
 			ui::InputText("Name", &node->name());
 			if (ImGui::BeginCombo("Mesh", node->mesh().name().data())) {
 				auto meshes = util::Adapt(scene.resource_manager().mesh_begin(), scene.resource_manager().mesh_end());
@@ -239,6 +239,7 @@ namespace ui {
 			State &state)
 	{
 		if (texture) {
+			ImGui::Text("Texture (id: %d)", texture->id());
 			if (ui::InputText("##SelectedName", &state.selected_name, ImGuiInputTextFlags_EnterReturnsTrue)) {
 				state.dup_name_error = !resources.rename_texture(texture->id(), state.selected_name);
 			}
@@ -384,6 +385,7 @@ namespace ui {
 			State &state)
 	{
 		if (mesh) {
+			ImGui::Text("Mesh (id: %d)", mesh->id());
 			if (ui::InputText(
 						"##SelectedName",
 						&state.selected_name,
@@ -432,6 +434,7 @@ namespace ui {
 			State &state)
 	{
 		if (material) {
+			ImGui::Text("Material (id: %d)", material->id());
 			if (ui::InputText("##SelectedName", &state.selected_name, ImGuiInputTextFlags_EnterReturnsTrue)) {
 				state.dup_name_error = !resources.rename_material(material->id(), state.selected_name);
 			}
