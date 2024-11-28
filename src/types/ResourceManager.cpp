@@ -22,6 +22,9 @@
 
 namespace types {
 	ResourceManager::ResourceManager() {
+		_textures.push_back(nullptr);
+		_meshes.push_back(nullptr);
+		_materials.push_back(nullptr);
 		//Can't use defaultTexture_ for holder because of const issues
 		auto res = add_texture_from_file("assets/default.png");
 		if (res) {
@@ -166,7 +169,7 @@ namespace types {
 
 	Mesh const *ResourceManager::get_mesh(const std::string &name) const {
 		for (auto &m : _meshes) {
-			if (m->name() == name) {
+			if (m && m->name() == name) {
 				return m.get();
 			}
 		}
@@ -175,7 +178,7 @@ namespace types {
 
 	Mesh *ResourceManager::get_mesh(const std::string &name) {
 		for (auto &m : _meshes) {
-			if (m->name() == name) {
+			if (m && m->name() == name) {
 				return m.get();
 			}
 		}
@@ -199,7 +202,7 @@ namespace types {
 
 	bool ResourceManager::has_mesh(const std::string &name) const {
 		for (auto &m : _meshes) {
-			if (m->name() == name) {
+			if (m && m->name() == name) {
 				return true;
 			}
 		}
@@ -231,7 +234,9 @@ namespace types {
 		}
 		_mesh_observers.push_back(observer);
 		for (auto &mesh : _meshes) {
-			observer->obs_create(mesh->id());
+			if (mesh) {
+				observer->obs_create(mesh->id());
+			}
 		}
 		return {};
 	}
@@ -282,7 +287,7 @@ namespace types {
 
 	types::Material const *ResourceManager::get_material(std::string const &name) const {
 		for (auto &m : _materials) {
-			if (m->name() == name) {
+			if (m && m->name() == name) {
 				return m.get();
 			}
 		}
@@ -291,7 +296,7 @@ namespace types {
 
 	types::Material *ResourceManager::get_material(std::string const &name) {
 		for (auto &m : _materials) {
-			if (m->name() == name) {
+			if (m && m->name() == name) {
 				return m.get();
 			}
 		}
@@ -315,8 +320,7 @@ namespace types {
 
 	bool ResourceManager::has_material(std::string const &name) const {
 		for (auto &m : _materials) {
-			if (m->name() == name) return true;
-		}
+			if (m && m->name() == name) return true; }
 		return false;
 	}
 
@@ -342,7 +346,9 @@ namespace types {
 		}
 		_material_observers.push_back(observer);
 		for (auto &material : _materials) {
-			observer->obs_create(material->id());
+			if (material) {
+				observer->obs_create(material->id());
+			}
 		}
 		return {};
 	}

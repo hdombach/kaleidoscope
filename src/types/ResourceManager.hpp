@@ -109,13 +109,30 @@ namespace types {
 			uint32_t _get_material_id();
 			uint32_t _get_texture_id();
 
-			std::vector<vulkan::Texture *> _textures;
-			uint32_t _default_texture;
+		private:
+			/**
+			 * Containers
+			 * id correspond to indexes in the container.
+			 * The first element is always reserved for an unused object
+			 * Elements can be nullptr if they are not created
+			 */
 
+			std::vector<vulkan::Texture *> _textures;
 			MeshContainer _meshes;
 			std::vector<std::unique_ptr<types::Material>> _materials;
+			
+			/**
+			 * default indexes
+			 * The index of default values
+			 */
+			uint32_t _default_texture;
 			uint32_t _default_mesh;
 			uint32_t _default_material;
+
+			/**
+			 * Observers
+			 * Objects to be notified when containers change
+			 */
 			std::list<util::Observer *> _mesh_observers;
 			std::list<util::Observer *> _material_observers;
 	};

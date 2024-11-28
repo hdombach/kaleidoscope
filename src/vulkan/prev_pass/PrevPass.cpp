@@ -986,6 +986,8 @@ namespace vulkan {
 			if (node && node.is_de()) {
 				LOG_DEBUG << "created de thing" << std::endl;
 				nodes.push_back(node.vimpl());
+			} else {
+				nodes.push_back(PrevPassNode::VImpl::create_empty());
 			}
 		}
 
