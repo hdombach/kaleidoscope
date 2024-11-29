@@ -416,6 +416,6 @@ namespace vulkan {
 
 		util::replace_substr(frag_source, "/*TEXTURE_UNIFORM*/", texture_uniform);
 
-		LOG_DEBUG << "frag codegen:\n" << frag_source << std::endl;
+		LOG_DEBUG << "frag codegen:\n" << util::add_strnum(frag_source) << std::endl;
 	}
 }

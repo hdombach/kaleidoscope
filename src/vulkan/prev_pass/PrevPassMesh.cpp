@@ -162,12 +162,16 @@ namespace vulkan {
 		return *this;
 	}
 
+	const types::Mesh *PrevPassMesh::base() const {
+		return _mesh;
+	}
+
 	bool PrevPassMesh::exists() const {
 		return _mesh;
 	}
 
 	bool PrevPassMesh::is_de() {
-		return _mesh->has_de();
+		return _mesh->is_de();
 	}
 
 	uint32_t PrevPassMesh::id() const {

@@ -31,28 +31,36 @@ namespace util {
 			return std::unique_ptr<Base>(static_cast<Base *>(ptr.release()));
 		}
 
-	inline void add_strnum(std::string &str) {
+	inline std::string add_strnum(std::string const &str) {
+		std::string result = str;
 		size_t i = 0;
 		size_t line = 2;
-		str.insert(0, "1\t");
+		result.insert(0, "1\t");
+		while (result[i]) {
+			if (result[i] == '\n') {
+				result.insert(i+1, f(line, "\t"));
+				line++;
+			}
+			i++;
+		}
+		return result;
+	}
+
+	inline void indent(std::string &str, std::string const &indent_str) {
+		size_t i = 0;
+		str.insert(0, indent_str);
 		while (str[i]) {
 			if (str[i] == '\n') {
-				str.insert(i+1, f(line, "\t"));
-				line++;
+				str.insert(i+1, indent_str);
 			}
 			i++;
 		}
 	}
 
-	inline void indent(std::string &str, std::string indent) {
-		size_t i = 0;
-		str.insert(0, indent);
-		while (str[i]) {
-			if (str[i] == '\n') {
-				str.insert(i+1, indent);
-			}
-			i++;
-		}
+	inline std::string indented(std::string const &str, std::string const &indent_str) {
+		std::string res = str;
+		indent(res, indent_str);
+		return res;
 	}
 
 	inline std::array<float, 3> as_array(glm::vec3 v) {

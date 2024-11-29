@@ -782,9 +782,7 @@ namespace vulkan {
 		util::replace_substr(source, "/*MATERIAL_SRCS*/\n", material_srcs);
 		util::replace_substr(source, "/*MATERIAL_CALLS*/\n", material_call);
 
-		std::string source_log = source;
-		util::add_strnum(source_log);
-		LOG_DEBUG << "codegen: \n" << source_log << std::endl;
+		LOG_DEBUG << "raytrace codegen: \n" << util::add_strnum(source) << std::endl;
 
 		return source;
 	}

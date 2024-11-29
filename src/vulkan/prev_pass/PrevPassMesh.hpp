@@ -20,6 +20,8 @@ namespace vulkan {
 			PrevPassMesh& operator=(const PrevPassMesh& other) = delete;
 			PrevPassMesh& operator=(PrevPassMesh&& other);
 
+			const types::Mesh *base() const;
+
 			bool exists() const;
 			operator bool() { return exists(); }
 

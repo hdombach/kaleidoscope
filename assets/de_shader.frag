@@ -17,7 +17,7 @@ layout(set = 1, binding = 1) readonly buffer node_buffer {
 	Node nodes[];
 };
 
-/*DE_FUNC*/
+/*DE_FUNCS*/
 
 float de(vec3 pos) {
 	vec3 z = pos;
@@ -50,14 +50,14 @@ float de(vec3 pos) {
 	return 0.5 * log(r) * r / dr;
 }
 
-bool de_intersect(vec3 pos, vec3 dir, inout float d, inout int iterations, inout vec3 closest_pos) {
+bool de_intersect(uint n, vec3 pos, vec3 dir, inout float d, inout int iterations, inout vec3 closest_pos) {
 	float step, smallest = 1000;
 	iterations = 0;
 	d = 0;
 	dir = normalize(dir);
 	pos += dir * max(length(pos) - 2, 0);
 	do {
-		step = de(pos);
+		/*DE_FUNC_CALLS*/
 		if (step < 0.0001 || iterations > 40) {
 			return true;
 		}
@@ -84,7 +84,7 @@ bool intersect_nodes(vec3 pos, vec3 dir, inout float d, inout int iterations, in
 		if (nodes[n].mesh_id == 0) continue;
 		vec4 trans_pos = nodes[n].transformation * vec4(pos, 1.0);
 		vec4 trans_dir = nodes[n].transformation * vec4(dir, 0.0);
-		if (de_intersect(trans_pos.xyz, trans_dir.xyz, temp_d, temp_iterations, temp_pos)) {
+		if (de_intersect(n, trans_pos.xyz, trans_dir.xyz, temp_d, temp_iterations, temp_pos)) {
 			hit = true;
 			if (temp_d < d) {
 				d = temp_d;

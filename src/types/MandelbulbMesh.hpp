@@ -26,7 +26,7 @@ namespace types {
 			void set_name(std::string const &name) override;
 			std::string const &name() const override;
 
-			bool has_de() const override { return true; }
+			bool is_de() const override { return true; }
 			std::string const &de() const override;
 
 		private:

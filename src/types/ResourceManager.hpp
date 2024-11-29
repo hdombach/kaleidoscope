@@ -39,7 +39,7 @@ namespace types {
 		public:
 			ResourceManager();
 			~ResourceManager();
-	
+
 			/*=========================== Textures =================================*/
 			util::Result<uint32_t, KError> add_texture_from_file(
 					std::string const &url);

@@ -52,7 +52,7 @@ namespace vulkan {
 	}
 
 	bool PrevPassNode::is_de() {
-		return _node->mesh().has_de();
+		return _node->mesh().is_de();
 	}
 
 	util::Result<void, KError> PrevPassNode::_create_descriptor_sets() {

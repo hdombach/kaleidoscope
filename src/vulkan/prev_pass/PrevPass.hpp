@@ -125,7 +125,7 @@ namespace vulkan {
 			void _create_command_buffers();
 			static VkFormat _depth_format();
 
-			static std::string _codegen_de();
+			std::string _codegen_de();
 
 		private:
 			std::vector<PrevPassMesh> _meshes;

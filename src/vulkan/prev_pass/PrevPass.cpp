@@ -10,13 +10,15 @@
 #include "PrevPass.hpp"
 #include "PrevPassMaterial.hpp"
 #include "PrevPassNode.hpp"
-#include "util/Util.hpp"
+#include "util/format.hpp"
 #include "vulkan/Scene.hpp"
 #include "vulkan/Uniforms.hpp"
 #include "vulkan/error.hpp"
 #include "vulkan/graphics.hpp"
+#include "util/Util.hpp"
 #include "util/log.hpp"
 #include "util/file.hpp"
+#include "types/Mesh.hpp"
 
 namespace vulkan {
 	/************************ Observers *********************************/
@@ -379,6 +381,8 @@ namespace vulkan {
 		_create_de_buffers();
 		_destroy_de_descriptor_set();
 		_create_de_descriptor_set();
+		_destroy_de_pipeline();
+		_create_de_pipeline();
 	}
 
 	void PrevPass::mesh_update(uint32_t id) { }
@@ -591,8 +595,7 @@ namespace vulkan {
 		util::replace_substr(source_code, "/*OVERLAY_UNIFORM_CONTENT*/\n", OverlayUniform::declaration_content());
 		auto compute_shader = Shader::from_source_code(source_code, Shader::Type::Compute);
 		if (!compute_shader) {
-			util::add_strnum(source_code);
-			LOG_DEBUG << "\n" << source_code << std::endl;
+			LOG_DEBUG << "\n" << util::add_strnum(source_code) << std::endl;
 			LOG_ERROR << compute_shader.error() << std::endl;
 			return compute_shader.error();
 		}
@@ -774,8 +777,7 @@ namespace vulkan {
 		auto vert_source_code = util::readEnvFile("assets/unit_square.vert");
 		auto vert_shader = Shader::from_source_code(vert_source_code, Shader::Type::Vertex);
 		if (!vert_shader) {
-			util::add_strnum(vert_source_code);
-			LOG_DEBUG << "\n" << vert_source_code << std::endl;
+			LOG_DEBUG << "\n" << util::add_strnum(vert_source_code) << std::endl;
 			LOG_ERROR << vert_shader.error() << std::endl;
 			return vert_shader.error();
 		}
@@ -783,8 +785,7 @@ namespace vulkan {
 		auto frag_source_code = _codegen_de();
 		auto frag_shader = Shader::from_source_code(frag_source_code, Shader::Type::Fragment);
 		if (!frag_shader) {
-			util::add_strnum(frag_source_code);
-			LOG_DEBUG << "\n" << frag_source_code << std::endl;
+			LOG_DEBUG << "\n" << util::add_strnum(frag_source_code) << std::endl;
 			LOG_ERROR << frag_shader.error() << std::endl;
 			return frag_shader.error();
 		}
@@ -1257,6 +1258,32 @@ namespace vulkan {
 		auto source_code = util::readEnvFile("assets/de_shader.frag");
 		util::replace_substr(source_code, "/*GLOBAL_UNIFORM_CONTENT*/\n", GlobalPrevPassUniform::declaration_content());
 		util::replace_substr(source_code, "/*NODE_BUFFER_DECL*/\n", PrevPassNode::VImpl::declaration());
+
+		auto de_funcs = std::string();
+
+		for (auto &m : _meshes) {
+			if (!m || !m.is_de()) continue;
+			de_funcs += util::f("float de_", m.base()->id(), "(vec3 pos) {\n");
+			de_funcs += util::indented(m.base()->de(), "\t");
+			de_funcs += "}\n";
+			de_funcs += "\n";
+		}
+
+		util::replace_substr(source_code, "/*DE_FUNCS*/\n", de_funcs);
+
+		auto de_func_calls = std::string();
+
+		for (auto &m : _meshes) {
+			if (!m || !m.is_de()) continue;
+			de_func_calls += util::f("if (nodes[n].mesh_id == ", m.base()->id(), ") {\n");
+			de_func_calls += util::f("\tstep = de_", m.base()->id(), "(pos);\n");
+			de_func_calls += util::f("}\n");
+		}
+
+		util::replace_substr(source_code, "/*DE_FUNC_CALLS*/\n", de_func_calls);
+
+		LOG_DEBUG << "Prev pass de code: " << util::add_strnum(source_code) << std::endl;
+
 		return source_code;
 	}
 }
