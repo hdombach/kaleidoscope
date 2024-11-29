@@ -86,6 +86,7 @@ namespace vulkan {
 		TRY(result->_create_prim_render_pass());
 		TRY(result->_create_de_render_pass());
 		TRY(result->_create_de_buffers());
+		TRY(result->_create_de_descriptor_set());
 		TRY(result->_create_de_pipeline());
 		TRY(result->_create_overlay_pipeline());
 		TRY(result->_create_framebuffers());
@@ -110,6 +111,7 @@ namespace vulkan {
 		_destroy_de_buffers();
 		_destroy_de_render_pass();
 		_destroy_de_pipeline();
+		_destroy_de_descriptor_set();
 		_destroy_overlay_pipeline();
 		_fence.destroy();
 		_semaphore.destroy();
@@ -331,9 +333,14 @@ namespace vulkan {
 			LOG_ERROR << res.error() << std::endl;
 		}
 
+		_destroy_de_descriptor_set();
 		_destroy_de_pipeline();
 		_destroy_de_render_pass();
 		res = _create_de_render_pass();
+		if (!res) {
+			LOG_ERROR << res.error() << std::endl;
+		}
+		res = _create_de_descriptor_set();
 		if (!res) {
 			LOG_ERROR << res.error() << std::endl;
 		}
@@ -360,7 +367,6 @@ namespace vulkan {
 	}
 
 	void PrevPass::mesh_create(uint32_t id) {
-		LOG_DEBUG << "Creating preview mesh" << std::endl;
 		while (id + 1 > _meshes.size()) {
 			_meshes.push_back(PrevPassMesh());
 		}
@@ -369,11 +375,10 @@ namespace vulkan {
 		} else {
 			LOG_ERROR << "Couldn't create preview mesh: " << mesh.error() << std::endl;
 		}
-		LOG_DEBUG << "HIIIIIIIIIIIIIIIIIIIII" << std::endl;
 		_destroy_de_buffers();
 		_create_de_buffers();
-		_destroy_de_pipeline();
-		_create_de_pipeline();
+		_destroy_de_descriptor_set();
+		_create_de_descriptor_set();
 	}
 
 	void PrevPass::mesh_update(uint32_t id) { }
@@ -404,7 +409,6 @@ namespace vulkan {
 			_nodes.push_back(PrevPassNode());
 		}
 		if (auto node = PrevPassNode::create(*_scene, *this, _scene->get_node(id))) {
-			LOG_DEBUG << "Created node. de: " << node.value().is_de() << std::endl;
 			_nodes[id] = std::move(node.value());
 		} else {
 			LOG_ERROR << "Couldn't create preview node: " << node.error() << std::endl;
@@ -413,13 +417,18 @@ namespace vulkan {
 		//TODO: need to update de references
 		_destroy_de_buffers();
 		_create_de_buffers();
-		_destroy_de_pipeline();
-		_create_de_pipeline();
+		_destroy_de_descriptor_set();
+		_create_de_descriptor_set();
 
 	}
 
 	void PrevPass::node_update(uint32_t id) {
 		_nodes[id].update();
+
+		_destroy_de_buffers();
+		_create_de_buffers();
+		_destroy_de_descriptor_set();
+		_create_de_descriptor_set();
 	}
 
 	void PrevPass::node_remove(uint32_t id) {
@@ -639,6 +648,34 @@ namespace vulkan {
 		_overlay_descriptor_set.destroy();
 	}
 
+	util::Result<void, KError> PrevPass::_create_de_descriptor_set() {
+		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
+		descriptor_templates.push_back(DescriptorSetTemplate::create_image(
+					0,
+					VK_SHADER_STAGE_FRAGMENT_BIT,
+					_depth_buf_image.image_view(),
+					VK_IMAGE_LAYOUT_GENERAL));
+
+		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
+					1,
+					VK_SHADER_STAGE_FRAGMENT_BIT,
+					_de_node_buffer))
+		{
+			descriptor_templates.push_back(buffer.value());
+		} else {
+			LOG_ERROR << "Problem creating de node buffer: " << buffer.error() << std::endl;
+		}
+
+		auto descriptor_sets = DescriptorSets::create(
+				descriptor_templates,
+				1,
+				_descriptor_pool);
+		TRY(descriptor_sets);
+		_de_descriptor_set = std::move(descriptor_sets.value());
+
+		return {};
+	}
+
 	util::Result<void, KError> PrevPass::_create_de_render_pass() {
 		auto color_attachment = VkAttachmentDescription{};
 		color_attachment.format = _RESULT_IMAGE_FORMAT;
@@ -721,6 +758,10 @@ namespace vulkan {
 		return {};
 	}
 
+	void PrevPass::_destroy_de_descriptor_set() {
+		_de_descriptor_set.destroy();
+	}
+
 	void PrevPass::_destroy_de_render_pass() {
 		if (_de_render_pass) {
 			vkDestroyRenderPass(Graphics::DEFAULT->device(), _de_render_pass, nullptr);
@@ -730,30 +771,6 @@ namespace vulkan {
 
 
 	util::Result<void, KError> PrevPass::_create_de_pipeline() {
-		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
-		descriptor_templates.push_back(DescriptorSetTemplate::create_image(
-					0,
-					VK_SHADER_STAGE_FRAGMENT_BIT,
-					_depth_buf_image.image_view(),
-					VK_IMAGE_LAYOUT_GENERAL));
-
-		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
-					1,
-					VK_SHADER_STAGE_FRAGMENT_BIT,
-					_de_node_buffer))
-		{
-			descriptor_templates.push_back(buffer.value());
-		} else {
-			LOG_ERROR << "Problem creating de node buffer: " << buffer.error() << std::endl;
-		}
-
-		auto descriptor_sets = DescriptorSets::create(
-				descriptor_templates,
-				1,
-				_descriptor_pool);
-		TRY(descriptor_sets);
-		_de_descriptor_set = std::move(descriptor_sets.value());
-
 		auto vert_source_code = util::readEnvFile("assets/unit_square.vert");
 		auto vert_shader = Shader::from_source_code(vert_source_code, Shader::Type::Vertex);
 		if (!vert_shader) {
@@ -980,11 +997,9 @@ namespace vulkan {
 	}
 
 	util::Result<void, KError> PrevPass::_create_de_buffers() {
-		LOG_DEBUG << "start of create de" << std::endl;
 		auto nodes = std::vector<PrevPassNode::VImpl>();
 		for (auto &node : _nodes) {
 			if (node && node.is_de()) {
-				LOG_DEBUG << "created de thing" << std::endl;
 				nodes.push_back(node.vimpl());
 			} else {
 				nodes.push_back(PrevPassNode::VImpl::create_empty());
@@ -992,7 +1007,6 @@ namespace vulkan {
 		}
 
 		if (nodes.empty()) {
-			LOG_DEBUG << "empty node buffer" << std::endl;
 			nodes.push_back(PrevPassNode::VImpl::create_empty());
 		}
 

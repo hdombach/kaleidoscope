@@ -100,6 +100,9 @@ namespace vulkan {
 			util::Result<void, KError> _create_overlay_pipeline();
 			void _destroy_overlay_pipeline();
 
+			util::Result<void, KError> _create_de_descriptor_set();
+			void _destroy_de_descriptor_set();
+
 			util::Result<void, KError> _create_de_render_pass();
 			void _destroy_de_render_pass();
 

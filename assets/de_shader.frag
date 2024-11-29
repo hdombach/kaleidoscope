@@ -76,14 +76,17 @@ bool intersect_nodes(vec3 pos, vec3 dir, inout float d, inout int iterations, in
 	d = global_uniform.z_far;
 	float temp_d = 0;
 	vec3 temp_pos;
+	int temp_iterations;
 	bool hit = false;
 	for (uint n = 1; n < nodes.length(); n++) {
-		return de_intersect(pos + nodes[n].position, dir, d, iterations, closest_pos);
-		if (de_intersect(pos + nodes[n].position, dir, temp_d, iterations, temp_pos)) {
+		if (nodes[n].mesh_id == 0) continue;
+		if (de_intersect(pos - nodes[n].position, dir, temp_d, temp_iterations, temp_pos)) {
 			hit = true;
 			if (temp_d < d) {
 				d = temp_d;
 				closest_pos = temp_pos;
+				closest_pos += nodes[n].position;
+				iterations = temp_iterations;
 			}
 		}
 	}
