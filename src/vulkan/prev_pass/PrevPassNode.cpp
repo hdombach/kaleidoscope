@@ -42,9 +42,12 @@ namespace vulkan {
 	}
 
 	PrevPassNode::VImpl PrevPassNode::vimpl() {
+		auto mat = _node->get_matrix();
 		return VImpl{
 			_node->mesh().id(),
 			_node->position(),
+			glm::inverse(mat),
+			mat,
 		};
 	}
 

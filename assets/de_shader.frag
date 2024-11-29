@@ -54,6 +54,8 @@ bool de_intersect(vec3 pos, vec3 dir, inout float d, inout int iterations, inout
 	float step, smallest = 1000;
 	iterations = 0;
 	d = 0;
+	dir = normalize(dir);
+	pos += dir * max(length(pos) - 2, 0);
 	do {
 		step = de(pos);
 		if (step < 0.0001 || iterations > 40) {
@@ -80,12 +82,14 @@ bool intersect_nodes(vec3 pos, vec3 dir, inout float d, inout int iterations, in
 	bool hit = false;
 	for (uint n = 1; n < nodes.length(); n++) {
 		if (nodes[n].mesh_id == 0) continue;
-		if (de_intersect(pos - nodes[n].position, dir, temp_d, temp_iterations, temp_pos)) {
+		vec4 trans_pos = nodes[n].transformation * vec4(pos, 1.0);
+		vec4 trans_dir = nodes[n].transformation * vec4(dir, 0.0);
+		if (de_intersect(trans_pos.xyz, trans_dir.xyz, temp_d, temp_iterations, temp_pos)) {
 			hit = true;
 			if (temp_d < d) {
 				d = temp_d;
-				closest_pos = temp_pos;
-				closest_pos += nodes[n].position;
+				trans_pos = nodes[n].inverse_transformation * vec4(temp_pos, 1.0);
+				closest_pos = trans_pos.xyz;
 				iterations = temp_iterations;
 			}
 		}

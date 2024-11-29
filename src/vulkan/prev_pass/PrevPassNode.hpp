@@ -17,6 +17,8 @@ namespace vulkan {
 			struct VImpl {
 				alignas(4) uint32_t mesh_id;
 				alignas(16) glm::vec3 position;
+				alignas(16) glm::mat4 transformation;
+				alignas(16) glm::mat4 inverse_transformation;
 
 				static VImpl create_empty();
 
@@ -25,6 +27,8 @@ namespace vulkan {
 						"struct Node {\n"
 						"\tuint mesh_id;\n"
 						"\tvec3 position;\n"
+						"\tmat4 transformation;\n"
+						"\tmat4 inverse_transformation;\n"
 						"};\n";
 				};
 			} __attribute__((packed));
