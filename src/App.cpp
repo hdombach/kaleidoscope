@@ -57,6 +57,13 @@ App::Ptr App::create(std::string const &name) {
 	}
 
 	{
+		auto res = result->_resource_manager->add_mesh_mandelbox("mandelbox");
+		if (!res) {
+			LOG_ERROR << res.error() << std::endl;
+		}
+	}
+
+	{
 		auto res = result->_resource_manager->add_texture_material(
 				"viking_room",
 				result->_resource_manager->get_texture("viking_room"));

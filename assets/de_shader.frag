@@ -58,7 +58,7 @@ bool de_intersect(uint n, vec3 pos, vec3 dir, inout float d, inout int iteration
 	pos += dir * max(length(pos) - 2, 0);
 	do {
 		/*DE_FUNC_CALLS*/
-		if (step < 0.0001 || iterations > 40) {
+		if (step < 0.0001 || iterations > 120) {
 			return true;
 		}
 		iterations++;

@@ -15,6 +15,7 @@
 #include "types/ColorMaterial.hpp"
 
 #include "types/MandelbulbMesh.hpp"
+#include "types/MandelboxMesh.hpp"
 #include "types/StaticMesh.hpp"
 #include "types/Mesh.hpp"
 
@@ -167,6 +168,12 @@ namespace types {
 	{
 		return _add_mesh(MandelbulbMesh::create(name, _get_mesh_id()));
 	}
+
+	util::Result<uint32_t, KError> ResourceManager::add_mesh_mandelbox(
+		std::string const &name)
+		{
+			return _add_mesh(MandelboxMesh::create(name, _get_mesh_id()));
+		}
 
 	Mesh *ResourceManager::default_mesh() {
 		return _meshes[_default_mesh].get();
