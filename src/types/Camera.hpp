@@ -18,6 +18,8 @@ namespace types {
 			float fovy;
 			float z_near;
 			float z_far;
+			int de_iterations;
+			float de_small_step;
 
 		public:
 			Camera();

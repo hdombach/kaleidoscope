@@ -23,6 +23,8 @@ namespace ui {
 		ImGui::DragInt2("Size", size.data());
 
 		ImGui::DragFloat("fovy", &camera.fovy);
+		ImGui::DragInt("DE Iterations", &camera.de_iterations);
+		ImGui::DragFloat("DE Small Step", &camera.de_small_step, 0.1, 0);
 
 		camera.set_position(pos);
 		camera.set_euler_rotation(rotation);

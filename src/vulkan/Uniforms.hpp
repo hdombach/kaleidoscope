@@ -16,6 +16,8 @@ namespace vulkan {
 		alignas(4) float fovy;
 		alignas(4) float z_near;
 		alignas(4) float z_far;
+		alignas(4) int32_t de_iterations;
+		alignas(4) float de_small_step;
 
 		static GlobalPrevPassUniform create(types::Camera const &camera) {
 			return {
@@ -25,7 +27,9 @@ namespace vulkan {
 				camera.get_aspect(),
 				camera.fovy,
 				camera.z_near,
-				camera.z_far
+				camera.z_far,
+				camera.de_iterations,
+				std::pow(10.0f, -camera.de_small_step),
 			};
 		}
 
@@ -37,7 +41,9 @@ namespace vulkan {
 				"\tfloat aspect;\n"
 				"\tfloat fovy;\n"
 				"\tfloat z_near;\n"
-				"\tfloat z_far;\n";
+				"\tfloat z_far;\n"
+				"\tint de_iterations;\n"
+				"\tfloat de_small_step;\n";
 		};
 	};
 

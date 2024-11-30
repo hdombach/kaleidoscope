@@ -19,37 +19,6 @@ layout(set = 1, binding = 1) readonly buffer node_buffer {
 
 /*DE_FUNCS*/
 
-float de(vec3 pos) {
-	vec3 z = pos;
-	float dr = 1;
-	float r = 0;
-	float power = 8.0;
-	float bailout = 2.0f;
-	uint iterations = 20;
-	float orbitLife;
-	for (uint i = 0; i < iterations; i++) {
-		r = length(z);
-		if (r > bailout) {
-			orbitLife = i;
-			break;
-		}
-		//convert to polar
-		float theta = acos(z.z / r);
-		float phi = atan(z.y / z.x);
-		dr = pow(r, power - 1) * power * dr + 1;
-		//scale and rotate the point
-		float zr = pow(r, power);
-		theta = theta * power;
-		phi = phi * power;
-		//convert back to cartesian
-		z = zr * vec3(sin(theta) * cos(phi), sin(phi) * sin(theta), cos(theta));
-		z += pos;
-		orbitLife = i;
-	}
-	orbitLife = orbitLife / iterations;
-	return 0.5 * log(r) * r / dr;
-}
-
 bool de_intersect(uint n, vec3 pos, vec3 dir, inout float d, inout int iterations, inout vec3 closest_pos) {
 	float step, smallest = 1000;
 	iterations = 0;
@@ -58,7 +27,7 @@ bool de_intersect(uint n, vec3 pos, vec3 dir, inout float d, inout int iteration
 	pos += dir * max(length(pos) - 2, 0);
 	do {
 		/*DE_FUNC_CALLS*/
-		if (step < 0.0001 || iterations > 120) {
+		if (step < global_uniform.de_small_step || iterations > global_uniform.de_iterations) {
 			return true;
 		}
 		iterations++;
@@ -129,7 +98,7 @@ void main() {
 		d = hit_pos.z / global_uniform.z_far;
 
 		if (cur_depth > d) {
-			color.xyz = vec3(float(iterations) / 40.0);
+			color.xyz = vec3(float(iterations) / global_uniform.de_iterations);
 			color.w = 1.0;
 		} else {
 			color.w = 0.0;

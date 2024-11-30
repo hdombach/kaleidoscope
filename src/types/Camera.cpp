@@ -18,6 +18,8 @@ namespace types {
 		fovy = 45;
 		z_near = 0.01f;
 		z_far = 10.0f;
+		de_iterations = 120;
+		de_small_step = 3;
 	}
 
 	bool Camera::operator==(const Camera &other) const {
@@ -28,7 +30,9 @@ namespace types {
 			height == other.height &&
 			fovy == other.fovy &&
 			z_near == other.z_near &&
-			z_far == other.z_far;
+			z_far == other.z_far &&
+			de_iterations == other.de_iterations &&
+			de_small_step == other.de_small_step;
 	}
 
 	bool Camera::operator!=(const Camera &other) const {
