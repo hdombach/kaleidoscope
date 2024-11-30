@@ -42,9 +42,7 @@ namespace types {
 	}
 
 	ResourceManager::~ResourceManager() {
-		for (auto texture : _textures) {
-			delete texture;
-		}
+		_textures.clear();
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_texture_from_file(
@@ -62,31 +60,31 @@ namespace types {
 			texture.value()->set_name(base_name + "_" + std::to_string(i));
 			i++;
 		}
-		_textures.push_back(texture.value());
+		_textures.push_back(std::move(texture.value()));
 		return {static_cast<uint32_t>(_textures.size() - 1)};
 	}
 
 	vulkan::Texture *ResourceManager::default_texture() {
-		return _textures[_default_texture];
+		return _textures[_default_texture].get();
 	}
 
 	vulkan::Texture const *ResourceManager::default_texture() const {
-		return _textures[_default_texture];
+		return _textures[_default_texture].get();
 	}
 
 	vulkan::Texture *ResourceManager::get_texture(const std::string &name) {
-		for (auto t : textures()) {
+		for (auto &t : textures()) {
 			if (t->name() == name) {
-				return t;
+				return t.get();
 			}
 		}
 		return nullptr;
 	}
 
 	vulkan::Texture const *ResourceManager::get_texture(const std::string &name) const {
-		for (auto t : textures()) {
+		for (auto &t : textures()) {
 			if (t->name() == name) {
-				return t;
+				return t.get();
 			}
 		}
 		return nullptr;
@@ -94,14 +92,14 @@ namespace types {
 
 	vulkan::Texture *ResourceManager::get_texture(uint32_t id) {
 		if (_textures.size() > id) {
-			return _textures[id];
+			return _textures[id].get();
 		}
 		return nullptr;
 	}
 
 	vulkan::Texture const *ResourceManager::get_texture(uint32_t id) const {
 		if (_textures.size() > id) {
-			return _textures[id];
+			return _textures[id].get();
 		}
 		return nullptr;
 	}
@@ -115,16 +113,16 @@ namespace types {
 	}
 
 	ResourceManager::texture_iterator ResourceManager::texture_begin() {
-		return texture_iterator(_textures.begin(), _textures.end(), util::ptr_exists<vulkan::Texture>);
+		return texture_iterator(_textures.begin(), _textures.end(), util::exists<vulkan::Texture>);
 	}
 	ResourceManager::texture_iterator ResourceManager::texture_end() {
-		return texture_iterator(_textures.end(), _textures.end(), util::ptr_exists<vulkan::Texture>);
+		return texture_iterator(_textures.end(), _textures.end(), util::exists<vulkan::Texture>);
 	}
 	ResourceManager::const_texture_iterator ResourceManager::texture_begin() const {
-		return const_texture_iterator(_textures.begin(), _textures.end(), util::ptr_exists<vulkan::Texture>);
+		return const_texture_iterator(_textures.begin(), _textures.end(), util::exists<vulkan::Texture>);
 	}
 	ResourceManager::const_texture_iterator ResourceManager::texture_end() const {
-		return const_texture_iterator(_textures.end(), _textures.end(), util::ptr_exists<vulkan::Texture>);
+		return const_texture_iterator(_textures.end(), _textures.end(), util::exists<vulkan::Texture>);
 	}
 	ResourceManager::TextureContainer const &ResourceManager::texture_container() const {
 		return _textures;

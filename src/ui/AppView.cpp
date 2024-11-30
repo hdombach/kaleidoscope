@@ -214,8 +214,7 @@ namespace ui {
 		float width = 250;
 
 		ImGui::BeginChild("Texture List", ImVec2(width, -ImGui::GetFrameHeightWithSpacing()), true);
-		for (auto texture : util::Adapt(resources.texture_begin(), resources.texture_end())) {
-			if (!texture) continue;
+		for (auto &texture : resources.textures()) {
 			if (ImGui::Selectable(texture->name().data(), state.selected_item == texture->id())) {
 				if (state.selected_item == texture->id()) {
 					state.selected_item = 0;
@@ -341,11 +340,10 @@ namespace ui {
 		}
 		auto &texture = resource.as_texture().value();
 		if (ImGui::BeginCombo(name.data(), texture.name().data())) {
-			for (auto t : util::Adapt(resource_manager.texture_begin(), resource_manager.texture_end())) {
-				if (!t) continue;
+			for (auto &t : resource_manager.textures()) {
 				if (ImGui::Selectable(t->name().data(), texture.id() == t->id())) {
 					if (texture.id() != t->id()) {
-						resources.set_texture(resource.name(), t);
+						resources.set_texture(resource.name(), t.get());
 					}
 				}
 			}

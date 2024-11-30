@@ -10,7 +10,9 @@
 namespace vulkan {
 	class StaticTexture: public Texture {
 		public:
-			static util::Result<StaticTexture *, KError> from_file(
+			using Ptr = std::unique_ptr<StaticTexture>;
+
+			static util::Result<Ptr, KError> from_file(
 					uint32_t id,
 					std::string const &url);
 			~StaticTexture();

@@ -190,3 +190,4 @@ namespace util {
 
 #define TRY(result) try { return {(result).error()}; } catch (...) {}
 
+#define TRY_LOG(result) try { auto error = result.error(); LOG_ERROR << error << std::endl; } catch (...) {}

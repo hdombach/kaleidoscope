@@ -319,38 +319,22 @@ namespace vulkan {
 		_cleanup_images();
 		_destroy_framebuffers();
 		_size = size;
-		auto res = _create_images();
-		if (!res) {
-			LOG_ERROR << res.error() << std::endl;
-		}
 
-		res = _create_framebuffers();
-		if (!res) {
-			LOG_ERROR << res.error() << std::endl;
-		}
+		TRY_LOG(_create_images());
 
-		_destroy_overlay_pipeline();
-		res = _create_overlay_pipeline();
-		if (!res) {
-			LOG_ERROR << res.error() << std::endl;
-		}
+		TRY_LOG(_create_framebuffers());
+
+		TRY_LOG(_create_overlay_pipeline());
 
 		_destroy_de_descriptor_set();
 		_destroy_de_pipeline();
 		_destroy_de_render_pass();
-		res = _create_de_render_pass();
-		if (!res) {
-			LOG_ERROR << res.error() << std::endl;
-		}
-		res = _create_de_descriptor_set();
-		if (!res) {
-			LOG_ERROR << res.error() << std::endl;
-		}
-		res = _create_de_pipeline();
-		if (!res) {
-			LOG_ERROR << res.error() << std::endl;
-		}
 
+		TRY_LOG(_create_de_render_pass());
+
+		TRY_LOG(_create_de_descriptor_set());
+
+		TRY_LOG(_create_de_pipeline());
 	}
 
 	VkExtent2D PrevPass::size() const {
@@ -446,6 +430,8 @@ namespace vulkan {
 	}
 
 	util::Result<void, KError> PrevPass::_create_prim_render_pass() {
+		_destroy_de_render_pass();
+
 		/* Create render pass */
 		auto color_attachment = VkAttachmentDescription{};
 		color_attachment.format = _RESULT_IMAGE_FORMAT;
@@ -566,6 +552,8 @@ namespace vulkan {
 	}
 
 	util::Result<void, KError> PrevPass::_create_overlay_pipeline() {
+		_destroy_overlay_pipeline();
+
 		auto buffer = MappedOverlayUniform::create();
 		TRY(buffer);
 		_mapped_overlay_uniform = std::move(buffer.value());
@@ -640,14 +628,20 @@ namespace vulkan {
 	}
 
 	void PrevPass::_destroy_overlay_pipeline() {
-		vkDestroyPipelineLayout(
-				Graphics::DEFAULT->device(),
-				_overlay_pipeline_layout, 
-				nullptr);
-		vkDestroyPipeline(
-				Graphics::DEFAULT->device(), 
-				_overlay_pipeline, 
-				nullptr);
+		if (_overlay_pipeline_layout) {
+			vkDestroyPipelineLayout(
+					Graphics::DEFAULT->device(),
+					_overlay_pipeline_layout, 
+					nullptr);
+			_overlay_pipeline_layout = nullptr;
+		}
+		if (_overlay_pipeline) {
+			vkDestroyPipeline(
+					Graphics::DEFAULT->device(), 
+					_overlay_pipeline, 
+					nullptr);
+			_overlay_pipeline = nullptr;
+		}
 		_overlay_descriptor_set.destroy();
 	}
 

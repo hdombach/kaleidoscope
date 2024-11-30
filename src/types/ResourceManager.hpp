@@ -25,7 +25,7 @@ namespace types {
 	 */
 	class ResourceManager {
 		public:
-			using TextureContainer = std::vector<vulkan::Texture *>;
+			using TextureContainer = std::vector<std::unique_ptr<vulkan::Texture>>;
 			using texture_iterator = util::filter_iterator<TextureContainer::iterator>;
 			using const_texture_iterator = util::filter_iterator<TextureContainer::const_iterator>;
 
@@ -165,7 +165,7 @@ namespace types {
 			 * Elements can be nullptr if they are not created
 			 */
 
-			std::vector<vulkan::Texture *> _textures;
+			std::vector<std::unique_ptr<vulkan::Texture>> _textures;
 			MeshContainer _meshes;
 			std::vector<std::unique_ptr<types::Material>> _materials;
 			
@@ -180,6 +180,7 @@ namespace types {
 			/**
 			 * Observers
 			 * Objects to be notified when containers change
+			 * Does not own observers
 			 */
 			std::list<util::Observer *> _mesh_observers;
 			std::list<util::Observer *> _material_observers;

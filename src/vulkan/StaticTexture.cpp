@@ -1,5 +1,6 @@
 #include <cmath>
 #include <filesystem>
+#include <memory>
 
 #include <vulkan/vulkan_core.h>
 #include <stb_image.h>
@@ -9,11 +10,11 @@
 #include "imgui_impl_vulkan.h"
 
 namespace vulkan {
-	util::Result<StaticTexture *, KError> StaticTexture::from_file(
+	util::Result<StaticTexture::Ptr, KError> StaticTexture::from_file(
 			uint32_t id,
 			const std::string &url)
 	{
-		auto result = new StaticTexture();
+		auto result = std::unique_ptr<StaticTexture>(new StaticTexture());
 		result->_id = id;
 
 		int tex_width, texHeight, texChannels;
@@ -95,7 +96,7 @@ namespace vulkan {
 
 		result->_name = std::filesystem::path(url).stem();
 
-		return result;
+		return std::move(result);
 	}
 
 	StaticTexture::~StaticTexture() {

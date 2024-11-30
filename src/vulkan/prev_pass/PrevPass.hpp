@@ -23,6 +23,9 @@ namespace vulkan {
 		public:
 			using Ptr = std::unique_ptr<PrevPass>;
 
+			/**
+			 * @brief Watch when meshes list is modified in resource manager
+			 */
 			class MeshObserver: public util::Observer {
 				public:
 					MeshObserver() = default;
@@ -34,6 +37,9 @@ namespace vulkan {
 					PrevPass *_render_pass;
 			};
 
+			/**
+			 * @brief Watch when material list is modified in resource manager
+			 */
 			class MaterialObserver: public util::Observer {
 				public:
 					MaterialObserver() = default;
@@ -45,6 +51,9 @@ namespace vulkan {
 					PrevPass *_render_pass;
 			};
 
+			/**
+			 * @brief Watch when node list is modified in resource manager
+			 */
 			class NodeObserver: public util::Observer {
 				public:
 					NodeObserver() = default;
@@ -68,15 +77,41 @@ namespace vulkan {
 			void resize(VkExtent2D size);
 
 			VkExtent2D size() const;
+			/**
+			 * @brief Handle for preview in imgui
+			 */
 			VkDescriptorSet imgui_descriptor_set();
+			/**
+			 * @brief Primary viepwort
+			 */
 			VkImageView image_view();
+			/**
+			 * @brief Render pass of primary rasterization stage
+			 * Needs to be used by PrevPassMaterial to use in pipelines
+			 * The DE stage is handeled in a seperate render pass internally
+			 */
 			VkRenderPass render_pass();
 			DescriptorPool &descriptor_pool() { return _descriptor_pool; };
+			/**
+			 * @brief Descriptor set layout used across rasterization and de render pass
+			 */
 			VkDescriptorSetLayout shared_descriptor_set_layout() { return _shared_descriptor_set.layout(); }
+			/**
+			 * @brief Descriptor set used across rasterization and de render pass
+			 */
 			VkDescriptorSet shared_descriptor_set() { return _shared_descriptor_set.descriptor_set(0); }
 
+			/**
+			 * @brief PrevPass handlers to changes in materials list
+			 */
 			MaterialObserver &material_observer() { return _material_observer; }
+			/**
+			 * @brief PrevPass handlers to changes in mesh list
+			 */
 			MeshObserver &mesh_observer() { return _mesh_observer; }
+			/**
+			 * @brief PrevPass handlers to changes in node list
+			 */
 			NodeObserver &node_observer() { return _node_observer; }
 
 		private:

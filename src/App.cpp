@@ -21,80 +21,25 @@ App::Ptr App::create(std::string const &name) {
 	result->_ui_render_pipeline = std::make_unique<vulkan::UIRenderPipeline>();
 	result->_resource_manager = std::make_unique<types::ResourceManager>();
 
-	{
-		auto res = result->_resource_manager->add_texture_from_file("assets/viking_room.png");
-		if (!res) {
-			LOG_ERROR << "Could not load example texture viking_room.png: " << res.value() << std::endl;
-		}
-	}
+	TRY_LOG(result->_resource_manager->add_texture_from_file("assets/viking_room.png"));
+	TRY_LOG(result->_resource_manager->add_texture_from_file("assets/grunge.png"));
 
-	{
-		auto res = result->_resource_manager->add_texture_from_file("assets/grunge.png");
-		if (!res) {
-			LOG_ERROR << "Could not load example texture \"grunge.png\": " << res.value() << std::endl;
-		}
-	}
+	TRY_LOG(result->_resource_manager->add_mesh_from_file("assets/viking_room.obj"));
+	TRY_LOG(result->_resource_manager->add_mesh_square("square"));
+	TRY_LOG(result->_resource_manager->add_mesh_mandelbulb("mandelbulb"));
+	TRY_LOG(result->_resource_manager->add_mesh_mandelbox("mandelbox"));
 
-	{
-		auto res = result->_resource_manager->add_mesh_from_file("assets/viking_room.obj");
-		if (!res) {
-			LOG_ERROR << res.error() << std::endl;
-		}
-	}
-
-	{
-		auto res = result->_resource_manager->add_mesh_square("square");
-		if (!res) {
-			LOG_ERROR << res.error() << std::endl;
-		}
-	}
-
-	{
-		auto res = result->_resource_manager->add_mesh_mandelbulb("mandelbulb");
-		if (!res) {
-			LOG_ERROR << res.error() << std::endl;
-		}
-	}
-
-	{
-		auto res = result->_resource_manager->add_mesh_mandelbox("mandelbox");
-		if (!res) {
-			LOG_ERROR << res.error() << std::endl;
-		}
-	}
-
-	{
-		auto res = result->_resource_manager->add_texture_material(
-				"viking_room",
-				result->_resource_manager->get_texture("viking_room"));
-		if (!res) {
-			LOG_ERROR << res.error() << std::endl;
-		}
-	}
-
-	{
-		auto res = result->_resource_manager->add_texture_material(
-				"grunge",
-				result->_resource_manager->get_texture("grunge"));
-		if (!res) {
-			LOG_ERROR << res.error() << std::endl;
-		}
-	}
-
-	if (auto res = result->_resource_manager->add_comb_texture_material(
+	TRY_LOG(result->_resource_manager->add_texture_material(
+			"viking_room",
+			result->_resource_manager->get_texture("viking_room")));
+	TRY_LOG(result->_resource_manager->add_texture_material(
+			"grunge",
+			result->_resource_manager->get_texture("grunge")));
+	TRY_LOG(result->_resource_manager->add_comb_texture_material(
 				"grunge_comb", 
 				result->_resource_manager->get_texture("viking_room"), 
-				result->_resource_manager->get_texture("grunge")))
-	{ } else {
-		LOG_ERROR << res.error() << std::endl;
-	}
-
-	{
-		auto res = result->_resource_manager->add_color_material("color", glm::vec3(0.5, 0.1, 0.2));
-		if (!res) {
-			LOG_ERROR << res.error() << std::endl;
-		}
-	}
+				result->_resource_manager->get_texture("grunge")));
+	TRY_LOG(result->_resource_manager->add_color_material("color", glm::vec3(0.5, 0.1, 0.2)));
 
 	if (auto scene = vulkan::Scene::create(*(result->_resource_manager))) {
 		result->_scene = std::move(scene.value());
@@ -102,19 +47,24 @@ App::Ptr App::create(std::string const &name) {
 		LOG_ERROR << scene.error() << std::endl;
 	}
 
-	{
-		auto id = result->_scene->add_node(
+	if (auto id = result->_scene->add_node(
 				result->_resource_manager->get_mesh("viking_room"),
-				result->_resource_manager->get_material("grunge_comb"));
+				result->_resource_manager->get_material("grunge_comb")))
+	{
 		result->_scene->get_node_mut(id.value())->set_position({0, 2.5, 0});
 		result->_scene->get_node_mut(id.value())->resources().add_resource(types::ShaderResource::create_primitive("comb_ratio", comb_ratio_value));
+	} else {
+		LOG_ERROR << id.error() << std::endl;
 	}
-	{
-		auto id = result->_scene->add_node(
+
+	if (auto id = result->_scene->add_node(
 				result->_resource_manager->get_mesh("square"),
-				result->_resource_manager->get_material("color"));
+				result->_resource_manager->get_material("color")))
+	{
 		result->_scene->get_node_mut(id.value())->set_position({0, 3.0, 0});
 		result->_scene->get_node_mut(id.value())->resources().add_resource(types::ShaderResource::create_color("color", glm::vec3(0.2, 0.3, 1.0)));
+	} else {
+		LOG_ERROR << id.error() << std::endl;
 	}
 
 	{
