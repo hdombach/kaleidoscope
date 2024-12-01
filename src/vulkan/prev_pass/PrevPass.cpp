@@ -326,10 +326,6 @@ namespace vulkan {
 
 		TRY_LOG(_create_overlay_pipeline());
 
-		_destroy_de_descriptor_set();
-		_destroy_de_pipeline();
-		_destroy_de_render_pass();
-
 		TRY_LOG(_create_de_render_pass());
 
 		TRY_LOG(_create_de_descriptor_set());
@@ -402,25 +398,22 @@ namespace vulkan {
 			LOG_ERROR << "Couldn't create preview node: " << node.error() << std::endl;
 		}
 
-		//TODO: need to update de references
-		_destroy_de_buffers();
 		_create_de_buffers();
-		_destroy_de_descriptor_set();
 		_create_de_descriptor_set();
-
 	}
 
 	void PrevPass::node_update(uint32_t id) {
 		_nodes[id].update();
 
-		_destroy_de_buffers();
 		_create_de_buffers();
-		_destroy_de_descriptor_set();
 		_create_de_descriptor_set();
 	}
 
 	void PrevPass::node_remove(uint32_t id) {
 		_nodes[id].destroy();
+
+		_create_de_buffers();
+		_create_de_descriptor_set();
 	}
 
 	PrevPass::PrevPass(Scene &scene, VkExtent2D size):
@@ -646,6 +639,7 @@ namespace vulkan {
 	}
 
 	util::Result<void, KError> PrevPass::_create_de_descriptor_set() {
+		_destroy_de_descriptor_set();
 		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
 		descriptor_templates.push_back(DescriptorSetTemplate::create_image(
 					0,
@@ -674,6 +668,7 @@ namespace vulkan {
 	}
 
 	util::Result<void, KError> PrevPass::_create_de_render_pass() {
+		_destroy_de_render_pass();
 		auto color_attachment = VkAttachmentDescription{};
 		color_attachment.format = _RESULT_IMAGE_FORMAT;
 		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -687,7 +682,7 @@ namespace vulkan {
 		auto node_attachment = VkAttachmentDescription{};
 		node_attachment.format = _NODE_IMAGE_FORMAT;
 		node_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		node_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		node_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 		node_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		node_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		node_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -768,6 +763,8 @@ namespace vulkan {
 
 
 	util::Result<void, KError> PrevPass::_create_de_pipeline() {
+		_destroy_de_pipeline();
+
 		auto vert_source_code = util::readEnvFile("assets/unit_square.vert");
 		auto vert_shader = Shader::from_source_code(vert_source_code, Shader::Type::Vertex);
 		if (!vert_shader) {
@@ -879,12 +876,7 @@ namespace vulkan {
 			VK_COLOR_COMPONENT_R_BIT |
 			VK_COLOR_COMPONENT_A_BIT;
 		node_blend_attachment.blendEnable = VK_FALSE;
-		node_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-		node_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
-		node_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-		node_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		node_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-		node_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
 
 		auto color_attachments = std::array<VkPipelineColorBlendAttachmentState, 2>{
 			color_blend_attachment,
@@ -981,14 +973,20 @@ namespace vulkan {
 	}
 
 	void PrevPass::_destroy_de_pipeline() {
-		vkDestroyPipelineLayout(
-				Graphics::DEFAULT->device(), 
-				_de_pipeline_layout, 
-				nullptr);
-		vkDestroyPipeline(
-				Graphics::DEFAULT->device(), 
-				_de_pipeline, 
-				nullptr);
+		if (_de_pipeline_layout) {
+			vkDestroyPipelineLayout(
+					Graphics::DEFAULT->device(), 
+					_de_pipeline_layout, 
+					nullptr);
+			_de_pipeline_layout = nullptr;
+		}
+		if (_de_pipeline) {
+			vkDestroyPipeline(
+					Graphics::DEFAULT->device(), 
+					_de_pipeline, 
+					nullptr);
+			_de_pipeline = nullptr;
+		}
 	}
 
 	util::Result<void, KError> PrevPass::_create_de_buffers() {

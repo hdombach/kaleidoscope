@@ -2,6 +2,8 @@
 
 /*NODE_BUFFER_DECL*/
 
+//sampler2DShadow
+
 layout(location = 1) in vec2 fragTexCoord;
 
 layout(location = 0) out vec4 outColor;
@@ -42,7 +44,7 @@ bool de_intersect(uint n, vec3 pos, vec3 dir, inout float d, inout int iteration
 	return false;
 }
 
-bool intersect_nodes(vec3 pos, vec3 dir, inout float d, inout int iterations, inout vec3 closest_pos) {
+bool intersect_nodes(vec3 pos, vec3 dir, inout float d, inout uint id, inout int iterations, inout vec3 closest_pos) {
 	uint n = 1;
 	d = global_uniform.z_far;
 	float temp_d = 0;
@@ -60,6 +62,7 @@ bool intersect_nodes(vec3 pos, vec3 dir, inout float d, inout int iterations, in
 				trans_pos = nodes[n].inverse_transformation * vec4(temp_pos, 1.0);
 				closest_pos = trans_pos.xyz;
 				iterations = temp_iterations;
+				id = n;
 			}
 		}
 	}
@@ -91,13 +94,14 @@ void main() {
 	int iterations;
 	float d = 0;
 	float cur_depth = texture(depthSampler, uv).x;
-	if (intersect_nodes(position.xyz, dir.xyz, d, iterations, hit_pos.xyz)) {
+	if (intersect_nodes(position.xyz, dir.xyz, d, node_id, iterations, hit_pos.xyz)) {
 
 		hit_pos.w = 1.0;
 		hit_pos = global_uniform.camera_transformation * hit_pos;
 		d = hit_pos.z / global_uniform.z_far;
 
 		if (cur_depth > d) {
+			outNode = node_id;
 			color.xyz = vec3(float(iterations) / global_uniform.de_iterations);
 			color.w = 1.0;
 		} else {

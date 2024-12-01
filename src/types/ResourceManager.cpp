@@ -39,6 +39,12 @@ namespace types {
 		} else {
 			LOG_FATAL_ERROR << "Couldn't create default material" << std::endl;
 		}
+
+		if (auto id = add_mesh_square("Default mesh")) {
+			_default_mesh = id;
+		} else {
+			LOG_FATAL_ERROR << "Couldn't create default mesh" << std::endl;
+		}
 	}
 
 	ResourceManager::~ResourceManager() {

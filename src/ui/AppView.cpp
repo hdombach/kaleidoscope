@@ -158,6 +158,8 @@ namespace ui {
 		if (ImGui::Button("New node", ImVec2(width, 0))) {
 			if (auto id = scene.add_node(scene.resource_manager().default_mesh(), scene.resource_manager().default_material())) {
 				state.selected_item = id.value();
+			} else {
+				LOG_ERROR << id.error() << std::endl;
 			}
 			LOG_DEBUG << "created new node: " << state.selected_item << std::endl;
 		}
