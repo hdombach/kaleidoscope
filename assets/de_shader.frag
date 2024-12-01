@@ -15,7 +15,9 @@ layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
 
 layout(set = 1, binding = 0) uniform sampler2D depthSampler;
 
-layout(set = 1, binding = 1) readonly buffer node_buffer {
+layout(set = 1, binding = 1) uniform usampler2D node_id_sampler;
+
+layout(set = 1, binding = 2) readonly buffer node_buffer {
 	Node nodes[];
 };
 
@@ -94,6 +96,7 @@ void main() {
 	int iterations;
 	float d = 0;
 	float cur_depth = texture(depthSampler, uv).x;
+	outNode = texture(node_id_sampler, uv).x;
 	if (intersect_nodes(position.xyz, dir.xyz, d, node_id, iterations, hit_pos.xyz)) {
 
 		hit_pos.w = 1.0;

@@ -563,7 +563,7 @@ namespace vulkan {
 		descriptor_templates.push_back(DescriptorSetTemplate::create_image_target(
 					2,
 					VK_SHADER_STAGE_COMPUTE_BIT,
-					_node_image.image_view()));
+					_de_node_image.image_view()));
 
 		auto descriptor_sets = DescriptorSets::create(
 				descriptor_templates,
@@ -647,8 +647,13 @@ namespace vulkan {
 					_depth_buf_image.image_view(),
 					VK_IMAGE_LAYOUT_GENERAL));
 
+		descriptor_templates.push_back(DescriptorSetTemplate::create_image(
+					1, VK_SHADER_STAGE_FRAGMENT_BIT,
+					_node_image.image_view(),
+					VK_IMAGE_LAYOUT_GENERAL));
+
 		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
-					1,
+					2,
 					VK_SHADER_STAGE_FRAGMENT_BIT,
 					_de_node_buffer))
 		{
@@ -1079,6 +1084,25 @@ namespace vulkan {
 					1);
 		}
 
+		/* Create de node images */
+		{
+			auto image = Image::create(
+					_size,
+					_NODE_IMAGE_FORMAT,
+					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+						| VK_IMAGE_USAGE_STORAGE_BIT
+						| VK_IMAGE_USAGE_SAMPLED_BIT);
+			TRY(image);
+			_de_node_image = std::move(image.value());
+
+			Graphics::DEFAULT->transition_image_layout(
+					_de_node_image.image(), 
+					_NODE_IMAGE_FORMAT, 
+					VK_IMAGE_LAYOUT_UNDEFINED, 
+					VK_IMAGE_LAYOUT_GENERAL, 
+					1);
+		}
+
 		/* depth buf */
 		{
 			auto image = Image::create(
@@ -1110,7 +1134,7 @@ namespace vulkan {
 	void PrevPass::_cleanup_images() {
 		_depth_image.destroy();
 		_color_image.destroy();
-		_node_image.destroy();
+		_de_node_image.destroy();
 		_depth_buf_image.destroy();
 
 		ImGui_ImplVulkan_RemoveTexture(_imgui_descriptor_set);
@@ -1176,7 +1200,7 @@ namespace vulkan {
 		{
 			auto attachments = std::array<VkImageView, 2>{
 				_color_image.image_view(),
-				_node_image.image_view(),
+				_de_node_image.image_view(),
 			};
 
 			auto framebuffer_info = VkFramebufferCreateInfo{};

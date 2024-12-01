@@ -174,7 +174,10 @@ namespace vulkan {
 			Image _depth_image;
 			Image _depth_buf_image;
 			Image _color_image;
+			/** @brief Texture written to by rasterizer and read from by de pass*/
 			Image _node_image;
+			/** @brief Texture written to by de pass (accumulates _node_image) */
+			Image _de_node_image;
 
 			DescriptorSets _shared_descriptor_set;
 
