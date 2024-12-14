@@ -25,4 +25,16 @@ namespace util {
 
 		return std::cout;
 	}
+
+	void log_assert(
+		bool test,
+		std::string &desc,
+		Importance importance,
+		std::string file,
+		int line)
+	{
+		if (!test) {
+			log(importance, file, line) << desc << std::endl;
+		}
+	}
 }
