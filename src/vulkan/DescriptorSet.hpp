@@ -12,6 +12,11 @@
 namespace vulkan {
 	class DescriptorSetTemplate {
 		public:
+			DescriptorSetTemplate() = default;
+			DescriptorSetTemplate(const DescriptorSetTemplate& other) = delete;
+			DescriptorSetTemplate(DescriptorSetTemplate &&other) = default;
+			DescriptorSetTemplate& operator=(const DescriptorSetTemplate& other) = delete;
+			DescriptorSetTemplate& operator=(DescriptorSetTemplate &&other) = default;
 
 			template<typename BufferObj>
 			static DescriptorSetTemplate create_uniform(
@@ -91,6 +96,9 @@ namespace vulkan {
 					StaticBuffer &static_buffer);
 
 			VkDescriptorSetLayoutBinding layout_binding() const { return _layout_binding; }
+			VkWriteDescriptorSet const &descriptor_write() const { return _descriptor_writes; }
+			std::vector<VkDescriptorBufferInfo> const &buffer_infos() const { return _buffer_infos; }
+			std::vector<VkDescriptorImageInfo> const &image_infos() const { return _image_infos; }
 			std::vector<VkBuffer> const &buffers() const { return _buffers; }
 			unsigned long buffer_range() const { return _buffer_range; }
 
@@ -105,7 +113,15 @@ namespace vulkan {
 					size_t buffer_size);
 
 		private:
+		
+			/** @brief Element in VkDescriptorSetLayoutCreateInfo */
 			VkDescriptorSetLayoutBinding _layout_binding;
+			/** @brief Descriptor writes accross multiple frames (not descriptor sets) */
+			VkWriteDescriptorSet _descriptor_writes;
+			/** @brief buffer list for descriptor writes */
+			std::vector<VkDescriptorBufferInfo> _buffer_infos;
+			/** @brief image list for descriptor writes */
+			std::vector<VkDescriptorImageInfo> _image_infos;
 
 			// used for buffer descirptor set
 			std::vector<VkBuffer> _buffers;

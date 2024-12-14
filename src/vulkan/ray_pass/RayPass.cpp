@@ -478,7 +478,7 @@ namespace vulkan {
 					VK_SHADER_STAGE_COMPUTE_BIT,
 					_vertex_buffer))
 		{
-			descriptor_templates.push_back(buffer.value());
+			descriptor_templates.push_back(std::move(buffer.value()));
 		} else {
 			LOG_ERROR << "Problem creating vertex buffer: " << buffer.error() << std::endl;
 		}
@@ -488,7 +488,7 @@ namespace vulkan {
 					VK_SHADER_STAGE_COMPUTE_BIT,
 					_bvnode_buffer))
 		{
-			descriptor_templates.push_back(buffer.value());
+			descriptor_templates.push_back(std::move(buffer.value()));
 		} else {
 			LOG_ERROR << "Problem creating bvnode buffer: " << buffer.error() << std::endl;
 		}
@@ -498,7 +498,7 @@ namespace vulkan {
 					VK_SHADER_STAGE_COMPUTE_BIT,
 					_node_buffer))
 		{
-			descriptor_templates.push_back(buffer.value());
+			descriptor_templates.push_back(std::move(buffer.value()));
 		} else {
 			LOG_ERROR << "Problem creating node buffer: " << buffer.error() << std::endl;
 		}
@@ -509,7 +509,7 @@ namespace vulkan {
 						VK_SHADER_STAGE_COMPUTE_BIT, 
 						textures))
 			{
-				descriptor_templates.push_back(images.value());
+				descriptor_templates.push_back(std::move(images.value()));
 			} else {
 				LOG_ERROR << "Problem attaching images: " << images.error() << std::endl;
 			}
@@ -520,7 +520,7 @@ namespace vulkan {
 					VK_SHADER_STAGE_COMPUTE_BIT,
 					_material_buffer))
 		{
-			descriptor_templates.push_back(buffer.value());
+			descriptor_templates.push_back(std::move(buffer.value()));
 		} else {
 			LOG_ERROR << "Problem creating material buffer: " << buffer.error() << std::endl;
 		}

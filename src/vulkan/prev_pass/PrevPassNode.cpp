@@ -71,7 +71,7 @@ namespace vulkan {
 		}
 		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, _uniform));
 		if (auto temp = DescriptorSetTemplate::create_images(1, VK_SHADER_STAGE_FRAGMENT_BIT, images)) {
-			descriptor_templates.push_back(temp.value());
+			descriptor_templates.push_back(std::move(temp.value()));
 		}
 
 		auto descriptor_sets = DescriptorSets::create(

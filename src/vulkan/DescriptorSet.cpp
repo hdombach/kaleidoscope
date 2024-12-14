@@ -1,4 +1,5 @@
 #include "DescriptorSet.hpp"
+#include "util/log.hpp"
 #include <vulkan/vulkan_core.h>
 
 namespace vulkan {
@@ -7,17 +8,7 @@ namespace vulkan {
 			VkShaderStageFlags stage_flags,
 			VkImageView image_view)
 	{
-		auto result = DescriptorSetTemplate{};
-		result._layout_binding.binding = binding;
-		result._layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		result._layout_binding.descriptorCount = 1;
-		result._layout_binding.stageFlags = stage_flags;
-		result._layout_binding.pImmutableSamplers = nullptr;
-
-		result._image_views = std::vector<VkImageView>{image_view};
-		result._image_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-		return result;
+		return create_image(binding, stage_flags, image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
 	DescriptorSetTemplate DescriptorSetTemplate::create_image(
@@ -26,12 +17,28 @@ namespace vulkan {
 			VkImageView image_view,
 			VkImageLayout image_layout)
 	{
-		auto result = DescriptorSetTemplate{};
+		auto result = DescriptorSetTemplate();
+
 		result._layout_binding.binding = binding;
 		result._layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		result._layout_binding.descriptorCount = 1;
 		result._layout_binding.stageFlags = stage_flags;
 		result._layout_binding.pImmutableSamplers = nullptr;
+
+		auto image_info = VkDescriptorImageInfo{};
+		image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		image_info.imageView = image_view;
+		image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
+		result._image_infos.push_back(image_info);
+
+		result._descriptor_writes = VkWriteDescriptorSet{};
+		result._descriptor_writes.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		//dstSet not handeled here
+		result._descriptor_writes.dstBinding = binding;
+		result._descriptor_writes.dstArrayElement = 0;
+		result._descriptor_writes.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		result._descriptor_writes.pImageInfo = result._image_infos.data();
+		result._descriptor_writes.descriptorCount = result._image_infos.size();
 
 		result._image_views = std::vector<VkImageView>{image_view};
 		result._image_layout = image_layout;
@@ -61,7 +68,24 @@ namespace vulkan {
 		}
 		result._image_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		return result;
+		for (auto &image_view : image_views) {
+			auto image_info = VkDescriptorImageInfo{};
+			image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			image_info.imageView = image_view;
+			image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
+			result._image_infos.push_back(image_info);
+		}
+
+		result._descriptor_writes = VkWriteDescriptorSet{};
+		result._descriptor_writes.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		//dstSet not handeled here
+		result._descriptor_writes.dstBinding = binding;
+		result._descriptor_writes.dstArrayElement = 0;
+		result._descriptor_writes.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		result._descriptor_writes.pImageInfo = result._image_infos.data();
+		result._descriptor_writes.descriptorCount = result._image_infos.size();
+
+		return std::move(result);
 	}
 
 	DescriptorSetTemplate DescriptorSetTemplate::create_image_target(
@@ -70,11 +94,28 @@ namespace vulkan {
 			VkImageView image_view)
 	{
 		auto result = DescriptorSetTemplate{};
+
 		result._layout_binding.binding = binding;
 		result._layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
 		result._layout_binding.descriptorCount = 1;
 		result._layout_binding.stageFlags = stage_flags;
 		result._layout_binding.pImmutableSamplers = nullptr;
+
+		auto image_info = VkDescriptorImageInfo{};
+		image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		image_info.imageView = image_view;
+		image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
+		result._image_infos.push_back(image_info);
+
+		auto descriptor_write = VkWriteDescriptorSet{};
+		descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		//dstSet not handeled here
+		descriptor_write.dstBinding = binding;
+		descriptor_write.dstArrayElement = 0;
+		descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		descriptor_write.pImageInfo = result._image_infos.data();
+		descriptor_write.descriptorCount = result._image_infos.size();
+		result._descriptor_writes = descriptor_write;
 
 		result._image_views = std::vector<VkImageView>{image_view};
 		result._image_layout = VK_IMAGE_LAYOUT_GENERAL;
@@ -98,6 +139,21 @@ namespace vulkan {
 		result._layout_binding.descriptorCount = 1;
 		result._layout_binding.stageFlags = stage_flags;
 		result._layout_binding.pImmutableSamplers = nullptr;
+
+		auto buffer_info = VkDescriptorBufferInfo{};
+		buffer_info.buffer = buffer;
+		buffer_info.offset = 0;
+		buffer_info.range = range;
+		result._buffer_infos.push_back(buffer_info);
+		
+		auto descriptor_write = VkWriteDescriptorSet{};
+		descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptor_write.dstBinding = binding;
+		descriptor_write.dstArrayElement = 0;
+		descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		descriptor_write.pBufferInfo = result._buffer_infos.data();
+		descriptor_write.descriptorCount = result._buffer_infos.size();
+		result._descriptor_writes = descriptor_write;
 
 		result._buffers = std::vector<VkBuffer>{buffer};
 		result._buffer_range = range;
@@ -131,6 +187,26 @@ namespace vulkan {
 		result._layout_binding.pImmutableSamplers = nullptr;
 		result._buffers = std::move(buffers);
 		result._buffer_range = buffer_size;
+
+		for (auto buffer : result._buffers) {
+			auto buffer_info = VkDescriptorBufferInfo{};
+
+			buffer_info.buffer = buffer;
+			buffer_info.offset = 0;
+			buffer_info.range = buffer_size;
+
+			result._buffer_infos.push_back(buffer_info);
+
+		}
+
+		auto descriptor_write = VkWriteDescriptorSet{};
+		descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptor_write.dstBinding = binding;
+		descriptor_write.dstArrayElement = 0;
+		descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptor_write.pBufferInfo = result._buffer_infos.data();
+		descriptor_write.descriptorCount = result._buffer_infos.size();
+		result._descriptor_writes = descriptor_write;
 
 		return result;
 
@@ -236,59 +312,10 @@ namespace vulkan {
 		for (size_t frame = 0; frame < frame_count; frame++) {
 			auto descriptor_writes = std::vector<VkWriteDescriptorSet>();
 
-			struct WriteBufferInfo {
-				VkDescriptorBufferInfo buffer_info;
-				std::vector<VkDescriptorImageInfo> image_infos;
-			};
-			/* literally just makes sure buffer's lifetime lasts outside for loop */
-			auto write_buffer_infos = std::vector<WriteBufferInfo>();
-			write_buffer_infos.resize(templates.size());
-
 			size_t write_i = 0;
-			for (auto templ : templates) {
-				auto descriptor_write = VkWriteDescriptorSet{};
-				descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			for (auto &templ : templates) {
+				auto descriptor_write = templ.descriptor_write();
 				descriptor_write.dstSet = result._descriptor_sets[frame];
-				descriptor_write.dstBinding = templ.layout_binding().binding;
-				descriptor_write.dstArrayElement = 0;
-				descriptor_write.descriptorType = templ.layout_binding().descriptorType;
-				descriptor_write.descriptorCount = 1;
-
-				if (descriptor_write.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-					auto buffer_info = &write_buffer_infos[write_i].buffer_info;
-					buffer_info->buffer = templ.buffers()[frame];
-					buffer_info->offset = 0;
-					buffer_info->range = templ.buffer_range();
-					descriptor_write.pBufferInfo = buffer_info;
-				} else if (descriptor_write.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-					auto &image_infos = write_buffer_infos[write_i].image_infos;
-					for (auto image_view : templ.image_views()) {
-						auto image_info = VkDescriptorImageInfo{};
-						image_info.imageLayout = templ.image_layout();
-						image_info.imageView = image_view;
-						image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
-						image_infos.push_back(image_info);
-					}
-					descriptor_write.pImageInfo = image_infos.data();
-					descriptor_write.descriptorCount = image_infos.size();
-				} else if (descriptor_write.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
-					auto &image_infos = write_buffer_infos[write_i].image_infos;
-					for (auto image_view : templ.image_views()) {
-						auto image_info = VkDescriptorImageInfo{};
-						image_info.imageLayout = templ.image_layout();
-						image_info.imageView = image_view;
-						image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
-						image_infos.push_back(image_info);
-					}
-					descriptor_write.pImageInfo = image_infos.data();
-					descriptor_write.descriptorCount = image_infos.size();
-				} else if (descriptor_write.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-					auto buffer_info = &write_buffer_infos[write_i].buffer_info;
-					buffer_info->buffer = templ.buffers()[frame];
-					buffer_info->offset = 0;
-					buffer_info->range = templ.buffer_range();
-					descriptor_write.pBufferInfo = buffer_info;
-				}
 				descriptor_writes.push_back(descriptor_write);
 				write_i++;
 			}

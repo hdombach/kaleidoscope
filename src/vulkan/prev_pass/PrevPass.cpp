@@ -657,7 +657,7 @@ namespace vulkan {
 					VK_SHADER_STAGE_FRAGMENT_BIT,
 					_de_node_buffer))
 		{
-			descriptor_templates.push_back(buffer.value());
+			descriptor_templates.push_back(std::move(buffer.value()));
 		} else {
 			LOG_ERROR << "Problem creating de node buffer: " << buffer.error() << std::endl;
 		}
