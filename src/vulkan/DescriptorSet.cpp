@@ -26,7 +26,7 @@ namespace vulkan {
 		result._layout_binding.pImmutableSamplers = nullptr;
 
 		auto image_info = VkDescriptorImageInfo{};
-		image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		image_info.imageLayout = image_layout;
 		image_info.imageView = image_view;
 		image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
 		result._image_infos.push_back(image_info);
@@ -102,7 +102,7 @@ namespace vulkan {
 		result._layout_binding.pImmutableSamplers = nullptr;
 
 		auto image_info = VkDescriptorImageInfo{};
-		image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 		image_info.imageView = image_view;
 		image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
 		result._image_infos.push_back(image_info);
