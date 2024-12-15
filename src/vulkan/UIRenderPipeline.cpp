@@ -8,7 +8,6 @@
 
 #include "UIRenderPipeline.hpp"
 #include "defs.hpp"
-#include "error.hpp"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
 #include "../util/log.hpp"
@@ -26,7 +25,7 @@ namespace vulkan {
 	}
 
 	UIRenderPipeline::~UIRenderPipeline() {
-		require(vkDeviceWaitIdle(Graphics::DEFAULT->device()));
+		util::require(vkDeviceWaitIdle(Graphics::DEFAULT->device()));
 		ImGui_ImplVulkan_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
@@ -117,7 +116,7 @@ namespace vulkan {
 		pool_info.poolSizeCount = pool_sizes.size();
 		pool_info.pPoolSizes = pool_sizes.data();
 
-		require(vkCreateDescriptorPool(Graphics::DEFAULT->device(), &pool_info, nullptr, &_descriptor_pool));
+		util::require(vkCreateDescriptorPool(Graphics::DEFAULT->device(), &pool_info, nullptr, &_descriptor_pool));
 	}
 
 	void UIRenderPipeline::_init_im_gui() {
@@ -231,22 +230,22 @@ namespace vulkan {
 			_swapchain_rebuild = true;
 			return nullptr;
 		}
-		require(err);
+		util::require(err);
 
 		auto frame = &_window_data.Frames[_window_data.FrameIndex];
 
-		require(vkWaitForFences(
+		util::require(vkWaitForFences(
 					Graphics::DEFAULT->device(),
 					1,
 					&frame->Fence,
 					VK_TRUE, UINT64_MAX));
-		require(vkResetFences(Graphics::DEFAULT->device(), 1, &frame->Fence));
+		util::require(vkResetFences(Graphics::DEFAULT->device(), 1, &frame->Fence));
 
-		require(vkResetCommandPool(Graphics::DEFAULT->device(), frame->CommandPool, 0));
+		util::require(vkResetCommandPool(Graphics::DEFAULT->device(), frame->CommandPool, 0));
 		auto buffer_begin_info = VkCommandBufferBeginInfo{};
 		buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		buffer_begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-		require(vkBeginCommandBuffer(frame->CommandBuffer, &buffer_begin_info));
+		util::require(vkBeginCommandBuffer(frame->CommandBuffer, &buffer_begin_info));
 
 		auto pass_begin_info = VkRenderPassBeginInfo{};
 		pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -289,8 +288,8 @@ namespace vulkan {
 		submit_info.signalSemaphoreCount = semaphores.size();
 		submit_info.pSignalSemaphores = semaphores.data();
 
-		require(vkEndCommandBuffer(frame->CommandBuffer));
-		require(vkQueueSubmit(
+		util::require(vkEndCommandBuffer(frame->CommandBuffer));
+		util::require(vkQueueSubmit(
 					Graphics::DEFAULT->graphics_queue(),
 					1,
 					&submit_info,
@@ -319,7 +318,7 @@ namespace vulkan {
 			_swapchain_rebuild = true;
 			return;
 		}
-		require(err);
+		util::require(err);
 		_window_data.SemaphoreIndex =
 			(_window_data.SemaphoreIndex + 1) % _window_data.ImageCount;
 	}

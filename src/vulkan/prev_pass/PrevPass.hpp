@@ -12,6 +12,8 @@
 #include "vulkan/DescriptorSet.hpp"
 #include "vulkan/Image.hpp"
 #include "vulkan/Uniforms.hpp"
+#include "vulkan/Fence.hpp"
+#include "vulkan/Semaphore.hpp"
 #include "util/result.hpp"
 #include "util/errors.hpp"
 #include "util/Observer.hpp"

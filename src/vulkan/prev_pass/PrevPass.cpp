@@ -13,7 +13,7 @@
 #include "util/format.hpp"
 #include "vulkan/Scene.hpp"
 #include "vulkan/Uniforms.hpp"
-#include "vulkan/error.hpp"
+#include "util/errors.hpp"
 #include "vulkan/graphics.hpp"
 #include "util/Util.hpp"
 #include "util/log.hpp"
@@ -143,7 +143,7 @@ namespace vulkan {
 		begin_info.flags = 0;
 		begin_info.pInheritanceInfo = nullptr;
 
-		require(vkBeginCommandBuffer(command_buffer, &begin_info));
+		util::require(vkBeginCommandBuffer(command_buffer, &begin_info));
 
 		auto viewport = VkViewport{};
 		viewport.x = 0.0f;
@@ -293,7 +293,7 @@ namespace vulkan {
 			vkCmdDispatch(_command_buffer, _size.width, _size.height, 1);
 		}
 
-		require(vkEndCommandBuffer(command_buffer));
+		util::require(vkEndCommandBuffer(command_buffer));
 
 		VkSemaphore finish_semaphore = _semaphore.get();
 
@@ -308,7 +308,7 @@ namespace vulkan {
 		submit_info.signalSemaphoreCount = 1;
 		submit_info.pSignalSemaphores = &finish_semaphore;
 
-		require(vkQueueSubmit(Graphics::DEFAULT->graphics_queue(), 1, &submit_info, _fence.get()));
+		util::require(vkQueueSubmit(Graphics::DEFAULT->graphics_queue(), 1, &submit_info, _fence.get()));
 
 		return finish_semaphore;
 	}
@@ -647,10 +647,10 @@ namespace vulkan {
 					_depth_buf_image.image_view(),
 					VK_IMAGE_LAYOUT_GENERAL));
 
-		descriptor_templates.push_back(DescriptorSetTemplate::create_image(
+		descriptor_templates.push_back(std::move(DescriptorSetTemplate::create_image(
 					1, VK_SHADER_STAGE_FRAGMENT_BIT,
 					_node_image.image_view(),
-					VK_IMAGE_LAYOUT_GENERAL));
+					VK_IMAGE_LAYOUT_GENERAL).set_sampler(Graphics::DEFAULT->near_texture_sampler())));
 
 		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
 					2,
@@ -1123,7 +1123,7 @@ namespace vulkan {
 		}
 
 		_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
-				Graphics::DEFAULT->main_texture_sampler(),
+				*Graphics::DEFAULT->main_texture_sampler(),
 				_color_image.image_view(),
 				VK_IMAGE_LAYOUT_GENERAL);
 
@@ -1259,7 +1259,7 @@ namespace vulkan {
 		alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		alloc_info.commandBufferCount = 1;
 
-		require(vkAllocateCommandBuffers(Graphics::DEFAULT->device(), &alloc_info, &_command_buffer));
+		util::require(vkAllocateCommandBuffers(Graphics::DEFAULT->device(), &alloc_info, &_command_buffer));
 	}
 
 

@@ -1,5 +1,4 @@
 #include "DescriptorPool.hpp"
-#include "error.hpp"
 #include "graphics.hpp"
 #include "vulkan/vulkan_core.h"
 #include <array>
@@ -25,7 +24,7 @@ namespace vulkan {
 		poolInfo.maxSets = 100;
 		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
-		require(vkCreateDescriptorPool(
+		util::require(vkCreateDescriptorPool(
 					Graphics::DEFAULT->device(),
 					&poolInfo,
 					nullptr,

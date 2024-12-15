@@ -95,6 +95,8 @@ namespace vulkan {
 					VkShaderStageFlags stage_flags,
 					StaticBuffer &static_buffer);
 
+			DescriptorSetTemplate &set_sampler(Sampler const &sampler);
+
 			VkDescriptorSetLayoutBinding layout_binding() const { return _layout_binding; }
 			VkWriteDescriptorSet const &descriptor_write() const { return _descriptor_writes; }
 			std::vector<VkDescriptorBufferInfo> const &buffer_infos() const { return _buffer_infos; }

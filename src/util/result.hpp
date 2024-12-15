@@ -7,6 +7,7 @@
 #include <type_traits>
 #include <variant>
 #include <type_traits>
+#include <vulkan/vulkan_core.h>
 
 namespace util {
 	/*
@@ -186,6 +187,12 @@ namespace util {
 				throw std::runtime_error(std::to_string(result.error()));
 			}
 		}
+
+	inline void require(VkResult result) {
+		if (result != VK_SUCCESS) {
+			throw std::runtime_error(std::to_string(result));
+		}
+	}
 }
 
 #define TRY(result) try { return {(result).error()}; } catch (...) {}

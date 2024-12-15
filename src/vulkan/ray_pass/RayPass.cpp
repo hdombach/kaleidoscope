@@ -14,7 +14,6 @@
 #include "types/Node.hpp"
 #include "util/file.hpp"
 #include "util/Util.hpp"
-#include "util/IterAdapter.hpp"
 
 namespace vulkan {
 	RayPass::MeshObserver::MeshObserver(RayPass &ray_pass):
@@ -603,7 +602,7 @@ namespace vulkan {
 					1);
 
 			_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
-					Graphics::DEFAULT->main_texture_sampler(), 
+					*Graphics::DEFAULT->main_texture_sampler(), 
 					_result_image.image_view(), 
 					VK_IMAGE_LAYOUT_GENERAL);
 		}

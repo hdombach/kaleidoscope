@@ -2,7 +2,6 @@
 #include <shaderc/shaderc.hpp>
 
 #include "Shader.hpp"
-#include "error.hpp"
 #include "../util/file.hpp"
 #include "graphics.hpp"
 
@@ -85,7 +84,7 @@ namespace vulkan {
 		createInfo.codeSize = code_s;
 		createInfo.pCode = code;
 
-		require(vkCreateShaderModule(
+		util::require(vkCreateShaderModule(
 					Graphics::DEFAULT->device(),
 					&createInfo,
 					nullptr,

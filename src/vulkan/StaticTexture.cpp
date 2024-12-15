@@ -90,7 +90,7 @@ namespace vulkan {
 				result->_mip_levels);
 
 		result->_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
-				Graphics::DEFAULT->main_texture_sampler(),
+				*Graphics::DEFAULT->main_texture_sampler(),
 				result->_image.image_view(),
 				VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 

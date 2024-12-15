@@ -9,8 +9,6 @@
 
 #include "graphics.hpp"
 #include "defs.hpp"
-#include "error.hpp"
-#include "../util/file.hpp"
 #include "../util/log.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -63,8 +61,11 @@ namespace vulkan {
 	VkInstance const &Graphics::instance() const {
 		return _instance;
 	}
-	VkSampler Graphics::main_texture_sampler() const {
-		return _texture_sampler;
+	Sampler const &Graphics::main_texture_sampler() const {
+		return _main_sampler;
+	}
+	Sampler const &Graphics::near_texture_sampler() const {
+		return _near_sampler;
 	}
 	GLFWwindow* Graphics::window() const {
 		return _window;
@@ -180,7 +181,6 @@ namespace vulkan {
 		_descriptor_pool(nullptr),
 		_command_pool(nullptr),
 		_mip_levels(0),
-		_texture_sampler(nullptr),
 		_swapchain_support_details()
 	{}
 
@@ -202,7 +202,8 @@ namespace vulkan {
 		_pick_physical_device();
 		_create_logical_device();
 		_create_command_pool();
-		_create_texture_sampler();
+		_main_sampler = std::move(Sampler::create_linear().value());
+		_near_sampler = std::move(Sampler::create_nearest().value());
 		_create_descriptor_pool();
 	}
 
@@ -278,10 +279,8 @@ namespace vulkan {
 	}
 
 	void Graphics::_destroy() {
-		if (_texture_sampler) {
-			vkDestroySampler(_device, _texture_sampler, nullptr);
-			_texture_sampler = nullptr;
-		}
+		_main_sampler.destroy();
+		_near_sampler.destroy();
 
 		if (_descriptor_pool) {
 			vkDestroyDescriptorPool(_device, _descriptor_pool, nullptr);
@@ -478,31 +477,6 @@ namespace vulkan {
 		if (vkCreateDescriptorPool(_device, &poolInfo, nullptr, &_descriptor_pool) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create descriptor pool!");
 		}
-	}
-
-	void Graphics::_create_texture_sampler() {
-		auto samplerInfo = VkSamplerCreateInfo{};
-		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		samplerInfo.magFilter = VK_FILTER_LINEAR;
-		samplerInfo.minFilter = VK_FILTER_LINEAR;
-		samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		samplerInfo.anisotropyEnable = VK_TRUE;
-
-		auto properties = VkPhysicalDeviceProperties{};
-		vkGetPhysicalDeviceProperties(_physical_device, &properties);
-		samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-		samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-		samplerInfo.unnormalizedCoordinates = VK_FALSE;
-		samplerInfo.compareEnable = VK_FALSE;
-		samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		samplerInfo.minLod = 0;
-		samplerInfo.maxLod = static_cast<float>(_mip_levels);
-		samplerInfo.mipLodBias = 0.0f;
-
-		require(vkCreateSampler(_device, &samplerInfo, nullptr, &_texture_sampler));
 	}
 
 	QueueFamilyIndices Graphics::_find_queue_families(VkPhysicalDevice device) const {

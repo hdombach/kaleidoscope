@@ -8,11 +8,8 @@
 #include <vulkan/vulkan_core.h>
 #include <GLFW/glfw3.h>
 
-#include "Semaphore.hpp"
-#include "Fence.hpp"
-#include "ImageView.hpp"
-#include "Image.hpp"
 #include "../util/errors.hpp"
+#include "vulkan/Sampler.hpp"
 
 namespace vulkan {
 	class Semaphore;
@@ -43,7 +40,8 @@ namespace vulkan {
 			VkPhysicalDevice const &physical_device() const;
 			VkDevice const &device() const;
 			VkInstance const &instance() const;
-			VkSampler main_texture_sampler() const;
+			Sampler const &main_texture_sampler() const;
+			Sampler const &near_texture_sampler() const;
 			GLFWwindow* window() const;
 			VkCommandPool command_pool() const;
 			VkQueue graphics_queue() const;
@@ -108,7 +106,6 @@ namespace vulkan {
 			void _create_command_pool();
 			void _create_descriptor_pool();
 			void _create_surface();
-			void _create_texture_sampler();
 
 			bool _check_validation_layer_support();
 			void _destroy();
@@ -195,7 +192,8 @@ namespace vulkan {
 			VkDescriptorPool _descriptor_pool;
 			VkCommandPool _command_pool;
 			uint32_t _mip_levels;
-			VkSampler _texture_sampler;
+			Sampler _main_sampler;
+			Sampler _near_sampler;
 			SwapchainSupportDetails _swapchain_support_details;
 
 			//imgui stuff

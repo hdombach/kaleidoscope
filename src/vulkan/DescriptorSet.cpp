@@ -28,7 +28,7 @@ namespace vulkan {
 		auto image_info = VkDescriptorImageInfo{};
 		image_info.imageLayout = image_layout;
 		image_info.imageView = image_view;
-		image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
+		image_info.sampler = *Graphics::DEFAULT->main_texture_sampler();
 		result._image_infos.push_back(image_info);
 
 		result._descriptor_writes = VkWriteDescriptorSet{};
@@ -72,7 +72,7 @@ namespace vulkan {
 			auto image_info = VkDescriptorImageInfo{};
 			image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			image_info.imageView = image_view;
-			image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
+			image_info.sampler = *Graphics::DEFAULT->main_texture_sampler();
 			result._image_infos.push_back(image_info);
 		}
 
@@ -104,7 +104,7 @@ namespace vulkan {
 		auto image_info = VkDescriptorImageInfo{};
 		image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 		image_info.imageView = image_view;
-		image_info.sampler = Graphics::DEFAULT->main_texture_sampler();
+		image_info.sampler = *Graphics::DEFAULT->main_texture_sampler();
 		result._image_infos.push_back(image_info);
 
 		auto descriptor_write = VkWriteDescriptorSet{};
@@ -171,6 +171,14 @@ namespace vulkan {
 				stage_flags,
 				static_buffer.buffer(),
 				static_buffer.range());
+	}
+
+	DescriptorSetTemplate &DescriptorSetTemplate::set_sampler(Sampler const &sampler) {
+		for (auto &image_info : _image_infos) {
+			image_info.sampler = *sampler;
+		}
+
+		return *this;
 	}
 
 	DescriptorSetTemplate DescriptorSetTemplate::_create_uniform_impl(
