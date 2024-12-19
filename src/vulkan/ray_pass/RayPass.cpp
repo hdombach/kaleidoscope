@@ -7,6 +7,7 @@
 #include "RayPassMaterial.hpp"
 #include "RayPassMesh.hpp"
 #include "RayPassNode.hpp"
+#include "util/result.hpp"
 #include "vulkan/Shader.hpp"
 #include "vulkan/graphics.hpp"
 #include "vulkan/Scene.hpp"
@@ -374,7 +375,7 @@ namespace vulkan {
 	size_t RayPass::max_material_range() const {
 		size_t res = 0;
 
-		for (auto &material : _materials) {
+		for (auto &material : _get_materials()) {
 			if (auto m = material.get()) {
 				size_t r = m->resources().range();
 				if (r > res) {
@@ -406,6 +407,47 @@ namespace vulkan {
 		_clear_accumulator = true;
 	}
 	
+	RayPass::mesh_iterator RayPass::_mesh_begin() {
+		return mesh_iterator(_meshes.begin(), _meshes.end(), util::has_value<RayPassMesh>);
+	}
+	RayPass::mesh_iterator RayPass::_mesh_end() {
+		return mesh_iterator(_meshes.end(), _meshes.end(), util::has_value<RayPassMesh>);
+	}
+
+	RayPass::const_mesh_iterator RayPass::_mesh_begin() const {
+		return const_mesh_iterator(_meshes.begin(), _meshes.end(), util::has_value<RayPassMesh>);
+	}
+	RayPass::const_mesh_iterator RayPass::_mesh_end() const {
+		return const_mesh_iterator(_meshes.end(), _meshes.end(), util::has_value<RayPassMesh>);
+	}
+
+	RayPass::node_iterator RayPass::_node_begin() {
+		return node_iterator(_nodes.begin(), _nodes.end(), util::has_value<RayPassNode>);
+	}
+	RayPass::node_iterator RayPass::_node_end() {
+		return node_iterator(_nodes.end(), _nodes.end(), util::has_value<RayPassNode>);
+	}
+
+	RayPass::const_node_iterator RayPass::_node_begin() const {
+		return const_node_iterator(_nodes.begin(), _nodes.end(), util::has_value<RayPassNode>);
+	}
+	RayPass::const_node_iterator RayPass::_node_end() const {
+		return const_node_iterator(_nodes.end(), _nodes.end(), util::has_value<RayPassNode>);
+	}
+
+	RayPass::material_iterator RayPass::_material_begin() {
+		return material_iterator(_materials.begin(), _materials.end(), util::has_value<RayPassMaterial>);
+	}
+	RayPass::material_iterator RayPass::_material_end() {
+		return material_iterator(_materials.end(), _materials.end(), util::has_value<RayPassMaterial>);
+	}
+
+	RayPass::const_material_iterator RayPass::_material_begin() const {
+		return const_material_iterator(_materials.begin(), _materials.end(), util::has_value<RayPassMaterial>);
+	}
+	RayPass::const_material_iterator RayPass::_material_end() const {
+		return const_material_iterator(_materials.end(), _materials.end(), util::has_value<RayPassMaterial>);
+	}
 
 	void RayPass::mesh_create(uint32_t id) {
 		_meshes.push_back(RayPassMesh(_scene->resource_manager().get_mesh(id), this));
@@ -422,17 +464,21 @@ namespace vulkan {
 		while (id + 1 > _materials.size()) {
 			_materials.push_back(RayPassMaterial());
 		}
-		_materials[id] = RayPassMaterial::create(
-				_scene->resource_manager().get_material(id),
-				this);
-		_material_dirty_bit = true;
+		if (auto material = RayPassMaterial::create(_scene->resource_manager().get_material(id), this)) {
+			_materials[id] = std::move(material.value());
+			_material_dirty_bit = true;
+		} else {
+			TRY_LOG(material);
+		}
 	}
 
 	void RayPass::material_update(uint32_t id) {
-		_materials[id] = RayPassMaterial::create(
-				_scene->resource_manager().get_material(id),
-				this);
-		_material_dirty_bit = true;
+		if (auto material = RayPassMaterial::create(_scene->resource_manager().get_material(id), this)) {
+			_materials[id] = std::move(material.value());
+			_material_dirty_bit = true;
+		} else {
+			TRY_LOG(material);
+		}
 	}
 
 	void RayPass::material_remove(uint32_t id) {
@@ -442,12 +488,16 @@ namespace vulkan {
 		while (id + 1 > _nodes.size()) {
 			_nodes.push_back(RayPassNode());
 		}
-		_nodes[id] = RayPassNode::create(_scene->get_node(id), this);
+		auto node = RayPassNode::create(_scene->get_node(id), this);
+		TRY_LOG(node);
+		_nodes[id] = node.value();
 		_node_dirty_bit = true;
 	}
 
 	void RayPass::node_update(uint32_t id) {
-		_nodes[id] = RayPassNode::create(_scene->get_node(id), this);
+		auto node = RayPassNode::create(_scene->get_node(id), this);
+		TRY_LOG(node);
+		_nodes[id] = node.value();
 		_node_dirty_bit = true;
 	}
 
@@ -671,7 +721,7 @@ namespace vulkan {
 		auto vertices = std::vector<vulkan::Vertex>();
 		auto bvnodes = std::vector<BVNode>();
 		bvnodes.push_back(BVNode::create_empty());
-		for (auto &mesh : _meshes) {
+		for (auto &mesh : _get_meshes()) {
 			mesh.build(bvnodes, vertices);
 		}
 		for (auto &bvnode : bvnodes) {
@@ -720,7 +770,7 @@ namespace vulkan {
 	}
 
 	void RayPass::_create_material_buffers() {
-		for (auto &m : _materials) {
+		for (auto &m : _get_materials()) {
 			m.update(); //TODO: keep track of a dirty bit
 		}
 
@@ -751,7 +801,7 @@ namespace vulkan {
 		auto resource_decls = std::string();
 		auto material_bufs = std::string();
 		auto material_srcs = std::string();
-		for (auto &material : _materials) {
+		for (auto &material : _get_materials()) {
 			resource_decls += material.cg_struct_decl() + "\n";
 			material_bufs += material.cg_buf_decl();
 			material_srcs += material.cg_frag_def();
@@ -759,7 +809,7 @@ namespace vulkan {
 
 		auto material_call = std::string();
 		bool first_call = true;
-		for (auto &material : _materials) {
+		for (auto &material : _get_materials()) {
 			auto id = std::to_string(material.get()->id());
 			if (first_call) {
 				first_call = false;

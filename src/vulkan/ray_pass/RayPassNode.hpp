@@ -10,14 +10,36 @@ namespace vulkan {
 
 	class RayPassNode {
 		public:
+			/**
+			 * @brief Vulkan representation of a node
+			 */
 			struct VImpl {
+				/**
+				 * @brief id of original node
+				 * Used for adding outline to nodes
+				 */
 				alignas(4) uint32_t node_id;
+				/**
+				 * @brief Index to vulkan bvnode
+				 */
 				alignas(4) uint32_t mesh_id;
+				/**
+				 * @brief Index to vulkan material
+				 */
 				alignas(4) uint32_t material_id;
+				/**
+				 * @brief Object transformation of node
+				 */
 				alignas(16) glm::mat4 object_transformation;
 
+				/**
+				 * @brief Creates node with id of 0
+				 */
 				static VImpl create_empty();
 
+				/**
+				 * @brief Vulkan source code declaration for node
+				 */
 				static constexpr const char *declaration() {
 					return
 					"struct Node {\n"
@@ -32,12 +54,19 @@ namespace vulkan {
 			} __attribute__((packed));
 
 			RayPassNode();
-			static RayPassNode create(const Node *node, const RayPass *ray_pass);
+			static util::Result<RayPassNode, KError> create(const Node *node, const RayPass *ray_pass);
 
+			/**
+			 * @brief Creates vulkan implimentation
+			 */
 			VImpl vimpl() const;
 
-			operator bool() const { return _node; }
+			bool has_value() const { return _node; }
+			operator bool() const { return has_value(); }
 
+			/**
+			 * @brief Gets underlying generic node
+			 */
 			Node const &get() const { return *_node; }
 
 		private:

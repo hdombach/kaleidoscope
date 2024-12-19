@@ -79,4 +79,9 @@ namespace util {
 	inline bool ptr_exists(T const *ptr) {
 		return ptr;
 	}
+
+	template<typename T>
+	inline bool has_value(T const &v) {
+		return static_cast<bool>(v);
+	}
 }

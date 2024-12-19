@@ -21,8 +21,15 @@ namespace vulkan {
 			<< "\"object_transformation\":" << object_transformation
 			<< "}";
 	}
-	RayPassNode RayPassNode::create(const Node *node, const RayPass *ray_pass) {
+	util::Result<RayPassNode, KError> RayPassNode::create(const Node *node, const RayPass *ray_pass) {
 		auto result = RayPassNode();
+
+		if (node == nullptr) {
+			return KError::invalid_arg("node is nullptr");
+		}
+		if (ray_pass == nullptr) {
+			return KError::invalid_arg("ray_pass is nullptr");
+		}
 
 		result._node = node;
 		result._ray_pass = ray_pass;
