@@ -39,11 +39,14 @@ namespace vulkan {
 
 	RayPassNode::VImpl RayPassNode::vimpl() const {
 		if (_node) {
+			if (!_ray_pass->mesh(_node->mesh().id())) {
+				LOG_ERROR << "Valid node contains invalid mesh: " << _node->mesh().id() << std::endl;
+			}
 			return VImpl{
 				_node->id(),
-					_ray_pass->mesh(_node->mesh().id()).bvnode_id(),
-					_node->material().id(),
-					_node->get_matrix_inverse(),
+				_ray_pass->mesh(_node->mesh().id()).bvnode_id(),
+				_node->material().id(),
+				_node->get_matrix_inverse(),
 			};
 		} else {
 			return VImpl::create_empty();

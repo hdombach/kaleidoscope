@@ -450,7 +450,10 @@ namespace vulkan {
 	}
 
 	void RayPass::mesh_create(uint32_t id) {
-		_meshes.push_back(RayPassMesh(_scene->resource_manager().get_mesh(id), this));
+		while (id + 1 > _meshes.size()) {
+			_meshes.push_back(RayPassMesh());
+		}
+		_meshes[id] = RayPassMesh(_scene->resource_manager().get_mesh(id), this);
 		_vertex_dirty_bit = true;
 	}
 

@@ -15,6 +15,10 @@ namespace vulkan {
 	 */
 	class RayPassMesh {
 		public:
+			RayPassMesh():
+				_mesh(nullptr),
+				_ray_pass(nullptr)
+			{ }
 			RayPassMesh(
 					const types::Mesh *mesh,
 					RayPass *ray_pass):
@@ -158,6 +162,8 @@ inline std::ostream& operator<<(std::ostream& os, vulkan::BVType const &type) {
 			return os << "Mesh";
 		case vulkan::BVType::Node:
 			return os << "Node";
+		default:
+			return os << "[ERROR]";
 	}
 }
 
