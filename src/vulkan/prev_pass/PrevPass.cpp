@@ -195,6 +195,7 @@ namespace vulkan {
 						_frame_index, 
 						node.position(), 
 						size);*/
+				LOG_ASSERT(material.pipeline(), "Material pipeline does not exist");
 				vkCmdBindPipeline(
 						command_buffer, 
 						VK_PIPELINE_BIND_POINT_GRAPHICS, 
@@ -245,6 +246,7 @@ namespace vulkan {
 
 			vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
+			LOG_ASSERT(_de_pipeline, "DE pipeline does not exist");
 			vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _de_pipeline);
 
 			auto descriptor_sets = std::array<VkDescriptorSet, 2>{
@@ -273,6 +275,7 @@ namespace vulkan {
 			uniform.selected_node = _scene->selected_node();
 			_mapped_overlay_uniform.set_value(uniform);
 
+			LOG_ASSERT(_overlay_pipeline, "Overlay pipeline does not exist");
 			vkCmdBindPipeline(
 					command_buffer,
 					VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -572,7 +575,7 @@ namespace vulkan {
 		TRY(descriptor_sets);
 		_overlay_descriptor_set = std::move(descriptor_sets.value());
 
-		auto source_code = util::readEnvFile("assets/overlay_shader.comp");
+		auto source_code = util::readEnvFile("assets/shaders/preview_overlay.comp");
 		util::replace_substr(source_code, "/*OVERLAY_UNIFORM_CONTENT*/\n", OverlayUniform::declaration_content());
 		auto compute_shader = Shader::from_source_code(source_code, Shader::Type::Compute);
 		if (!compute_shader) {
@@ -770,7 +773,7 @@ namespace vulkan {
 	util::Result<void, KError> PrevPass::_create_de_pipeline() {
 		_destroy_de_pipeline();
 
-		auto vert_source_code = util::readEnvFile("assets/unit_square.vert");
+		auto vert_source_code = util::readEnvFile("assets/shaders/unit_square.vert");
 		auto vert_shader = Shader::from_source_code(vert_source_code, Shader::Type::Vertex);
 		if (!vert_shader) {
 			LOG_DEBUG << "\n" << util::add_strnum(vert_source_code) << std::endl;
@@ -1271,7 +1274,7 @@ namespace vulkan {
 	}
 
 	std::string PrevPass::_codegen_de() {
-		auto source_code = util::readEnvFile("assets/de_shader.frag");
+		auto source_code = util::readEnvFile("assets/shaders/preview_de.frag");
 		util::replace_substr(source_code, "/*GLOBAL_UNIFORM_CONTENT*/\n", GlobalPrevPassUniform::declaration_content());
 		util::replace_substr(source_code, "/*NODE_BUFFER_DECL*/\n", PrevPassNode::VImpl::declaration());
 

@@ -798,7 +798,7 @@ namespace vulkan {
 	}
 
 	std::string RayPass::_codegen(uint32_t texture_count) {
-		auto source = util::readEnvFile("assets/default_shader.comp");
+		auto source = util::readEnvFile("assets/shaders/raytrace.comp");
 
 
 		auto resource_decls = std::string();

@@ -25,7 +25,7 @@ namespace util {
 	extern Importance g_log_flags;
 
 	std::ostream& log(Importance importance, std::string file, int line);
-	void log_assert(bool test, std::string &desc, Importance importance, std::string file, int line);
+	void log_assert(bool test, std::string const &desc, Importance importance, std::string file, int line);
 
 	namespace color {
 		static const char *RESET    = "\033[0m";
@@ -48,4 +48,4 @@ namespace util {
 #define LOG_MEMORY log(util::Importance::MEMORY, __FILE__, __LINE__)
 #define LOG_DEBUG log(util::Importance::DEBUG, __FILE__, __LINE__)
 
-#define LOG_ASSERT(test, desc) log_assert(test, util::Importance::FATAL_ERROR, __FILE__, __LINE__)
+#define LOG_ASSERT(test, desc) log_assert(test, desc, util::Importance::FATAL_ERROR, __FILE__, __LINE__)

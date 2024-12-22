@@ -355,13 +355,13 @@ namespace vulkan {
 			const types::Material *material,
 			std::vector<std::string> &textures)
 	{
-		frag_source = util::readEnvFile("assets/prev_pass_shader.frag");
+		frag_source = util::readEnvFile("assets/shaders/preview_material_templ.frag");
 		util::replace_substr(
 				frag_source,
 				"/*GLOBAL_UNIFORM_CONTENT*/",
 				GlobalPrevPassUniform::declaration_content());
 
-		vert_source = util::readEnvFile("assets/prev_pass_shader.vert");
+		vert_source = util::readEnvFile("assets/shaders/preview_material_templ.vert");
 		util::replace_substr(
 				vert_source, 
 				"/*GLOBAL_UNIFORM_CONTENT*/", 

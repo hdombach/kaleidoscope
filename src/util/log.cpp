@@ -28,7 +28,7 @@ namespace util {
 
 	void log_assert(
 		bool test,
-		std::string &desc,
+		std::string const &desc,
 		Importance importance,
 		std::string file,
 		int line)

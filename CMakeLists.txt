@@ -90,5 +90,3 @@ file(CREATE_LINK "../assets" "${CMAKE_BINARY_DIR}/assets" SYMBOLIC)
 
 message(STATUS "printing libraries")
 message(STATUS glfw)
-
-add_subdirectory(src/shaders)
