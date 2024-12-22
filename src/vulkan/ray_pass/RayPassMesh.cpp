@@ -29,13 +29,25 @@ namespace vulkan {
 			std::vector<BVNode> &nodes,
 			std::vector<Vertex> &vertices)
 	{
-		auto b = BVNodeBuilder();
-		for (auto &v : *_mesh) {
-			b.add_vertex(v);
+		if (_mesh->is_de()) {
+			auto b = BVNode {
+				{0, 0, 0},
+				{1, 1, 1},
+				BVType::DE,
+				_mesh->id(),
+				0,
+				0
+			};
+			_bvnode_id = nodes.size();
+			nodes.push_back(b);
+		} else {
+			auto b = BVNodeBuilder();
+			for (auto &v : *_mesh) {
+				b.add_vertex(v);
+			}
+			b.split();
+			_bvnode_id = b.build(nodes, vertices);
 		}
-		b.split();
-		_bvnode_id = b.build(nodes, vertices);
-		return;
 	}
 
 	void BVNodeBuilder::add_vertex(Vertex v) {

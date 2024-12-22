@@ -57,6 +57,7 @@ namespace vulkan {
 		Unknown,
 		Mesh,
 		Node,
+		DE,
 	};
 
 	/**
@@ -93,6 +94,7 @@ namespace vulkan {
 			"#define BV_UNKNOWN 0\n"
 			"#define BV_MESH 1\n"
 			"#define BV_NODE 2\n"
+			"#define BV_DE   3\n"
 			"struct BVNode {\n"
 			"\tvec3 min_pos;\n"
 			"\tvec3 max_pos;\n"
@@ -162,6 +164,8 @@ inline std::ostream& operator<<(std::ostream& os, vulkan::BVType const &type) {
 			return os << "Mesh";
 		case vulkan::BVType::Node:
 			return os << "Node";
+		case vulkan::BVType::DE:
+			return os << "DE";
 		default:
 			return os << "[ERROR]";
 	}

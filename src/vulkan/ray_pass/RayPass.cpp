@@ -824,11 +824,29 @@ namespace vulkan {
 			material_call += "\t\t\t}\n";
 		}
 
+		auto de_funcs = std::string();
+		auto de_func_calls = std::string();
+
+		for (auto &rp_mesh : _get_meshes()) {
+			auto const &m = rp_mesh.base_mesh();
+			if (!m->is_de()) continue;
+			de_funcs += util::f("float de_", m->id(), "(vec3 pos) {\n");
+			de_funcs += util::indented(m->de(), "\t");
+			de_funcs += "}\n";
+			de_funcs += "\n";
+
+			de_func_calls += util::f("if (mesh_id == ", m->id(), ") {\n");
+			de_func_calls += util::f("\tstep = de_", m->id(), "(pos);\n");
+			de_func_calls += util::f("}\n");
+		}
+
 		util::replace_substr(source, "/*VERTEX_DECL*/\n", Vertex::declaration());
 		util::replace_substr(source, "/*BVNODE_DECL*/\n", BVNode::declaration());
 		util::replace_substr(source, "/*NODE_DECL*/\n", RayPassNode::VImpl::declaration());
 		util::replace_substr(source, "/*RESOURCE_DECL*/", resource_decls);
 		util::replace_substr(source, "/*UNIFORM_DECL*/\n", ComputeUniform::declaration());
+		util::replace_substr(source, "/*DE_FUNCS*/\n", de_funcs);
+		util::replace_substr(source, "/*DE_FUNC_CALLS*/\n", de_func_calls);
 		util::replace_substr(source, "/*TEXTURE_COUNT*/", std::to_string(texture_count));
 		util::replace_substr(source, "/*MATERIAL_BUFFERS*/\n", material_bufs);
 		util::replace_substr(source, "/*MATERIAL_SRCS*/\n", material_srcs);

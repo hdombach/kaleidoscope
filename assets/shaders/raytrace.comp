@@ -14,6 +14,8 @@ layout(binding = 1, rgba16f) uniform image2D accumulator;
 
 /*UNIFORM_DECL*/
 
+/*DE_FUNCS*/
+
 layout(set = 0, binding = 2) uniform UniformBlock {
 	ComputeUniform u;
 } compute_uniform;
@@ -142,6 +144,37 @@ bool ray_intersects_triangle(in vec3 ray_origin,
 			return false;
 }
 
+bool intersect_de(
+	uint mesh_id,
+	vec3 pos,
+	vec3 dir,
+	inout float d,
+	inout int iterations,
+	inout vec3 closest_pos
+) {
+	float step, smallest = 1000;
+	iterations = 0;
+	d = 0;
+	dir = normalize(dir);
+	pos += dir * max(length(pos) - 2, 0);
+	do {
+		/*DE_FUNC_CALLS*/
+		/*if (step < global_uniform.de_small_step || iterations > global_uniform.de_iterations) {*/
+		if (step < 0.0001 || iterations > 40) {
+			return true;
+		}
+		iterations++;
+		pos += dir * step;
+		if (step < smallest) {
+			smallest = step;
+			closest_pos = pos;
+		}
+		d += step;
+		if (length(pos) > 2.0) return false;
+	} while (true);
+	return false;
+}
+
 bool intersect_mesh(
 	vec3 ray_pos,
 	vec3 ray_dir,
@@ -222,6 +255,22 @@ bool intersect_mesh(
 			prevm = m;
 			m = bvnodes[m].parent;
 			continue;
+		} else if (bvnodes[m].type == BV_DE) {
+			intr = intersect_aabb(
+				ray_pos,
+				ray_dir,
+				bvnodes[m].min_pos,
+				bvnodes[m].max_pos
+			);
+
+			if (intr.x < intr.y && intr.x < dist) {
+				float temp_d = 0;
+				int temp_iterations;
+				vec3 temp_pos;
+				if (intersect_de(bvnodes[m].lchild, ray_pos, ray_dir, temp_d, temp_iterations, temp_pos)) {
+					return true;
+				}
+			}
 		}
 
 		if (bvnodes[m].type != BV_NODE) return false;
