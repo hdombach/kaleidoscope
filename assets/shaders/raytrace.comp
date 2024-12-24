@@ -289,12 +289,8 @@ bool intersect_bvnode(
 
 bool intersect_nodes(
 	Ray ray,
-	inout vec2 uv,
-	inout uint node_id,
-	inout uint debug,
-	inout vec3 normal,
-	inout float dist)
-{
+	inout HitInfo hit_info
+) {
 	bool result = false;
 	//Assuming first node is not being used.
 	for (uint n = 1; n < nodes.length(); n++) {
@@ -303,46 +299,36 @@ bool intersect_nodes(
 		node_ray.dir = nodes[n].object_transformation * vec4(node_ray.dir.xyz, 0.0); // what black magic is this
 		float ratio = length(node_ray.dir.xyz);
 		node_ray.dir /= ratio;
-		dist *= ratio;
-		HitInfo hit_info;
-		hit_info.debug = debug;
-		hit_info.dist = dist;
+		hit_info.dist *= ratio;
 
 		if (intersect_bvnode(node_ray, nodes[n].mesh_id, hit_info)) {
-			node_id = n;
+			hit_info.node_id = n;
 			result = true;
-
-			debug = hit_info.debug;
-			uv = hit_info.uv;
-			dist = hit_info.dist;
-			normal = hit_info.normal;
 		}
-		dist /= ratio;
+		hit_info.dist /= ratio;
 	}
 	return result;
 }
 
 vec3 raytrace(Ray ray, inout uvec4 seed) {
 	vec4 color;
-	vec2 uv;
-	uint node_id;
-	vec3 normal;
-	uint debug;
-	float dist = 3.402823466e+38;
 	vec3 absorbed = vec3(1.0);
 	vec3 light = vec3(0.0);
 
+	HitInfo hit_info;
+
 	for (int i = 0; i < 5; i++) {
-		if (intersect_nodes(ray, uv, node_id, debug, normal, dist)) {
+		hit_info.dist = 3.402823466e+38;
+		if (intersect_nodes(ray, hit_info)) {
 			/*MATERIAL_CALLS*/
 			absorbed *= color.xyz;
-			ray.pos += ray.dir * (dist - 0.0001);
+			ray.pos += ray.dir * (hit_info.dist - 0.0001);
 
-			if (dot(normal, ray.dir.xyz) > 0) {
-				normal *= -1; //correct normal
+			if (dot(hit_info.normal, ray.dir.xyz) > 0) {
+				hit_info.normal *= -1; //correct normal
 			}
 			ray.dir.xyz = rand_unit_vec3(seed);
-			if (dot(ray.dir.xyz, normal) < 0) {
+			if (dot(ray.dir.xyz, hit_info.normal) < 0) {
 				ray.dir.xyz *= -1;
 			}
 		} else {

@@ -113,13 +113,13 @@ namespace vulkan {
 		auto textures = _ray_pass->used_textures();
 		_cg_frag_call = "";
 
-		_cg_frag_call += "material" + id + "_main(color, uv";
+		_cg_frag_call += "material" + id + "_main(color, hit_info.uv";
 		for (auto &resource : _material->resources().get()) {
 			_cg_frag_call += ", ";
 			if (resource->is_primitive()) {
-				_cg_frag_call += "material" + id + "[node_id]." + resource->name();
+				_cg_frag_call += "material" + id + "[hit_info.node_id]." + resource->name();
 			} else if (resource->type() == types::ShaderResource::Type::Texture) {
-				_cg_frag_call += "textures[material" + id + "[node_id]." + resource->name() + "]";
+				_cg_frag_call += "textures[material" + id + "[hit_info.node_id]." + resource->name() + "]";
 			}
 		}
 		_cg_frag_call += ")";
