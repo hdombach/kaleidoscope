@@ -799,7 +799,7 @@ namespace vulkan {
 
 	std::string RayPass::_codegen(uint32_t texture_count) {
 		auto source = util::readEnvFile("assets/shaders/raytrace.comp");
-
+		auto common_source = util::readEnvFile("assets/shaders/common.hpp");
 
 		auto resource_decls = std::string();
 		auto material_bufs = std::string();
@@ -836,10 +836,11 @@ namespace vulkan {
 			de_funcs += "\n";
 
 			de_func_calls += util::f("if (mesh_id == ", m->id(), ") {\n");
-			de_func_calls += util::f("\tstep = de_", m->id(), "(pos);\n");
+			de_func_calls += util::f("\tstep = de_", m->id(), "(ray.pos.xyz);\n");
 			de_func_calls += util::f("}\n");
 		}
 
+		util::replace_substr(source, "/*COMMON_INCL*/\n", common_source);
 		util::replace_substr(source, "/*VERTEX_DECL*/\n", Vertex::declaration());
 		util::replace_substr(source, "/*BVNODE_DECL*/\n", BVNode::declaration());
 		util::replace_substr(source, "/*NODE_DECL*/\n", RayPassNode::VImpl::declaration());

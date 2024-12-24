@@ -4,6 +4,8 @@ layout(set = 0, binding = 0, rgba8) uniform image2D result;
 
 layout(binding = 1, rgba16f) uniform image2D accumulator;
 
+/*COMMON_INCL*/
+
 /*VERTEX_DECL*/
 
 /*BVNODE_DECL*/
@@ -90,9 +92,9 @@ vec3 rand_unit_vec3(inout uvec4 s) {
 
 // https://gist.github.com/DomNomNom/46bb1ce47f68d255fd5d
 // returns (near, far)
-vec2 intersect_aabb(vec3 ray_pos, vec3 ray_dir, vec3 box_min, vec3 box_max) {
-    vec3 tmin = (box_min - ray_pos) / ray_dir;
-    vec3 tmax = (box_max - ray_pos) / ray_dir;
+vec2 intersect_aabb(in Ray ray, vec3 box_min, vec3 box_max) {
+    vec3 tmin = (box_min - ray.pos.xyz) / ray.dir.xyz;
+    vec3 tmax = (box_max - ray.pos.xyz) / ray.dir.xyz;
     vec3 t1 = min(tmin, tmax);
     vec3 t2 = max(tmin, tmax);
     float tnear = max(max(t1.x, t1.y), t1.z);
@@ -101,32 +103,31 @@ vec2 intersect_aabb(vec3 ray_pos, vec3 ray_dir, vec3 box_min, vec3 box_max) {
 }
 
 //https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
-bool ray_intersects_triangle(in vec3 ray_origin, 
-                             in vec3 ray_vector, 
-                             in Triangle triangle,
-                             inout vec3 out_intersection_point,
-                             inout vec2 uv)
-{
+bool ray_intersects_triangle(
+	in Ray ray, 
+	in Triangle triangle,
+	inout HitInfo info
+) {
 	//https://en.cppreference.com/w/cpp/types/climits
 	float epsilon = 1.19209e-07;
 
 	vec3 edge1 = triangle.v2 - triangle.v1;
 	vec3 edge2 = triangle.v3 - triangle.v1;
-	vec3 ray_cross_e2 = cross(ray_vector, edge2);
+	vec3 ray_cross_e2 = cross(ray.dir.xyz, edge2);
 	float det = dot(edge1, ray_cross_e2);
 
 	if (det > -epsilon && det < epsilon)
 			return false;    // This ray is parallel to this triangle.
 
 	float inv_det = 1.0 / det;
-	vec3 s = ray_origin - triangle.v1;
+	vec3 s = ray.pos.xyz - triangle.v1;
 	float u = inv_det * dot(s, ray_cross_e2);
 
 	if (u < 0 || u > 1)
 			return false;
 
 	vec3 s_cross_e1 = cross(s, edge1);
-	float v = inv_det * dot(ray_vector, s_cross_e1);
+	float v = inv_det * dot(ray.dir.xyz, s_cross_e1);
 
 	if (v < 0 || u + v > 1)
 			return false;
@@ -136,9 +137,9 @@ bool ray_intersects_triangle(in vec3 ray_origin,
 
 	if (t > epsilon) // ray intersection
 	{
-			out_intersection_point = ray_origin + ray_vector * t;
-			uv = vec2(u, v);
-			return true;
+		info.pos = ray.pos.xyz + ray.dir.xyz * t;
+		info.uv = vec2(u, v);
+		return true;
 	}
 	else // This means that there is a line intersection but not a ray intersection.
 			return false;
@@ -146,38 +147,34 @@ bool ray_intersects_triangle(in vec3 ray_origin,
 
 bool intersect_de(
 	uint mesh_id,
-	vec3 pos,
-	vec3 dir,
-	inout float d,
-	inout int iterations,
-	inout vec3 closest_pos
+	Ray ray,
+	inout HitInfo info
 ) {
 	float step, smallest = 1000;
-	iterations = 0;
-	d = 0;
-	dir = normalize(dir);
-	pos += dir * max(length(pos) - 2, 0);
+	info.iterations = 0;
+	info.dist = 0;
+	ray.dir = normalize(ray.dir);
+	ray.pos.xyz += ray.dir.xyz * max(length(ray.pos.xyz) - 2, 0);
 	do {
 		/*DE_FUNC_CALLS*/
-		/*if (step < global_uniform.de_small_step || iterations > global_uniform.de_iterations) {*/
-		if (step < 0.0001 || iterations > 40) {
+		/*if (step < global_uniform.de_small_step || info.iterations > global_uniform.de_iterations) {*/
+		if (step < 0.0001 || info.iterations > 40) {
 			return true;
 		}
-		iterations++;
-		pos += dir * step;
+		info.iterations++;
+		ray.pos.xyz += ray.dir.xyz * step;
 		if (step < smallest) {
 			smallest = step;
-			closest_pos = pos;
+			info.pos = ray.pos.xyz;
 		}
-		d += step;
-		if (length(pos) > 2.0) return false;
+		info.dist += step;
+		if (length(ray.pos.xyz) > 2.0) return false;
 	} while (true);
 	return false;
 }
 
 bool intersect_mesh(
-	vec3 ray_pos,
-	vec3 ray_dir,
+	in Ray ray,
 	uint m,
 	inout uint debug,
 	inout vec2 uv,
@@ -188,6 +185,7 @@ bool intersect_mesh(
 	uint prevm = 0;
 	vec3 intr_point;
 	bool result = false;
+	HitInfo hit_info;
 
 	while (m > 0) {
 		if (bvnodes[m].type == BV_UNKNOWN) {
@@ -199,8 +197,7 @@ bool intersect_mesh(
 
 			debug++;
 			intr = intersect_aabb(
-				ray_pos,
-				ray_dir,
+				ray,
 				bvnodes[m].min_pos,
 				bvnodes[m].max_pos);
 
@@ -211,17 +208,17 @@ bool intersect_mesh(
 					t.v1 = vertices[tm + 0].pos;
 					t.v2 = vertices[tm + 1].pos;
 					t.v3 = vertices[tm + 2].pos;
-					if (ray_intersects_triangle(ray_pos, ray_dir, t, intr_point, tuv)) {
-						float diff = length(intr_point - ray_pos);
+					if (ray_intersects_triangle(ray, t, hit_info)) {
+						float diff = length(hit_info.pos - ray.pos.xyz);
 						if (diff < dist) {
 							dist = diff;
 							vec2 uv1 = vertices[tm + 0].tex_coord;
 							vec2 uv2 = vertices[tm + 1].tex_coord;
 							vec2 uv3 = vertices[tm + 2].tex_coord;
 
-							uv = (1 - tuv.x - tuv.y) * uv1;
-							uv += tuv.x * uv2;
-							uv += tuv.y * uv3;
+							uv = (1 - hit_info.uv.x - hit_info.uv.y) * uv1;
+							uv += hit_info.uv.x * uv2;
+							uv += hit_info.uv.y * uv3;
 
 							normal = normalize(cross(t.v1 - t.v2, t.v1 - t.v3));
 							result = true;
@@ -233,17 +230,17 @@ bool intersect_mesh(
 					t.v1 = vertices[tm + 0].pos;
 					t.v2 = vertices[tm + 1].pos;
 					t.v3 = vertices[tm + 2].pos;
-					if (ray_intersects_triangle(ray_pos, ray_dir, t, intr_point, tuv)) {
-						float diff = length(intr_point - ray_pos);
+					if (ray_intersects_triangle(ray, t, hit_info)) {
+						float diff = length(hit_info.pos - ray.pos.xyz);
 						if (diff < dist) {
 							dist = diff;
 							vec2 uv1 = vertices[tm + 0].tex_coord;
 							vec2 uv2 = vertices[tm + 1].tex_coord;
 							vec2 uv3 = vertices[tm + 2].tex_coord;
 
-							uv = (1 - tuv.x - tuv.y) * uv1;
-							uv += tuv.x * uv2;
-							uv += tuv.y * uv3;
+							uv = (1 - hit_info.uv.x - hit_info.uv.y) * uv1;
+							uv += hit_info.uv.x * uv2;
+							uv += hit_info.uv.y * uv3;
 
 							normal = normalize(cross(t.v1 - t.v2, t.v1 - t.v3));
 							result = true;
@@ -257,17 +254,13 @@ bool intersect_mesh(
 			continue;
 		} else if (bvnodes[m].type == BV_DE) {
 			intr = intersect_aabb(
-				ray_pos,
-				ray_dir,
+				ray,
 				bvnodes[m].min_pos,
 				bvnodes[m].max_pos
 			);
 
 			if (intr.x < intr.y && intr.x < dist) {
-				float temp_d = 0;
-				int temp_iterations;
-				vec3 temp_pos;
-				if (intersect_de(bvnodes[m].lchild, ray_pos, ray_dir, temp_d, temp_iterations, temp_pos)) {
+				if (intersect_de(bvnodes[m].lchild, ray, hit_info)) {
 					return true;
 				}
 			}
@@ -278,8 +271,7 @@ bool intersect_mesh(
 		if (prevm == bvnodes[m].parent) {
 			debug++;
 			intr = intersect_aabb(
-				ray_pos,
-				ray_dir,
+				ray,
 				bvnodes[m].min_pos,
 				bvnodes[m].max_pos);
 
@@ -301,16 +293,24 @@ bool intersect_mesh(
 	return result;
 }
 
-bool intersect_nodes(vec3 ray_pos, vec3 ray_dir, inout vec2 uv, inout uint node_id, inout uint debug, inout vec3 normal, inout float dist) {
+bool intersect_nodes(
+	Ray ray,
+	inout vec2 uv,
+	inout uint node_id,
+	inout uint debug,
+	inout vec3 normal,
+	inout float dist)
+{
 	bool result = false;
 	//Assuming first node is not being used.
 	for (uint n = 1; n < nodes.length(); n++) {
-		vec4 pos = nodes[n].object_transformation * vec4(ray_pos.xyz, 1.0);
-		vec4 dir = nodes[n].object_transformation * vec4(ray_dir.xyz, 0.0); // what black magic is this
-		float ratio = length(dir);
-		dir /= ratio;
+		Ray node_ray = ray;
+		node_ray.pos = nodes[n].object_transformation * vec4(node_ray.pos.xyz, 1.0);
+		node_ray.dir = nodes[n].object_transformation * vec4(node_ray.dir.xyz, 0.0); // what black magic is this
+		float ratio = length(node_ray.dir.xyz);
+		node_ray.dir /= ratio;
 		dist *= ratio;
-		if (intersect_mesh(pos.xyz, normalize(dir.xyz), nodes[n].mesh_id, debug, uv, dist, normal)) {
+		if (intersect_mesh(node_ray, nodes[n].mesh_id, debug, uv, dist, normal)) {
 			node_id = n;
 			result = true;
 		}
@@ -319,7 +319,7 @@ bool intersect_nodes(vec3 ray_pos, vec3 ray_dir, inout vec2 uv, inout uint node_
 	return result;
 }
 
-vec3 raytrace(vec3 pos, vec3 dir, inout uvec4 seed) {
+vec3 raytrace(Ray ray, inout uvec4 seed) {
 	vec4 color;
 	vec2 uv;
 	uint node_id;
@@ -330,21 +330,21 @@ vec3 raytrace(vec3 pos, vec3 dir, inout uvec4 seed) {
 	vec3 light = vec3(0.0);
 
 	for (int i = 0; i < 5; i++) {
-		if (intersect_nodes(pos, dir, uv, node_id, debug, normal, dist)) {
+		if (intersect_nodes(ray, uv, node_id, debug, normal, dist)) {
 			/*MATERIAL_CALLS*/
 			absorbed *= color.xyz;
-			pos += dir * (dist - 0.0001);
+			ray.pos += ray.dir * (dist - 0.0001);
 
-			if (dot(normal, dir) > 0) {
+			if (dot(normal, ray.dir.xyz) > 0) {
 				normal *= -1; //correct normal
 			}
-			dir = rand_unit_vec3(seed);
-			if (dot(dir, normal) < 0) {
-				dir *= -1;
+			ray.dir.xyz = rand_unit_vec3(seed);
+			if (dot(ray.dir.xyz, normal) < 0) {
+				ray.dir.xyz *= -1;
 			}
 		} else {
 			//temp skybox for now
-			if (dot(dir, vec3(0.3, 0.3, 1.0)) > 0.98) {
+			if (dot(ray.dir.xyz, vec3(0.3, 0.3, 1.0)) > 0.98) {
 				light = vec3(5);
 			} else {
 				light = vec3(0.5);
@@ -388,8 +388,13 @@ void main() {
 	uint debug = 0;
 	vec3 normal;
 
+	Ray ray = {
+		position,
+		dir
+	};
+
 	vec4 color = imageLoad(accumulator, dst);
-	color.xyz += raytrace(position.xyz, dir.xyz, seed);
+	color.xyz += raytrace(ray, seed);
 	imageStore(accumulator, dst, color);
 	color /= compute_uniform.u.ray_count;
 	//color.xyz = vec3(pow(color.x, 1/2.2), pow(color.y, 1/2.2), pow(color.z, 1/2.2));
