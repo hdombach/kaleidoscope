@@ -137,9 +137,15 @@ bool ray_intersects_triangle(
 
 	if (t > epsilon) // ray intersection
 	{
-		info.pos = ray.pos.xyz + ray.dir.xyz * t;
-		info.uv = vec2(u, v);
-		return true;
+		if (t < info.dist) {
+			info.dist = t;
+			info.pos = ray.pos.xyz + ray.dir.xyz * t;
+			info.uv = vec2(u, v);
+			info.normal = normalize(cross(triangle.v1 - triangle.v2, triangle.v1 - triangle.v3));
+			return true;
+		} else {
+			return false;
+		}
 	}
 	else // This means that there is a line intersection but not a ray intersection.
 			return false;
@@ -173,122 +179,110 @@ bool intersect_de(
 	return false;
 }
 
-bool intersect_mesh(
+bool intersect_bvnode(
 	in Ray ray,
-	uint m,
-	inout uint debug,
-	inout vec2 uv,
-	inout float dist,
-	inout vec3 normal)
-{
+	uint id,
+	inout HitInfo hit_info
+) {
 	vec2 intr, tuv;
-	uint prevm = 0;
+	uint previd = 0;
 	vec3 intr_point;
 	bool result = false;
-	HitInfo hit_info;
+	HitInfo t_hit_info;
 
-	while (m > 0) {
-		if (bvnodes[m].type == BV_UNKNOWN) {
+	while (id > 0) {
+		if (bvnodes[id].type == BV_UNKNOWN) {
+			return false;
+		} else if (bvnodes[id].type == BV_MESH) {
+			Triangle t;
+
+			hit_info.debug++;
+			intr = intersect_aabb(
+				ray,
+				bvnodes[id].min_pos,
+				bvnodes[id].max_pos);
+
+			if (intr.x < intr.y && intr.x < hit_info.dist) {
+				hit_info.debug += 1;
+				if (bvnodes[id].lchild != -1) {
+					uint tm = bvnodes[id].lchild;
+					t.v1 = vertices[tm + 0].pos;
+					t.v2 = vertices[tm + 1].pos;
+					t.v3 = vertices[tm + 2].pos;
+					if (ray_intersects_triangle(ray, t, hit_info)) {
+						vec2 uv1 = vertices[tm + 0].tex_coord;
+						vec2 uv2 = vertices[tm + 1].tex_coord;
+						vec2 uv3 = vertices[tm + 2].tex_coord;
+
+						vec2 uv = hit_info.uv;
+						hit_info.uv = (1 - uv.x - uv.y) * uv1;
+						hit_info.uv += uv.x * uv2;
+						hit_info.uv += uv.y * uv3;
+						result = true;
+					}
+				}
+				if (bvnodes[id].rchild != -1) {
+					uint tm = bvnodes[id].rchild;
+					t.v1 = vertices[tm + 0].pos;
+					t.v2 = vertices[tm + 1].pos;
+					t.v3 = vertices[tm + 2].pos;
+					if (ray_intersects_triangle(ray, t, hit_info)) {
+						vec2 uv1 = vertices[tm + 0].tex_coord;
+						vec2 uv2 = vertices[tm + 1].tex_coord;
+						vec2 uv3 = vertices[tm + 2].tex_coord;
+
+						vec2 uv = hit_info.uv;
+						hit_info.uv = (1 - uv.x - uv.y) * uv1;
+						hit_info.uv += uv.x * uv2;
+						hit_info.uv += uv.y * uv3;
+						result = true;
+					}
+				}
+			}
+
+			previd = id;
+			id = bvnodes[id].parent;
+			continue;
+		} else if (bvnodes[id].type == BV_DE) {
+			intr = intersect_aabb(
+				ray,
+				bvnodes[id].min_pos,
+				bvnodes[id].max_pos
+			);
+
+			if (intr.x < intr.y && intr.x < hit_info.dist) {
+				if (intersect_de(bvnodes[id].lchild, ray, t_hit_info)) {
+					result = true;
+				}
+			}
+			previd = id;
+			id = bvnodes[id].parent;
+		} else if (bvnodes[id].type == BV_NODE) {
+			if (previd == bvnodes[id].parent) {
+				hit_info.debug++;
+				intr = intersect_aabb(
+					ray,
+					bvnodes[id].min_pos,
+					bvnodes[id].max_pos);
+
+				if (intr.x < intr.y && intr.x < hit_info.dist) {
+					previd = id;
+					id = bvnodes[id].lchild;
+				} else {
+					previd = id;
+					id = bvnodes[id].parent;
+				}
+			} else if (previd == bvnodes[id].lchild) {
+				previd = id;
+				id = bvnodes[id].rchild;
+			} else if (previd == bvnodes[id].rchild) {
+				previd = id;
+				id = bvnodes[id].parent;
+			}
+		} else {
 			return false;
 		}
 
-		if (bvnodes[m].type == BV_MESH) {
-			Triangle t;
-
-			debug++;
-			intr = intersect_aabb(
-				ray,
-				bvnodes[m].min_pos,
-				bvnodes[m].max_pos);
-
-			if (intr.x < intr.y && intr.x < dist) {
-				debug += 1;
-				if (bvnodes[m].lchild != -1) {
-					uint tm = bvnodes[m].lchild;
-					t.v1 = vertices[tm + 0].pos;
-					t.v2 = vertices[tm + 1].pos;
-					t.v3 = vertices[tm + 2].pos;
-					if (ray_intersects_triangle(ray, t, hit_info)) {
-						float diff = length(hit_info.pos - ray.pos.xyz);
-						if (diff < dist) {
-							dist = diff;
-							vec2 uv1 = vertices[tm + 0].tex_coord;
-							vec2 uv2 = vertices[tm + 1].tex_coord;
-							vec2 uv3 = vertices[tm + 2].tex_coord;
-
-							uv = (1 - hit_info.uv.x - hit_info.uv.y) * uv1;
-							uv += hit_info.uv.x * uv2;
-							uv += hit_info.uv.y * uv3;
-
-							normal = normalize(cross(t.v1 - t.v2, t.v1 - t.v3));
-							result = true;
-						}
-					}
-				}
-				if (bvnodes[m].rchild != -1) {
-					uint tm = bvnodes[m].rchild;
-					t.v1 = vertices[tm + 0].pos;
-					t.v2 = vertices[tm + 1].pos;
-					t.v3 = vertices[tm + 2].pos;
-					if (ray_intersects_triangle(ray, t, hit_info)) {
-						float diff = length(hit_info.pos - ray.pos.xyz);
-						if (diff < dist) {
-							dist = diff;
-							vec2 uv1 = vertices[tm + 0].tex_coord;
-							vec2 uv2 = vertices[tm + 1].tex_coord;
-							vec2 uv3 = vertices[tm + 2].tex_coord;
-
-							uv = (1 - hit_info.uv.x - hit_info.uv.y) * uv1;
-							uv += hit_info.uv.x * uv2;
-							uv += hit_info.uv.y * uv3;
-
-							normal = normalize(cross(t.v1 - t.v2, t.v1 - t.v3));
-							result = true;
-						}
-					}
-				}
-			}
-
-			prevm = m;
-			m = bvnodes[m].parent;
-			continue;
-		} else if (bvnodes[m].type == BV_DE) {
-			intr = intersect_aabb(
-				ray,
-				bvnodes[m].min_pos,
-				bvnodes[m].max_pos
-			);
-
-			if (intr.x < intr.y && intr.x < dist) {
-				if (intersect_de(bvnodes[m].lchild, ray, hit_info)) {
-					return true;
-				}
-			}
-		}
-
-		if (bvnodes[m].type != BV_NODE) return false;
-
-		if (prevm == bvnodes[m].parent) {
-			debug++;
-			intr = intersect_aabb(
-				ray,
-				bvnodes[m].min_pos,
-				bvnodes[m].max_pos);
-
-			if (intr.x < intr.y && intr.x < dist) {
-				prevm = m;
-				m = bvnodes[m].lchild;
-			} else {
-				prevm = m;
-				m = bvnodes[m].parent;
-			}
-		} else if (prevm == bvnodes[m].lchild) {
-			prevm = m;
-			m = bvnodes[m].rchild;
-		} else if (prevm == bvnodes[m].rchild) {
-			prevm = m;
-			m = bvnodes[m].parent;
-		}
 	}
 	return result;
 }
@@ -310,9 +304,18 @@ bool intersect_nodes(
 		float ratio = length(node_ray.dir.xyz);
 		node_ray.dir /= ratio;
 		dist *= ratio;
-		if (intersect_mesh(node_ray, nodes[n].mesh_id, debug, uv, dist, normal)) {
+		HitInfo hit_info;
+		hit_info.debug = debug;
+		hit_info.dist = dist;
+
+		if (intersect_bvnode(node_ray, nodes[n].mesh_id, hit_info)) {
 			node_id = n;
 			result = true;
+
+			debug = hit_info.debug;
+			uv = hit_info.uv;
+			dist = hit_info.dist;
+			normal = hit_info.normal;
 		}
 		dist /= ratio;
 	}
