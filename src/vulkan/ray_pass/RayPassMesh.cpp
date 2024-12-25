@@ -31,8 +31,8 @@ namespace vulkan {
 	{
 		if (_mesh->is_de()) {
 			auto b = BVNode {
-				{0, 0, 0},
-				{1, 1, 1},
+				{-2, -2, -2},
+				{2, 2, 2},
 				BVType::DE,
 				_mesh->id(),
 				0,

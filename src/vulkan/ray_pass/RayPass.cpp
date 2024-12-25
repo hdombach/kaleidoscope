@@ -836,7 +836,7 @@ namespace vulkan {
 			de_funcs += "\n";
 
 			de_func_calls += util::f("if (mesh_id == ", m->id(), ") {\n");
-			de_func_calls += util::f("\tstep = de_", m->id(), "(ray.pos.xyz);\n");
+			de_func_calls += util::f("\treturn de_", m->id(), "(pos);\n");
 			de_func_calls += util::f("}\n");
 		}
 

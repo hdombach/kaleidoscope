@@ -151,6 +151,23 @@ bool ray_intersects_triangle(
 			return false;
 }
 
+float de(uint mesh_id, vec3 pos) {
+	/*DE_FUNC_CALLS*/
+}
+
+vec3 de_normal(uint mesh_id, vec3 pos) {
+	//e is an abitrary number
+	//e can cause white specks to appear if chosen wrongly
+	float e = 0.000001;
+	float n = de(mesh_id, pos);
+	float dx = de(mesh_id, pos + vec3(e, 0, 0)) - n;
+	float dy = de(mesh_id, pos + vec3(0, e, 0)) - n;
+	float dz = de(mesh_id, pos + vec3(0, 0, e)) - n;
+	
+	return normalize(vec3(dx, dy, dz) * 1);
+}
+
+
 bool intersect_de(
 	uint mesh_id,
 	Ray ray,
@@ -158,13 +175,15 @@ bool intersect_de(
 ) {
 	float step, smallest = 1000;
 	info.iterations = 0;
-	info.dist = 0;
+	float dist = max(length(ray.pos.xyz) - 2, 0);
 	ray.dir = normalize(ray.dir);
-	ray.pos.xyz += ray.dir.xyz * max(length(ray.pos.xyz) - 2, 0);
+	ray.pos.xyz += ray.dir.xyz * dist;
 	do {
-		/*DE_FUNC_CALLS*/
+		step = de(mesh_id, ray.pos.xyz);
 		/*if (step < global_uniform.de_small_step || info.iterations > global_uniform.de_iterations) {*/
-		if (step < 0.0001 || info.iterations > 40) {
+		if (step < 0.00001 || info.iterations > 120) {
+			info.normal = de_normal(mesh_id, ray.pos.xyz);
+			info.dist = dist;
 			return true;
 		}
 		info.iterations++;
@@ -173,8 +192,9 @@ bool intersect_de(
 			smallest = step;
 			info.pos = ray.pos.xyz;
 		}
-		info.dist += step;
+		dist += step;
 		if (length(ray.pos.xyz) > 2.0) return false;
+		if (dist > info.dist) return false;
 	} while (true);
 	return false;
 }
@@ -188,7 +208,6 @@ bool intersect_bvnode(
 	uint previd = 0;
 	vec3 intr_point;
 	bool result = false;
-	HitInfo t_hit_info;
 
 	while (id > 0) {
 		if (bvnodes[id].type == BV_UNKNOWN) {
@@ -251,7 +270,7 @@ bool intersect_bvnode(
 			);
 
 			if (intr.x < intr.y && intr.x < hit_info.dist) {
-				if (intersect_de(bvnodes[id].lchild, ray, t_hit_info)) {
+				if (intersect_de(bvnodes[id].lchild, ray, hit_info)) {
 					result = true;
 				}
 			}
