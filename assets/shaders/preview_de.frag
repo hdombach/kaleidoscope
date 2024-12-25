@@ -21,49 +21,29 @@ layout(set = 1, binding = 2) readonly buffer node_buffer {
 	Node nodes[];
 };
 
-/*DE_FUNCS*/
-
-bool de_intersect(uint n, vec3 pos, vec3 dir, inout float d, inout int iterations, inout vec3 closest_pos) {
-	float step, smallest = 1000;
-	iterations = 0;
-	d = 0;
-	dir = normalize(dir);
-	pos += dir * max(length(pos) - 2, 0);
-	do {
-		/*DE_FUNC_CALLS*/
-		if (step < global_uniform.de_small_step || iterations > global_uniform.de_iterations) {
-			return true;
-		}
-		iterations++;
-		pos += dir * step;
-		if (step < smallest) {
-			smallest = step;
-			closest_pos = pos;
-		}
-		d += step;
-		if (length(pos) > 2.0) return false;
-	} while (true);
-	return false;
-}
+/*COMMON_INCL*/
 
 bool intersect_nodes(vec3 pos, vec3 dir, inout float d, inout uint id, inout int iterations, inout vec3 closest_pos) {
 	uint n = 1;
 	d = global_uniform.z_far;
-	float temp_d = 0;
-	vec3 temp_pos;
-	int temp_iterations;
+	HitInfo hit_info;
+	hit_info.dist = 3.402823466e+38;
 	bool hit = false;
 	for (uint n = 1; n < nodes.length(); n++) {
 		if (nodes[n].mesh_id == 0) continue;
 		vec4 trans_pos = nodes[n].transformation * vec4(pos, 1.0);
 		vec4 trans_dir = nodes[n].transformation * vec4(dir, 0.0);
-		if (de_intersect(n, trans_pos.xyz, trans_dir.xyz, temp_d, temp_iterations, temp_pos)) {
+		Ray ray = {
+			trans_pos,
+			trans_dir
+		};
+		if (intersect_de(nodes[n].mesh_id, ray, hit_info)) {
 			hit = true;
-			if (temp_d < d) {
-				d = temp_d;
-				trans_pos = nodes[n].inverse_transformation * vec4(temp_pos, 1.0);
-				closest_pos = trans_pos.xyz;
-				iterations = temp_iterations;
+			if (hit_info.dist < d) {
+				d = hit_info.dist;
+				trans_pos = nodes[n].inverse_transformation * vec4(hit_info.pos, 1.0);
+				hit_info.pos = trans_pos.xyz;
+				iterations = hit_info.iterations;
 				id = n;
 			}
 		}

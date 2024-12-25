@@ -14,3 +14,53 @@ struct HitInfo {
 	vec3 normal;
 	vec3 pos;
 };
+
+/*DE_FUNCS*/
+
+float de(uint mesh_id, vec3 pos) {
+	/*DE_FUNC_CALLS*/
+	return 0;
+}
+
+vec3 de_normal(uint mesh_id, vec3 pos) {
+	//e is an abitrary number
+	//e can cause white specks to appear if chosen wrongly
+	float e = 0.000001;
+	float n = de(mesh_id, pos);
+	float dx = de(mesh_id, pos + vec3(e, 0, 0)) - n;
+	float dy = de(mesh_id, pos + vec3(0, e, 0)) - n;
+	float dz = de(mesh_id, pos + vec3(0, 0, e)) - n;
+	
+	return normalize(vec3(dx, dy, dz) * 1);
+}
+
+bool intersect_de(
+	uint mesh_id,
+	Ray ray,
+	inout HitInfo hit_info
+) {
+	float step, smallest = 1000;
+	hit_info.iterations = 0;
+	float dist = max(length(ray.pos.xyz) - 2, 0);
+	ray.dir = normalize(ray.dir);
+	ray.pos.xyz += ray.dir.xyz * dist;
+	do {
+		step = de(mesh_id, ray.pos.xyz);
+		if (step < global_uniform.de_small_step || hit_info.iterations > global_uniform.de_iterations) {
+			hit_info.normal = de_normal(mesh_id, ray.pos.xyz);
+			hit_info.dist = dist;
+			return true;
+		}
+		hit_info.iterations++;
+		ray.pos.xyz += ray.dir.xyz * step;
+		if (step < smallest) {
+			smallest = step;
+			hit_info.pos = ray.pos.xyz;
+		}
+		dist += step;
+		if (length(ray.pos.xyz) > 2.0) return false;
+		if (dist > hit_info.dist) return false;
+	} while (true);
+	return false;
+}
+

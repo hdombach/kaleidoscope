@@ -64,10 +64,11 @@ namespace vulkan {
 		alignas(16) glm::u32vec4 seed;
 		alignas(4) uint32_t ray_count;
 		alignas(4) uint32_t compute_index;
+		alignas(4) int32_t de_iterations;
+		alignas(4) float de_small_step;
 
-		static constexpr const char *declaration() {
+		static constexpr const char *declaration_content() {
 			return
-				"struct ComputeUniform {\n"
 				"\tmat4 rotation;\n"
 				"\tvec4 translation;\n"
 				"\tfloat aspect;\n"
@@ -77,7 +78,8 @@ namespace vulkan {
 				"\tuvec4 seed;\n"
 				"\tuint ray_count;\n"
 				"\tuint compute_index;\n"
-				"};\n";
+				"\tint de_iterations;\n"
+				"\tfloat de_small_step;\n";
 		}
 	};
 

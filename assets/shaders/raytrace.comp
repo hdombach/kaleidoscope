@@ -4,8 +4,6 @@ layout(set = 0, binding = 0, rgba8) uniform image2D result;
 
 layout(binding = 1, rgba16f) uniform image2D accumulator;
 
-/*COMMON_INCL*/
-
 /*VERTEX_DECL*/
 
 /*BVNODE_DECL*/
@@ -16,11 +14,9 @@ layout(binding = 1, rgba16f) uniform image2D accumulator;
 
 /*UNIFORM_DECL*/
 
-/*DE_FUNCS*/
-
 layout(set = 0, binding = 2) uniform UniformBlock {
-	ComputeUniform u;
-} compute_uniform;
+	/*GLOBAL_UNIFORM_CONTENT*/
+} global_uniform;
 
 layout(binding = 3) readonly buffer vertex_buffer {
 	Vertex vertices[];
@@ -39,6 +35,8 @@ float PI = 3.14159265358979;
 struct Triangle {
 	vec3 v1, v2, v3;
 };
+
+/*COMMON_INCL*/
 
 //---------------- RAND helper functions
 //https://blog.bithole.dev/blogposts/random-float/
@@ -149,54 +147,6 @@ bool ray_intersects_triangle(
 	}
 	else // This means that there is a line intersection but not a ray intersection.
 			return false;
-}
-
-float de(uint mesh_id, vec3 pos) {
-	/*DE_FUNC_CALLS*/
-}
-
-vec3 de_normal(uint mesh_id, vec3 pos) {
-	//e is an abitrary number
-	//e can cause white specks to appear if chosen wrongly
-	float e = 0.000001;
-	float n = de(mesh_id, pos);
-	float dx = de(mesh_id, pos + vec3(e, 0, 0)) - n;
-	float dy = de(mesh_id, pos + vec3(0, e, 0)) - n;
-	float dz = de(mesh_id, pos + vec3(0, 0, e)) - n;
-	
-	return normalize(vec3(dx, dy, dz) * 1);
-}
-
-
-bool intersect_de(
-	uint mesh_id,
-	Ray ray,
-	inout HitInfo info
-) {
-	float step, smallest = 1000;
-	info.iterations = 0;
-	float dist = max(length(ray.pos.xyz) - 2, 0);
-	ray.dir = normalize(ray.dir);
-	ray.pos.xyz += ray.dir.xyz * dist;
-	do {
-		step = de(mesh_id, ray.pos.xyz);
-		/*if (step < global_uniform.de_small_step || info.iterations > global_uniform.de_iterations) {*/
-		if (step < 0.00001 || info.iterations > 120) {
-			info.normal = de_normal(mesh_id, ray.pos.xyz);
-			info.dist = dist;
-			return true;
-		}
-		info.iterations++;
-		ray.pos.xyz += ray.dir.xyz * step;
-		if (step < smallest) {
-			smallest = step;
-			info.pos = ray.pos.xyz;
-		}
-		dist += step;
-		if (length(ray.pos.xyz) > 2.0) return false;
-		if (dist > info.dist) return false;
-	} while (true);
-	return false;
 }
 
 bool intersect_bvnode(
@@ -365,13 +315,13 @@ vec3 raytrace(Ray ray, inout uvec4 seed) {
 
 void main() {
 	ivec2 size = imageSize(result);
-	uint index = (gl_GlobalInvocationID.x + compute_uniform.u.compute_index) % (size.x * size.y);
+	uint index = (gl_GlobalInvocationID.x + global_uniform.compute_index) % (size.x * size.y);
 
 	ivec2 dst;
 	dst.x = int(index % size.x);
 	dst.y = int(index / size.x);
 
-	uvec4 seed = compute_uniform.u.seed;
+	uvec4 seed = global_uniform.seed;
 	//uncoment to get a dither pattern
 	if (false) {
 		for (int i = 0; i < (dst.x % 2) * 2 + (dst.y % 2); i++) {
@@ -381,16 +331,16 @@ void main() {
 
 	vec2 uv = (vec2(dst) + rand_vec2(seed)) / vec2(size);
 	vec4 dir = vec4(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, 2.0, 0.0);
-	dir.x *= compute_uniform.u.aspect;
-	dir.z = 1.0 / tan(compute_uniform.u.fovy * PI / 360.0f);
-	dir = normalize(dir) * -1 * compute_uniform.u.rotation;
+	dir.x *= global_uniform.aspect;
+	dir.z = 1.0 / tan(global_uniform.fovy * PI / 360.0f);
+	dir = normalize(dir) * -1 * global_uniform.rotation;
 	vec2 intr_uv;
 	vec2 tex_uv;
 	uint node_id = 0;
 
 	dst = size - dst;
 
-	vec4 position = vec4(0, 0, 0, 1) - compute_uniform.u.translation;
+	vec4 position = vec4(0, 0, 0, 1) - global_uniform.translation;
 
 
 	uint debug = 0;
@@ -404,7 +354,7 @@ void main() {
 	vec4 color = imageLoad(accumulator, dst);
 	color.xyz += raytrace(ray, seed);
 	imageStore(accumulator, dst, color);
-	color /= compute_uniform.u.ray_count;
+	color /= global_uniform.ray_count;
 	//color.xyz = vec3(pow(color.x, 1/2.2), pow(color.y, 1/2.2), pow(color.z, 1/2.2));
 	color.w = 1.0;
 	imageStore(result, dst, color);

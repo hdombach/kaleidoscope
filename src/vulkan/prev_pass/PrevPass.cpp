@@ -1275,8 +1275,10 @@ namespace vulkan {
 
 	std::string PrevPass::_codegen_de() {
 		auto source_code = util::readEnvFile("assets/shaders/preview_de.frag");
+		auto common_source_code = util::readEnvFile("assets/shaders/common.hpp");
 		util::replace_substr(source_code, "/*GLOBAL_UNIFORM_CONTENT*/\n", GlobalPrevPassUniform::declaration_content());
 		util::replace_substr(source_code, "/*NODE_BUFFER_DECL*/\n", PrevPassNode::VImpl::declaration());
+		util::replace_substr(source_code, "/*COMMON_INCL*/\n", common_source_code);
 
 		auto de_funcs = std::string();
 
@@ -1294,8 +1296,8 @@ namespace vulkan {
 
 		for (auto &m : _meshes) {
 			if (!m || !m.is_de()) continue;
-			de_func_calls += util::f("if (nodes[n].mesh_id == ", m.base()->id(), ") {\n");
-			de_func_calls += util::f("\tstep = de_", m.base()->id(), "(pos);\n");
+			de_func_calls += util::f("if (mesh_id == ", m.base()->id(), ") {\n");
+			de_func_calls += util::f("\treturn de_", m.base()->id(), "(pos);\n");
 			de_func_calls += util::f("}\n");
 		}
 

@@ -93,6 +93,9 @@ namespace vulkan {
 		uniform_buffer.camera_translation = glm::vec4(camera().position, 0.0);
 		uniform_buffer.aspect = static_cast<float>(camera().width) / static_cast<float>(camera().height);
 		uniform_buffer.fovy = camera().fovy;
+		uniform_buffer.de_iterations = camera().de_iterations;
+		uniform_buffer.de_small_step = std::pow(10.0f, -camera().de_small_step);
+
 		return _raytrace_render_pass->submit(*_nodes[0], _render_rate, uniform_buffer, semaphore);
 	}
 
