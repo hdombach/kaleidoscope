@@ -119,16 +119,16 @@ namespace types {
 	}
 
 	ResourceManager::texture_iterator ResourceManager::texture_begin() {
-		return texture_iterator(_textures.begin(), _textures.end(), util::exists<vulkan::Texture>);
+		return texture_iterator(_textures.begin(), _textures.end());
 	}
 	ResourceManager::texture_iterator ResourceManager::texture_end() {
-		return texture_iterator(_textures.end(), _textures.end(), util::exists<vulkan::Texture>);
+		return texture_iterator(_textures.end(), _textures.end());
 	}
 	ResourceManager::const_texture_iterator ResourceManager::texture_begin() const {
-		return const_texture_iterator(_textures.begin(), _textures.end(), util::exists<vulkan::Texture>);
+		return const_texture_iterator(_textures.begin(), _textures.end());
 	}
 	ResourceManager::const_texture_iterator ResourceManager::texture_end() const {
-		return const_texture_iterator(_textures.end(), _textures.end(), util::exists<vulkan::Texture>);
+		return const_texture_iterator(_textures.end(), _textures.end());
 	}
 	ResourceManager::TextureContainer const &ResourceManager::texture_container() const {
 		return _textures;
@@ -241,17 +241,17 @@ namespace types {
 	}
 
 	ResourceManager::mesh_iterator ResourceManager::mesh_begin() {
-		return mesh_iterator(_meshes.begin(), _meshes.end(), util::exists<Mesh>);
+		return mesh_iterator(_meshes.begin(), _meshes.end());
 	}
 
 	ResourceManager::mesh_iterator ResourceManager::mesh_end() {
-		return mesh_iterator(_meshes.end(), _meshes.end(), util::exists<Mesh>);
+		return mesh_iterator(_meshes.end(), _meshes.end());
 	}
 	ResourceManager::const_mesh_iterator ResourceManager::mesh_begin() const {
-		return const_mesh_iterator(_meshes.begin(), _meshes.end(), util::exists<Mesh>);
+		return const_mesh_iterator(_meshes.begin(), _meshes.end());
 	}
 	ResourceManager::const_mesh_iterator ResourceManager::mesh_end() const {
-		return const_mesh_iterator(_meshes.end(), _meshes.end(), util::exists<Mesh>);
+		return const_mesh_iterator(_meshes.end(), _meshes.end());
 	}
 	ResourceManager::MeshContainer const &ResourceManager::mesh_container() const {
 		return _meshes;
@@ -361,17 +361,17 @@ namespace types {
 	}
 
 	ResourceManager::material_iterator ResourceManager::material_begin() {
-		return material_iterator(_materials.begin(), _materials.end(), util::exists<Material>);
+		return material_iterator(_materials.begin(), _materials.end());
 	}
 
 	ResourceManager::material_iterator ResourceManager::material_end() {
-		return material_iterator(_materials.end(), _materials.end(), util::exists<Material>);
+		return material_iterator(_materials.end(), _materials.end());
 	}
 	ResourceManager::const_material_iterator ResourceManager::material_begin() const {
-		return const_material_iterator(_materials.begin(), _materials.end(), util::exists<Material>);
+		return const_material_iterator(_materials.begin(), _materials.end());
 	}
 	ResourceManager::const_material_iterator ResourceManager::material_end() const {
-		return const_material_iterator(_materials.end(), _materials.end(), util::exists<Material>);
+		return const_material_iterator(_materials.end(), _materials.end());
 	}
 	ResourceManager::MaterialContainer const &ResourceManager::material_container() const {
 		return _materials;

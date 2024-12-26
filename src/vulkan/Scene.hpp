@@ -26,9 +26,8 @@ namespace vulkan {
 		public:
 			using Ptr = std::unique_ptr<Scene>;
 			using Container = std::vector<Node::Ptr>;
-			using iterator = util::filter_iterator<Container::iterator>;
-			//using const_iterator = util::filter_iterator<Container::const_iterator>;
-			//using iterator = Container::iterator;
+			using iterator = util::filter_iterator<Container::iterator, util::exists<Node>>;
+			using const_iterator = util::filter_iterator<Container::const_iterator, util::exists<Node>>;
 
 			Scene(types::ResourceManager &resource_manager, PrevPass::Ptr preview_render_pass);
 
@@ -74,21 +73,18 @@ namespace vulkan {
 			util::Result<void, KError> add_node_observer(util::Observer *observer);
 			util::Result<void, KError> rem_node_observer(util::Observer *observer);
 
-			//iterator begin() { return _nodes.begin(); }
-			//iterator end() { return _nodes.end(); }
-
 			iterator begin() {
-				return iterator(_nodes.begin(), _nodes.end(), util::exists<vulkan::Node>);
+				return iterator(_nodes.begin(), _nodes.end());
 			}
 			iterator end() {
-				return iterator(_nodes.end(), _nodes.end(), util::exists<vulkan::Node>);
+				return iterator(_nodes.end(), _nodes.end());
 			}
-			/*const_iterator begin() const {
-				return const_iterator(_nodes.begin(), _nodes.end(), util::exists<vulkan::Node>);
+			const_iterator begin() const {
+				return const_iterator(_nodes.begin(), _nodes.end());
 			}
 			const_iterator end() const {
-				return const_iterator(_nodes.begin(), _nodes.end(), util::exists<vulkan::Node>);
-			}*/
+				return const_iterator(_nodes.begin(), _nodes.end());
+			}
 
 		private:
 			Scene() = default;

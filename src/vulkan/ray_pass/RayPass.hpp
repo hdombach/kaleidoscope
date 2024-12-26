@@ -1,7 +1,6 @@
 #pragma once
 
 #include <memory>
-#include <set>
 
 #include "RayPassMesh.hpp"
 #include "RayPassNode.hpp"

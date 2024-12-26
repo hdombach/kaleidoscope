@@ -25,16 +25,16 @@ namespace types {
 	class ResourceManager {
 		public:
 			using TextureContainer = std::vector<std::unique_ptr<vulkan::Texture>>;
-			using texture_iterator = util::filter_iterator<TextureContainer::iterator>;
-			using const_texture_iterator = util::filter_iterator<TextureContainer::const_iterator>;
+			using texture_iterator = util::filter_iterator<TextureContainer::iterator, util::exists<vulkan::Texture>>;
+			using const_texture_iterator = util::filter_iterator<TextureContainer::const_iterator, util::exists<vulkan::Texture>>;
 
 			using MeshContainer = std::vector<std::unique_ptr<Mesh>>;
-			using mesh_iterator = util::filter_iterator<MeshContainer::iterator>;
-			using const_mesh_iterator = util::filter_iterator<MeshContainer::const_iterator>;
+			using mesh_iterator = util::filter_iterator<MeshContainer::iterator, util::exists<Mesh>>;
+			using const_mesh_iterator = util::filter_iterator<MeshContainer::const_iterator, util::exists<Mesh>>;
 
 			using MaterialContainer = std::vector<std::unique_ptr<Material>>;
-			using material_iterator = util::filter_iterator<MaterialContainer::iterator>;
-			using const_material_iterator = util::filter_iterator<MaterialContainer::const_iterator>;
+			using material_iterator = util::filter_iterator<MaterialContainer::iterator, util::exists<Material>>;
+			using const_material_iterator = util::filter_iterator<MaterialContainer::const_iterator, util::exists<Material>>;
 		public:
 			ResourceManager();
 			~ResourceManager();

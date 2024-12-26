@@ -408,45 +408,45 @@ namespace vulkan {
 	}
 	
 	RayPass::mesh_iterator RayPass::_mesh_begin() {
-		return mesh_iterator(_meshes.begin(), _meshes.end(), util::has_value<RayPassMesh>);
+		return mesh_iterator(_meshes.begin(), _meshes.end());
 	}
 	RayPass::mesh_iterator RayPass::_mesh_end() {
-		return mesh_iterator(_meshes.end(), _meshes.end(), util::has_value<RayPassMesh>);
+		return mesh_iterator(_meshes.end(), _meshes.end());
 	}
 
 	RayPass::const_mesh_iterator RayPass::_mesh_begin() const {
-		return const_mesh_iterator(_meshes.begin(), _meshes.end(), util::has_value<RayPassMesh>);
+		return const_mesh_iterator(_meshes.begin(), _meshes.end());
 	}
 	RayPass::const_mesh_iterator RayPass::_mesh_end() const {
-		return const_mesh_iterator(_meshes.end(), _meshes.end(), util::has_value<RayPassMesh>);
+		return const_mesh_iterator(_meshes.end(), _meshes.end());
 	}
 
 	RayPass::node_iterator RayPass::_node_begin() {
-		return node_iterator(_nodes.begin(), _nodes.end(), util::has_value<RayPassNode>);
+		return node_iterator(_nodes.begin(), _nodes.end());
 	}
 	RayPass::node_iterator RayPass::_node_end() {
-		return node_iterator(_nodes.end(), _nodes.end(), util::has_value<RayPassNode>);
+		return node_iterator(_nodes.end(), _nodes.end());
 	}
 
 	RayPass::const_node_iterator RayPass::_node_begin() const {
-		return const_node_iterator(_nodes.begin(), _nodes.end(), util::has_value<RayPassNode>);
+		return const_node_iterator(_nodes.begin(), _nodes.end());
 	}
 	RayPass::const_node_iterator RayPass::_node_end() const {
-		return const_node_iterator(_nodes.end(), _nodes.end(), util::has_value<RayPassNode>);
+		return const_node_iterator(_nodes.end(), _nodes.end());
 	}
 
 	RayPass::material_iterator RayPass::_material_begin() {
-		return material_iterator(_materials.begin(), _materials.end(), util::has_value<RayPassMaterial>);
+		return material_iterator(_materials.begin(), _materials.end());
 	}
 	RayPass::material_iterator RayPass::_material_end() {
-		return material_iterator(_materials.end(), _materials.end(), util::has_value<RayPassMaterial>);
+		return material_iterator(_materials.end(), _materials.end());
 	}
 
 	RayPass::const_material_iterator RayPass::_material_begin() const {
-		return const_material_iterator(_materials.begin(), _materials.end(), util::has_value<RayPassMaterial>);
+		return const_material_iterator(_materials.begin(), _materials.end());
 	}
 	RayPass::const_material_iterator RayPass::_material_end() const {
-		return const_material_iterator(_materials.end(), _materials.end(), util::has_value<RayPassMaterial>);
+		return const_material_iterator(_materials.end(), _materials.end());
 	}
 
 	void RayPass::mesh_create(uint32_t id) {

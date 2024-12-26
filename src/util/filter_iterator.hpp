@@ -1,20 +1,19 @@
 #pragma once
 
-#include <functional>
+#include "util/Util.hpp"
 
 namespace util {
-	template<typename From>
+	template<typename From, typename Pred = util::has_value<typename From::value_type>>
 		class filter_iterator {
 		public:
-			using Predicate = std::function<bool(const typename From::value_type&)>;
 			using value_type = typename From::value_type;
 			using reference = typename From::reference;
 
-			explicit filter_iterator(From begin, From end, Predicate pred):
+			explicit filter_iterator(From begin, From end):
 				_begin(begin),
-				_end(end),
-				_pred(pred) {
-					while (_begin != _end && !_pred(*_begin)) {
+				_end(end)
+			 {
+					while (_begin != _end && !Pred()(*_begin)) {
 						_begin++;
 					}
 				}
@@ -22,7 +21,7 @@ namespace util {
 		filter_iterator& operator++() {
 			do {
 				_begin++;
-			} while (_begin != _end && !_pred(*_begin));
+			} while (_begin != _end && !Pred()(*_begin));
 			return *this;
 		}
 
@@ -44,6 +43,5 @@ namespace util {
 		private:
 			From _begin;
 			From _end;
-			Predicate _pred;
 	};
 }

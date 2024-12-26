@@ -71,17 +71,23 @@ namespace util {
 	}
 
 	template<typename T>
-	inline bool exists(std::unique_ptr<T> const &ptr) {
-		return static_cast<bool>(ptr);
-	}
+	struct exists {
+		bool operator()(std::unique_ptr<T> const &ptr) {
+			return static_cast<bool>(ptr);
+		}
+	};
 
 	template<typename T>
-	inline bool ptr_exists(T const *ptr) {
-		return ptr;
-	}
+	struct ptr_exists {
+		bool operator()(T const *ptr) {
+			return ptr;
+		}
+	};
 
 	template<typename T>
-	inline bool has_value(T const &v) {
-		return static_cast<bool>(v);
-	}
+	struct has_value {
+		bool operator()(T const &v) {
+			return static_cast<bool>(v);
+		}
+	};
 }
