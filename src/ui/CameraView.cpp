@@ -1,5 +1,5 @@
 #include "CameraView.hpp"
-#include "../types/Camera.hpp"
+#include "types/Camera.hpp"
 #include <array>
 #include <imgui.h>
 

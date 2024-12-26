@@ -1,6 +1,8 @@
-#include "DescriptorSet.hpp"
-#include "util/log.hpp"
+#include <vector>
+
 #include <vulkan/vulkan_core.h>
+
+#include "DescriptorSet.hpp"
 
 namespace vulkan {
 	DescriptorSetTemplate DescriptorSetTemplate::create_image(

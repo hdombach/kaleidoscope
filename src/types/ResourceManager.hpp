@@ -11,9 +11,9 @@
 #include "util/Observer.hpp"
 #include "util/filter_iterator.hpp"
 #include "util/IterAdapter.hpp"
-#include "../types/Mesh.hpp"
-#include "../vulkan/Texture.hpp"
-#include "../vulkan/Vertex.hpp"
+#include "types/Mesh.hpp"
+#include "vulkan/Texture.hpp"
+#include "vulkan/Vertex.hpp"
 #include "Material.hpp"
 
 

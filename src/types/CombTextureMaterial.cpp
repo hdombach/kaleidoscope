@@ -1,5 +1,12 @@
 #include "CombTextureMaterial.hpp"
 
+#include <memory>
+
+#include <glm/fwd.hpp>
+
+#include "vulkan/Texture.hpp"
+#include "types/ShaderResource.hpp"
+
 namespace types {
 	std::unique_ptr<CombTextureMaterial> CombTextureMaterial::create(
 			uint32_t id,

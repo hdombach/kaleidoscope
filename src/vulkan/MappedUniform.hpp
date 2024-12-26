@@ -4,7 +4,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "graphics.hpp"
-#include "../util/result.hpp"
+#include "util/result.hpp"
 
 namespace vulkan {
 	class Uniform {

@@ -4,8 +4,7 @@
 #include <vulkan/vulkan_core.h>
 #include <string>
 
-#include "../util/log.hpp"
-#include "ImageView.hpp"
+#include "util/log.hpp"
 
 
 namespace vulkan {

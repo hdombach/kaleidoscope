@@ -1,9 +1,12 @@
 #pragma once
 
-#include <vulkan/vulkan_core.h>
+#include <cstdint>
+#include <memory>
+#include <glm/fwd.hpp>
 
 #include "Material.hpp"
-#include "../vulkan/Texture.hpp"
+#include "ShaderResource.hpp"
+#include "vulkan/Texture.hpp"
 
 namespace types {
 	class TextureMaterial: public Material {

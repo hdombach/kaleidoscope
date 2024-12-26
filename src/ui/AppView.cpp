@@ -1,15 +1,20 @@
 #include <cstdio>
+#include <string>
+
 #include <glm/fwd.hpp>
 #include <imgui.h>
 #include <portable-file-dialogs.h>
-#include <filesystem>
 
 #include "AppView.hpp"
 #include "CameraView.hpp"
-#include "../App.hpp"
-#include "../util/Util.hpp"
-#include "../util/IterAdapter.hpp"
+#include "App.hpp"
 #include "Misc.hpp"
+#include "State.hpp"
+#include "ui/TextureView.hpp"
+#include "util/Util.hpp"
+#include "types/ResourceManager.hpp"
+#include "types/Material.hpp"
+#include "types/Mesh.hpp"
 
 namespace ui {
 	void AppView(App &app, State &state) {

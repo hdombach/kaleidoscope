@@ -2,7 +2,8 @@
 
 #include <vulkan/vulkan_core.h>
 
-#include "../util/result.hpp"
+#include "util/result.hpp"
+#include "graphics.hpp"
 
 namespace vulkan {
 	util::Result<StaticBuffer, KError> StaticBuffer::create(

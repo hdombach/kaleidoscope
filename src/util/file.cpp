@@ -8,7 +8,7 @@
 #include <sstream>
 
 #include "file.hpp"
-#include "../App.hpp"
+#include "App.hpp"
 #include "result.hpp"
 
 namespace util {

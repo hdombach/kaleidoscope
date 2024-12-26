@@ -1,8 +1,8 @@
 #pragma once
 
-#include <glm/fwd.hpp>
+#include <string>
 
-#include "../types/ShaderResource.hpp"
+#include "types/ShaderResource.hpp"
 
 namespace types {
 

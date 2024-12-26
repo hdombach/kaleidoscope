@@ -1,14 +1,14 @@
 #pragma once
 
-#include "./types/ResourceManager.hpp"
-#include "./vulkan/UIRenderPipeline.hpp"
-#include "./ui/AppView.hpp"
-#include "ui/State.hpp"
-#include "vulkan/Scene.hpp"
-
-#define GLFW_INCLUDE_VULKAN
-#include <vulkan/vulkan.h>
 #include <memory>
+#include <string>
+
+#include <vulkan/vulkan.h>
+
+#include "vulkan/UIRenderPipeline.hpp"
+#include "vulkan/Scene.hpp"
+#include "types/ResourceManager.hpp"
+#include "ui/State.hpp"
 
 
 class App {

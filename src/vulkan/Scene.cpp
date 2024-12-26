@@ -1,10 +1,8 @@
 #include <algorithm>
-#include <chrono>
-#include <random>
 
 #include <vulkan/vulkan_core.h>
 
-#include "../util/Util.hpp"
+#include "util/Util.hpp"
 #include "Scene.hpp"
 #include "prev_pass/PrevPass.hpp"
 #include "Uniforms.hpp"

@@ -1,14 +1,15 @@
 #pragma once
 
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/glm.hpp>
-#include <glm/gtx/euler_angles.hpp>
 #include <memory>
 #include <string>
 
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtx/euler_angles.hpp>
+
 #include "Material.hpp"
-#include "../types/Mesh.hpp"
 #include "ShaderResource.hpp"
+#include "Mesh.hpp"
 
 namespace vulkan {
 	/**

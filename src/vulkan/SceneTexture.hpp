@@ -1,5 +1,9 @@
 #pragma once
 
+#include <string>
+
+#include <vulkan/vulkan_core.h>
+
 #include "Texture.hpp"
 
 namespace vulkan {

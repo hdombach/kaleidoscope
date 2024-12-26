@@ -4,12 +4,13 @@
 #include <stdexcept>
 #include <set>
 #include <array>
+#include <vector>
 
 #include <vulkan/vulkan_core.h>
 
 #include "graphics.hpp"
 #include "defs.hpp"
-#include "../util/log.hpp"
+#include "util/log.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>

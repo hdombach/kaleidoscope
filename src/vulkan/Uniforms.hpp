@@ -4,7 +4,7 @@
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #include <glm/glm.hpp>
 
-#include "../types/Camera.hpp"
+#include "types/Camera.hpp"
 #include "MappedUniform.hpp"
 
 namespace vulkan {

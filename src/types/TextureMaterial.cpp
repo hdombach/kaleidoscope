@@ -4,11 +4,11 @@
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/ext/quaternion_transform.hpp>
 #include <glm/fwd.hpp>
-
-#include <vulkan/vulkan_core.h>
 #include <glm/vector_relational.hpp>
 
 #include "TextureMaterial.hpp"
+#include "vulkan/Texture.hpp"
+#include "ShaderResource.hpp"
 
 namespace types {
 	std::unique_ptr<TextureMaterial> TextureMaterial::create(uint32_t id, vulkan::Texture* texture) {

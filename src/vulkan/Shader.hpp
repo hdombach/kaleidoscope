@@ -3,10 +3,9 @@
 #include <string>
 
 #include <vulkan/vulkan_core.h>
-#include <vulkan/vulkan.h>
 
-#include "../util/result.hpp"
-#include "../util/errors.hpp"
+#include "util/result.hpp"
+#include "util/errors.hpp"
 
 namespace vulkan {
 	class Shader {

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include <string>
 
-#include "../vulkan/Vertex.hpp"
+#include "vulkan/Vertex.hpp"
 
 namespace types {
 	class Mesh {

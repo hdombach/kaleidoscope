@@ -1,9 +1,14 @@
-#include <tiny_obj_loader.h>
 #include <vector>
 #include <unordered_map>
 #include <filesystem>
+#include <string>
+
+#include <tiny_obj_loader.h>
 
 #include "StaticMesh.hpp"
+#include "util/result.hpp"
+#include "util/errors.hpp"
+#include "vulkan/Vertex.hpp"
 
 namespace types {
 	util::Result<StaticMesh::Ptr , KError> StaticMesh::from_file(

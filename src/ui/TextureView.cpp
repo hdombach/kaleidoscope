@@ -2,7 +2,7 @@
 #include <imgui.h>
 
 #include "TextureView.hpp"
-#include "../vulkan/Texture.hpp"
+#include "vulkan/Texture.hpp"
 
 namespace ui {
 	void TextureView(vulkan::Texture &texture) {

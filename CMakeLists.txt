@@ -50,36 +50,34 @@ function(compile_shader)
 		DEPENDS ${FULL_OUTPUT_FILE_NAME})
 endfunction()
 
-file(GLOB_RECURSE SOURCES "src/*.cpp")
 file(GLOB_RECURSE HEADERS "src/*.h")
 
-list(APPEND SOURCES "${CMAKE_BINARY_DIR}/imgui_impl_vulkan.cpp")
-list(APPEND HEADERS "${CMAKE_BINARY_DIR}/imgui_impl_vulkan.h")
+set(SOURCES
+	src/App.cpp
+	src/main.cpp
+	"${CMAKE_BINARY_DIR}/imgui_impl_vulkan.cpp"
+	"${CMAKE_BINARY_DIR}/imgui_impl_glfw.cpp"
+)
 
-list(APPEND SOURCES "${CMAKE_BINARY_DIR}/imgui_impl_glfw.cpp")
-list(APPEND HEADERS "${CMAKE_BINARY_DIR}/imgui_impl_glfw.h")
+set(INCLUDE_DIRS
+	${CMAKE_BINARY_DIR}
+	src
+)
 
-set(INCLUDE_DIRS "")
-foreach(HEADER ${HEADERS})
-	get_filename_component(TEMP_DIR ${HEADER} PATH)
-	list(APPEND INCLUDE_DIRS ${TEMP_DIR})
-endforeach()
-list(REMOVE_DUPLICATES INCLUDE_DIRS)
+include_directories(${INCLUDE_DIRS})
 
-include_directories(${HEADERS})
+add_subdirectory(src/types)
+add_subdirectory(src/ui)
+add_subdirectory(src/util)
+add_subdirectory(src/vulkan)
 
 add_executable(kaleidoscope ${SOURCES})
 target_include_directories(kaleidoscope PRIVATE ${INCLUDE_DIRS})
-target_include_directories(kaleidoscope PRIVATE src)
 target_link_libraries(kaleidoscope PUBLIC ${Vulkan_LIBRARIES})
 target_link_libraries(kaleidoscope PUBLIC glfw)
-target_link_libraries(kaleidoscope PUBLIC stb::stb)
-target_link_libraries(kaleidoscope PUBLIC tinyobjloader)
-target_link_libraries(kaleidoscope PUBLIC glm::glm)
-target_link_libraries(kaleidoscope PUBLIC imgui::imgui)
 target_link_libraries(kaleidoscope PUBLIC vulkan-headers::vulkan-headers)
-target_link_libraries(kaleidoscope PUBLIC shaderc::shaderc)
-target_link_libraries(kaleidoscope PUBLIC portable-file-dialogs::portable-file-dialogs)
+target_link_libraries(kaleidoscope PUBLIC types ui util vulkan)
+
 message("Build type is ${CMAKE_BUILD_TYPE}")
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "debug")
 	target_compile_options(kaleidoscope PUBLIC -g -O0)

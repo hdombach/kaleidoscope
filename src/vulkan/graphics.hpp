@@ -8,7 +8,7 @@
 #include <vulkan/vulkan_core.h>
 #include <GLFW/glfw3.h>
 
-#include "../util/errors.hpp"
+#include "util/errors.hpp"
 #include "vulkan/Sampler.hpp"
 
 namespace vulkan {

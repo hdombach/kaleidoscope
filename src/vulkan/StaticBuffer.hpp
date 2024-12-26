@@ -3,9 +3,8 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
-#include "graphics.hpp"
-#include "../util/result.hpp"
-#include "../util/errors.hpp"
+#include "util/result.hpp"
+#include "util/errors.hpp"
 
 namespace vulkan {
 	class StaticBuffer {

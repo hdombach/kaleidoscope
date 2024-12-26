@@ -1,6 +1,11 @@
 #pragma once
 
-#include "../vulkan/SceneTexture.hpp"
+#include <memory>
+#include <string>
+#include <glm/glm.hpp>
+
+#include "vulkan/SceneTexture.hpp"
+#include "vulkan/Scene.hpp"
 
 namespace vulkan {
 	class Scene;

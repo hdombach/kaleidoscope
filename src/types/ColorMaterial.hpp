@@ -1,19 +1,17 @@
 #pragma once
 
-#include <vector>
 #include <memory>
+#include <string>
+#include <cstdint>
 
 #include <glm/fwd.hpp>
-#include <glm/glm.hpp>
-#include <vulkan/vulkan_core.h>
 
 #include "Material.hpp"
-#include "../types/ShaderResource.hpp"
+#include "types/ShaderResource.hpp"
 
 namespace types {
 	class ColorMaterial: public Material {
 		public:
-			//TODO: change to unique_ptr
 			static std::unique_ptr<ColorMaterial> create(uint32_t id, glm::vec3 color);
 
 			~ColorMaterial() override = default;

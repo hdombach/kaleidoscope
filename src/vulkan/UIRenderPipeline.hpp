@@ -1,11 +1,13 @@
 #pragma once
 
+#include <functional>
+
+#include <imgui.h>
+#include <vulkan/vulkan.h>
+
 #include "Semaphore.hpp"
 #include "imgui_impl_vulkan.h"
 #include "vulkan/vulkan_core.h"
-#include <functional>
-#include <imgui.h>
-#include <vulkan/vulkan.h>
 
 namespace vulkan {
 	class Graphics;

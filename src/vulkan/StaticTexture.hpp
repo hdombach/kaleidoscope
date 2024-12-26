@@ -2,8 +2,8 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
-#include "../util/errors.hpp"
-#include "../util/result.hpp"
+#include "util/errors.hpp"
+#include "util/result.hpp"
 #include "Texture.hpp"
 #include "Image.hpp"
 

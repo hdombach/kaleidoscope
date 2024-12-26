@@ -1,3 +1,7 @@
+#include <string>
+
+#include <imgui.h>
+
 #include "Misc.hpp"
 
 namespace ui {

@@ -2,12 +2,10 @@
 
 #include <glm/fwd.hpp>
 
-#include "TextureView.hpp"
-#include "../vulkan/SceneTexture.hpp"
 #include "State.hpp"
-#include "../types/Node.hpp"
-#include "../types/ResourceManager.hpp"
-#include "../types/ShaderResource.hpp"
+#include "types/Node.hpp"
+#include "types/ResourceManager.hpp"
+#include "types/ShaderResource.hpp"
 
 class App;
 namespace ui {

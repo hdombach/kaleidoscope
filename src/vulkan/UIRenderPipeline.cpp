@@ -10,10 +10,10 @@
 #include "defs.hpp"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
-#include "../util/log.hpp"
+#include "util/log.hpp"
 #include "graphics.hpp"
-#include "../App.hpp"
-#include "../util/file.hpp"
+#include "App.hpp"
+#include "util/file.hpp"
 
 //https://github.com/ocornut/imgui/blob/master/examples/example_glfw_vulkan/main.cpp
 

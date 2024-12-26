@@ -1,20 +1,21 @@
 #pragma once
 
+#include <list>
 #include <memory>
 #include <vector>
 
 #include <vulkan/vulkan_core.h>
 
-#include "../util/result.hpp"
-#include "../util/errors.hpp"
-#include "../util/Observer.hpp"
-#include "../util/Util.hpp"
-#include "../util/filter_iterator.hpp"
-#include "../types/ResourceManager.hpp"
-#include "../types/Camera.hpp"
+#include "util/result.hpp"
+#include "util/errors.hpp"
+#include "util/Observer.hpp"
+#include "util/Util.hpp"
+#include "util/filter_iterator.hpp"
+#include "types/ResourceManager.hpp"
+#include "types/Camera.hpp"
 #include "prev_pass/PrevPass.hpp"
 #include "ray_pass/RayPass.hpp"
-#include "../types/Node.hpp"
+#include "types/Node.hpp"
 
 namespace vulkan {
 	/**

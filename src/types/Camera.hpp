@@ -6,7 +6,7 @@
 #include <glm/ext/quaternion_float.hpp>
 #include <glm/trigonometric.hpp>
 
-#include "../util/math.hpp"
+#include "util/math.hpp"
 
 namespace types {
 	class Camera {

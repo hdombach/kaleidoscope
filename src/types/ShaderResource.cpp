@@ -1,13 +1,15 @@
 #include <algorithm>
-#include <cstring>
+#include <string>
 #include <stdlib.h>
+#include <vector>
 
 #include <glm/glm.hpp>
 
 #include "ShaderResource.hpp"
-#include "../vulkan/MappedUniform.hpp"
-#include "../util/format.hpp"
-#include "../util/log.hpp"
+#include "vulkan/MappedUniform.hpp"
+#include "vulkan/Texture.hpp"
+#include "util/format.hpp"
+#include "util/errors.hpp"
 
 namespace types {
 	ShaderResource ShaderResource::create_primitive(

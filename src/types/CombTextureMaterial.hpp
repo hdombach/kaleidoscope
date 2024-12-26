@@ -1,9 +1,12 @@
 #pragma once
 
 #include <memory>
+#include <cstdint>
+#include <string>
 
 #include "Material.hpp"
-#include "../vulkan/Texture.hpp"
+#include "vulkan/Texture.hpp"
+#include "types/ShaderResource.hpp"
 
 namespace types {
 	class CombTextureMaterial: public Material {

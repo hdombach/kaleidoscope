@@ -5,8 +5,10 @@
 
 #include <glm/glm.hpp>
 
-#include "../vulkan/MappedUniform.hpp"
-#include "../vulkan/Texture.hpp"
+#include "vulkan/MappedUniform.hpp"
+#include "vulkan/Texture.hpp"
+#include "util/result.hpp"
+#include "util/errors.hpp"
 
 namespace types {
 	class ShaderResource {

@@ -10,7 +10,7 @@
 #include <glm/gtx/hash.hpp>
 #include <vulkan/vulkan.h>
 
-#include "../util/format.hpp"
+#include "util/format.hpp"
 
 namespace vulkan {
 	struct Vertex {

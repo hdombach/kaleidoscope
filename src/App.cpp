@@ -1,17 +1,20 @@
 #include <memory>
 #include <filesystem>
+#include <string>
+#include <chrono>
+
+#define GLFW_INCLUDE_VULKAN
 
 #include <GLFW/glfw3.h>
+#include <vulkan/vulkan_core.h>
 
 #include "App.hpp"
-#include "./vulkan/graphics.hpp"
-#include "./util/log.hpp"
-#include "./types/ResourceManager.hpp"
-#include "./vulkan/StaticTexture.hpp"
-#include "./vulkan/UIRenderPipeline.hpp"
-#include "./ui/AppView.hpp"
 #include "vulkan/Scene.hpp"
-#include "util/file.hpp"
+#include "vulkan/graphics.hpp"
+#include "vulkan/UIRenderPipeline.hpp"
+#include "util/log.hpp"
+#include "types/ResourceManager.hpp"
+#include "ui/AppView.hpp"
 
 float comb_ratio_value = 0.0f;
 

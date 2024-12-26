@@ -1,5 +1,9 @@
 #include "MandelbulbMesh.hpp"
 
+#include <string>
+#include <cstdint>
+#include <memory>
+
 namespace types {
 	MandelbulbMesh::Ptr MandelbulbMesh::create(std::string const &name, uint32_t id) {
 		auto result = MandelbulbMesh::Ptr(new MandelbulbMesh());

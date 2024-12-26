@@ -1,11 +1,9 @@
-#include <vector>
+#include <memory>
 
-#include <glm/ext/matrix_clip_space.hpp>
-#include <glm/ext/matrix_transform.hpp>
 #include <glm/fwd.hpp>
-#include <vulkan/vulkan_core.h>
 
 #include "ColorMaterial.hpp"
+#include "types/ShaderResource.hpp"
 
 namespace types {
 	std::unique_ptr<ColorMaterial> ColorMaterial::create(uint32_t id, glm::vec3 color) {

@@ -1,5 +1,9 @@
 #include "MandelboxMesh.hpp"
 
+#include <string>
+#include <cstdint>
+#include <memory>
+
 namespace types {
 	MandelboxMesh::Ptr MandelboxMesh::create(std::string const &name, uint32_t id) {
 		auto result = Ptr(new MandelboxMesh());

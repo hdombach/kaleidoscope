@@ -1,19 +1,19 @@
 
 #include <algorithm>
 #include <string>
+#include <vector>
 
 #include "util/errors.hpp"
 #include "util/result.hpp"
 #include "util/file.hpp"
 #include "util/Util.hpp"
 #include "util/log.hpp"
-
+#include "util/Observer.hpp"
 #include "vulkan/StaticTexture.hpp"
 #include "vulkan/Texture.hpp"
 #include "types/TextureMaterial.hpp"
 #include "types/CombTextureMaterial.hpp"
 #include "types/ColorMaterial.hpp"
-
 #include "types/MandelbulbMesh.hpp"
 #include "types/MandelboxMesh.hpp"
 #include "types/StaticMesh.hpp"
