@@ -70,22 +70,21 @@ namespace util {
 		return {a[0], a[1], a[2]};
 	}
 
-	template<typename T>
-	struct exists {
-		bool operator()(std::unique_ptr<T> const &ptr) {
-			return static_cast<bool>(ptr);
-		}
-	};
-
-	template<typename T>
+	/**
+	 * @brief Tests whether a ptr exists
+	 */
 	struct ptr_exists {
+		template<typename T>
 		bool operator()(T const *ptr) {
 			return ptr;
 		}
 	};
 
-	template<typename T>
+	/**
+	 * @brief Tests the element with a bool operator overload
+	 */
 	struct has_value {
+		template<typename T>
 		bool operator()(T const &v) {
 			return static_cast<bool>(v);
 		}

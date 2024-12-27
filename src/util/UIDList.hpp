@@ -31,7 +31,7 @@ namespace util {
 	 * The element class needs to either contain an id function or impliment trait
 	 * to retrieve id
 	 */
-	template<typename Element, typename Pred = util::has_value<Element>, typename IdTrait = id_trait>
+	template<typename Element, typename Pred = util::has_value, typename IdTrait = id_trait>
 	class UIDList {
 		public:
 			using Container = std::vector<Element>;

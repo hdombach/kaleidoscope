@@ -3,7 +3,7 @@
 #include "util/Util.hpp"
 
 namespace util {
-	template<typename From, typename Pred = util::has_value<typename From::value_type>>
+	template<typename From, typename Pred = util::has_value>
 		class filter_iterator {
 		public:
 			using value_type = typename From::value_type;
