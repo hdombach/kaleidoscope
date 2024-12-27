@@ -49,7 +49,9 @@ namespace vulkan {
 
 			~PrevPassNode() { destroy(); }
 
-			operator bool() { return _node; }
+			operator bool() const { return _node; }
+
+			uint32_t id() const { return _node->id(); }
 
 			DescriptorSets &descriptor_set() { return _descriptor_set; }
 

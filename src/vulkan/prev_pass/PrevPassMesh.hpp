@@ -23,7 +23,7 @@ namespace vulkan {
 			const types::Mesh *base() const;
 
 			bool exists() const;
-			operator bool() { return exists(); }
+			operator bool() const { return exists(); }
 
 			bool is_de();
 

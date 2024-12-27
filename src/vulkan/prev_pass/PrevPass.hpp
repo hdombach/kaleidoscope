@@ -17,6 +17,7 @@
 #include "util/result.hpp"
 #include "util/errors.hpp"
 #include "util/Observer.hpp"
+#include "util/UIDList.hpp"
 #include "types/Camera.hpp"
 
 namespace vulkan {
@@ -165,9 +166,9 @@ namespace vulkan {
 			std::string _codegen_de();
 
 		private:
-			std::vector<PrevPassMesh> _meshes;
-			std::vector<PrevPassMaterial> _materials;
-			std::vector<PrevPassNode> _nodes;
+			util::UIDList<PrevPassMesh> _meshes;
+			util::UIDList<PrevPassMaterial> _materials;
+			util::UIDList<PrevPassNode> _nodes;
 			MeshObserver _mesh_observer;
 			MaterialObserver _material_observer;
 			NodeObserver _node_observer;

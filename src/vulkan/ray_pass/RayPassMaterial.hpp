@@ -3,10 +3,7 @@
 #include <string>
 #include "util/result.hpp"
 #include "util/errors.hpp"
-
-namespace types {
-	class Material;
-}
+#include "types/Material.hpp"
 
 namespace vulkan {
 	class RayPass;
@@ -21,6 +18,7 @@ namespace vulkan {
 
 			bool has_value() const { return _material; }
 			operator bool() const { return has_value(); }
+			uint32_t id() const { return _material->id(); }
 
 			/**
 			 * @brief Creates definition for struct containing properties in vulkan shader

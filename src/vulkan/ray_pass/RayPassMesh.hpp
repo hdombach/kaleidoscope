@@ -29,6 +29,8 @@ namespace vulkan {
 			bool has_value() const { return _mesh; }
 			operator bool() const { return has_value(); }
 
+			uint32_t id() const { return _mesh->id(); }
+
 			/**
 			 * @brief Populates nodes and vertices with data corresponding to underlying mesh
 			 * @param[out] nodes

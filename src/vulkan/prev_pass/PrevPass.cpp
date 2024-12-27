@@ -352,14 +352,12 @@ namespace vulkan {
 	}
 
 	void PrevPass::mesh_create(uint32_t id) {
-		while (id + 1 > _meshes.size()) {
-			_meshes.push_back(PrevPassMesh());
-		}
 		if (auto mesh = PrevPassMesh::create(*_scene, _scene->resource_manager().get_mesh(id))) {
-			_meshes[id] = std::move(mesh.value());
+			LOG_ASSERT(_meshes.insert(std::move(mesh.value())), "Duplicated mesh in PrevPass");
 		} else {
-			LOG_ERROR << "Couldn't create preview mesh: " << mesh.error() << std::endl;
+			TRY_LOG(mesh);
 		}
+
 		_destroy_de_buffers();
 		_create_de_buffers();
 		_destroy_de_descriptor_set();
@@ -375,13 +373,14 @@ namespace vulkan {
 	}
 
 	void PrevPass::material_create(uint32_t id) {
-		while (id + 1 > _materials.size()) {
-			_materials.push_back(PrevPassMaterial());
-		}
-		if (auto material = PrevPassMaterial::create(*_scene, *this, _scene->resource_manager().get_material(id))) {
-			_materials[id] = std::move(material.value());
+		if (auto material = PrevPassMaterial::create(
+			*_scene,
+			*this,
+			_scene->resource_manager().get_material(id))
+		) {
+			LOG_ASSERT(_materials.insert(std::move(material.value())), "Duplicated material in PrevPass");
 		} else {
-			LOG_ERROR << "Couldn't create preview material: " << material.error() << std::endl;
+			TRY_LOG(material);
 		}
 	}
 
@@ -392,13 +391,10 @@ namespace vulkan {
 	}
 
 	void PrevPass::node_create(uint32_t id) {
-		while (id + 1 > _nodes.size()) {
-			_nodes.push_back(PrevPassNode());
-		}
 		if (auto node = PrevPassNode::create(*_scene, *this, _scene->get_node(id))) {
-			_nodes[id] = std::move(node.value());
+			LOG_ASSERT(_nodes.insert(std::move(node.value())), "Duplicated node in PrevPass");
 		} else {
-			LOG_ERROR << "Couldn't create preview node: " << node.error() << std::endl;
+			TRY_LOG(node);
 		}
 
 		_create_de_buffers();
@@ -999,7 +995,7 @@ namespace vulkan {
 
 	util::Result<void, KError> PrevPass::_create_de_buffers() {
 		auto nodes = std::vector<PrevPassNode::VImpl>();
-		for (auto &node : _nodes) {
+		for (auto &node : _nodes.raw()) {
 			if (node && node.is_de()) {
 				nodes.push_back(node.vimpl());
 			} else {

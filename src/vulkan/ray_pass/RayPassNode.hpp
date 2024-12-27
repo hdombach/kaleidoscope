@@ -64,6 +64,8 @@ namespace vulkan {
 			bool has_value() const { return _node; }
 			operator bool() const { return has_value(); }
 
+			uint32_t id() const { return _node->id(); }
+
 			/**
 			 * @brief Gets underlying generic node
 			 */

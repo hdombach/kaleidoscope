@@ -15,9 +15,8 @@
 
 #include "types/Node.hpp"
 
-#include "util/IterAdapter.hpp"
-#include "util/filter_iterator.hpp"
 #include "util/Observer.hpp"
+#include "util/UIDList.hpp"
 
 namespace vulkan {
 	class Scene;
@@ -95,42 +94,6 @@ namespace vulkan {
 			void reset_counters();
 
 		private:
-			using MeshContainer = std::vector<RayPassMesh>;
-			using mesh_iterator = util::filter_iterator<MeshContainer::iterator>;
-			using const_mesh_iterator = util::filter_iterator<MeshContainer::const_iterator>;
-
-			using NodeContainer = std::vector<RayPassNode>;
-			using node_iterator = util::filter_iterator<NodeContainer::iterator>;
-			using const_node_iterator = util::filter_iterator<NodeContainer::const_iterator>;
-
-			using MaterialContainer = std::vector<RayPassMaterial>;
-			using material_iterator = util::filter_iterator<MaterialContainer::iterator>;
-			using const_material_iterator = util::filter_iterator<MaterialContainer::const_iterator>;
-
-			mesh_iterator _mesh_begin();
-			mesh_iterator _mesh_end();
-			auto _get_meshes() { return util::Adapt(_mesh_begin(), _mesh_end()); }
-
-			const_mesh_iterator _mesh_begin() const;
-			const_mesh_iterator _mesh_end() const;
-			auto _get_meshes() const { return util::Adapt(_mesh_begin(), _mesh_end()); }
-
-			node_iterator _node_begin();
-			node_iterator _node_end();
-			auto _get_nodes() { return util::Adapt(_node_begin(), _node_end()); }
-
-			const_node_iterator _node_begin() const;
-			const_node_iterator _node_end() const;
-			auto _get_nodes() const { return util::Adapt(_node_begin(), _node_end()); }
-
-			material_iterator _material_begin();
-			material_iterator _material_end();
-			auto _get_materials() { return util::Adapt(_material_begin(), _material_end()); }
-
-			const_material_iterator _material_begin() const;
-			const_material_iterator _material_end() const;
-			auto _get_materials() const { return util::Adapt(_material_begin(), _material_end()); }
-
 			void mesh_create(uint32_t id);
 			void mesh_update(uint32_t id);
 			void mesh_remove(uint32_t id);
@@ -182,9 +145,9 @@ namespace vulkan {
 			StaticBuffer _node_buffer;
 			StaticBuffer _material_buffer;
 
-			std::vector<RayPassMesh> _meshes;
-			std::vector<RayPassNode> _nodes;
-			std::vector<RayPassMaterial> _materials;
+			util::UIDList<RayPassMesh> _meshes;
+			util::UIDList<RayPassNode> _nodes;
+			util::UIDList<RayPassMaterial> _materials;
 
 			Scene *_scene;
 			uint32_t _compute_index;

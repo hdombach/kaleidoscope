@@ -28,7 +28,7 @@ namespace vulkan {
 			~PrevPassMaterial();
 
 			bool exists() const;
-			operator bool() { return exists(); }
+			operator bool() const { return exists(); }
 
 			uint32_t id() const;
 
