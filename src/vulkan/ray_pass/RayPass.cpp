@@ -390,7 +390,7 @@ namespace vulkan {
 	std::vector<VkImageView> RayPass::used_textures() const {
 		auto result = std::vector<VkImageView>();
 
-		for (auto &t : _scene->resource_manager().texture_container()) {
+		for (auto &t : _scene->resource_manager().textures().raw()) {
 			if (t) {
 				result.push_back(t->image_view());
 			} else {

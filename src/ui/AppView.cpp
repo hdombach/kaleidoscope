@@ -179,8 +179,7 @@ namespace ui {
 			ImGui::Text("Node (id: %d)", node->id());
 			ui::InputText("Name", &node->name());
 			if (ImGui::BeginCombo("Mesh", node->mesh().name().data())) {
-				auto meshes = util::Adapt(scene.resource_manager().mesh_begin(), scene.resource_manager().mesh_end());
-				for (auto &mesh : meshes) {
+				for (auto &mesh : scene.resource_manager().meshes()) {
 					if (!mesh) continue;
 					if (ImGui::Selectable(mesh->name().data(), mesh->id() == node->mesh().id())) {
 						node->set_mesh(*mesh);
@@ -190,8 +189,7 @@ namespace ui {
 			}
 
 			if (ImGui::BeginCombo("Material", node->material().name().data())) {
-				auto materials = util::Adapt(scene.resource_manager().material_begin(), scene.resource_manager().material_end());
-				for (auto &material : materials) {
+				for (auto &material : scene.resource_manager().materials()) {
 					if (!material) continue;
 					if (ImGui::Selectable(material->name().data(), material->id() == node->material().id())) {
 						node->set_material(*material);
@@ -365,7 +363,7 @@ namespace ui {
 		float width = 250;
 
 		ImGui::BeginChild("Mesh List", ImVec2(width, -ImGui::GetFrameHeightWithSpacing()), true);
-		for (auto &mesh : util::Adapt(resources.mesh_begin(), resources.mesh_end())) {
+		for (auto &mesh : resources.meshes()) {
 			if (!mesh) continue;
 			if (ImGui::Selectable(mesh->name().data(), state.selected_item == mesh->id())) {
 				if (state.selected_item == mesh->id()) {
@@ -418,7 +416,7 @@ namespace ui {
 		float width = 250;
 
 		ImGui::BeginChild("Material List", ImVec2(width, -ImGui::GetFrameHeightWithSpacing()), true);
-		for (auto &material : util::Adapt(resources.material_begin(), resources.material_end())) {
+		for (auto &material : resources.materials()) {
 			if (!material) continue;
 			if (ImGui::Selectable(material->name().data(), state.selected_item == material->id())) {
 				if (state.selected_item == material->id()) {

@@ -1,8 +1,10 @@
 #pragma once
+#include <string>
+#include <memory>
+
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
-#include <string>
 
 #include "util/log.hpp"
 
@@ -14,6 +16,8 @@ namespace vulkan {
 	 */
 	class Texture {
 		public:
+			using Ptr = std::unique_ptr<Texture>;
+
 			virtual ~Texture() = default;
 			virtual VkDescriptorSet imgui_descriptor_set() = 0;
 			virtual VkImageView image_view() const = 0;

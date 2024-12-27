@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <memory>
 
 #include "types/ShaderResource.hpp"
 
@@ -8,6 +9,8 @@ namespace types {
 
 	class Material {
 		public:
+			using Ptr = std::unique_ptr<Material>;
+
 			virtual ~Material() = default;
 
 			virtual types::ShaderResources const &resources() const = 0;

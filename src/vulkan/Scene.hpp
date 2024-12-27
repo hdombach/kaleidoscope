@@ -2,7 +2,6 @@
 
 #include <list>
 #include <memory>
-#include <vector>
 
 #include <vulkan/vulkan_core.h>
 
@@ -10,7 +9,6 @@
 #include "util/errors.hpp"
 #include "util/Observer.hpp"
 #include "util/Util.hpp"
-#include "util/filter_iterator.hpp"
 #include "types/ResourceManager.hpp"
 #include "types/Camera.hpp"
 #include "prev_pass/PrevPass.hpp"
@@ -25,9 +23,9 @@ namespace vulkan {
 	class Scene {
 		public:
 			using Ptr = std::unique_ptr<Scene>;
-			using Container = std::vector<Node::Ptr>;
-			using iterator = util::filter_iterator<Container::iterator, util::exists<Node>>;
-			using const_iterator = util::filter_iterator<Container::const_iterator, util::exists<Node>>;
+			using Container = util::UIDList<Node::Ptr, util::has_value<Node::Ptr>, util::id_deref_trait>;
+			using iterator = Container::iterator;
+			using const_iterator = Container::const_iterator;
 
 			Scene(types::ResourceManager &resource_manager, PrevPass::Ptr preview_render_pass);
 
@@ -74,21 +72,20 @@ namespace vulkan {
 			util::Result<void, KError> rem_node_observer(util::Observer *observer);
 
 			iterator begin() {
-				return iterator(_nodes.begin(), _nodes.end());
+				return _nodes.begin();
 			}
 			iterator end() {
-				return iterator(_nodes.end(), _nodes.end());
+				return _nodes.end();
 			}
 			const_iterator begin() const {
-				return const_iterator(_nodes.begin(), _nodes.end());
+				return _nodes.begin();
 			}
 			const_iterator end() const {
-				return const_iterator(_nodes.begin(), _nodes.end());
+				return _nodes.end();
 			}
 
 		private:
 			Scene() = default;
-			uint32_t _get_node_id();
 
 		private:
 			PrevPass::Ptr _preview_render_pass;
@@ -98,7 +95,7 @@ namespace vulkan {
 			 * @brief List of abstract nodes
 			 * First element is reserved for unused id
 			 */
-			std::vector<Node::Ptr> _nodes;
+			Container _nodes;
 			types::Camera _camera;
 			bool _camera_dirty_bit = false;
 			types::ResourceManager *_resource_manager;

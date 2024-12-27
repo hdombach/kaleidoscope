@@ -3,7 +3,6 @@
 #include <vector>
 #include "util/filter_iterator.hpp"
 #include "util/Util.hpp"
-#include "util/log.hpp"
 
 namespace util {
 	/**
@@ -27,7 +26,7 @@ namespace util {
 	 * @brief A list of unique id's
 	 * The caller is in charge of setting the unique id's however
 	 * this class does provide helper functions
-	 * The id 0 will always be empty
+	 * The first element (id == 0) will always be empty
 	 *
 	 * The element class needs to either contain an id function or impliment trait
 	 * to retrieve id

@@ -23,9 +23,6 @@
 
 namespace types {
 	ResourceManager::ResourceManager() {
-		_textures.push_back(nullptr);
-		_meshes.push_back(nullptr);
-		_materials.push_back(nullptr);
 		//Can't use defaultTexture_ for holder because of const issues
 		auto res = add_texture_from_file("assets/default.png");
 		if (res) {
@@ -54,20 +51,25 @@ namespace types {
 	util::Result<uint32_t, KError> ResourceManager::add_texture_from_file(
 			const std::string &url)
 	{
+		auto id = _textures.get_id();
+
 		auto path = util::env_file_path(url);
 		TRY(path);
 		auto texture = vulkan::StaticTexture::from_file(
-				_get_texture_id(),
-				path.value());
+			id,
+			path.value()
+		);
 		TRY(texture);
+
 		int i = 1;
 		auto base_name = texture.value()->name();
 		while (get_texture(texture.value()->name())) {
 			texture.value()->set_name(base_name + "_" + std::to_string(i));
 			i++;
 		}
-		_textures.push_back(std::move(texture.value()));
-		return {static_cast<uint32_t>(_textures.size() - 1)};
+
+		_textures.insert(std::move(texture.value()));
+		return {id};
 	}
 
 	vulkan::Texture *ResourceManager::default_texture() {
@@ -118,29 +120,16 @@ namespace types {
 		return {};
 	}
 
-	ResourceManager::texture_iterator ResourceManager::texture_begin() {
-		return texture_iterator(_textures.begin(), _textures.end());
-	}
-	ResourceManager::texture_iterator ResourceManager::texture_end() {
-		return texture_iterator(_textures.end(), _textures.end());
-	}
-	ResourceManager::const_texture_iterator ResourceManager::texture_begin() const {
-		return const_texture_iterator(_textures.begin(), _textures.end());
-	}
-	ResourceManager::const_texture_iterator ResourceManager::texture_end() const {
-		return const_texture_iterator(_textures.end(), _textures.end());
-	}
-	ResourceManager::TextureContainer const &ResourceManager::texture_container() const {
-		return _textures;
-	}
-
 	util::Result<uint32_t, KError> ResourceManager::add_mesh_from_file(
 			std::string const &url)
 	{
+		auto id = _meshes.get_id();
+
 		auto path = util::env_file_path(url);
 		TRY(path);
-		auto mesh = StaticMesh::from_file(_get_mesh_id(), path.value());
+		auto mesh = StaticMesh::from_file(id, path.value());
 		TRY(mesh);
+
 		int i = 1;
 		auto base_name = mesh.value()->name();
 		while (get_mesh(mesh.value()->name())) {
@@ -154,7 +143,7 @@ namespace types {
 	util::Result<uint32_t, KError> ResourceManager::add_mesh_square(
 			std::string const &name)
 	{
-		return _add_mesh(StaticMesh::create_square(name, _get_mesh_id()));
+		return _add_mesh(StaticMesh::create_square(name, _meshes.get_id()));
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_mesh_from_vertices(
@@ -162,21 +151,22 @@ namespace types {
 			std::vector<vulkan::Vertex> const &vertices)
 	{
 		return _add_mesh(StaticMesh::from_vertices(
-					name,
-					_get_mesh_id(),
-					vertices));
+			name,
+			_meshes.get_id(),
+			vertices
+		));
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_mesh_mandelbulb(
 			std::string const &name) 
 	{
-		return _add_mesh(MandelbulbMesh::create(name, _get_mesh_id()));
+		return _add_mesh(MandelbulbMesh::create(name, _meshes.get_id()));
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_mesh_mandelbox(
 		std::string const &name)
 		{
-			return _add_mesh(MandelboxMesh::create(name, _get_mesh_id()));
+			return _add_mesh(MandelboxMesh::create(name, _meshes.get_id()));
 		}
 
 	Mesh *ResourceManager::default_mesh() {
@@ -240,24 +230,6 @@ namespace types {
 		return {};
 	}
 
-	ResourceManager::mesh_iterator ResourceManager::mesh_begin() {
-		return mesh_iterator(_meshes.begin(), _meshes.end());
-	}
-
-	ResourceManager::mesh_iterator ResourceManager::mesh_end() {
-		return mesh_iterator(_meshes.end(), _meshes.end());
-	}
-	ResourceManager::const_mesh_iterator ResourceManager::mesh_begin() const {
-		return const_mesh_iterator(_meshes.begin(), _meshes.end());
-	}
-	ResourceManager::const_mesh_iterator ResourceManager::mesh_end() const {
-		return const_mesh_iterator(_meshes.end(), _meshes.end());
-	}
-	ResourceManager::MeshContainer const &ResourceManager::mesh_container() const {
-		return _meshes;
-	}
-	
-
 	util::Result<void, KError> ResourceManager::add_mesh_observer(util::Observer *observer) {
 		if (util::contains(_mesh_observers, observer)) {
 			return KError::internal("Mesh observer already exists");
@@ -284,14 +256,14 @@ namespace types {
 			std::string const &name,
 			vulkan::Texture *texture)
 	{
-		return _add_material(name, types::TextureMaterial::create(_get_material_id(), texture));
+		return _add_material(name, types::TextureMaterial::create(_materials.get_id(), texture));
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_color_material(
 			std::string const &name,
 			glm::vec3 color)
 	{
-		return _add_material(name, types::ColorMaterial::create(_get_material_id(), color));
+		return _add_material(name, types::ColorMaterial::create(_materials.get_id(), color));
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_comb_texture_material(
@@ -300,9 +272,10 @@ namespace types {
 			vulkan::Texture *comb_texture)
 	{
 		return _add_material(name, types::CombTextureMaterial::create(
-					_get_material_id(),
-					prim_texture,
-					comb_texture));
+			_materials.get_id(),
+			prim_texture,
+			comb_texture
+		));
 	}
 
 	types::Material *ResourceManager::default_material() {
@@ -360,23 +333,6 @@ namespace types {
 		return {};
 	}
 
-	ResourceManager::material_iterator ResourceManager::material_begin() {
-		return material_iterator(_materials.begin(), _materials.end());
-	}
-
-	ResourceManager::material_iterator ResourceManager::material_end() {
-		return material_iterator(_materials.end(), _materials.end());
-	}
-	ResourceManager::const_material_iterator ResourceManager::material_begin() const {
-		return const_material_iterator(_materials.begin(), _materials.end());
-	}
-	ResourceManager::const_material_iterator ResourceManager::material_end() const {
-		return const_material_iterator(_materials.end(), _materials.end());
-	}
-	ResourceManager::MaterialContainer const &ResourceManager::material_container() const {
-		return _materials;
-	}
-
 	util::Result<void, KError> ResourceManager::add_material_observer(util::Observer *observer) {
 		if (util::contains(_material_observers, observer)) {
 			return KError::internal("Material observer already exists");
@@ -406,7 +362,8 @@ namespace types {
 			return KError::mesh_already_exists(mesh->name());
 		}
 		auto id = mesh->id();
-		_meshes.push_back(std::move(mesh));
+		_meshes.insert(std::move(mesh));
+
 		for (auto &mesh_observer: _mesh_observers) {
 			mesh_observer->obs_create(id);
 		}
@@ -422,22 +379,11 @@ namespace types {
 		}
 		auto id = material->id();
 		material->set_name(name);
-		_materials.push_back(std::move(material));
+		_materials.insert(std::move(material));
+
 		for (auto &material_observer: _material_observers) {
 			material_observer->obs_create(id);
 		}
 		return {id};
-	}
-
-	uint32_t ResourceManager::_get_mesh_id() {
-		return _meshes.size();
-	}
-
-	uint32_t ResourceManager::_get_material_id() {
-		return _materials.size();
-	}
-
-	uint32_t ResourceManager::_get_texture_id() {
-		return _textures.size();
 	}
 }

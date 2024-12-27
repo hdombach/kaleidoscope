@@ -1,12 +1,14 @@
 #pragma once
 
 #include <string>
+#include <memory>
 
 #include "vulkan/Vertex.hpp"
 
 namespace types {
 	class Mesh {
 		public:
+			using Ptr = std::unique_ptr<Mesh>;
 			using const_iterator = const vulkan::Vertex*;
 
 			virtual ~Mesh() = default;

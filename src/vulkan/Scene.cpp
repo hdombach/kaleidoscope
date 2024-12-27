@@ -34,7 +34,6 @@ namespace vulkan {
 		resource_manager.add_mesh_observer(&scene->_raytrace_render_pass->mesh_observer());
 		resource_manager.add_material_observer(&scene->_raytrace_render_pass->material_observer());
 
-		scene->_nodes.push_back(nullptr);
 		return scene;
 	}
 
@@ -82,7 +81,7 @@ namespace vulkan {
 	}
 
 	VkSemaphore Scene::render_preview(VkSemaphore semaphore) {
-		return _preview_render_pass->render(_nodes, camera(), semaphore);
+		return _preview_render_pass->render(_nodes.raw(), camera(), semaphore);
 	}
 
 	VkSemaphore Scene::render_raytrace(VkSemaphore semaphore) {
@@ -94,7 +93,7 @@ namespace vulkan {
 		uniform_buffer.de_iterations = camera().de_iterations;
 		uniform_buffer.de_small_step = std::pow(10.0f, -camera().de_small_step);
 
-		return _raytrace_render_pass->submit(*_nodes[0], _render_rate, uniform_buffer, semaphore);
+		return _raytrace_render_pass->submit(*_nodes.raw()[0], _render_rate, uniform_buffer, semaphore);
 	}
 
 	void Scene::update() {
@@ -146,8 +145,8 @@ namespace vulkan {
 		if (!material) {
 			return KError::invalid_arg("Material is null");
 		}
-		auto id = _get_node_id();
-		_nodes.push_back(Node::create(id, *mesh, *material));
+		auto id = _nodes.get_id();
+		_nodes.insert(Node::create(id, *mesh, *material));
 		for (auto &observer : _node_observers) {
 			observer->obs_create(id);
 		}
@@ -155,7 +154,7 @@ namespace vulkan {
 	}
 
 	util::Result<void, KError> Scene::rem_node(uint32_t id) {
-		if (!_nodes[id]) {
+		if (!_nodes.contains(id)) {
 			return KError::invalid_node(id);
 		}
 
@@ -191,9 +190,5 @@ namespace vulkan {
 				_node_observers.end(),
 				observer);
 		return {};
-	}
-
-	uint32_t Scene::_get_node_id() {
-		return _nodes.size();
 	}
 }

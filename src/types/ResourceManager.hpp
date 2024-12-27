@@ -6,11 +6,11 @@
 #include <list>
 #include <memory>
 
+#include "util/Util.hpp"
 #include "util/errors.hpp"
 #include "util/result.hpp"
 #include "util/Observer.hpp"
-#include "util/filter_iterator.hpp"
-#include "util/IterAdapter.hpp"
+#include "util/UIDList.hpp"
 #include "types/Mesh.hpp"
 #include "vulkan/Texture.hpp"
 #include "vulkan/Vertex.hpp"
@@ -24,17 +24,11 @@ namespace types {
 	 */
 	class ResourceManager {
 		public:
-			using TextureContainer = std::vector<std::unique_ptr<vulkan::Texture>>;
-			using texture_iterator = util::filter_iterator<TextureContainer::iterator, util::exists<vulkan::Texture>>;
-			using const_texture_iterator = util::filter_iterator<TextureContainer::const_iterator, util::exists<vulkan::Texture>>;
+			using TextureContainer = util::UIDList<vulkan::Texture::Ptr, util::has_value<vulkan::Texture::Ptr>, util::id_deref_trait>;
 
-			using MeshContainer = std::vector<std::unique_ptr<Mesh>>;
-			using mesh_iterator = util::filter_iterator<MeshContainer::iterator, util::exists<Mesh>>;
-			using const_mesh_iterator = util::filter_iterator<MeshContainer::const_iterator, util::exists<Mesh>>;
+			using MeshContainer = util::UIDList<Mesh::Ptr, util::has_value<Mesh::Ptr>, util::id_deref_trait>;
 
-			using MaterialContainer = std::vector<std::unique_ptr<Material>>;
-			using material_iterator = util::filter_iterator<MaterialContainer::iterator, util::exists<Material>>;
-			using const_material_iterator = util::filter_iterator<MaterialContainer::const_iterator, util::exists<Material>>;
+			using MaterialContainer = util::UIDList<Material::Ptr, util::has_value<Material::Ptr>, util::id_deref_trait>;
 		public:
 			ResourceManager();
 			~ResourceManager();
@@ -50,22 +44,9 @@ namespace types {
 			vulkan::Texture *get_texture(uint32_t id);
 			vulkan::Texture const *get_texture(uint32_t id) const;
 			util::Result<void, KError> rename_texture(uint32_t id, std::string const &name);
-			texture_iterator texture_begin();
-			texture_iterator texture_end();
-			/**
-			 * @brief An iterator that only contains valid textures
-			 */
-			auto textures() { return util::Adapt(texture_begin(), texture_end()); }
-			const_texture_iterator texture_begin() const;
-			const_texture_iterator texture_end() const;
-			/**
-			 * @brief A const iterator that only contains valid textures
-			 */
-			auto textures() const { return util::Adapt(texture_begin(), texture_end()); }
-			/**
-			 * @brief Underlying container containing unallocated textures as well
-			 */
-			TextureContainer const &texture_container() const;
+
+			TextureContainer &textures() { return _textures; }
+			TextureContainer const &textures() const { return _textures; }
 
 			/*========================= Meshes =====================================*/
 			util::Result<uint32_t, KError> add_mesh_from_file(
@@ -88,22 +69,9 @@ namespace types {
 			Mesh *get_mesh(uint32_t id);
 			bool has_mesh(std::string const &name) const;
 			util::Result<void, KError> rename_mesh(uint32_t id, std::string const &name);
-			mesh_iterator mesh_begin();
-			mesh_iterator mesh_end();
-			/**
-			 * @brief An iterator that only contains valid meshes
-			 */
-			auto meshes() { return util::Adapt(mesh_begin(), mesh_end()); }
-			const_mesh_iterator mesh_begin() const;
-			const_mesh_iterator mesh_end() const;
-			/**
-			 * @brief A const iterator that only contains valid meshes
-			 */
-			auto meshes() const { return util::Adapt(mesh_begin(), mesh_end()); }
-			/**
-			 * @brief Underlying container containg unallocated meshes as well
-			 */
-			MeshContainer const &mesh_container() const;
+
+			MeshContainer &meshes() { return _meshes; }
+			MeshContainer const &meshes() const { return _meshes; }
 
 			util::Result<void, KError> add_mesh_observer(util::Observer *observer);
 			util::Result<void, KError> rem_mesh_observer(util::Observer *observer);
@@ -126,22 +94,9 @@ namespace types {
 			types::Material *get_material(uint32_t id);
 			bool has_material(std::string const &name) const;
 			util::Result<void, KError> rename_material(uint32_t id, std::string const &name);
-			material_iterator material_begin();
-			material_iterator material_end();
-			/**
-			 * @brief An iterator that only contains valid materials
-			 */
-			auto materials() { return util::Adapt(material_begin(), material_end()); }
-			const_material_iterator material_begin() const;
-			const_material_iterator material_end() const;
-			/**
-			 * @brief A const iterator that only contains valid materials
-			 */
-			auto materials() const { return util::Adapt(material_begin(), material_end()); }
-			/**
-			 * @brief Underlying container containing unallocated materials as well
-			 */
-			MaterialContainer const &material_container() const;
+
+			MaterialContainer &materials() { return _materials; }
+			MaterialContainer const &materials() const { return _materials; }
 
 			util::Result<void, KError> add_material_observer(util::Observer *observer);
 			util::Result<void, KError> rem_material_observer(util::Observer *observer);
@@ -152,9 +107,6 @@ namespace types {
 			util::Result<uint32_t, KError> _add_material(
 					std::string const &name,
 					std::unique_ptr<types::Material> &&material);
-			uint32_t _get_mesh_id();
-			uint32_t _get_material_id();
-			uint32_t _get_texture_id();
 
 		private:
 			/**
@@ -164,9 +116,9 @@ namespace types {
 			 * Elements can be nullptr if they are not created
 			 */
 
-			std::vector<std::unique_ptr<vulkan::Texture>> _textures;
+			TextureContainer _textures;
 			MeshContainer _meshes;
-			std::vector<std::unique_ptr<types::Material>> _materials;
+			MaterialContainer _materials;
 			
 			/**
 			 * default indexes
