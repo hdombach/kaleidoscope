@@ -71,6 +71,7 @@ add_subdirectory(src/ui)
 add_subdirectory(src/util)
 add_subdirectory(src/vulkan)
 add_subdirectory(src/tests)
+add_subdirectory(src/codegen)
 
 add_executable(kaleidoscope ${SOURCES})
 target_include_directories(kaleidoscope PRIVATE ${INCLUDE_DIRS})
