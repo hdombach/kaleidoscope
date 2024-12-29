@@ -13,6 +13,7 @@ namespace cg {
 				reference,
 				sequence,
 				alternative,
+				closure,
 			};
 
 			using Container = std::vector<CFG>;
@@ -37,6 +38,14 @@ namespace cg {
 			static CFG seq(CFG &&lhs, CFG &&rhs);
 
 			static CFG alt(CFG &&lhs, CFG &&rhs);
+
+			/**
+			 * @brief create a closure around a single reference
+			 * @param[in] c
+			 */
+			static CFG cls(CFG const &c);
+
+			static CFG cls(CFG &&c);
 
 			Container const &children() const;
 			std::string const &content() const;

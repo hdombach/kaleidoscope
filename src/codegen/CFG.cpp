@@ -147,6 +147,19 @@ namespace cg {
 		return result;
 	}
 
+	CFG CFG::cls(CFG const &c) {
+		return CFG::cls(CFG::ref(c));
+	}
+
+	CFG CFG::cls(CFG &&c) {
+		auto result = CFG();
+
+		result._type = Type::closure;
+		result._children.push_back(std::move(c));
+
+		return result;
+	}
+
 	CFG::Container const &CFG::children() const {
 		return _children;
 	}
@@ -201,6 +214,8 @@ namespace cg {
 					os << child;
 				}
 				return os;
+			case Type::closure:
+				return os << "[" << _children[0] << "]";
 		}
 	}
 
@@ -337,6 +352,35 @@ namespace cg {
 
 		auto test_long2 = first + (second | third) + fourth;
 		EXPECT_EQ(test_long2.str(), "first_ref + (second_ref | third_ref) + fourth_ref");
+
+		CFG recurse_test;
+		recurse_test = "end"_cfg | "e"_cfg + recurse_test;
+		recurse_test.set_name("recurse_test");
+
+		EXPECT_EQ(recurse_test.str(), "\"end\" | \"e\" + recurse_test");
+	}
+
+	TEST(cfg, closures) {
+		auto first = "first"_cfg;
+		first.set_name("first_ref");
+
+		auto second = "second"_cfg;
+		second.set_name("second_ref");
+
+		auto single_closure = CFG::cls(first);
+		EXPECT_EQ(single_closure.str(), "[first_ref]");
+
+		auto alt_closure = CFG::cls(first | second);
+		EXPECT_EQ(alt_closure.str(), "[first_ref | second_ref]");
+
+		auto alt_closure2 = CFG::cls(first.dup() | second.dup());
+		EXPECT_EQ(alt_closure2.str(), "[\"first\" | \"second\"]");
+
+		auto seq_closure = CFG::cls(first + second);
+		EXPECT_EQ(seq_closure.str(), "[first_ref + second_ref]");
+
+		auto seq_closure_combined = CFG::cls(first.dup() + second.dup());
+		EXPECT_EQ(seq_closure_combined.str(), "[\"firstsecond\"]");
 	}
 }
 
