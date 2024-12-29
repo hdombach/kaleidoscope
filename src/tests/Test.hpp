@@ -47,9 +47,13 @@ void expect_eq(
 	if (lhs == rhs) {
 		suites[test.suite_name][test.test_name].passed_test_count++;
 	} else {
-		std::cout << "[TEST " << test.suite_name << "::" << test.test_name << "] ";
-		std::cout << "Expression " << lhs_string << "==" << rhs_string << " failed ";
-		std::cout << "( " << lhs << " == " << rhs << " )" << std::endl;
+		std::cout << "[FAILED TEST " << test.suite_name << "::" << test.test_name
+			<< " (" << filename << ":"<< line << ")] " << std::endl;
+		std::cout << "\tEXPECT_EQ(" << lhs_string << ", " << rhs_string << ");" << std::endl;
+		std::cout << std::endl;
+		std::cout << "\tlhs: " << lhs << std::endl;
+		std::cout << "\trhs: " << rhs << std::endl;
+		std::cout << std::endl;
 	}
 }
 #define EXPECT_EQ(lhs, rhs) \
