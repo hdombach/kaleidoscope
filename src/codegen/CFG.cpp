@@ -160,6 +160,19 @@ namespace cg {
 		return result;
 	}
 
+	CFG CFG::opt(CFG const &c) {
+		return CFG::opt(CFG::ref(c));
+	}
+
+	CFG CFG::opt(CFG &&c) {
+		auto result = CFG();
+
+		result._type = Type::optional;
+		result._children.push_back(std::move(c));
+
+		return result;
+	}
+
 	CFG::Container const &CFG::children() const {
 		return _children;
 	}
@@ -171,6 +184,9 @@ namespace cg {
 	}
 	void CFG::set_name(std::string const &name) {
 		_name = name;
+	}
+	CFG const &CFG::ref() const {
+		return *_ref;
 	}
 
 	std::ostream &CFG::debug(std::ostream &os) const {
@@ -216,6 +232,8 @@ namespace cg {
 				return os;
 			case Type::closure:
 				return os << "[" << _children[0] << "]";
+			case Type::optional:
+				return os << "(" << _children[0] << ")?";
 		}
 	}
 
@@ -381,6 +399,42 @@ namespace cg {
 
 		auto seq_closure_combined = CFG::cls(first.dup() + second.dup());
 		EXPECT_EQ(seq_closure_combined.str(), "[\"firstsecond\"]");
+	}
+
+	TEST(cfg, optional) {
+		auto first = "first"_cfg;
+		first.set_name("first_ref");
+
+		auto second = "second"_cfg;
+		second.set_name("second_ref");
+
+		auto third = "third"_cfg;
+		third.set_name("third_ref");
+
+		auto single = CFG::opt(first);
+		EXPECT_EQ(single.str(), "(first_ref)?");
+
+		auto single_literal = CFG::opt(first.dup());
+		EXPECT_EQ(single_literal.str(), "(\"first\")?");
+
+		auto concat_opt = CFG::opt(first + second) + third;
+		EXPECT_EQ(concat_opt.str(), "(first_ref + second_ref)? + third_ref");
+
+		auto combine_opt = CFG::opt(first.dup() + second.dup()) + third;
+		EXPECT_EQ(combine_opt.str(), "(\"firstsecond\")? + third_ref");
+
+		auto alt_opt = CFG::opt(first | second) | third;
+		EXPECT_EQ(alt_opt.str(), "(first_ref | second_ref)? | third_ref");
+
+		auto mixed_opt = first | CFG::opt(second + third);
+		EXPECT_EQ(mixed_opt.str(), "first_ref | (second_ref + third_ref)?");
+
+		auto mixed_opt2 = CFG::opt(second | third) + first;
+		EXPECT_EQ(mixed_opt2.str(), "(second_ref | third_ref)? + first_ref");
+
+		auto opt_nested = CFG::opt(CFG::opt(first.dup()));
+		EXPECT_EQ(opt_nested.str(), "((\"first\")?)?");
+
 	}
 }
 

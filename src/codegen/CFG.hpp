@@ -14,6 +14,7 @@ namespace cg {
 				sequence,
 				alternative,
 				closure,
+				optional,
 			};
 
 			using Container = std::vector<CFG>;
@@ -47,10 +48,19 @@ namespace cg {
 
 			static CFG cls(CFG &&c);
 
+			/**
+			 * @brief Creates an optional around a single reference
+			 * @param[in] c
+			 */
+			static CFG opt(CFG const &c);
+
+			static CFG opt(CFG &&c);
+
 			Container const &children() const;
 			std::string const &content() const;
 			Type type() const;
 			void set_name(std::string const &str);
+			CFG const &ref() const;
 
 			std::ostream &debug(std::ostream &os) const;
 
