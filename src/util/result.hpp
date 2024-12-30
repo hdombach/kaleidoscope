@@ -48,14 +48,21 @@ namespace util {
 					}
 				}
 
-				Value &value(Value default_value) {
+				Value &value(Value &default_value) {
 					try {
 						return std::get<Value>(*this);
 					} catch (std::bad_variant_access) {
 						return default_value;
 					}
 				}
-				Value const &value(Value default_value) const {
+				Value const &value(Value const &default_value) const {
+					try {
+						return std::get<Value>(*this);
+					} catch (std::bad_variant_access) {
+						return default_value;
+					}
+				}
+				Value value(Value default_value) {
 					try {
 						return std::get<Value>(*this);
 					} catch (std::bad_variant_access) {
