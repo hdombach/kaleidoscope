@@ -2,7 +2,7 @@
 #include "tests/Test.hpp"
 
 namespace cg {
-	util::Result<size_t, ASTError> match_cfg_literal(const char *str, CFG const &cfg) {
+	util::Result<size_t, ASTError> match_cfg_literal(const char *str, cfg const &cfg) {
 		auto r = 0;
 		for (auto c : cfg.content()) {
 			if (str[r] != c) return ASTError{};
@@ -11,11 +11,11 @@ namespace cg {
 		return r;
 	}
 
-	util::Result<size_t, ASTError> match_cfg_ref(const char *str, CFG const &cfg) {
+	util::Result<size_t, ASTError> match_cfg_ref(const char *str, cfg const &cfg) {
 		return match_cfg(str, cfg.ref());
 	}
 
-	util::Result<size_t, ASTError> match_cfg_seq(const char *str, CFG const &cfg) {
+	util::Result<size_t, ASTError> match_cfg_seq(const char *str, cfg const &cfg) {
 		size_t r = 0;
 		for (auto &child : cfg.children()) {
 			if (auto i = match_cfg(str+r, child)) {
@@ -27,7 +27,7 @@ namespace cg {
 		return r;
 	}
 
-	util::Result<size_t, ASTError> match_cfg_alt(const char *str, CFG const &cfg) {
+	util::Result<size_t, ASTError> match_cfg_alt(const char *str, cfg const &cfg) {
 		for (auto &child : cfg.children()) {
 			if (auto i = match_cfg(str, child)) {
 				return i;
@@ -36,7 +36,7 @@ namespace cg {
 		return ASTError{};
 	}
 
-	util::Result<size_t, ASTError> match_cfg_closure(const char *str, CFG const &cfg) {
+	util::Result<size_t, ASTError> match_cfg_closure(const char *str, cfg const &cfg) {
 		size_t r = 0;
 		while (true) {
 			if (auto i = match_cfg(str + r, cfg.children()[0])) {
@@ -47,25 +47,25 @@ namespace cg {
 		}
 	}
 
-	util::Result<size_t, ASTError> match_cfg_opt(const char *str, CFG const &cfg) {
+	util::Result<size_t, ASTError> match_cfg_opt(const char *str, cfg const &cfg) {
 		return match_cfg(str, cfg.children()[0]).value(0);
 	}
 
-	util::Result<size_t, ASTError> match_cfg(const char *str, CFG const &cfg) {
+	util::Result<size_t, ASTError> match_cfg(const char *str, cfg const &cfg) {
 		switch (cfg.type()) {
-			case CFG::Type::none:
+			case cfg::Type::none:
 				return 0;
-			case CFG::Type::literal:
+			case cfg::Type::literal:
 				return match_cfg_literal(str, cfg);
-			case CFG::Type::reference:
+			case cfg::Type::reference:
 				return match_cfg_ref(str, cfg);
-			case CFG::Type::sequence:
+			case cfg::Type::sequence:
 				return match_cfg_seq(str, cfg);
-			case CFG::Type::alternative:
+			case cfg::Type::alternative:
 				return match_cfg_alt(str, cfg);
-			case CFG::Type::closure:
+			case cfg::Type::closure:
 				return match_cfg_closure(str, cfg);
-			case CFG::Type::optional:
+			case cfg::Type::optional:
 				return match_cfg_opt(str, cfg);
 		}
 	}
@@ -85,7 +85,7 @@ namespace cg {
 			"0"_cfg | "1"_cfg | "2"_cfg | "3"_cfg | "4"_cfg |
 			"5"_cfg | "6"_cfg | "7"_cfg | "8"_cfg | "9"_cfg;
 
-		auto integer = CFG::cls(digit);
+		auto integer = cfg::cls(digit);
 
 		auto decimal = integer + "."_cfg + integer;
 
@@ -110,17 +110,17 @@ namespace cg {
 			"0"_cfg | "1"_cfg | "2"_cfg | "3"_cfg | "4"_cfg |
 			"5"_cfg | "6"_cfg | "7"_cfg | "8"_cfg | "9"_cfg;
 
-		auto integer = digit + CFG::cls(digit);
+		auto integer = digit + cfg::cls(digit);
 
-		auto decimal = integer + CFG::opt("."_cfg + integer);
+		auto decimal = integer + cfg::opt("."_cfg + integer);
 
-		auto exp_sing = CFG::ref(decimal);
+		auto exp_sing = cfg::ref(decimal);
 
-		auto exp3 = CFG::cls("+"_cfg | "-"_cfg | "!"_cfg) + exp_sing;
+		auto exp3 = cfg::cls("+"_cfg | "-"_cfg | "!"_cfg) + exp_sing;
 
-		auto exp5 = exp3 + CFG::cls(("*"_cfg | "/"_cfg | "%"_cfg) + exp3);
+		auto exp5 = exp3 + cfg::cls(("*"_cfg | "/"_cfg | "%"_cfg) + exp3);
 
-		auto exp6 = exp5 + CFG::cls(("+"_cfg | "-"_cfg) + exp5);
+		auto exp6 = exp5 + cfg::cls(("+"_cfg | "-"_cfg) + exp5);
 
 		auto exp = std::ref(exp6);
 

@@ -19,7 +19,7 @@ namespace cg {
 	}
 
 	struct ASTNode {
-		CFG *cfg;
+		cfg *cfg;
 		std::vector<ASTNode> children;
 		std::string consumed;
 	};
@@ -28,12 +28,12 @@ namespace cg {
 	 * @brief Tests whether string matches context free grammar
 	 * @returns Number of consumed characters
 	 */
-	inline util::Result<size_t, ASTError> match_cfg(std::string const &str, CFG const &cfg) {
+	inline util::Result<size_t, ASTError> match_cfg(std::string const &str, cfg const &cfg) {
 		return match_cfg(str.data(), cfg);
 	}
 	/**
 	 * @brief Tests whether string matches context free grammar
 	 * @returns Number of consumed characters
 	 */
-	util::Result<size_t, ASTError> match_cfg(const char *str, CFG const &cfg);
+	util::Result<size_t, ASTError> match_cfg(const char *str, cfg const &cfg);
 }
