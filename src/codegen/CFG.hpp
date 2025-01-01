@@ -8,7 +8,7 @@ namespace cg {
 	/**
 	 * @brief Class for building context free grammars
 	 */
-	class cfg {
+	class Cfg {
 		public:
 			enum class Type {
 				none,
@@ -20,34 +20,34 @@ namespace cg {
 				optional,
 			};
 
-			using Container = std::vector<cfg>;
+			using Container = std::vector<Cfg>;
 
 		public:
-			cfg();
+			Cfg();
 
-			cfg(const cfg &other) = delete;
-			cfg(cfg &&other);
-			cfg& operator=(const cfg &other) = delete;
-			cfg & operator=(cfg&& other);
+			Cfg(const Cfg &other) = delete;
+			Cfg(Cfg &&other);
+			Cfg& operator=(const Cfg &other) = delete;
+			Cfg & operator=(Cfg&& other);
 
 			void destroy();
-			~cfg() { destroy(); }
+			~Cfg() { destroy(); }
 
-			cfg dup() const;
+			Cfg dup() const;
 
 			/**
 			 * @brief Creates a string literal grammar object
 			 * Matches against a string of the same value
 			 * @param[in] str
 			 */
-			static cfg literal(std::string const &str);
+			static Cfg literal(std::string const &str);
 
 			/**
 			 * @brief Creates a reference string grammar object
 			 * Is helpful when creating recursive definitions
 			 * @param[in] other
 			 */
-			static cfg ref(cfg const &other);
+			static Cfg ref(Cfg const &other);
 
 			/**
 			 * @brief Creates a sequence grammar object
@@ -58,7 +58,7 @@ namespace cg {
 			 * @param[in] lhs
 			 * @param[in] rhs
 			 */
-			static cfg seq(cfg &&lhs, cfg &&rhs);
+			static Cfg seq(Cfg &&lhs, Cfg &&rhs);
 
 			/**
 			 * @brief Creates an alternate grammar object
@@ -66,33 +66,33 @@ namespace cg {
 			 * @param[in] lhs
 			 * @param[in] rhs
 			 */
-			static cfg alt(cfg &&lhs, cfg &&rhs);
+			static Cfg alt(Cfg &&lhs, Cfg &&rhs);
 
 			/**
 			 * @brief Create a closure around a single reference
 			 * @param[in] c
 			 */
-			static cfg cls(cfg const &c);
+			static Cfg cls(Cfg const &c);
 
 			/**
 			 * @brief Creates a closure grammar object
 			 * Matches against the child object multiple times or skips
 			 * @param[in] c
 			 */
-			static cfg cls(cfg &&c);
+			static Cfg cls(Cfg &&c);
 
 			/**
 			 * @brief Creates an optional around a single reference
 			 * @param[in] c
 			 */
-			static cfg opt(cfg const &c);
+			static Cfg opt(Cfg const &c);
 
 			/**
 			 * @brief Creates an optional around a grammar object
 			 * Matches against child object or skips
 			 * @param[in] c
 			 */
-			static cfg opt(cfg &&c);
+			static Cfg opt(Cfg &&c);
 
 			/**
 			 * @brief Gets children object excluding references
@@ -107,7 +107,7 @@ namespace cg {
 			 * @brief Sets name used for debug printing
 			 */
 			void set_name(std::string const &str);
-			cfg const &ref() const;
+			Cfg const &ref() const;
 
 			std::ostream &debug(std::ostream &os) const;
 
@@ -116,43 +116,42 @@ namespace cg {
 
 		private:
 			Container _children;
-			cfg const *_ref = nullptr;
+			Cfg const *_ref = nullptr;
 			std::string _content;
 			Type _type;
 			std::string _name;
 	};
 
-	inline cfg operator ""_cfg(const char * str, size_t) {
-		return cfg::literal(str);
+	inline Cfg operator ""_cfg(const char * str, size_t) {
+		return Cfg::literal(str);
 	}
 
-	inline cfg operator+(cfg const &lhs, cfg const &rhs) {
-		return cfg::seq(cfg::ref(lhs), cfg::ref(rhs));
+	inline Cfg operator+(Cfg const &lhs, Cfg const &rhs) {
+		return Cfg::seq(Cfg::ref(lhs), Cfg::ref(rhs));
 	};
-	inline cfg operator+(cfg &&lhs, cfg &&rhs) {
-		return cfg::seq(std::move(lhs), std::move(rhs));
+	inline Cfg operator+(Cfg &&lhs, Cfg &&rhs) {
+		return Cfg::seq(std::move(lhs), std::move(rhs));
 	}
-	inline cfg operator+(cfg const &lhs, cfg &&rhs) {
-		return cfg::seq(cfg::ref(lhs), std::move(rhs));
+	inline Cfg operator+(Cfg const &lhs, Cfg &&rhs) {
+		return Cfg::seq(Cfg::ref(lhs), std::move(rhs));
 	}
-	inline cfg operator+(cfg &&lhs, cfg const &rhs) {
-		return cfg::seq(std::move(lhs), cfg::ref(rhs).dup());
+	inline Cfg operator+(Cfg &&lhs, Cfg const &rhs) {
+		return Cfg::seq(std::move(lhs), Cfg::ref(rhs).dup());
 	}
 
-	inline cfg operator|(cfg const &lhs, cfg const &rhs) {
-		return cfg::alt(cfg::ref(lhs), cfg::ref(rhs));
+	inline Cfg operator|(Cfg const &lhs, Cfg const &rhs) {
+		return Cfg::alt(Cfg::ref(lhs), Cfg::ref(rhs));
 	}
-	inline cfg operator|(cfg &&lhs, cfg &&rhs) {
-		return cfg::alt(std::move(lhs), std::move(rhs));
+	inline Cfg operator|(Cfg &&lhs, Cfg &&rhs) {
+		return Cfg::alt(std::move(lhs), std::move(rhs));
 	}
-	inline cfg operator|(cfg const &lhs, cfg &&rhs) {
-		return cfg::alt(cfg::ref(lhs), std::move(rhs));
+	inline Cfg operator|(Cfg const &lhs, Cfg &&rhs) {
+		return Cfg::alt(Cfg::ref(lhs), std::move(rhs));
 	}
-	inline cfg operator|(cfg &&lhs, cfg const &rhs) {
-		return cfg::alt(std::move(lhs), cfg::ref(rhs));
+	inline Cfg operator|(Cfg &&lhs, Cfg const &rhs) {
+		return Cfg::alt(std::move(lhs), Cfg::ref(rhs));
 	}
-}
-
-inline std::ostream &operator<<(std::ostream& os, cg::cfg const &cfg) {
-	return cfg.debug(os);
+	inline std::ostream &operator<<(std::ostream& os, cg::Cfg const &cfg) {
+		return cfg.debug(os);
+	}
 }

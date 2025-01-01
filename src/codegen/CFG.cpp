@@ -6,9 +6,9 @@
 #include "tests/Test.hpp"
 
 namespace cg {
-	cfg::cfg(): _type(Type::none) { }
+	Cfg::Cfg(): _type(Type::none) { }
 
-	cfg::cfg(cfg &&other) {
+	Cfg::Cfg(Cfg &&other) {
 		_children = std::move(other._children);
 
 		_ref = other._ref;
@@ -22,7 +22,7 @@ namespace cg {
 		_name = std::move(other._name);
 	}
 
-	cfg &cfg::operator=(cfg &&other) {
+	Cfg &Cfg::operator=(Cfg &&other) {
 		destroy();
 
 		_children = std::move(other._children);
@@ -40,7 +40,7 @@ namespace cg {
 		return *this;
 	}
 
-	void cfg::destroy() {
+	void Cfg::destroy() {
 		_children.clear();
 		_ref = nullptr;
 		_content.clear();
@@ -48,8 +48,8 @@ namespace cg {
 		_name.clear();
 	}
 
-	cfg cfg::dup() const {
-		cfg result;
+	Cfg Cfg::dup() const {
+		Cfg result;
 		for (auto &child : _children) {
 			result._children.push_back(child.dup());
 		}
@@ -61,8 +61,8 @@ namespace cg {
 		return result;
 	}
 
-	cfg cfg::literal(const std::string &str) {
-		auto result = cfg();
+	Cfg Cfg::literal(const std::string &str) {
+		auto result = Cfg();
 
 		result._type = Type::literal;
 		result._content = str;
@@ -70,8 +70,8 @@ namespace cg {
 		return result;
 	}
 
-	cfg cfg::ref(cfg const &other) {
-		auto result = cfg();
+	Cfg Cfg::ref(Cfg const &other) {
+		auto result = Cfg();
 
 		result._ref = &other;
 		result._type = Type::reference;
@@ -79,8 +79,8 @@ namespace cg {
 		return result;
 	}
 
-	cfg cfg::seq(cfg &&lhs, cfg &&rhs) {
-		auto result = cfg();
+	Cfg Cfg::seq(Cfg &&lhs, Cfg &&rhs) {
+		auto result = Cfg();
 
 		if (lhs.type() == Type::literal && rhs.type() == Type::literal) {
 			result._type = Type::literal;
@@ -118,8 +118,8 @@ namespace cg {
 		return result;
 	}
 
-	cfg cfg::alt(cfg &&lhs, cfg &&rhs) {
-		auto result = cfg();
+	Cfg Cfg::alt(Cfg &&lhs, Cfg &&rhs) {
+		auto result = Cfg();
 
 		result._type = Type::alternative;
 
@@ -147,12 +147,12 @@ namespace cg {
 		return result;
 	}
 
-	cfg cfg::cls(cfg const &c) {
-		return cfg::cls(cfg::ref(c));
+	Cfg Cfg::cls(Cfg const &c) {
+		return Cfg::cls(Cfg::ref(c));
 	}
 
-	cfg cfg::cls(cfg &&c) {
-		auto result = cfg();
+	Cfg Cfg::cls(Cfg &&c) {
+		auto result = Cfg();
 
 		result._type = Type::closure;
 		result._children.push_back(std::move(c));
@@ -160,12 +160,12 @@ namespace cg {
 		return result;
 	}
 
-	cfg cfg::opt(cfg const &c) {
-		return cfg::opt(cfg::ref(c));
+	Cfg Cfg::opt(Cfg const &c) {
+		return Cfg::opt(Cfg::ref(c));
 	}
 
-	cfg cfg::opt(cfg &&c) {
-		auto result = cfg();
+	Cfg Cfg::opt(Cfg &&c) {
+		auto result = Cfg();
 
 		result._type = Type::optional;
 		result._children.push_back(std::move(c));
@@ -173,23 +173,23 @@ namespace cg {
 		return result;
 	}
 
-	cfg::Container const &cfg::children() const {
+	Cfg::Container const &Cfg::children() const {
 		return _children;
 	}
-	std::string const &cfg::content() const {
+	std::string const &Cfg::content() const {
 		return _content;
 	}
-	cfg::Type cfg::type() const {
+	Cfg::Type Cfg::type() const {
 		return _type;
 	}
-	void cfg::set_name(std::string const &name) {
+	void Cfg::set_name(std::string const &name) {
 		_name = name;
 	}
-	cfg const &cfg::ref() const {
+	Cfg const &Cfg::ref() const {
 		return *_ref;
 	}
 
-	std::ostream &cfg::debug(std::ostream &os) const {
+	std::ostream &Cfg::debug(std::ostream &os) const {
 		bool first = true;
 		switch (_type) {
 			case Type::none:
@@ -237,17 +237,17 @@ namespace cg {
 		}
 	}
 
-	std::string cfg::str() const {
+	std::string Cfg::str() const {
 		std::stringstream ss;
 		debug(ss);
 		return ss.str();
 	}
 
 	TEST(cfg, literal) {
-		auto literal_cfg = cfg::literal("simpler cfg");
+		auto literal_cfg = Cfg::literal("simpler cfg");
 		EXPECT_EQ(literal_cfg.str(), "\"simpler cfg\"");
 
-		cfg literal_cfg2 = "another simpler cfg"_cfg;
+		Cfg literal_cfg2 = "another simpler cfg"_cfg;
 		EXPECT_EQ(literal_cfg2.str(), "\"another simpler cfg\"");
 	}
 
@@ -265,13 +265,13 @@ namespace cg {
 		auto first = "f"_cfg + "ir"_cfg + "st"_cfg;
 		EXPECT_EQ(first.str(), "\"first\"");
 
-		auto second = cfg() + cfg::literal("second") + cfg();
+		auto second = Cfg() + Cfg::literal("second") + Cfg();
 		EXPECT_EQ(second.str(), "\"second\"");
 
 		auto first_sec = first.dup() + second.dup();
 		EXPECT_EQ(first_sec.str(), "\"firstsecond\"");
 
-		auto first_third = cfg::seq(first.dup(), "third"_cfg);
+		auto first_third = Cfg::seq(first.dup(), "third"_cfg);
 		EXPECT_EQ(first_third.str(), "\"firstthird\"");
 	}
 
@@ -371,7 +371,7 @@ namespace cg {
 		auto test_long2 = first + (second | third) + fourth;
 		EXPECT_EQ(test_long2.str(), "first_ref + (second_ref | third_ref) + fourth_ref");
 
-		cfg recurse_test;
+		Cfg recurse_test;
 		recurse_test = "end"_cfg | "e"_cfg + recurse_test;
 		recurse_test.set_name("recurse_test");
 
@@ -385,19 +385,19 @@ namespace cg {
 		auto second = "second"_cfg;
 		second.set_name("second_ref");
 
-		auto single_closure = cfg::cls(first);
+		auto single_closure = Cfg::cls(first);
 		EXPECT_EQ(single_closure.str(), "[first_ref]");
 
-		auto alt_closure = cfg::cls(first | second);
+		auto alt_closure = Cfg::cls(first | second);
 		EXPECT_EQ(alt_closure.str(), "[first_ref | second_ref]");
 
-		auto alt_closure2 = cfg::cls(first.dup() | second.dup());
+		auto alt_closure2 = Cfg::cls(first.dup() | second.dup());
 		EXPECT_EQ(alt_closure2.str(), "[\"first\" | \"second\"]");
 
-		auto seq_closure = cfg::cls(first + second);
+		auto seq_closure = Cfg::cls(first + second);
 		EXPECT_EQ(seq_closure.str(), "[first_ref + second_ref]");
 
-		auto seq_closure_combined = cfg::cls(first.dup() + second.dup());
+		auto seq_closure_combined = Cfg::cls(first.dup() + second.dup());
 		EXPECT_EQ(seq_closure_combined.str(), "[\"firstsecond\"]");
 	}
 
@@ -411,28 +411,28 @@ namespace cg {
 		auto third = "third"_cfg;
 		third.set_name("third_ref");
 
-		auto single = cfg::opt(first);
+		auto single = Cfg::opt(first);
 		EXPECT_EQ(single.str(), "(first_ref)?");
 
-		auto single_literal = cfg::opt(first.dup());
+		auto single_literal = Cfg::opt(first.dup());
 		EXPECT_EQ(single_literal.str(), "(\"first\")?");
 
-		auto concat_opt = cfg::opt(first + second) + third;
+		auto concat_opt = Cfg::opt(first + second) + third;
 		EXPECT_EQ(concat_opt.str(), "(first_ref + second_ref)? + third_ref");
 
-		auto combine_opt = cfg::opt(first.dup() + second.dup()) + third;
+		auto combine_opt = Cfg::opt(first.dup() + second.dup()) + third;
 		EXPECT_EQ(combine_opt.str(), "(\"firstsecond\")? + third_ref");
 
-		auto alt_opt = cfg::opt(first | second) | third;
+		auto alt_opt = Cfg::opt(first | second) | third;
 		EXPECT_EQ(alt_opt.str(), "(first_ref | second_ref)? | third_ref");
 
-		auto mixed_opt = first | cfg::opt(second + third);
+		auto mixed_opt = first | Cfg::opt(second + third);
 		EXPECT_EQ(mixed_opt.str(), "first_ref | (second_ref + third_ref)?");
 
-		auto mixed_opt2 = cfg::opt(second | third) + first;
+		auto mixed_opt2 = Cfg::opt(second | third) + first;
 		EXPECT_EQ(mixed_opt2.str(), "(second_ref | third_ref)? + first_ref");
 
-		auto opt_nested = cfg::opt(cfg::opt(first.dup()));
+		auto opt_nested = Cfg::opt(Cfg::opt(first.dup()));
 		EXPECT_EQ(opt_nested.str(), "((\"first\")?)?");
 
 	}
