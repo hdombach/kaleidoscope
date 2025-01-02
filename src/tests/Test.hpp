@@ -33,6 +33,15 @@ inline struct _TEST_NAME(_class_, suite_name, _, test_name) {\
 } _TEST_NAME(_inst_, suite_name, _, test_name); \
 void _TEST_NAME(_, suite_name, _, test_name)(Test &_test)
 
+inline std::ostream &test_head(
+	Test &test,
+	const char *filename,
+	size_t line
+) {
+	return std::cout << "[FAILED TEST " << test.suite_name << "::" << test.test_name
+		<< " (" << filename << ":" << line << ")] ";
+}
+
 template<typename LHS, typename RHS>
 void expect_eq(
 	Test &test,
@@ -47,16 +56,23 @@ void expect_eq(
 	if (lhs == rhs) {
 		suites[test.suite_name][test.test_name].passed_test_count++;
 	} else {
-		std::cout << "[FAILED TEST " << test.suite_name << "::" << test.test_name
-			<< " (" << filename << ":"<< line << ")] " << std::endl;
-		std::cout << "\tEXPECT_EQ(" << lhs_string << ", " << rhs_string << ");" << std::endl;
-		std::cout << std::endl;
-		std::cout << "\tlhs: " << lhs << std::endl;
-		std::cout << "\trhs: " << rhs << std::endl;
-		std::cout << std::endl;
+		auto &os = test_head(test, filename, line) << std::endl;
+
+		os << "\tEXPECT_EQ(" << lhs_string << ", " << rhs_string << ");" << std::endl;
+		os << std::endl;
+		os << "\tlhs: " << lhs << std::endl;
+		os << "\trhs: " << rhs << std::endl;
+		os << std::endl;
 	}
 }
 #define EXPECT_EQ(lhs, rhs) \
-expect_eq(_test, lhs, rhs, #lhs, #rhs, __FILE__, __LINE__)
+try { \
+	expect_eq(_test, lhs, rhs, #lhs, #rhs, __FILE__, __LINE__); \
+} catch (...) { \
+	auto &os = test_head(_test, __FILE__, __LINE__) << std::endl; \
+	os << "\tEXPECT_EQ(" #lhs ", " #rhs ");" << std::endl; \
+	os << std::endl; \
+	os << "\tException was thrown" << std::endl; \
+}
 
 int test_main();
