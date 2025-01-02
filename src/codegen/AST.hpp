@@ -69,7 +69,7 @@ namespace cg {
 			std::string _consumed;
 
 			/**
-			 * @biref The cached size
+			 * @brief The cached size
 			 */
 			mutable size_t _size;
 
