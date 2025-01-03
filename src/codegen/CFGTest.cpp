@@ -17,7 +17,7 @@ namespace cg {
 		named_value.set_name("named_ref");
 
 		auto combined = anon_value + named_value;
-		EXPECT_EQ(combined.str(), "<ref> + named_ref");
+		EXPECT_EQ(combined.str(), "<anon> + <named_ref>");
 	}
 
 	TEST(cfg, concat_str) {
@@ -45,22 +45,22 @@ namespace cg {
 		third.set_name("third_ref");
 
 		auto first_sec = first + second;
-		EXPECT_EQ(first_sec.str(), "first_ref + second_ref");
+		EXPECT_EQ(first_sec.str(), "<first_ref> + <second_ref>");
 
 		auto first_sec2 = first + second.dup();
-		EXPECT_EQ(first_sec2.str(), "first_ref + \"second\"");
+		EXPECT_EQ(first_sec2.str(), "<first_ref> + \"second\"");
 
 		auto first_sec3 = first.dup() + second;
-		EXPECT_EQ(first_sec3.str(), "\"first\" + second_ref");
+		EXPECT_EQ(first_sec3.str(), "\"first\" + <second_ref>");
 
 		auto first_sec_third = first + second + third;
-		EXPECT_EQ(first_sec_third.str(), "first_ref + second_ref + third_ref");
+		EXPECT_EQ(first_sec_third.str(), "<first_ref> + <second_ref> + <third_ref>");
 
 		auto first_sec_third2 = first + second.dup() + third;
-		EXPECT_EQ(first_sec_third2.str(), "first_ref + \"second\" + third_ref");
+		EXPECT_EQ(first_sec_third2.str(), "<first_ref> + \"second\" + <third_ref>");
 
 		auto first_sec_third3 = first.dup() + "_"_cfg + "_"_cfg + third;
-		EXPECT_EQ(first_sec_third3.str(), "\"first__\" + third_ref");
+		EXPECT_EQ(first_sec_third3.str(), "\"first__\" + <third_ref>");
 
 	}
 
@@ -75,28 +75,28 @@ namespace cg {
 		third.set_name("third_ref");
 
 		auto first_sec = first | second;
-		EXPECT_EQ(first_sec.str(), "first_ref | second_ref");
+		EXPECT_EQ(first_sec.str(), "<first_ref> | <second_ref>");
 
 		auto first_sec2 = first.dup() | second;
-		EXPECT_EQ(first_sec2.str(), "\"first\" | second_ref");
+		EXPECT_EQ(first_sec2.str(), "\"first\" | <second_ref>");
 
 		auto first_sec3 = first | second.dup();
-		EXPECT_EQ(first_sec3.str(), "first_ref | \"second\"");
+		EXPECT_EQ(first_sec3.str(), "<first_ref> | \"second\"");
 
 		auto first_sec4 = first.dup() | second.dup();
 		EXPECT_EQ(first_sec4.str(), "\"first\" | \"second\"");
 
 		auto first_sec_third = first | second | third;
-		EXPECT_EQ(first_sec_third.str(), "first_ref | second_ref | third_ref");
+		EXPECT_EQ(first_sec_third.str(), "<first_ref> | <second_ref> | <third_ref>");
 
 		auto first_sec_third2 = (first | second) | third;
-		EXPECT_EQ(first_sec_third2.str(), "first_ref | second_ref | third_ref");
+		EXPECT_EQ(first_sec_third2.str(), "<first_ref> | <second_ref> | <third_ref>");
 
 		auto first_sec_third3 = first | (second | third);
-		EXPECT_EQ(first_sec_third3.str(), "first_ref | second_ref | third_ref");
+		EXPECT_EQ(first_sec_third3.str(), "<first_ref> | <second_ref> | <third_ref>");
 
 		auto first_sec_third4 = (first | second.dup()) | third;
-		EXPECT_EQ(first_sec_third4.str(), "first_ref | \"second\" | third_ref");
+		EXPECT_EQ(first_sec_third4.str(), "<first_ref> | \"second\" | <third_ref>");
 	}
 
 	TEST(cfg, alt_concat) {
@@ -110,31 +110,31 @@ namespace cg {
 		fourth.set_name("fourth_ref");
 
 		auto test1 = first + second | third;
-		EXPECT_EQ(test1.str(), "first_ref + second_ref | third_ref");
+		EXPECT_EQ(test1.str(), "<first_ref> + <second_ref> | <third_ref>");
 
 		auto test2 = (first + second) | third;
-		EXPECT_EQ(test2.str(), "first_ref + second_ref | third_ref");
+		EXPECT_EQ(test2.str(), "<first_ref> + <second_ref> | <third_ref>");
 
 		auto test3 = first + (second | third);
-		EXPECT_EQ(test3.str(), "first_ref + (second_ref | third_ref)");
+		EXPECT_EQ(test3.str(), "<first_ref> + (<second_ref> | <third_ref>)");
 
 		auto test4 = first.dup() + (second.dup() | third);
-		EXPECT_EQ(test4.str(), "\"first\" + (\"second\" | third_ref)");
+		EXPECT_EQ(test4.str(), "\"first\" + (\"second\" | <third_ref>)");
 
 		auto test5 = first.dup() + second.dup() | third;
-		EXPECT_EQ(test5.str(), "\"firstsecond\" | third_ref");
+		EXPECT_EQ(test5.str(), "\"firstsecond\" | <third_ref>");
 
 		auto test_long = (first + second) | (third + fourth);
-		EXPECT_EQ(test_long.str(), "first_ref + second_ref | third_ref + fourth_ref");
+		EXPECT_EQ(test_long.str(), "<first_ref> + <second_ref> | <third_ref> + <fourth_ref>");
 
 		auto test_long2 = first + (second | third) + fourth;
-		EXPECT_EQ(test_long2.str(), "first_ref + (second_ref | third_ref) + fourth_ref");
+		EXPECT_EQ(test_long2.str(), "<first_ref> + (<second_ref> | <third_ref>) + <fourth_ref>");
 
 		Cfg recurse_test;
 		recurse_test = "end"_cfg | "e"_cfg + recurse_test;
 		recurse_test.set_name("recurse_test");
 
-		EXPECT_EQ(recurse_test.str(), "\"end\" | \"e\" + recurse_test");
+		EXPECT_EQ(recurse_test.str(), "\"end\" | \"e\" + <recurse_test>");
 	}
 
 	TEST(cfg, closures) {
@@ -145,16 +145,16 @@ namespace cg {
 		second.set_name("second_ref");
 
 		auto single_closure = Cfg::cls(first);
-		EXPECT_EQ(single_closure.str(), "[first_ref]");
+		EXPECT_EQ(single_closure.str(), "[<first_ref>]");
 
 		auto alt_closure = Cfg::cls(first | second);
-		EXPECT_EQ(alt_closure.str(), "[first_ref | second_ref]");
+		EXPECT_EQ(alt_closure.str(), "[<first_ref> | <second_ref>]");
 
 		auto alt_closure2 = Cfg::cls(first.dup() | second.dup());
 		EXPECT_EQ(alt_closure2.str(), "[\"first\" | \"second\"]");
 
 		auto seq_closure = Cfg::cls(first + second);
-		EXPECT_EQ(seq_closure.str(), "[first_ref + second_ref]");
+		EXPECT_EQ(seq_closure.str(), "[<first_ref> + <second_ref>]");
 
 		auto seq_closure_combined = Cfg::cls(first.dup() + second.dup());
 		EXPECT_EQ(seq_closure_combined.str(), "[\"firstsecond\"]");
@@ -171,25 +171,25 @@ namespace cg {
 		third.set_name("third_ref");
 
 		auto single = Cfg::opt(first);
-		EXPECT_EQ(single.str(), "(first_ref)?");
+		EXPECT_EQ(single.str(), "(<first_ref>)?");
 
 		auto single_literal = Cfg::opt(first.dup());
 		EXPECT_EQ(single_literal.str(), "(\"first\")?");
 
 		auto concat_opt = Cfg::opt(first + second) + third;
-		EXPECT_EQ(concat_opt.str(), "(first_ref + second_ref)? + third_ref");
+		EXPECT_EQ(concat_opt.str(), "(<first_ref> + <second_ref>)? + <third_ref>");
 
 		auto combine_opt = Cfg::opt(first.dup() + second.dup()) + third;
-		EXPECT_EQ(combine_opt.str(), "(\"firstsecond\")? + third_ref");
+		EXPECT_EQ(combine_opt.str(), "(\"firstsecond\")? + <third_ref>");
 
 		auto alt_opt = Cfg::opt(first | second) | third;
-		EXPECT_EQ(alt_opt.str(), "(first_ref | second_ref)? | third_ref");
+		EXPECT_EQ(alt_opt.str(), "(<first_ref> | <second_ref>)? | <third_ref>");
 
 		auto mixed_opt = first | Cfg::opt(second + third);
-		EXPECT_EQ(mixed_opt.str(), "first_ref | (second_ref + third_ref)?");
+		EXPECT_EQ(mixed_opt.str(), "<first_ref> | (<second_ref> + <third_ref>)?");
 
 		auto mixed_opt2 = Cfg::opt(second | third) + first;
-		EXPECT_EQ(mixed_opt2.str(), "(second_ref | third_ref)? + first_ref");
+		EXPECT_EQ(mixed_opt2.str(), "(<second_ref> | <third_ref>)? + <first_ref>");
 
 		auto opt_nested = Cfg::opt(Cfg::opt(first.dup()));
 		EXPECT_EQ(opt_nested.str(), "((\"first\")?)?");

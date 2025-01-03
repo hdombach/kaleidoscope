@@ -198,9 +198,9 @@ namespace cg {
 				return os << "\"" << _content << "\"";
 			case Type::reference:
 				if (_ref->_name.empty()) {
-					return os << "<ref>";
+					return os << "<anon>";
 				} else {
-					return os << _ref->_name;
+					return os << "<" << _ref->_name << ">";
 				}
 			case Type::sequence:
 				for (auto &child : _children) {

@@ -1,5 +1,7 @@
 #include "AST.hpp"
 #include "tests/Test.hpp"
+#include <fstream>
+#include <ostream>
 
 namespace cg {
 	TEST(ast, match_literals) {
@@ -67,26 +69,80 @@ namespace cg {
 	}
 
 	TEST(ast, parse_math) {
+		Cfg exp3, exp5, exp6;
+		auto whitespace = Cfg::cls(" "_cfg | "\t"_cfg | "\n"_cfg);
 		auto digit =
 			"0"_cfg | "1"_cfg | "2"_cfg | "3"_cfg | "4"_cfg |
 			"5"_cfg | "6"_cfg | "7"_cfg | "8"_cfg | "9"_cfg;
+		auto integer = digit + Cfg::cls(digit);
+		auto decimal = integer + Cfg::opt("."_cfg + integer);
+		auto exp_sing = whitespace + Cfg::ref(decimal);
+		exp3 = exp_sing | (Cfg::opt(whitespace + ("+"_cfg | "-"_cfg | "!"_cfg)) + exp3);
+		exp5 = exp3 + Cfg::opt(whitespace + ("*"_cfg | "/"_cfg | "%"_cfg) + exp5);
+		exp6 = exp5 + Cfg::opt(whitespace + ("+"_cfg | "-"_cfg) + exp6);
+		auto exp = Cfg::ref(exp6);
 
-		auto integer = digit.dup() + Cfg::cls(digit.dup());
+		whitespace.set_name("whitespace");
+		digit.set_name("digit");
+		integer.set_name("integer");
+		decimal.set_name("decimal");
+		exp_sing.set_name("single_exp");
+		exp3.set_name("inc_dec_exp");
+		exp5.set_name("mult_div_exp");
+		exp6.set_name("add_sub_exp");
+		exp.set_name("exp");
 
-		auto decimal = integer.dup() + Cfg::opt("."_cfg + integer.dup());
+		auto prim = std::vector<Cfg const *>{
+			&whitespace,
+			&exp_sing,
+			&exp3,
+			&exp5,
+			&exp6
+		};
 
-		auto exp_sing = Cfg::ref(decimal.dup());
 
-		auto exp3 = Cfg::cls("+"_cfg | "-"_cfg | "!"_cfg) + exp_sing;
+		EXPECT_EQ(
+			parse_cfg("1", exp).value().compressed(prim).pre_order_str(),
+			"exp add_sub_exp mult_div_exp inc_dec_exp single_exp "
+		);
 
-		auto exp5 = exp3 + Cfg::cls(("*"_cfg | "/"_cfg | "%"_cfg) + exp3);
+		EXPECT_EQ(
+			parse_cfg("501.76", exp).value().compressed(prim).pre_order_str(),
+			"exp add_sub_exp mult_div_exp inc_dec_exp single_exp "
+		);
 
-		auto exp6 = exp5 + Cfg::cls(("+"_cfg | "-"_cfg) + exp5);
+		EXPECT_EQ(
+			parse_cfg("41.2+14", exp).value().compressed(prim).pre_order_str(),
+			"exp add_sub_exp "
+			"mult_div_exp inc_dec_exp single_exp "
+			"add_sub_exp mult_div_exp inc_dec_exp single_exp "
+		);
 
-		auto exp = exp6.dup();
+		EXPECT_EQ(
+			parse_cfg("4-3*82  /3+ 2.3", exp).value().compressed(prim).pre_order_str(),
+			"exp add_sub_exp "
+				"mult_div_exp inc_dec_exp single_exp "
+				"add_sub_exp "
+					"mult_div_exp "
+						"inc_dec_exp single_exp "
+						"mult_div_exp "
+							"inc_dec_exp single_exp "
+							"whitespace "
+							"mult_div_exp inc_dec_exp single_exp "
+					"add_sub_exp mult_div_exp inc_dec_exp single_exp whitespace "
+		);
 
-		auto node = parse_cfg("1", exp);
+		std::ofstream file("gen/ast_parse_math.gv", std::ios::out);
+		parse_cfg("5+-2*-+-12", exp).value().compressed(prim).debug_dot(file);
+		file.close();
 
-		EXPECT_EQ(node.value().str(), "1");
+		EXPECT_EQ(
+			parse_cfg("5+-2*-+-12", exp).value().compressed(prim).pre_order_str(),
+			"exp add_sub_exp "
+				"mult_div_exp inc_dec_exp single_exp "
+				"add_sub_exp mult_div_exp "
+					"inc_dec_exp inc_dec_exp single_exp "
+					"mult_div_exp inc_dec_exp inc_dec_exp inc_dec_exp inc_dec_exp single_exp "
+		);
 	}
 }

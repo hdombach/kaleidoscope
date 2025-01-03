@@ -1,5 +1,6 @@
 #include "AST.hpp"
 #include "CFG.hpp"
+#include "util/Util.hpp"
 
 namespace cg {
 	ASTNode::ASTNode():
@@ -7,9 +8,10 @@ namespace cg {
 		_size(0)
 	{ }
 
-	ASTNode::ASTNode(Cfg const &cfg) {
+	ASTNode::ASTNode(Cfg const &cfg, uint32_t id) {
 		_cfg = &cfg;
 		_size = 0;
+		_id = id;
 	}
 
 	bool ASTNode::has_value() const {
@@ -38,16 +40,28 @@ namespace cg {
 		return _cfg->type() == Cfg::Type::reference;
 	}
 
-	void ASTNode::compress() {
+	void ASTNode::compress(std::vector<Cfg const *> cfgs) {
 		auto new_children = std::vector<ASTNode>();
 		for (auto &child : _children) {
-			child.compress();
-			_consumed += child._consumed;
-			if (child.is_ref()) {
-				new_children.push_back(child);
+			child.compress(cfgs);
+			if (std::find(cfgs.begin(), cfgs.end(), &child.cfg()) == cfgs.end()) {
+				//Combine the current child into self
+				_consumed += child._consumed;
+				new_children.insert(new_children.end(), child.children().begin(), child.children().end());
+			} else {
+				//Keep the current child if it is non empty
+				if (!child.consumed().empty() || child.children().size() > 0) {
+					new_children.push_back(child);
+				}
 			}
 		}
 		_children = new_children;
+	}
+
+	ASTNode ASTNode::compressed(std::vector<Cfg const *> cfgs) const {
+		auto result = *this;
+		result.compress(cfgs);
+		return result;
 	}
 
 	size_t ASTNode::_calc_size() const {
@@ -126,6 +140,9 @@ namespace cg {
 		}
 	}
 
+	//TODO: make this more official
+	static uint32_t g_uid = 1;
+
 	/************************************************
 	 *                  Parsing
 	 ************************************************/
@@ -135,7 +152,7 @@ namespace cg {
 		Cfg const &cfg
 	) {
 		size_t r = 0;
-		auto node = ASTNode(cfg);
+		auto node = ASTNode(cfg, g_uid++);
 		for (auto c : cfg.content()) {
 			if (str[r] != c) return ASTError{};
 			node.consume(c);
@@ -148,7 +165,7 @@ namespace cg {
 		const char *str,
 		Cfg const &cfg
 	) {
-		auto node = ASTNode(cfg);
+		auto node = ASTNode(cfg, g_uid++);
 
 		if (auto child = parse_cfg(str, cfg.ref())) {
 			node.add_child(child.value());
@@ -163,7 +180,7 @@ namespace cg {
 		Cfg const &cfg
 	) {
 		size_t r = 0;
-		auto node = ASTNode(cfg);
+		auto node = ASTNode(cfg, g_uid++);
 		for (auto &child_cfg : cfg.children()) {
 			if (auto child = parse_cfg(str+r, child_cfg)) {
 				r += child.value().size();
@@ -179,7 +196,7 @@ namespace cg {
 		const char *str,
 		Cfg const &cfg
 	) {
-		auto node = ASTNode(cfg);
+		auto node = ASTNode(cfg, g_uid++);
 		for (auto &child_cfg : cfg.children()) {
 			if (auto child = parse_cfg(str, child_cfg)) {
 				node.add_child(child.value());
@@ -193,7 +210,7 @@ namespace cg {
 		const char *str,
 		Cfg const &cfg
 	) {
-		auto node = ASTNode(cfg);
+		auto node = ASTNode(cfg, g_uid++);
 		size_t r = 0;
 		while (true) {
 			if (auto child = parse_cfg(str + r, cfg.children()[0])) {
@@ -209,8 +226,8 @@ namespace cg {
 		const char *str,
 		Cfg const &cfg
 	) {
-		auto node = ASTNode(cfg);
-		if (auto child = parse_cfg(str, cfg)) {
+		auto node = ASTNode(cfg, g_uid++);
+		if (auto child = parse_cfg(str, cfg.children()[0])) {
 			node.add_child(child.value());
 		}
 		return node;
@@ -235,34 +252,52 @@ namespace cg {
 		}
 	}
 
-	std::ostream &ASTNode::debug(std::ostream &os) const {
-		bool is_first;
-		os << "{";
-
-		os << "\"cfg\": \"" << *_cfg << "\"";
-
-		os << ", \"content\": " << _consumed;
-
-		os << ", \"children\": [";
-		is_first = true;
-		for (auto &child : _children) {
-			if (is_first) {
-				is_first = false;
-			} else {
-				os << ", ";
-			}
-
-			os << child;
+	std::ostream &ASTNode::debug_pre_order(std::ostream &os) const {
+		os << cfg().name() << " ";
+		for (auto &child : children()) {
+			child.debug_pre_order(os);
 		}
-		os << "]";
-
-		os << "}";
 		return os;
 	}
 
-	std::string ASTNode::str() const {
+	void _debug_dot_attributes(ASTNode const &node, std::ostream &os) {
+
+		auto desc = node.cfg().name() + ": " + node.cfg().str();
+
+
+		os << "ast_" << node.id() << " [label=\"";
+		if (node.cfg().name().empty()) {
+			os << "<anon>";
+		} else {
+			os << "<" << node.cfg().name() << ">";
+		}
+		if (!node.consumed().empty()) {
+			os << ": ";
+			os << "\\\"" << util::escape_str(node.consumed()) << "\\\"";
+		}
+		os << "\"];" << std::endl;
+		for (auto const &child : node.children()) {
+			_debug_dot_attributes(child, os);
+		}
+	}
+
+	void _debug_dot_paths(ASTNode const &node, std::ostream &os) {
+		for (auto const &child : node.children()) {
+			os << "ast_" << node.id() << " -> ast_" << child.id() << ";" << std::endl;
+			_debug_dot_paths(child, os);
+		}
+	}
+
+	void ASTNode::debug_dot(std::ostream &os) const {
+		os << "digraph graphname {" << std::endl;
+		_debug_dot_attributes(*this, os);
+		_debug_dot_paths(*this, os);
+		os << "}" << std::endl;
+	}
+
+	std::string ASTNode::pre_order_str() const {
 		std::stringstream ss;
-		debug(ss);
+		debug_pre_order(ss);
 		return ss.str();
 	}
 }

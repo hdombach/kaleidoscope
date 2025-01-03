@@ -70,6 +70,23 @@ namespace util {
 		return {a[0], a[1], a[2]};
 	}
 
+	inline std::string escape_str(std::string const &str) {
+		auto res = std::string();
+		for (auto c : str) {
+			switch (c) {
+				case '"':
+					res += "\\\"";
+					break;
+				case '/':
+					res += "\\\\";
+					break;
+				default:
+					res += c;
+			}
+		}
+		return res;
+	}
+
 	/**
 	 * @brief Tests whether a ptr exists
 	 */

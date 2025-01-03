@@ -26,7 +26,9 @@ namespace cg {
 	class ASTNode {
 		public:
 			ASTNode();
-			ASTNode(Cfg const &cfg);
+			ASTNode(Cfg const &cfg, uint32_t id);
+
+			uint32_t id() const { return _id; }
 
 			bool has_value() const;
 			operator bool() const { return has_value(); }
@@ -57,13 +59,23 @@ namespace cg {
 			/**
 			 * @brief Combines all nodes that aren't ref nodes
 			 */
-			void compress();
+			void compress(std::vector<Cfg const*> cfgs);
 
-			std::ostream &debug(std::ostream &os) const;
+			ASTNode compressed(std::vector<Cfg const *> cfgs) const;
 
-			std::string str() const;
+			/**
+			 * @brief Debug print a pre-order traversal of the tree
+			 */
+			std::ostream &debug_pre_order(std::ostream &os) const;
+			/**
+			 * @brief Create graphviz image representing astnode
+			 */
+			void debug_dot(std::ostream &os) const;
+
+			std::string pre_order_str() const;
 
 		private:
+			uint32_t _id;
 			Cfg const *_cfg;
 			std::vector<ASTNode> _children;
 			std::string _consumed;
@@ -96,8 +108,4 @@ namespace cg {
 		return parse_cfg(str.data(), cfg);
 	}
 	util::Result<ASTNode, ASTError> parse_cfg(const char *str, Cfg const &cfg);
-
-	inline std::ostream &operator<<(std::ostream &os, ASTNode const &node) {
-		return node.debug(os);
-	}
 }

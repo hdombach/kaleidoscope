@@ -107,6 +107,7 @@ namespace cg {
 			 * @brief Sets name used for debug printing
 			 */
 			void set_name(std::string const &str);
+			std::string const &name() const { return _name; }
 			Cfg const &ref() const;
 
 			std::ostream &debug(std::ostream &os) const;
