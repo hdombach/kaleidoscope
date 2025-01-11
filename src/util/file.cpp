@@ -8,8 +8,8 @@
 #include <sstream>
 
 #include "file.hpp"
-#include "App.hpp"
 #include "result.hpp"
+#include "util/Env.hpp"
 
 namespace util {
 
@@ -33,8 +33,7 @@ namespace util {
 		}
 
 		{
-			auto full_path = std::filesystem::path(App::prog_path()).parent_path();
-			full_path += "/" + filename;
+			auto full_path = util::g_env.working_dir / filename;
 
 			if (std::filesystem::exists(full_path)) {
 				return {full_path};

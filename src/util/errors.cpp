@@ -117,3 +117,11 @@ KError KError::internal(std::string msg) {
 			std::string(),
 			msg);
 }
+
+KError KError::codegen(std::string msg) {
+	return KError(
+		CODEGEN,
+		msg,
+		"Codegen error"
+	);
+}

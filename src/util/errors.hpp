@@ -25,6 +25,7 @@ class KError {
 			EMPTY_BUFFER,
 			INVALID_ARG,
 			INTERNAL,
+			CODEGEN,
 		};
 
 		KError(Type type, std::string content, std::string desc);
@@ -54,6 +55,7 @@ class KError {
 		static KError empty_buffer();
 		static KError invalid_arg(std::string msg);
 		static KError internal(std::string msg);
+		static KError codegen(std::string msg);
 
 	private:
 		Type _type;

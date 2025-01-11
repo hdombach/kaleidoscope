@@ -128,19 +128,3 @@ void App::main_loop() {
 
 	vulkan::Graphics::DEFAULT->wait_idle();
 }
-
-std::string &App::prog_path() {
-	return _prog_path;
-}
-
-std::string &App::working_path() {
-	return _working_path;
-}
-
-void App::set_prog_path(std::string path) {
-	_prog_path = path;
-	_working_path = std::filesystem::path(_prog_path).parent_path();
-}
-
-std::string App::_prog_path;
-std::string App::_working_path;

@@ -10,9 +10,9 @@
 #include "defs.hpp"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
+#include "util/Env.hpp"
 #include "util/log.hpp"
 #include "graphics.hpp"
-#include "App.hpp"
 #include "util/file.hpp"
 
 //https://github.com/ocornut/imgui/blob/master/examples/example_glfw_vulkan/main.cpp
@@ -131,7 +131,7 @@ namespace vulkan {
 		_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 		_io->ConfigFlags |= ImGuiConfigFlags_DockingEnable; //Allows imgui windows to be combined
 		_io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // allows imgui windows to be dragged outisde of main window
-		LOG_DEBUG << "Font path is " << App::working_path() << "/assets/Helvetica.ttc" << std::endl;
+		LOG_DEBUG << "Font path is " << util::g_env.working_dir << "/assets/Helvetica.ttc" << std::endl;
 		//TODO: error handling
 		_io->Fonts->AddFontFromFileTTF(util::env_file_path("/../assets/Helvetica.ttc").value().c_str(), 14);
 

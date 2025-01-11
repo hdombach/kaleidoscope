@@ -3,9 +3,10 @@
 #include <cstdlib>
 
 #include "App.hpp"
+#include "util/Env.hpp"
 
 int main(int argc, char **argv) {
-	App::set_prog_path(argv[0]);
+	util::Env::setup(argc, argv);
 	auto app = App::create("Kaleidoscope");
 
 	try {

@@ -19,10 +19,6 @@ class App {
 		void main_loop();
 		vulkan::Scene &scene() { return *_scene; };
 
-		static std::string &prog_path();
-		static std::string &working_path();
-		static void set_prog_path(std::string path);
-
 	private:
 		App() = default;
 		vulkan::Scene::Ptr _scene;
@@ -30,7 +26,4 @@ class App {
 		std::unique_ptr<types::ResourceManager> _resource_manager;
 		std::unique_ptr<ui::State> _view_state;
 		VkSemaphore _prev_semaphore;
-
-		static std::string _prog_path;
-		static std::string _working_path;
 };
