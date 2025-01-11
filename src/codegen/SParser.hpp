@@ -12,13 +12,6 @@ namespace cg {
 	 */
 	class SParser {
 		public:
-			struct Error {
-				Error() = default;
-				Error(std::string const &m): msg(m) {}
-				std::string str() const { return "SParser " + msg; }
-				std::string msg;
-			};
-
 			using Type = CfgNode::Type;
 		public:
 			SParser(CfgContext &ctx);
@@ -29,7 +22,7 @@ namespace cg {
 			 * @param[in] root_node Name of CfgNode to match against
 			 * @returns Number of characters consumed
 			 */
-			util::Result<size_t, Error> match(
+			util::Result<size_t, KError> match(
 				std::string const &str,
 				std::string const &root_node
 			);
@@ -40,7 +33,7 @@ namespace cg {
 			 * @param[in] root_node Name of CfgNode to generate with
 			 * @returns Generated abstract syntax tree
 			 */
-			util::Result<AstNode, Error> parse(
+			util::Result<AstNode, KError> parse(
 				std::string const &str,
 				std::string const &root_node
 			);
@@ -56,29 +49,25 @@ namespace cg {
 			/************************************
 			 * Match helper functions
 			 ************************************/
-			util::Result<size_t, Error> _match(const char *str, CfgNode const &node);
-			util::Result<size_t, Error> _match_lit(const char *str, CfgNode const &node);
-			util::Result<size_t, Error> _match_ref(const char *str, CfgNode const &node);
-			util::Result<size_t, Error> _match_seq(const char *str, CfgNode const &node);
-			util::Result<size_t, Error> _match_alt(const char *str, CfgNode const &node);
-			util::Result<size_t, Error> _match_cls(const char *str, CfgNode const &node);
-			util::Result<size_t, Error> _match_opt(const char *str, CfgNode const &node);
-			util::Result<size_t, Error> _match_neg(const char *str, CfgNode const &node);
+			util::Result<size_t, KError> _match(const char *str, CfgNode const &node);
+			util::Result<size_t, KError> _match_lit(const char *str, CfgNode const &node);
+			util::Result<size_t, KError> _match_ref(const char *str, CfgNode const &node);
+			util::Result<size_t, KError> _match_seq(const char *str, CfgNode const &node);
+			util::Result<size_t, KError> _match_alt(const char *str, CfgNode const &node);
+			util::Result<size_t, KError> _match_cls(const char *str, CfgNode const &node);
+			util::Result<size_t, KError> _match_opt(const char *str, CfgNode const &node);
+			util::Result<size_t, KError> _match_neg(const char *str, CfgNode const &node);
 
 			/***********************************
 			 * Parser helper functions
 			 * *********************************/
-			util::Result<AstNode, Error> _parse(const char *str, CfgNode const &node);
-			util::Result<AstNode, Error> _parse_lit(const char *str, CfgNode const &node);
-			util::Result<AstNode, Error> _parse_ref(const char *str, CfgNode const &node);
-			util::Result<AstNode, Error> _parse_seq(const char *str, CfgNode const &node);
-			util::Result<AstNode, Error> _parse_alt(const char *str, CfgNode const &name);
-			util::Result<AstNode, Error> _parse_cls(const char *str, CfgNode const &name);
-			util::Result<AstNode, Error> _parse_opt(const char *str, CfgNode const &name);
-			util::Result<AstNode, Error> _parse_neg(const char *str, CfgNode const &name);
+			util::Result<AstNode, KError> _parse(const char *str, CfgNode const &node);
+			util::Result<AstNode, KError> _parse_lit(const char *str, CfgNode const &node);
+			util::Result<AstNode, KError> _parse_ref(const char *str, CfgNode const &node);
+			util::Result<AstNode, KError> _parse_seq(const char *str, CfgNode const &node);
+			util::Result<AstNode, KError> _parse_alt(const char *str, CfgNode const &name);
+			util::Result<AstNode, KError> _parse_cls(const char *str, CfgNode const &name);
+			util::Result<AstNode, KError> _parse_opt(const char *str, CfgNode const &name);
+			util::Result<AstNode, KError> _parse_neg(const char *str, CfgNode const &name);
 	};
-
-	inline std::ostream &operator <<(std::ostream &os, SParser::Error const &error) {
-		return os << error.str();
-	}
 }

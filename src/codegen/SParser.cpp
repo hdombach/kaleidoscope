@@ -11,14 +11,14 @@ namespace cg {
 		_ctx(ctx)
 	{}
 
-	util::Result<size_t, SParser::Error> SParser::match(
+	util::Result<size_t, KError> SParser::match(
 		std::string const &str,
 		std::string const &root_node
 	) {
 		return _match(str.c_str(), _ctx.get(root_node));
 	}
 
-	util::Result<AstNode, SParser::Error> SParser::parse(
+	util::Result<AstNode, KError> SParser::parse(
 		std::string const &str,
 		std::string const &root_node
 	) {
@@ -29,7 +29,7 @@ namespace cg {
 	 * Match helper functions
 	 ************************************/
 
-	util::Result<size_t, SParser::Error> SParser::_match(
+	util::Result<size_t, KError> SParser::_match(
 		const char *str,
 		CfgNode const &node
 	) {
@@ -53,26 +53,26 @@ namespace cg {
 		}
 	}
 
-	util::Result<size_t, SParser::Error> SParser::_match_lit(
+	util::Result<size_t, KError> SParser::_match_lit(
 		const char *str,
 		CfgNode const &node
 	) {
 		auto r = 0;
 		for (auto c : node.content()) {
-			if (str[r] != c) return Error();
+			if (str[r] != c) return KError::codegen("Cannot match literal");
 			r++;
 		}
 		return r;
 	}
 
-	util::Result<size_t, SParser::Error> SParser::_match_ref(
+	util::Result<size_t, KError> SParser::_match_ref(
 		const char *str,
 		CfgNode const &node
 	) {
 		return _match(str, _ctx.get(node.ref_id()));
 	}
 
-	util::Result<size_t, SParser::Error> SParser::_match_seq(
+	util::Result<size_t, KError> SParser::_match_seq(
 		const char *str,
 		CfgNode const &node
 	) {
@@ -81,13 +81,13 @@ namespace cg {
 			if (auto i = _match(str+r, child)) {
 				r += i.value();
 			} else {
-				return Error();
+				return KError::codegen("Cannot match sequence");
 			}
 		}
 		return r;
 	}
 
-	util::Result<size_t, SParser::Error> SParser::_match_alt(
+	util::Result<size_t, KError> SParser::_match_alt(
 		const char *str,
 		CfgNode const &node
 	) {
@@ -96,10 +96,10 @@ namespace cg {
 				return i;
 			} 
 		}
-		return Error();
+		return KError::codegen("Cannot match alt");
 	}
 
-	util::Result<size_t, SParser::Error> SParser::_match_cls(
+	util::Result<size_t, KError> SParser::_match_cls(
 		const char *str,
 		CfgNode const &node
 	) {
@@ -116,22 +116,22 @@ namespace cg {
 		}
 	}
 
-	util::Result<size_t, SParser::Error> SParser::_match_opt(
+	util::Result<size_t, KError> SParser::_match_opt(
 		const char *str,
 		CfgNode const &node
 	) {
 		return _match(str, node.children()[0]).value(0);
 	}
 
-	util::Result<size_t, SParser::Error> SParser::_match_neg(
+	util::Result<size_t, KError> SParser::_match_neg(
 		const char *str,
 		CfgNode const &node
 	) {
 		if (str[0] == '\0') {
-			return Error();
+			return KError::codegen("Cannot match EOF");
 		}
 		if (auto res = _match(str, node.children()[0])) {
-			return Error();
+			return KError::codegen("Cannot match neg");
 		} else {
 			return 1;
 		}
@@ -141,13 +141,13 @@ namespace cg {
 	 * Parser helper functions
 	 * *********************************/
 
-	util::Result<AstNode, SParser::Error> SParser::_parse(
+	util::Result<AstNode, KError> SParser::_parse(
 		const char *str,
 		CfgNode const &node
 	) {
 		switch (node.type()) {
 			case Type::none:
-				return Error();
+				return KError::codegen("Trying to parse none CfgNode");
 			case Type::literal:
 				return _parse_lit(str, node);
 			case Type::reference:
@@ -165,7 +165,7 @@ namespace cg {
 		}
 	}
 
-	util::Result<AstNode, SParser::Error> SParser::_parse_lit(
+	util::Result<AstNode, KError> SParser::_parse_lit(
 		const char *str,
 		CfgNode const &cfg
 	) {
@@ -173,7 +173,7 @@ namespace cg {
 		auto res = AstNode(++_uid, _ctx, cfg.id());
 		for (auto c : cfg.content()) {
 			if (str[r] != c) {
-				return Error(util::f(
+				return KError::codegen(util::f(
 					"Unexpected character: ",
 					c,
 					" in string: \"",
@@ -186,7 +186,7 @@ namespace cg {
 		return res;
 	}
 
-	util::Result<AstNode, SParser::Error> SParser::_parse_ref(
+	util::Result<AstNode, KError> SParser::_parse_ref(
 		const char *str,
 		CfgNode const &cfg
 	) {
@@ -199,7 +199,7 @@ namespace cg {
 		return res;
 	}
 
-	util::Result<AstNode, SParser::Error> SParser::_parse_seq(
+	util::Result<AstNode, KError> SParser::_parse_seq(
 		const char *str,
 		CfgNode const &cfg
 	) {
@@ -216,7 +216,7 @@ namespace cg {
 		return node;
 	}
 
-	util::Result<AstNode, SParser::Error> SParser::_parse_alt(
+	util::Result<AstNode, KError> SParser::_parse_alt(
 		const char *str,
 		CfgNode const &cfg
 	) {
@@ -227,10 +227,10 @@ namespace cg {
 				return node;
 			}
 		}
-		return Error("Unmatched alternative: " + _ctx.node_str(cfg));
+		return KError::codegen("Unmatched alternative: " + _ctx.node_str(cfg));
 	}
 
-	util::Result<AstNode, SParser::Error> SParser::_parse_cls(
+	util::Result<AstNode, KError> SParser::_parse_cls(
 		const char *str,
 		CfgNode const &cfg
 	) {
@@ -250,7 +250,7 @@ namespace cg {
 		}
 	}
 
-	util::Result<AstNode, SParser::Error> SParser::_parse_opt(
+	util::Result<AstNode, KError> SParser::_parse_opt(
 		const char *str,
 		CfgNode const &cfg
 	) {
@@ -261,16 +261,16 @@ namespace cg {
 		return node;
 	}
 
-	util::Result<AstNode, SParser::Error> SParser::_parse_neg(
+	util::Result<AstNode, KError> SParser::_parse_neg(
 		const char *str,
 		CfgNode const &cfg
 	) {
 		auto node = AstNode(++_uid, _ctx, cfg.id());
 		if (str[0] == '\0') {
-			return Error("Unexpected EOF");
+			return KError::codegen("Unexpected EOF");
 		}
 		if (auto c = _parse(str, cfg.children()[0])) {
-			return Error("Unexpected element: " + _ctx.node_str(cfg));
+			return KError::codegen("Unexpected element: " + _ctx.node_str(cfg));
 		} else {
 			node.consume(str[0]);
 		}

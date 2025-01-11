@@ -61,7 +61,7 @@ namespace cg {
 		auto ids = std::vector<uint32_t>();
 		for (auto &name : cfg_names) {
 			if (!_ctx->contains(name)) {
-				return KError::codegen("Unknown cfg name in compress: " + name);
+				return KError::codegen("Internal: Unknown cfg name in compress: " + name);
 			}
 			ids.push_back(_ctx->get(name).id());
 		}

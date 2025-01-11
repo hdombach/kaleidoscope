@@ -43,7 +43,7 @@ namespace cg {
 		if (node.type() == CfgNode::Type::reference) {
 			if (node.ref_id() == 0) {
 				if (map.count(node.ref_name()) == 0) {
-					return KError::codegen("Unknown cfg name: " + node.ref_name());
+					return KError::codegen("Internal: Unknown cfg name " + node.ref_name());
 				}
 				node.set_ref_id(map[node.ref_name()]);
 			}
