@@ -29,6 +29,7 @@ namespace cg {
 				alternative,
 				closure,
 				optional,
+				negation,
 			};
 
 		public:
@@ -96,6 +97,13 @@ namespace cg {
 			 * Matches against the child object or skips
 			 */
 			static CfgNode opt(CfgNode &&c);
+
+			/**
+			 * @brief Creates a negation grammar object
+			 * If child matches, will throw an error.
+			 * If it doesn't, consume 1 char
+			 */
+			static CfgNode neg(CfgNode &&c);
 
 			/**
 			 * @brief Returns node to empty state

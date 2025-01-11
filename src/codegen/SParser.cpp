@@ -34,20 +34,22 @@ namespace cg {
 		CfgNode const &node
 	) {
 		switch (node.type()) {
-			case CfgNode::Type::none:
+			case Type::none:
 				return 0;
-			case CfgNode::Type::literal:
+			case Type::literal:
 				return _match_lit(str, node);
-			case CfgNode::Type::reference:
+			case Type::reference:
 				return _match_ref(str, node);
-			case CfgNode::Type::sequence:
+			case Type::sequence:
 				return _match_seq(str, node);
-			case CfgNode::Type::alternative:
+			case Type::alternative:
 				return _match_alt(str, node);
-			case CfgNode::Type::closure:
+			case Type::closure:
 				return _match_cls(str, node);
-			case CfgNode::Type::optional:
+			case Type::optional:
 				return _match_opt(str, node);
+			case Type::negation:
+				return _match_neg(str, node);
 		}
 	}
 
@@ -104,6 +106,9 @@ namespace cg {
 		size_t r = 0;
 		while (true) {
 			if (auto i = _match(str + r, node.children()[0])) {
+				if (i.value() == 0) {
+					return r;
+				}
 				r += i.value();
 			} else {
 				return r;
@@ -118,6 +123,20 @@ namespace cg {
 		return _match(str, node.children()[0]).value(0);
 	}
 
+	util::Result<size_t, SParser::Error> SParser::_match_neg(
+		const char *str,
+		CfgNode const &node
+	) {
+		if (str[0] == '\0') {
+			return Error();
+		}
+		if (auto res = _match(str, node.children()[0])) {
+			return Error();
+		} else {
+			return 1;
+		}
+	}
+
 	/***********************************
 	 * Parser helper functions
 	 * *********************************/
@@ -127,20 +146,22 @@ namespace cg {
 		CfgNode const &node
 	) {
 		switch (node.type()) {
-			case CfgNode::Type::none:
+			case Type::none:
 				return Error();
-			case CfgNode::Type::literal:
+			case Type::literal:
 				return _parse_lit(str, node);
-			case CfgNode::Type::reference:
+			case Type::reference:
 				return _parse_ref(str, node);
-			case CfgNode::Type::sequence:
+			case Type::sequence:
 				return _parse_seq(str, node);
-			case CfgNode::Type::alternative:
+			case Type::alternative:
 				return _parse_alt(str, node);
-			case CfgNode::Type::closure:
+			case Type::closure:
 				return _parse_cls(str, node);
-			case CfgNode::Type::optional:
+			case Type::optional:
 				return _parse_opt(str, node);
+			case Type::negation:
+				return _parse_neg(str, node);
 		}
 	}
 
@@ -217,7 +238,11 @@ namespace cg {
 		size_t r = 0;
 		while (true) {
 			if (auto child = _parse(str + r, cfg.children()[0])) {
-				r += child.value().size();
+				auto s = child.value().size();
+				if (s == 0) { // Can happen with nested closures
+					return node; 
+				}
+				r += s;
 				node.add_child(child.value());
 			} else {
 				return node;
@@ -232,6 +257,22 @@ namespace cg {
 		auto node = AstNode(++_uid, _ctx, cfg.id());
 		if (auto child = _parse(str, cfg.children()[0])) {
 			node.add_child(child.value());
+		}
+		return node;
+	}
+
+	util::Result<AstNode, SParser::Error> SParser::_parse_neg(
+		const char *str,
+		CfgNode const &cfg
+	) {
+		auto node = AstNode(++_uid, _ctx, cfg.id());
+		if (str[0] == '\0') {
+			return Error("Unexpected EOF");
+		}
+		if (auto c = _parse(str, cfg.children()[0])) {
+			return Error("Unexpected element: " + _ctx.node_str(cfg));
+		} else {
+			node.consume(str[0]);
 		}
 		return node;
 	}

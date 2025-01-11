@@ -175,6 +175,15 @@ namespace cg {
 		return result;
 	}
 
+	CfgNode CfgNode::neg(CfgNode &&c) {
+		auto result = CfgNode();
+
+		result._type = Type::negation;
+		result._children.push_back(std::move(c));
+
+		return result;
+	}
+
 	void CfgNode::destroy() {
 		_id = 0;
 		_name.clear();

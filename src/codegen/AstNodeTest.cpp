@@ -73,6 +73,23 @@ namespace cg {
 		EXPECT_EQ(parser.match("5+-2*-+-12", "exp").value(0), 10);
 	}
 
+	TEST(ast_node, match_neg) {
+		auto c = CfgContext();
+		auto parser = SParser(c);
+
+		c["not_a"] = c.cls(!"a"_cfg);
+		c["consonants"] = c.cls(!("a"_cfg | "e"_cfg | "i"_cfg | "o"_cfg | "u"_cfg | "y"_cfg));
+		c["whitespace"] = c.cls(" "_cfg | "\t"_cfg | "\n"_cfg);
+		c["mixed"] = c.cls(!("if"_cfg + c.ref("whitespace") + ("true"_cfg | "false"_cfg)));
+
+		EXPECT(c.prep());
+
+		EXPECT_EQ(parser.match("abcd", "not_a").value(0), 0);
+		EXPECT_EQ(parser.match("change", "not_a").value(0), 2);
+		EXPECT_EQ(parser.match("mndups", "consonants").value(0), 3);
+		EXPECT_EQ(parser.match("if flse if  false", "mixed").value(0), 8);
+	}
+
 	TEST(ast_node, parse_match) {
 		auto c = CfgContext();
 		auto parser = SParser(c);
@@ -116,7 +133,7 @@ namespace cg {
 			"add_sub_exp mult_div_exp unary_exp sing_exp "
 		);
 
-		std::ofstream file("gen/ast_node_parse_math.gv", std::ios::out);
+		std::ofstream file("gen/ast_node_parse_math.gv");
 		parser
 			.parse("4-3*82  /3+ 2.3", "exp").value()
 			.compressed(prim_names).value()
@@ -150,6 +167,89 @@ namespace cg {
 				"add_sub_exp mult_div_exp "
 					"unary_exp unary_exp sing_exp "
 					"mult_div_exp unary_exp unary_exp unary_exp unary_exp sing_exp "
-		)
+		);
+	}
+
+	TEST(ast_node, parse_neg) {
+		auto c = CfgContext();
+		auto parser = SParser(c);
+
+		c["whitespace"] = c.cls(" "_cfg | "\t"_cfg | "\n"_cfg);
+
+		c["beg_exp"] = "{{"_cfg;
+		c["end_exp"] = "}}"_cfg;
+		c["beg_cmt"] = "{#"_cfg;
+		c["end_cmt"] = "#}"_cfg;
+
+		c["digit"] =
+			"0"_cfg | "1"_cfg | "2"_cfg | "3"_cfg | "4"_cfg |
+			"5"_cfg | "6"_cfg | "7"_cfg | "8"_cfg | "9"_cfg;
+		c["integer"] = c.ref("digit") + c.cls(c.ref("digit"));
+
+		c["comment"] = c.ref("beg_cmt") + c.cls(!c.ref("end_cmt")) + c.ref("end_cmt");
+		c["exp"] = c.ref("beg_exp") + c.ref("whitespace") + c.ref("integer") + c.ref("whitespace") + c.ref("end_exp");
+
+		c["raw"] = c.cls(!(c.ref("beg_exp") | c.ref("beg_cmt") | "\n"_cfg));
+
+		c["line"] = c.cls(c.ref("comment") | c.ref("exp") | c.ref("raw")) + "\n"_cfg;
+
+		c["file"] = c.cls(c.ref("line"));
+
+		c.prep();
+
+		auto prims = std::vector<std::string>{
+			"whitespace",
+			"beg_exp",
+			"end_exp",
+			"beg_cmt",
+			"end_cmt",
+			"comment",
+			"exp",
+			"integer",
+			"raw",
+			"line"
+		};
+
+		{
+			auto src = "Hello world\n";
+			EXPECT_EQ(
+				parser
+					.parse(src, "file").value()
+					.compressed(prims).value()
+					.pre_order_str(),
+				"file line raw "
+			);
+		}
+
+		{
+			auto src =
+				"This is raw {# variable #} text\n"
+				"Hello world {#\n"
+				"Multi line\n"
+				"#}\n";
+
+			EXPECT_EQ(
+				parser
+					.parse(src, "file").value()
+					.compressed(prims).value()
+					.pre_order_str(),
+				"file "
+					"line raw comment beg_cmt end_cmt raw "
+					"line raw comment beg_cmt end_cmt "
+			);
+		}
+
+		{
+			auto src =
+				"jar saodf {{ 492\n"
+				"}}{# fdf #}\n";
+
+			std::ofstream file("gen/ast_node_parse_neg.gv");
+			parser
+				.parse(src, "file").value()
+				.compressed(prims).value()
+				.debug_dot(file);
+		}
+
 	}
 }

@@ -15,6 +15,8 @@ namespace cg {
 
 	class CfgContext {
 		public:
+			using Type = CfgNode::Type;
+		public:
 			CfgContext() = default;
 
 			/******************************
@@ -53,6 +55,11 @@ namespace cg {
 			 * @brief Wrapper around CfgNode::opt
 			 */
 			CfgNode opt(CfgNode &&c);
+
+			/**
+			 * @brief Wrapper around CfgNode::neg
+			 */
+			CfgNode neg(CfgNode &&c);
 
 			/**
 			 * @brief Duplicates a node
@@ -102,5 +109,8 @@ namespace cg {
 	}
 	inline CfgNode operator|(CfgNode &&lhs, CfgNode &&rhs) {
 		return CfgNode::alt(std::move(lhs), std::move(rhs));
+	}
+	inline CfgNode operator!(CfgNode &&node) {
+		return CfgNode::neg(std::move(node));
 	}
 }

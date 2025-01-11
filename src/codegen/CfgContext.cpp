@@ -1,5 +1,4 @@
 #include "CfgContext.hpp"
-#include "util/log.hpp"
 
 #include <sstream>
 
@@ -30,6 +29,10 @@ namespace cg {
 
 	CfgNode CfgContext::opt(CfgNode &&c) {
 		return CfgNode::opt(std::move(c));
+	}
+
+	CfgNode CfgContext::neg(CfgNode &&c) {
+		return CfgNode::neg(std::move(c));
 	}
 
 	CfgNode CfgContext::dup(std::string const &name) const {
@@ -100,12 +103,12 @@ namespace cg {
 	void CfgContext::debug_node(CfgNode const &node, std::ostream &os) const {
 		bool first = true;
 		switch (node.type()) {
-			case CfgNode::Type::none:
+			case Type::none:
 				return;
-			case CfgNode::Type::literal:
+			case Type::literal:
 				os << "\"" << node.content() << "\"";
 				return;
-			case CfgNode::Type::reference: {
+			case Type::reference: {
 					auto name = _cfgs[node.ref_id()].name();
 					if (name.empty()) {
 						os << "<anon>";
@@ -114,7 +117,7 @@ namespace cg {
 					}
 					return;
 				}
-			case CfgNode::Type::sequence:
+			case Type::sequence:
 				for (auto &child : node.children()) {
 					if (first) {
 						first = false;
@@ -122,16 +125,16 @@ namespace cg {
 						os << " + ";
 					}
 
-					if (child.type() == CfgNode::Type::alternative) {
+					if (child.type() == Type::alternative) {
 						os << "(";
 					}
 					debug_node(child, os);
-					if (child.type() == CfgNode::Type::alternative) {
+					if (child.type() == Type::alternative) {
 						os << ")";
 					}
 				}
 				return;
-			case CfgNode::Type::alternative:
+			case Type::alternative:
 				for (auto &child : node.children()) {
 					if (first) {
 						first = false;
@@ -142,12 +145,24 @@ namespace cg {
 					debug_node(child, os);
 				}
 				return;
-			case CfgNode::Type::closure:
+			case Type::closure:
 				os << "[" << node.children()[0] << "]";
 				return;
-			case CfgNode::Type::optional:
+			case Type::optional:
 				os << "(" << node.children()[0] << ")?";
 				return;
+			case Type::negation: {
+				auto &child = node.children()[0];
+				if (child.type() == Type::alternative || child.type() == Type::optional) {
+					os << "!(";
+					debug_node(child, os);
+					os << ")";
+				} else {
+					os << "!";
+					debug_node(child, os);
+				}
+				return;
+			}
 		}
 	}
 

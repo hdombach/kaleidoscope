@@ -18,6 +18,8 @@ namespace cg {
 				std::string str() const { return "SParser " + msg; }
 				std::string msg;
 			};
+
+			using Type = CfgNode::Type;
 		public:
 			SParser(CfgContext &ctx);
 
@@ -61,6 +63,7 @@ namespace cg {
 			util::Result<size_t, Error> _match_alt(const char *str, CfgNode const &node);
 			util::Result<size_t, Error> _match_cls(const char *str, CfgNode const &node);
 			util::Result<size_t, Error> _match_opt(const char *str, CfgNode const &node);
+			util::Result<size_t, Error> _match_neg(const char *str, CfgNode const &node);
 
 			/***********************************
 			 * Parser helper functions
@@ -72,6 +75,7 @@ namespace cg {
 			util::Result<AstNode, Error> _parse_alt(const char *str, CfgNode const &name);
 			util::Result<AstNode, Error> _parse_cls(const char *str, CfgNode const &name);
 			util::Result<AstNode, Error> _parse_opt(const char *str, CfgNode const &name);
+			util::Result<AstNode, Error> _parse_neg(const char *str, CfgNode const &name);
 	};
 
 	inline std::ostream &operator <<(std::ostream &os, SParser::Error const &error) {
