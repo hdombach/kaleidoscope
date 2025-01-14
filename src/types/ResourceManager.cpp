@@ -51,25 +51,25 @@ namespace types {
 	util::Result<uint32_t, KError> ResourceManager::add_texture_from_file(
 			const std::string &url)
 	{
-		auto id = _textures.get_id();
+		try {
+			auto id = _textures.get_id();
 
-		auto path = util::env_file_path(url);
-		TRY(path);
-		auto texture = vulkan::StaticTexture::from_file(
-			id,
-			path.value()
-		);
-		TRY(texture);
+			auto path = util::env_file_path(url).value();
+			auto texture = std::move(vulkan::StaticTexture::from_file(
+				id,
+				path
+			).value());
 
-		int i = 1;
-		auto base_name = texture.value()->name();
-		while (get_texture(texture.value()->name())) {
-			texture.value()->set_name(base_name + "_" + std::to_string(i));
-			i++;
-		}
+			int i = 1;
+			auto base_name = texture->name();
+			while (get_texture(texture->name())) {
+				texture->set_name(base_name + "_" + std::to_string(i));
+				i++;
+			}
 
-		_textures.insert(std::move(texture.value()));
-		return {id};
+			_textures.insert(std::move(texture));
+			return {id};
+		} catch_kerror;
 	}
 
 	vulkan::Texture *ResourceManager::default_texture() {
@@ -123,21 +123,21 @@ namespace types {
 	util::Result<uint32_t, KError> ResourceManager::add_mesh_from_file(
 			std::string const &url)
 	{
-		auto id = _meshes.get_id();
+		try {
+			auto id = _meshes.get_id();
 
-		auto path = util::env_file_path(url);
-		TRY(path);
-		auto mesh = StaticMesh::from_file(id, path.value());
-		TRY(mesh);
+			auto path = util::env_file_path(url).value();
+			auto mesh = std::move(StaticMesh::from_file(id, path).value());
 
-		int i = 1;
-		auto base_name = mesh.value()->name();
-		while (get_mesh(mesh.value()->name())) {
-			mesh.value()->set_name(base_name + "_" + std::to_string(i));
-			i++;
-		}
+			int i = 1;
+			auto base_name = mesh->name();
+			while (get_mesh(mesh->name())) {
+				mesh->set_name(base_name + "_" + std::to_string(i));
+				i++;
+			}
 
-		return _add_mesh(std::move(mesh.value()));
+			return _add_mesh(std::move(mesh));
+		} catch_kerror;
 	}
 
 	util::Result<uint32_t, KError> ResourceManager::add_mesh_square(

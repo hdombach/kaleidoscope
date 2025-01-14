@@ -31,22 +31,24 @@ namespace util {
 					try {
 						return std::get<Value>(*this);
 					} catch (std::bad_variant_access) {
-						throw std::runtime_error(util::f(
-									"Trying to get value of function that threw \"",
-									error(),
-									'"'));
+						throw std::get<Error>(*this);
 					}
 				}
 				Value const &value() const {
 					try {
 						return std::get<Value>(*this);
 					} catch (std::bad_variant_access) {
-						throw std::runtime_error(util::f(
-									"Trying to get value of function that threw \"",
-									error(),
-									'"'));
+						throw std::get<Error>(*this);
 					}
 				}
+
+				Value *operator->() {
+					return &value();
+				}
+				Value const *operator->() const {
+					return &value();
+				}
+
 
 				Value &value(Value &default_value) {
 					try {
@@ -191,7 +193,7 @@ namespace util {
 	template<typename Value, typename Error>
 		void require(Result<Value, Error> &result) {
 			if (!result.has_value()) {
-				throw std::runtime_error(std::to_string(result.error()));
+					throw std::get<Error>(result.error());
 			}
 		}
 

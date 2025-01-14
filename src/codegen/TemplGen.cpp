@@ -1,6 +1,8 @@
 #include "TemplGen.hpp"
 #include "codegen/SParser.hpp"
 #include "codegen/TemplObj.hpp"
+#include "util/KError.hpp"
+
 #include <fstream>
 
 namespace cg {
@@ -64,19 +66,17 @@ namespace cg {
 		std::string const &str,
 		TemplObj::Dict const &args
 	) const {
-		auto parser = SParser(_ctx);
+		try {
+			auto parser = SParser(_ctx);
 
-		auto parsed = parser.parse(str, "file");
-		TRY(parsed);
+			auto node = parser.parse(str, "file")->compressed(_prims).value();
 
-		auto compressed = parsed.value().compressed(_prims);
-		TRY(compressed);
+			std::ofstream file("gen/templgen.gv");
+			node.debug_dot(file);
+			file.close();
 
-		std::ofstream file("gen/templgen.gv");
-		compressed.value().debug_dot(file);
-		file.close();
-
-		return _codegen(compressed.value(), args);
+			return _codegen(node, args);
+		} catch_kerror;
 	}
 
 	#define CG_ASSERT(stm, msg) \

@@ -16,7 +16,7 @@ namespace cg {
 		};
 
 		EXPECT_EQ(
-			gen.value().codegen(src, args).value(),
+			gen->codegen(src, args).value(),
 			"Hezekiah Dombach\n"
 		);
 	}
