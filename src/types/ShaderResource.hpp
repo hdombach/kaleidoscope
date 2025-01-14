@@ -8,7 +8,7 @@
 #include "vulkan/MappedUniform.hpp"
 #include "vulkan/Texture.hpp"
 #include "util/result.hpp"
-#include "util/errors.hpp"
+#include "util/KError.hpp"
 
 namespace types {
 	class ShaderResource {

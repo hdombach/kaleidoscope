@@ -5,7 +5,7 @@
 
 #include "util/UIDList.hpp"
 #include "util/result.hpp"
-#include "util/errors.hpp"
+#include "util/KError.hpp"
 #include "codegen/CfgNode.hpp"
 
 namespace cg {

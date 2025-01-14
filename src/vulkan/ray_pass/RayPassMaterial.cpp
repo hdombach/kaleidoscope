@@ -2,7 +2,7 @@
 #include "RayPass.hpp"
 #include "types/Material.hpp"
 #include "util/Util.hpp"
-#include "util/errors.hpp"
+#include "util/KError.hpp"
 
 namespace vulkan {
 	RayPassMaterial::RayPassMaterial():

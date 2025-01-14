@@ -15,7 +15,7 @@
 #include "vulkan/Fence.hpp"
 #include "vulkan/Semaphore.hpp"
 #include "util/result.hpp"
-#include "util/errors.hpp"
+#include "util/KError.hpp"
 #include "util/Observer.hpp"
 #include "util/UIDList.hpp"
 #include "types/Camera.hpp"

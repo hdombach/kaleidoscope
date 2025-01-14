@@ -2,7 +2,7 @@
 
 #include "vulkan/Shader.hpp"
 #include "util/result.hpp"
-#include "util/errors.hpp"
+#include "util/KError.hpp"
 #include "types/Material.hpp"
 
 namespace vulkan {

@@ -9,7 +9,7 @@
 #include "vulkan/MappedUniform.hpp"
 #include "vulkan/Texture.hpp"
 #include "util/format.hpp"
-#include "util/errors.hpp"
+#include "util/KError.hpp"
 
 namespace types {
 	ShaderResource ShaderResource::create_primitive(

@@ -2,7 +2,7 @@
 
 #include "CfgContext.hpp"
 #include "CfgNode.hpp"
-#include "util/errors.hpp"
+#include "util/KError.hpp"
 
 namespace cg {
 	/**

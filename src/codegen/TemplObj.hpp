@@ -7,7 +7,7 @@
 #include <functional>
 
 #include "util/result.hpp"
-#include "util/errors.hpp"
+#include "util/KError.hpp"
 
 namespace cg {
 	class TemplObj {

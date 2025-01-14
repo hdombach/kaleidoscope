@@ -4,7 +4,7 @@
 #include <string>
 
 #include "result.hpp"
-#include "errors.hpp"
+#include "KError.hpp"
 
 namespace util {
 	static const char * ENV_PATH = "KALEIDOSCOPE_PATH";

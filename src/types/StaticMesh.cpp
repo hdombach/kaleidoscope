@@ -7,7 +7,7 @@
 
 #include "StaticMesh.hpp"
 #include "util/result.hpp"
-#include "util/errors.hpp"
+#include "util/KError.hpp"
 #include "vulkan/Vertex.hpp"
 
 namespace types {

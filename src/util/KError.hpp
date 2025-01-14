@@ -1,12 +1,13 @@
 #pragma once
 
+#include <exception>
 #include <ostream>
 #include <string>
 
 #include <vulkan/vulkan_core.h>
 
 
-class KError {
+class KError: public std::exception {
 	public:
 		enum Type {
 			UNKNOWN,
@@ -28,16 +29,10 @@ class KError {
 			CODEGEN,
 		};
 
-		KError(Type type, std::string content, std::string desc);
+		KError(Type type, std::string what);
 		KError(VkResult result);
 
-		/** @brief Long description that can be printed*/
-		std::string const &desc_part() const;
-
-		/** @brief Detail like texture name or filename */
-		std::string const &content_part() const;
-
-		std::string str() const { return desc_part() + ": " + content_part(); }
+		const char* what() const noexcept override { return _what.c_str(); }
 
 		Type type() const { return _type; }
 
@@ -60,12 +55,14 @@ class KError {
 	private:
 		Type _type;
 
-		std::string _desc;
-		std::string _content;
+		std::string _what;
 		VkResult _vk_error;
 };
 
 inline std::ostream &operator <<(std::ostream &os, KError const &error) {
-	os << error.str();
+	os << error.what();
 	return os;
 }
+
+#define catch_kerror catch (KError const &err) { return {err}; }
+

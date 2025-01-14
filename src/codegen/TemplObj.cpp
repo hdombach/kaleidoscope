@@ -1,7 +1,7 @@
 #include "TemplObj.hpp"
 
 #include "util/result.hpp"
-#include "util/errors.hpp"
+#include "util/KError.hpp"
 
 //https://en.cppreference.com/w/cpp/utility/variant/visit2
 template<class... Ts>
