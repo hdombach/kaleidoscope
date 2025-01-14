@@ -14,7 +14,7 @@ namespace cg {
 		public:
 			using Type = CfgNode::Type;
 		public:
-			SParser(CfgContext &ctx);
+			SParser(CfgContext const &ctx);
 
 			/**
 			 * @brief Matches a string against a CfgNode specified by name
@@ -43,7 +43,7 @@ namespace cg {
 			 * @brief uid for constructing AstNodes
 			 */
 			uint32_t _uid;
-			CfgContext &_ctx;
+			CfgContext const &_ctx;
 
 		private:
 			/************************************

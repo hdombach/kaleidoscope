@@ -29,6 +29,8 @@ namespace cg {
 			 */
 			CfgNode const &cfg_node() const { return _ctx->get(_cfg_id); }
 
+			std::string cfg_name() const { return cfg_node().name(); }
+
 			std::string const &consumed() const { return _consumed; }
 
 			void consume(char c);

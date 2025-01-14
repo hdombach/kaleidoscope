@@ -6,7 +6,7 @@
 #include "AstNode.hpp"
 
 namespace cg {
-	SParser::SParser(CfgContext &ctx):
+	SParser::SParser(CfgContext const &ctx):
 		_uid(0),
 		_ctx(ctx)
 	{}
@@ -177,7 +177,8 @@ namespace cg {
 					"Unexpected character: ",
 					c,
 					" in string: \"",
-					util::escape_str(str)
+					util::escape_str(str),
+					"\""
 				));
 			}
 			res.consume(c);
