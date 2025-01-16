@@ -24,7 +24,7 @@ App::Ptr App::create(std::string const &name) {
 	result->_ui_render_pipeline = std::make_unique<vulkan::UIRenderPipeline>();
 	result->_resource_manager = std::make_unique<types::ResourceManager>();
 
-	TRY_LOG(result->_resource_manager->add_texture_from_file("assets/viking_room.png"));
+	TRY_LOG(result->_resource_manager->add_texture_from_file("assets/viking_rom.png"));
 	TRY_LOG(result->_resource_manager->add_texture_from_file("assets/grunge.png"));
 
 	TRY_LOG(result->_resource_manager->add_mesh_from_file("assets/viking_room.obj"));
