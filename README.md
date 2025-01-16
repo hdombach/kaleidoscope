@@ -16,6 +16,9 @@ cmake --build build
 
 # Compiling
 Or you can just use `setup.sh`
+If you want to specify which compiler to use, you can define
+- `KALEIDOSCOPE_CC`
+- `KALEIDOSCOPE_CXX`
 
 
 # Overview
