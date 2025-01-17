@@ -1,10 +1,12 @@
 #pragma once
 
+#include <filesystem>
 #include <functional>
 #include <string>
 #include <map>
 #include <iostream>
 
+#include "util/Env.hpp"
 #include "util/log.hpp"
 
 struct Test;
@@ -37,13 +39,13 @@ void _TEST_NAME(_, suite_name, _, test_name)(Test &_test)
 
 inline std::ostream &fail_head(
 	Test &test,
-	const char *filename,
-	size_t line
+	std::source_location loc=std::source_location::current()
 ) {
 	std::cout << "[";
 	std::cout << util::color::RED << "FAILED_TEST " << util::color::RESET;
-	std::cout << test.suite_name << "::" << test.test_name
-		<< " (" << filename << ":" << line << ")] ";
+	std::cout	<< std::filesystem::relative(loc.file_name(), util::g_env.working_dir).c_str();
+	std::cout << "(" << loc.line() << ":" << loc.column() << ")] ";
+	std::cout << test.suite_name << "::" << test.test_name;
 
 	return std::cout;
 }
@@ -55,13 +57,12 @@ void expect_eq(
 	RHS const &rhs,
 	const char *lhs_string,
 	const char *rhs_string,
-	const char *filename,
-	size_t line
+	std::source_location loc=std::source_location::current()
 ) {
 	if (lhs == rhs) {
 		test.passed_test_count++;
 	} else {
-		auto &os = fail_head(test, filename, line) << std::endl;
+		auto &os = fail_head(test, loc) << std::endl;
 
 		os << "\tEXPECT_EQ(" << lhs_string << ", " << rhs_string << ");" << std::endl;
 		os << std::endl;
@@ -75,13 +76,12 @@ inline void expect(
 	Test &test,
 	bool value,
 	const char *value_string,
-	const char *filename,
-	size_t line
+	std::source_location loc=std::source_location::current()
 ) {
 	if (value) {
 		test.passed_test_count++;
 	} else {
-		auto &os = fail_head(test, filename, line) << std::endl;
+		auto &os = fail_head(test, loc) << std::endl;
 
 		os << "\tEXPECT(" << value_string << ");" << std::endl;
 		os << std::endl;
@@ -93,34 +93,50 @@ inline void expect(
 #define EXPECT_EQ(lhs, rhs) {\
 	_test.total_test_count++;\
 	try { \
-		expect_eq(_test, lhs, rhs, #lhs, #rhs, __FILE__, __LINE__); \
+		expect_eq(_test, lhs, rhs, #lhs, #rhs); \
+	} catch (KError const &e) { \
+		auto &os = fail_head(_test) << std::endl; \
+		os << "\tEXPECT_EQ(" #lhs ", " #rhs ");" << std::endl; \
+		os << std::endl; \
+		os << "\tException was thrown:" << std::endl << "\t"; \
+		log_error(e) << std::endl; \
 	} catch (std::exception const &e) { \
-		auto &os = fail_head(_test, __FILE__, __LINE__) << std::endl; \
+		auto &os = fail_head(_test) << std::endl; \
 		os << "\tEXPECT_EQ(" #lhs ", " #rhs ");" << std::endl; \
 		os << std::endl; \
-		os << "\tException was thrown: " << e.what() << std::endl; \
+		os << "\t"; \
+		log_error() << "Exception thrown " << e.what() << std::endl; \
 	} catch (...) { \
-		auto &os = fail_head(_test, __FILE__, __LINE__) << std::endl; \
+		auto &os = fail_head(_test) << std::endl; \
 		os << "\tEXPECT_EQ(" #lhs ", " #rhs ");" << std::endl; \
 		os << std::endl; \
-		os << "\tUnknown exception was thrown" << std::endl; \
+		os << "\t"; \
+		log_error() << "Unknown exception was thrown" << std::endl; \
 	}\
 }
 
 #define EXPECT(value) {\
 	_test.total_test_count++;\
 	try { \
-		expect(_test, value, #value, __FILE__, __LINE__); \
+		expect(_test, value, #value); \
+	} catch (KError const &e) { \
+		auto &os = fail_head(_test) << std::endl; \
+		os << "\tEXPECT(" #value ");" << std::endl; \
+		os << std::endl; \
+		os << "\tException was thrown:" << std::endl << "\t"; \
+		log_error(e) << std::endl; \
 	} catch (std::exception const &e) { \
-		auto &os = fail_head(_test, __FILE__, __LINE__) << std::endl; \
+		auto &os = fail_head(_test) << std::endl; \
 		os << "\tEXPECT(" #value ");" << std::endl; \
 		os << std::endl; \
-		os << "\tException was thrown: " << e.what() << std::endl; \
+		os << "\t"; \
+		log_error() << "Exception thrown " << e.what() << std::endl; \
 	} catch (...) { \
-		auto &os = fail_head(_test, __FILE__, __LINE__) << std::endl; \
+		auto &os = fail_head(_test) << std::endl; \
 		os << "\tEXPECT(" #value ");" << std::endl; \
 		os << std::endl; \
-		os << "\tUnknown exception was thrown" << std::endl; \
+		os << "\t"; \
+		log_error() << "Unknown exception was thrown" << std::endl; \
 	}\
 }
 

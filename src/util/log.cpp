@@ -1,7 +1,10 @@
-#include "log.hpp"
 #include <ostream>
 #include <source_location>
 #include <string>
+#include <filesystem>
+
+#include "log.hpp"
+#include "util/Env.hpp"
 
 namespace util {
 	std::ostream& log(Importance importance, std::source_location location) {
@@ -22,7 +25,7 @@ namespace util {
 		}
 		std::cout << color::RESET;
 
-		std::cout << location.file_name() << "(" << location.line() << ":" << location.column() << ")" << "] ";
+		std::cout << std::filesystem::relative(location.file_name(), util::g_env.working_dir).c_str() << "(" << location.line() << ":" << location.column() << ")" << "] ";
 
 		return std::cout;
 	}
