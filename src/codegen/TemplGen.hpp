@@ -56,6 +56,13 @@ namespace cg {
 				AstNode const &node,
 				TemplObj::Dict const &args
 			) const;
+			util::Result<std::string, KError> _codegen_line(
+				AstNode const &node,
+				TemplObj::Dict const &args
+			) const;
+
+
+			util::Result<bool, KError> _tag_keep_padding(AstNode const &node, bool def) const;
 
 	};
 }

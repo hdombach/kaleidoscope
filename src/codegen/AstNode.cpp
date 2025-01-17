@@ -23,6 +23,15 @@ namespace cg {
 		_size = 0; /* Cache is invalidated */
 	}
 
+	util::Result<AstNode, KError> AstNode::child_with_cfg(std::string const &name) const {
+		for (auto &child : _children) {
+			if (child.cfg_name() == name) {
+				return child;
+			}
+		}
+		return KError::codegen(util::f("CfgNode does not contain child with name ", name));
+	}
+
 	void AstNode::consume(char c) {
 		_consumed.push_back(c);
 		_size = 0; /* Invalidate cache */

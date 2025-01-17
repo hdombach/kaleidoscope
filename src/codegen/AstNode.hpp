@@ -24,6 +24,8 @@ namespace cg {
 
 			void add_child(AstNode const &node);
 
+			util::Result<AstNode, KError> child_with_cfg(std::string const &name) const;
+
 			/**
 			 * @brief The rule that was used to generate this node
 			 */

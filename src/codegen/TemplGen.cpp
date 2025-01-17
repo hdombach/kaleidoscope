@@ -31,14 +31,18 @@ namespace cg {
 
 		c["exp_id"] = c.ref("whitespace") + c.ref("identifier") + c.ref("whitespace");
 
+		c["comment_b"] = "{#"_cfg + c.opt("-"_cfg | "+"_cfg);
+		c["comment_e"] = c.opt("-"_cfg | "+"_cfg) + "#}"_cfg;
 		c["comment"] =
 			c.ref("padding") +
-			"{#"_cfg + c.cls(!"#}"_cfg) + "#}"_cfg +
+			c.ref("comment_b") + c.cls(!"#}"_cfg) + c.ref("comment_e") +
 			c.ref("padding");
 
+		c["expression_b"] = "{{"_cfg + c.opt("_"_cfg | "+"_cfg);
+		c["expression_e"] = c.opt("_"_cfg | "+"_cfg) + "}}"_cfg;
 		c["expression"] =
 			c.ref("padding") +
-			"{{"_cfg + c.ref("exp_id") + "}}"_cfg +
+			c.ref("expression_b") + c.ref("exp_id") + c.ref("expression_e") +
 			c.ref("padding");
 
 		c["raw"] = c.cls(!(c.ref("expression") | c.ref("comment") | "\n"_cfg));
@@ -54,9 +58,14 @@ namespace cg {
 			"padding",
 			"identifier",
 			"exp_id",
+			"comment_b",
+			"comment_e",
 			"comment",
+			"expression_b",
+			"expression_e",
 			"expression",
-			"raw"
+			"raw",
+			"line"
 		};
 
 		return result;
@@ -104,6 +113,8 @@ namespace cg {
 			return _codegen_default(node, args);
 		} else if (node.cfg_name() == "file") {
 			return _codegen_file(node, args);
+		} else if (node.cfg_name() == "line") {
+			return _codegen_line(node, args);
 		} else {
 			return KError::codegen("Unimplimented AstNode type: " + node.cfg_name());
 		}
@@ -148,15 +159,25 @@ namespace cg {
 		AstNode const &node,
 		TemplObj::Dict const &args
 	) const {
-		for (auto &child : node.children()) {
-			auto name = child.cfg_name();
-			if (name == "padding") {
-				continue;
-			} else {
-				return _codegen(child, args);
+		try {
+			auto result = std::string();
+
+			for (auto &child : node.children()) {
+				auto name = child.cfg_name();
+				if (name == "padding") {
+					continue;
+				} else if (name == "expression_b") {
+					if (_tag_keep_padding(child, true).value()) {
+						result += child.consumed();
+					}
+				} else if (name == "expression_e") {
+					if (_tag_keep_padding(child, true).value()) {
+						result += child.consumed();
+					}
+				}
 			}
-		}
-		return KError::codegen("Empty expression");
+			return KError::codegen("Empty expression");
+		} catch_kerror;
 	}
 
 	util::Result<std::string, KError> TemplGen::_codegen_file(
@@ -168,9 +189,61 @@ namespace cg {
 			if (auto str = _codegen(child, args)) {
 				result += str.value();
 			} else {
-				return result;
+				return str;
 			}
 		}
 		return result;
+	}
+
+	util::Result<std::string, KError> TemplGen::_codegen_line(
+		AstNode const &node,
+		TemplObj::Dict const &args
+	) const {
+		auto result = std::string();
+		for (auto &child : node.children()) {
+			if (auto str = _codegen(child, args)) {
+				result += str.value();
+			} else {
+				return str;
+			}
+		}
+		result += node.consumed();
+		return result;
+	}
+
+
+	util::Result<bool, KError> TemplGen::_tag_keep_padding(
+		AstNode const &node,
+		bool def
+	) const {
+		auto const &cons = node.consumed();
+		auto const &name = node.cfg_name();
+		if (name == "comment_b" || name == "expression_b") {
+			if (cons.size() == 2) {
+				return def;
+			}
+			CG_ASSERT(cons.size() == 3, "Invalid beggining tag size");
+			if (cons[2] == '-') {
+				return false;
+			}
+			if (cons[2] == '+') {
+				return true;
+			}
+			return KError::codegen(util::f("Invalid tag ending: ", cons[2]));
+		} else if (name == "commend_e" || name == "expression_e") {
+			if (cons.size() == 2) {
+				return def;
+			}
+			CG_ASSERT(cons.size() == 3, "Invalid ending tag size");
+			if (cons[0] == '-') {
+				return false;
+			}
+			if (cons[0] == '+') {
+				return true;
+			}
+			return KError::codegen(util::f("Invalid tag beggining: ", cons[0]));
+		} else {
+			return KError::codegen(util::f("Cannot get tag padding for cfg node ", name));
+		}
 	}
 }
