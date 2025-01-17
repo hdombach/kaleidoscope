@@ -9,7 +9,7 @@ KError::KError(Type type, std::string what, Loc loc):
 	_vk_error(VK_ERROR_UNKNOWN),
 	_loc(loc)
 {
-	_what = util::f("[KERROR ", loc.file_name(), "(", loc.line(), ":", loc.column(), "]: ", what);
+	//_what = util::f("[KERROR ", loc.file_name(), "(", loc.line(), ":", loc.column(), ")]: ", what);
 }
 
 KError::KError(VkResult result, Loc loc):

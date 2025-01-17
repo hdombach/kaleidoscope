@@ -1,8 +1,8 @@
 #pragma once
 
-#include <_types/_uint8_t.h>
 #include <ostream>
 #include <iostream>
+#include <source_location>
 
 #define DEFAULT_LOG_EVENT true
 #define DEFAULT_LOG_WARNING true
@@ -22,11 +22,6 @@ namespace util {
 		NONE         = 0b00000000,
 	};
 
-	extern Importance g_log_flags;
-
-	std::ostream& log(Importance importance, std::string file, int line);
-	void log_assert(bool test, std::string const &desc, Importance importance, std::string file, int line);
-
 	namespace color {
 		static const char *RESET    = "\033[0m";
 		static const char *BLACK    = "\033[30m";
@@ -38,14 +33,37 @@ namespace util {
 		static const char *CYAN     = "\033[36m";
 		static const char *WHILE    = "\033[37m";
 	}
+
+	extern Importance g_log_flags;
+
+	std::ostream& log(
+		Importance importance,
+		std::source_location loc=std::source_location::current()
+	);
 }
 
-#define LOG(importance) log(importance, __FILE__, __LINE__)
-#define LOG_EVENT log(util::Importance::EVENT, __FILE__, __LINE__)
-#define LOG_WARNING log(util::Importance::WARNING, __FILE__, __LINE__)
-#define LOG_ERROR log(util::Importance::ERROR, __FILE__, __LINE__)
-#define LOG_FATAL_ERROR log(util::Importance::FATAL_ERROR, __FILE__, __LINE__)
-#define LOG_MEMORY log(util::Importance::MEMORY, __FILE__, __LINE__)
-#define LOG_DEBUG log(util::Importance::DEBUG, __FILE__, __LINE__)
+void log_assert(
+	bool test,
+	std::string const &desc,
+	std::source_location=std::source_location::current()
+);
 
-#define LOG_ASSERT(test, desc) log_assert(test, desc, util::Importance::FATAL_ERROR, __FILE__, __LINE__)
+inline std::ostream& log_event(std::source_location loc=std::source_location::current()) {
+	return log(util::Importance::EVENT, loc);
+}
+inline std::ostream& log_warning(std::source_location loc=std::source_location::current()) {
+	return log(util::Importance::WARNING, loc);
+}
+inline std::ostream& log_error(std::source_location loc=std::source_location::current()) {
+	return log(util::Importance::ERROR, loc);
+}
+inline std::ostream& log_fatal_error(std::source_location loc=std::source_location::current()) {
+	return log(util::Importance::FATAL_ERROR, loc);
+}
+inline std::ostream& log_memory(std::source_location loc=std::source_location::current()) {
+	return log(util::Importance::MEMORY, loc);
+}
+inline std::ostream& log_debug(std::source_location loc=std::source_location::current()) {
+	return log(util::Importance::DEBUG, loc);
+}
+

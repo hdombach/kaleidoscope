@@ -15,6 +15,7 @@
 #include "types/ResourceManager.hpp"
 #include "types/Material.hpp"
 #include "types/Mesh.hpp"
+#include "util/log.hpp"
 
 namespace ui {
 	void AppView(App &app, State &state) {
@@ -164,9 +165,9 @@ namespace ui {
 			if (auto id = scene.add_node(scene.resource_manager().default_mesh(), scene.resource_manager().default_material())) {
 				state.selected_item = id.value();
 			} else {
-				LOG_ERROR << id.error() << std::endl;
+				log_error() << id.error() << std::endl;
 			}
-			LOG_DEBUG << "created new node: " << state.selected_item << std::endl;
+			log_debug() << "created new node: " << state.selected_item << std::endl;
 		}
 	}
 

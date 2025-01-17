@@ -29,7 +29,7 @@ namespace vulkan {
 				return false;
 			}
 			virtual void resize(VkExtent2D size) {
-				LOG_ERROR << "Cannot resize texture that is not resizable" << std::endl;
+				log_error() << "Cannot resize texture that is not resizable" << std::endl;
 			}
 	};
 }

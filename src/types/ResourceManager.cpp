@@ -28,19 +28,19 @@ namespace types {
 		if (res) {
 			_default_texture = res.value();
 		} else {
-			LOG_FATAL_ERROR << "Couldn't create default texture" << std::endl;
+			log_fatal_error(res.error()) << std::endl;
 		}
 
 		if (auto id = add_color_material("Default Material", glm::vec3(1.0, 0.0, 1.0))) {
 			_default_material = id;
 		} else {
-			LOG_FATAL_ERROR << "Couldn't create default material" << std::endl;
+			log_fatal_error() << "Couldn't create default material" << std::endl;
 		}
 
 		if (auto id = add_mesh_square("Default mesh")) {
 			_default_mesh = id;
 		} else {
-			LOG_FATAL_ERROR << "Couldn't create default mesh" << std::endl;
+			log_fatal_error() << "Couldn't create default mesh" << std::endl;
 		}
 	}
 

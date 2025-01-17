@@ -5,6 +5,8 @@
 #include <map>
 #include <iostream>
 
+#include "util/log.hpp"
+
 struct Test;
 struct Test {
 	std::function<void(Test &)> fn;
@@ -38,8 +40,12 @@ inline std::ostream &fail_head(
 	const char *filename,
 	size_t line
 ) {
-	return std::cout << "[FAILED TEST " << test.suite_name << "::" << test.test_name
+	std::cout << "[";
+	std::cout << util::color::RED << "FAILED_TEST " << util::color::RESET;
+	std::cout << test.suite_name << "::" << test.test_name
 		<< " (" << filename << ":" << line << ")] ";
+
+	return std::cout;
 }
 
 template<typename LHS, typename RHS>

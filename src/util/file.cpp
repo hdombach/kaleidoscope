@@ -2,7 +2,6 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <ostream>
 #include <sstream>
 #include <string>
 #include <sstream>
@@ -25,10 +24,10 @@ namespace util {
 		envPathIterator << envPathValue;
 		std::string path;
 		while(std::getline(envPathIterator, path, ':')) {
-			std::string full_path = path + "/" + filename;
+			auto full_path = std::filesystem::path(path) / filename;
 
 			if (std::filesystem::exists(full_path)) {
-				return full_path;
+				return {full_path};
 			}
 		}
 

@@ -6,6 +6,7 @@
 #include "PrevPass.hpp"
 #include "PrevPassMaterial.hpp"
 #include "PrevPassCodegen.hpp"
+#include "util/log.hpp"
 #include "vulkan/Vertex.hpp"
 #include "util/file.hpp"
 #include "util/Util.hpp"
@@ -84,7 +85,7 @@ namespace vulkan {
 				descriptor_layouts,
 				&result._pipeline,
 				&result._pipeline_layout));
-		LOG_MEMORY << "Just created a pipeline " << result._pipeline << std::endl;
+		log_memory() << "Just created a pipeline " << result._pipeline << std::endl;
 		return result;
 	}
 
@@ -391,7 +392,7 @@ namespace vulkan {
 				while (textures[i] != resource->name()) {
 					i++;
 					if (i >= textures.size()) {
-						LOG_FATAL_ERROR << "INTERNAL: unknown texture name: " << resource->name() << std::endl;
+						log_fatal_error() << "INTERNAL: unknown texture name: " << resource->name() << std::endl;
 						return;
 					}
 				}
@@ -416,6 +417,6 @@ namespace vulkan {
 
 		util::replace_substr(frag_source, "/*TEXTURE_UNIFORM*/", texture_uniform);
 
-		LOG_DEBUG << "frag codegen:\n" << util::add_strnum(frag_source) << std::endl;
+		log_debug() << "frag codegen:\n" << util::add_strnum(frag_source) << std::endl;
 	}
 }

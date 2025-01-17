@@ -7,6 +7,7 @@
 #include "RayPassMaterial.hpp"
 #include "RayPassMesh.hpp"
 #include "RayPassNode.hpp"
+#include "util/log.hpp"
 #include "util/result.hpp"
 #include "vulkan/Shader.hpp"
 #include "vulkan/graphics.hpp"
@@ -275,7 +276,7 @@ namespace vulkan {
 		if (!_pipeline) {
 			auto res = _create_pipeline();
 			if (!res) {
-				LOG_ERROR << "problem creating pipeline: " << res.error() << std::endl;
+				log_error() << "problem creating pipeline: " << res.error() << std::endl;
 				return nullptr;
 			}
 		}
@@ -309,7 +310,7 @@ namespace vulkan {
 		auto begin_info = VkCommandBufferBeginInfo{};
 		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 		if (vkBeginCommandBuffer(_command_buffer, &begin_info) != VK_SUCCESS) {
-			LOG_ERROR << "Couldn't begin command buffer" << std::endl;
+			log_error() << "Couldn't begin command buffer" << std::endl;
 		}
 		VkClearColorValue clear_color = {0.0, 0.0, 0.0, 0.0};
 		VkImageSubresourceRange range;
@@ -324,7 +325,7 @@ namespace vulkan {
 			range.layerCount = 1;
 			range.levelCount = 1;
 			vkCmdClearColorImage(_command_buffer, _accumulator_image.image(), VK_IMAGE_LAYOUT_GENERAL, &clear_color, 1, &range);
-			LOG_DEBUG << "Cleared accumulator" << std::endl;
+			log_debug() << "Cleared accumulator" << std::endl;
 		}
 		vkCmdBindPipeline(_command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, _pipeline);
 		auto descriptor_set = _descriptor_set.descriptor_set(0);
@@ -339,7 +340,7 @@ namespace vulkan {
 				nullptr);
 		vkCmdDispatch(_command_buffer, count, 1, 1);
 		if (vkEndCommandBuffer(_command_buffer) != VK_SUCCESS) {
-			LOG_ERROR << "Couldn't end command buffer" << std::endl;
+			log_error() << "Couldn't end command buffer" << std::endl;
 		}
 
 		auto ray_semaphore = _semaphore.get();
@@ -357,7 +358,7 @@ namespace vulkan {
 
 		auto res = vkQueueSubmit(Graphics::DEFAULT->compute_queue(), 1, &submit_info, *_pass_fence);
 		if (res != VK_SUCCESS) {
-			LOG_ERROR << "Problem submitting queue" << std::endl;
+			log_error() << "Problem submitting queue" << std::endl;
 		}
 		return ray_semaphore;
 	}
@@ -420,7 +421,7 @@ namespace vulkan {
 
 	void RayPass::material_create(uint32_t id) {
 		if (auto material = RayPassMaterial::create(_scene->resource_manager().get_material(id), this)) {
-			LOG_ASSERT(_materials.insert(std::move(material.value())), "Duplicate material in RayPass");
+			log_assert(_materials.insert(std::move(material.value())), "Duplicate material in RayPass");
 		} else {
 			TRY_LOG(material);
 		}
@@ -441,7 +442,7 @@ namespace vulkan {
 
 	void RayPass::node_create(uint32_t id) {
 		if (auto node = RayPassNode::create(_scene->get_node(id), this)) {
-			LOG_ASSERT(_nodes.insert(std::move(node.value())), "Duplicate node in RayPass");
+			log_assert(_nodes.insert(std::move(node.value())), "Duplicate node in RayPass");
 		} else {
 			TRY_LOG(node);
 		}
@@ -485,7 +486,7 @@ namespace vulkan {
 		{
 			descriptor_templates.push_back(std::move(buffer.value()));
 		} else {
-			LOG_ERROR << "Problem creating vertex buffer: " << buffer.error() << std::endl;
+			log_error() << "Problem creating vertex buffer: " << buffer.error() << std::endl;
 		}
 
 		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
@@ -495,7 +496,7 @@ namespace vulkan {
 		{
 			descriptor_templates.push_back(std::move(buffer.value()));
 		} else {
-			LOG_ERROR << "Problem creating bvnode buffer: " << buffer.error() << std::endl;
+			log_error() << "Problem creating bvnode buffer: " << buffer.error() << std::endl;
 		}
 
 		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
@@ -505,7 +506,7 @@ namespace vulkan {
 		{
 			descriptor_templates.push_back(std::move(buffer.value()));
 		} else {
-			LOG_ERROR << "Problem creating node buffer: " << buffer.error() << std::endl;
+			log_error() << "Problem creating node buffer: " << buffer.error() << std::endl;
 		}
 
 		if (textures.size() > 0) {
@@ -516,7 +517,7 @@ namespace vulkan {
 			{
 				descriptor_templates.push_back(std::move(images.value()));
 			} else {
-				LOG_ERROR << "Problem attaching images: " << images.error() << std::endl;
+				log_error() << "Problem attaching images: " << images.error() << std::endl;
 			}
 		}
 
@@ -527,7 +528,7 @@ namespace vulkan {
 		{
 			descriptor_templates.push_back(std::move(buffer.value()));
 		} else {
-			LOG_ERROR << "Problem creating material buffer: " << buffer.error() << std::endl;
+			log_error() << "Problem creating material buffer: " << buffer.error() << std::endl;
 		}
 
 		auto descriptor_sets = DescriptorSets::create(
@@ -577,7 +578,7 @@ namespace vulkan {
 			return {res};
 		}
 
-		LOG_DEBUG << "just created raypass pipeline " << _pipeline << std::endl;
+		log_debug() << "just created raypass pipeline " << _pipeline << std::endl;
 
 		return {};
 	}
@@ -645,7 +646,7 @@ namespace vulkan {
 		}
 
 		if (_node_dirty_bit) {
-			LOG_DEBUG << "update node buffers " << std::endl;
+			log_debug() << "update node buffers " << std::endl;
 			_create_node_buffers();
 			_node_dirty_bit = false;
 			_material_dirty_bit = true;
@@ -693,7 +694,7 @@ namespace vulkan {
 			_vertex_buffer = std::move(buffer.value());
 		} else {
 			if (buffer.error().type() != KError::Type::EMPTY_BUFFER) {
-				LOG_ERROR << buffer.error() << std::endl;
+				log_error() << buffer.error() << std::endl;
 			}
 		}
 
@@ -701,7 +702,7 @@ namespace vulkan {
 			_bvnode_buffer = std::move(buffer.value());
 		} else {
 			if (buffer.error().type() != KError::Type::EMPTY_BUFFER) {
-				LOG_ERROR << buffer.error() << std::endl;
+				log_error() << buffer.error() << std::endl;
 			}
 		}
 	}
@@ -720,7 +721,7 @@ namespace vulkan {
 			_node_buffer = std::move(buffer.value());
 		} else {
 			if (buffer.error().type() != KError::Type::EMPTY_BUFFER) {
-				LOG_ERROR << buffer.error() << std::endl;
+				log_error() << buffer.error() << std::endl;
 			}
 		}
 	}
@@ -746,7 +747,7 @@ namespace vulkan {
 		if (auto buffer = StaticBuffer::create(buf.data(), range)) {
 			_material_buffer = std::move(buffer.value());
 		} else {
-			LOG_ERROR << buffer.error() << std::endl;
+			log_error() << buffer.error() << std::endl;
 		}
 	}
 
@@ -806,7 +807,7 @@ namespace vulkan {
 		util::replace_substr(source, "/*MATERIAL_SRCS*/\n", material_srcs);
 		util::replace_substr(source, "/*MATERIAL_CALLS*/\n", material_call);
 
-		LOG_DEBUG << "raytrace codegen: \n" << util::add_strnum(source) << std::endl;
+		log_debug() << "raytrace codegen: \n" << util::add_strnum(source) << std::endl;
 
 		return source;
 	}

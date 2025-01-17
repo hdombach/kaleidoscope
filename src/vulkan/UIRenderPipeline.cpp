@@ -131,9 +131,9 @@ namespace vulkan {
 		_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 		_io->ConfigFlags |= ImGuiConfigFlags_DockingEnable; //Allows imgui windows to be combined
 		_io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // allows imgui windows to be dragged outisde of main window
-		LOG_DEBUG << "Font path is " << util::g_env.working_dir << "/assets/Helvetica.ttc" << std::endl;
+		log_debug() << "Font path is " << util::g_env.working_dir << "/assets/Helvetica.ttc" << std::endl;
 		//TODO: error handling
-		_io->Fonts->AddFontFromFileTTF(util::env_file_path("/../assets/Helvetica.ttc").value().c_str(), 14);
+		_io->Fonts->AddFontFromFileTTF(util::env_file_path("./assets/Helvetica.ttc").value().c_str(), 14);
 
 		ImGui::StyleColorsDark();
 
@@ -151,7 +151,7 @@ namespace vulkan {
 		init_info.Queue = Graphics::DEFAULT->graphics_queue();
 		init_info.DescriptorPool = _descriptor_pool;
 		init_info.Subpass = 0;
-		LOG_EVENT << "Min image count: " << FRAMES_IN_FLIGHT << std::endl;
+		log_event() << "Min image count: " << FRAMES_IN_FLIGHT << std::endl;
 		init_info.MinImageCount = FRAMES_IN_FLIGHT;
 		init_info.ImageCount = FRAMES_IN_FLIGHT;
 		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
@@ -174,7 +174,7 @@ namespace vulkan {
 				Graphics::DEFAULT->surface(),
 				&res);
 		if (res != VK_TRUE) {
-			LOG_ERROR << "No WSI support on physical device 0" << std::endl;
+			log_error() << "No WSI support on physical device 0" << std::endl;
 		}
 
     const VkFormat requestSurfaceImageFormat[] = {

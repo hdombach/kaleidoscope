@@ -1,9 +1,10 @@
 #include "log.hpp"
 #include <ostream>
+#include <source_location>
 #include <string>
 
 namespace util {
-	std::ostream& log(Importance importance, std::string file, int line) {
+	std::ostream& log(Importance importance, std::source_location location) {
 		std::cout << "[";
 
 		if (importance & EVENT) {
@@ -21,20 +22,19 @@ namespace util {
 		}
 		std::cout << color::RESET;
 
-		std::cout << file << ":" << line << "] ";
+		std::cout << location.file_name() << "(" << location.line() << ":" << location.column() << ")" << "] ";
 
 		return std::cout;
 	}
 
-	void log_assert(
-		bool test,
-		std::string const &desc,
-		Importance importance,
-		std::string file,
-		int line)
-	{
-		if (!test) {
-			log(importance, file, line) << desc << std::endl;
-		}
+}
+
+void log_assert(
+	bool test,
+	std::string const &desc,
+	std::source_location loc
+) {
+	if (!test) {
+		log(util::Importance::FATAL_ERROR, loc) << desc << std::endl;
 	}
 }

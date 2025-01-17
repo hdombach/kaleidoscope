@@ -2,6 +2,7 @@
 #include "RayPassMesh.hpp"
 #include "RayPass.hpp"
 #include "util/format.hpp"
+#include "util/log.hpp"
 
 namespace vulkan {
 	RayPassNode::VImpl RayPassNode::VImpl::create_empty() {
@@ -40,7 +41,7 @@ namespace vulkan {
 	RayPassNode::VImpl RayPassNode::vimpl() const {
 		if (_node) {
 			if (!_ray_pass->mesh(_node->mesh().id())) {
-				LOG_ERROR << "Valid node contains invalid mesh: " << _node->mesh().id() << std::endl;
+				log_error() << "Valid node contains invalid mesh: " << _node->mesh().id() << std::endl;
 			}
 			return VImpl{
 				_node->id(),

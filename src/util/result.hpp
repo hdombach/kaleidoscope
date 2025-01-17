@@ -1,6 +1,7 @@
 #pragma once
 
 #include "format.hpp"
+#include "util/log.hpp"
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -206,4 +207,4 @@ namespace util {
 
 #define TRY(result) try { return {(result).error()}; } catch (...) {}
 
-#define TRY_LOG(result) try { auto error = result.error(); LOG_ERROR << error << std::endl; } catch (...) {}
+#define TRY_LOG(result) try { auto error = result.error(); log_error(error) << std::endl; } catch (...) {}

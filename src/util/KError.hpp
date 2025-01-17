@@ -7,6 +7,8 @@
 
 #include <vulkan/vulkan_core.h>
 
+#include "util/log.hpp"
+
 
 class KError: public std::exception {
 	private:
@@ -38,7 +40,7 @@ class KError: public std::exception {
 		const char* what() const noexcept override { return _what.c_str(); }
 
 		Type type() const { return _type; }
-		Loc loc() const;
+		Loc loc() const { return _loc; }
 
 		static KError texture_exists(std::string texture_name, Loc=Loc::current());
 		static KError file_doesnt_exist(std::string file_name, Loc=Loc::current());
@@ -70,4 +72,12 @@ inline std::ostream &operator <<(std::ostream &os, KError const &error) {
 }
 
 #define catch_kerror catch (KError const &err) { return {err}; }
+
+inline std::ostream& log_fatal_error(KError const &err) {
+	return log_fatal_error(err.loc()) << err;
+}
+
+inline std::ostream& log_error(KError const &err) {
+	return log_error(err.loc()) << err;
+}
 

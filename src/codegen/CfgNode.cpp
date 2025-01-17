@@ -79,7 +79,7 @@ namespace cg {
 		// There will be at least one of these
 		result._ref_id = other.id();
 		result._ref_name = other.name();
-		util::LOG_ASSERT(other.name().size() > 0, "ref does not have name");
+		log_assert(other.name().size() > 0, "ref does not have name");
 
 		return result;
 	}

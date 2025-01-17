@@ -252,7 +252,7 @@ namespace vulkan {
 		if (result != VK_SUCCESS) {
 			return KError(result);
 		}
-		LOG_MEMORY << "Create instance " << _instance << std::endl;
+		log_memory() << "Create instance " << _instance << std::endl;
 
 		return {};
 	}
@@ -294,7 +294,7 @@ namespace vulkan {
 		}
 
 		if (_device) {
-			LOG_MEMORY << "destroying device " << _device << std::endl;
+			log_memory() << "destroying device " << _device << std::endl;
 			vkDestroyDevice(_device, nullptr);
 			_device = nullptr;
 		}
@@ -304,7 +304,7 @@ namespace vulkan {
 			_debug_messenger = nullptr;
 		}
 
-		LOG_MEMORY << "Destroy instance " << _instance << std::endl;
+		log_memory() << "Destroy instance " << _instance << std::endl;
 		vkDestroyInstance(_instance, nullptr);
 		_instance = nullptr;
 
@@ -380,7 +380,7 @@ namespace vulkan {
 			_swapchain_support_details = _query_swap_chain_support(device);
 			swapChainAdequate = !_swapchain_support_details.formats.empty() && !_swapchain_support_details.present_modes.empty();
 		} else {
-			LOG_ERROR << "Extensions are not supported" << std::endl;
+			log_error() << "Extensions are not supported" << std::endl;
 		}
 		VkPhysicalDeviceFeatures supportedFeatures;
 		vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
@@ -437,7 +437,7 @@ namespace vulkan {
 		if (result != VK_SUCCESS) {
 			throw KError(result);
 		}
-		LOG_MEMORY << "Created device " << _device << std::endl;
+		log_memory() << "Created device " << _device << std::endl;
 		//TODO: the pipeline objects should probably own graphics queue
 		vkGetDeviceQueue(_device, indices.graphics_family.value(), 0, &_graphics_queue);
 		//TODO: search specifically for a compute queue
@@ -832,7 +832,7 @@ namespace vulkan {
 				imageFormat,
 				&formatProperties);
 		if (!(formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT)) {
-			LOG_FATAL_ERROR << "Texture image format does not support linear blitting" << std::endl;
+			log_fatal_error() << "Texture image format does not support linear blitting" << std::endl;
 		}
 
 		auto commandBuffer = _begin_single_time_commands();

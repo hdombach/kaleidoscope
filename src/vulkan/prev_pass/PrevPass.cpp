@@ -101,7 +101,7 @@ namespace vulkan {
 	}
 
 	void PrevPass::destroy() {
-		LOG_MEMORY << "Deconstructing main render pipeline" << std::endl;
+		log_memory() << "Deconstructing main render pipeline" << std::endl;
 
 		_cleanup_images();
 		_destroy_framebuffers();
@@ -195,7 +195,7 @@ namespace vulkan {
 						_frame_index, 
 						node.position(), 
 						size);*/
-				LOG_ASSERT(material.pipeline(), "Material pipeline does not exist");
+				log_assert(material.pipeline(), "Material pipeline does not exist");
 				vkCmdBindPipeline(
 						command_buffer, 
 						VK_PIPELINE_BIND_POINT_GRAPHICS, 
@@ -246,7 +246,7 @@ namespace vulkan {
 
 			vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-			LOG_ASSERT(_de_pipeline, "DE pipeline does not exist");
+			log_assert(_de_pipeline, "DE pipeline does not exist");
 			vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _de_pipeline);
 
 			auto descriptor_sets = std::array<VkDescriptorSet, 2>{
@@ -275,7 +275,7 @@ namespace vulkan {
 			uniform.selected_node = _scene->selected_node();
 			_mapped_overlay_uniform.set_value(uniform);
 
-			LOG_ASSERT(_overlay_pipeline, "Overlay pipeline does not exist");
+			log_assert(_overlay_pipeline, "Overlay pipeline does not exist");
 			vkCmdBindPipeline(
 					command_buffer,
 					VK_PIPELINE_BIND_POINT_COMPUTE,
@@ -353,7 +353,7 @@ namespace vulkan {
 
 	void PrevPass::mesh_create(uint32_t id) {
 		if (auto mesh = PrevPassMesh::create(*_scene, _scene->resource_manager().get_mesh(id))) {
-			LOG_ASSERT(_meshes.insert(std::move(mesh.value())), "Duplicated mesh in PrevPass");
+			log_assert(_meshes.insert(std::move(mesh.value())), "Duplicated mesh in PrevPass");
 		} else {
 			TRY_LOG(mesh);
 		}
@@ -378,7 +378,7 @@ namespace vulkan {
 			*this,
 			_scene->resource_manager().get_material(id))
 		) {
-			LOG_ASSERT(_materials.insert(std::move(material.value())), "Duplicated material in PrevPass");
+			log_assert(_materials.insert(std::move(material.value())), "Duplicated material in PrevPass");
 		} else {
 			TRY_LOG(material);
 		}
@@ -392,7 +392,7 @@ namespace vulkan {
 
 	void PrevPass::node_create(uint32_t id) {
 		if (auto node = PrevPassNode::create(*_scene, *this, _scene->get_node(id))) {
-			LOG_ASSERT(_nodes.insert(std::move(node.value())), "Duplicated node in PrevPass");
+			log_assert(_nodes.insert(std::move(node.value())), "Duplicated node in PrevPass");
 		} else {
 			TRY_LOG(node);
 		}
@@ -575,8 +575,8 @@ namespace vulkan {
 		util::replace_substr(source_code, "/*OVERLAY_UNIFORM_CONTENT*/\n", OverlayUniform::declaration_content());
 		auto compute_shader = Shader::from_source_code(source_code, Shader::Type::Compute);
 		if (!compute_shader) {
-			LOG_DEBUG << "\n" << util::add_strnum(source_code) << std::endl;
-			LOG_ERROR << compute_shader.error() << std::endl;
+			log_debug() << "\n" << util::add_strnum(source_code) << std::endl;
+			log_error() << compute_shader.error() << std::endl;
 			return compute_shader.error();
 		}
 
@@ -658,7 +658,7 @@ namespace vulkan {
 		{
 			descriptor_templates.push_back(std::move(buffer.value()));
 		} else {
-			LOG_ERROR << "Problem creating de node buffer: " << buffer.error() << std::endl;
+			log_error() << "Problem creating de node buffer: " << buffer.error() << std::endl;
 		}
 
 		auto descriptor_sets = DescriptorSets::create(
@@ -749,7 +749,7 @@ namespace vulkan {
 			return {res};
 		}
 
-		LOG_DEBUG << "Created DE preview render pass: " << _de_render_pass << std::endl;
+		log_debug() << "Created DE preview render pass: " << _de_render_pass << std::endl;
 
 		return {};
 	}
@@ -772,16 +772,16 @@ namespace vulkan {
 		auto vert_source_code = util::readEnvFile("assets/shaders/unit_square.vert");
 		auto vert_shader = Shader::from_source_code(vert_source_code, Shader::Type::Vertex);
 		if (!vert_shader) {
-			LOG_DEBUG << "\n" << util::add_strnum(vert_source_code) << std::endl;
-			LOG_ERROR << vert_shader.error() << std::endl;
+			log_debug() << "\n" << util::add_strnum(vert_source_code) << std::endl;
+			log_error() << vert_shader.error() << std::endl;
 			return vert_shader.error();
 		}
 
 		auto frag_source_code = _codegen_de();
 		auto frag_shader = Shader::from_source_code(frag_source_code, Shader::Type::Fragment);
 		if (!frag_shader) {
-			LOG_DEBUG << "\n" << util::add_strnum(frag_source_code) << std::endl;
-			LOG_ERROR << frag_shader.error() << std::endl;
+			log_debug() << "\n" << util::add_strnum(frag_source_code) << std::endl;
+			log_error() << frag_shader.error() << std::endl;
 			return frag_shader.error();
 		}
 
@@ -1011,7 +1011,7 @@ namespace vulkan {
 			_de_node_buffer = std::move(buffer.value());
 		} else {
 			if (buffer.error().type() != KError::Type::EMPTY_BUFFER) {
-				LOG_ERROR << buffer.error() << std::endl;
+				log_error() << buffer.error() << std::endl;
 			}
 			return buffer.error();
 		}
@@ -1299,7 +1299,7 @@ namespace vulkan {
 
 		util::replace_substr(source_code, "/*DE_FUNC_CALLS*/\n", de_func_calls);
 
-		LOG_DEBUG << "Prev pass de code: " << util::add_strnum(source_code) << std::endl;
+		log_debug() << "Prev pass de code: " << util::add_strnum(source_code) << std::endl;
 
 		return source_code;
 	}

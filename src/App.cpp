@@ -24,7 +24,7 @@ App::Ptr App::create(std::string const &name) {
 	result->_ui_render_pipeline = std::make_unique<vulkan::UIRenderPipeline>();
 	result->_resource_manager = std::make_unique<types::ResourceManager>();
 
-	TRY_LOG(result->_resource_manager->add_texture_from_file("assets/viking_rom.png"));
+	TRY_LOG(result->_resource_manager->add_texture_from_file("assets/viking_room.png"));
 	TRY_LOG(result->_resource_manager->add_texture_from_file("assets/grunge.png"));
 
 	TRY_LOG(result->_resource_manager->add_mesh_from_file("assets/viking_room.obj"));
@@ -47,7 +47,7 @@ App::Ptr App::create(std::string const &name) {
 	if (auto scene = vulkan::Scene::create(*(result->_resource_manager))) {
 		result->_scene = std::move(scene.value());
 	} else {
-		LOG_ERROR << scene.error() << std::endl;
+		log_error() << scene.error() << std::endl;
 	}
 
 	if (auto id = result->_scene->add_node(
@@ -57,7 +57,7 @@ App::Ptr App::create(std::string const &name) {
 		result->_scene->get_node_mut(id.value())->set_position({0, 2.5, 0});
 		result->_scene->get_node_mut(id.value())->resources().add_resource(types::ShaderResource::create_primitive("comb_ratio", comb_ratio_value));
 	} else {
-		LOG_ERROR << id.error() << std::endl;
+		log_error() << id.error() << std::endl;
 	}
 
 	if (auto id = result->_scene->add_node(
@@ -67,7 +67,7 @@ App::Ptr App::create(std::string const &name) {
 		result->_scene->get_node_mut(id.value())->set_position({0, 3.0, 0});
 		result->_scene->get_node_mut(id.value())->resources().add_resource(types::ShaderResource::create_color("color", glm::vec3(0.2, 0.3, 1.0)));
 	} else {
-		LOG_ERROR << id.error() << std::endl;
+		log_error() << id.error() << std::endl;
 	}
 
 	{
@@ -101,8 +101,8 @@ void App::main_loop() {
 		comb_ratio_value = 0.5 + 0.4 * sin(time * 1);
 
 		if (!(*_scene->begin()).get()) {
-			LOG_DEBUG << "bool: " << (_scene->begin() == _scene->end()) << std::endl;
-			LOG_DEBUG << "empty" << std::endl;
+			log_debug() << "bool: " << (_scene->begin() == _scene->end()) << std::endl;
+			log_debug() << "empty" << std::endl;
 		}
 
 		for (auto &node : *_scene) {

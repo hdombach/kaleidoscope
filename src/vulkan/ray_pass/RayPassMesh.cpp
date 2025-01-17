@@ -175,7 +175,7 @@ namespace vulkan {
 		if (_is_leaf) {
 			nodes[res].type = BVType::Mesh;
 			if (_verts.size() > 6) {
-				LOG_FATAL_ERROR << "BVNodeBuilder has more than 2 children." << std::endl;
+				log_fatal_error() << "BVNodeBuilder has more than 2 children." << std::endl;
 				return res;
 			}
 			auto vstart = vertices.size();
