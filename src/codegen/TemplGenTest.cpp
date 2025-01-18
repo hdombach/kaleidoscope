@@ -18,7 +18,7 @@ namespace cg {
 		EXPECT_EQ(
 			gen->codegen(src, args).value(),
 			"Hello everyone\n"
-			"My name is Hezekiah Dombach!"
+			"My name is Hezekiah Dombach!\n"
 		);
 	}
 }

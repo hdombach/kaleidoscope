@@ -35,6 +35,10 @@ namespace cg {
 				AstNode const &node,
 				TemplObj::Dict const &args
 			) const;
+			util::Result<std::string, KError> _codegen_ref(
+				AstNode const &node,
+				TemplObj::Dict const &args
+			) const;
 			util::Result<std::string, KError> _codegen_identifier(
 				AstNode const &node,
 				TemplObj::Dict const &args

@@ -31,19 +31,22 @@ namespace cg {
 
 		c["exp_id"] = c.ref("whitespace") + c.ref("identifier") + c.ref("whitespace");
 
+		c["padding_b"] = c.ref("padding");
+		c["padding_e"] = c.ref("padding");
+
 		c["comment_b"] = "{#"_cfg + c.opt("-"_cfg | "+"_cfg);
 		c["comment_e"] = c.opt("-"_cfg | "+"_cfg) + "#}"_cfg;
 		c["comment"] =
-			c.ref("padding") +
+			c.ref("padding_b") +
 			c.ref("comment_b") + c.cls(!"#}"_cfg) + c.ref("comment_e") +
-			c.ref("padding");
+			c.ref("padding_e");
 
-		c["expression_b"] = "{{"_cfg + c.opt("_"_cfg | "+"_cfg);
-		c["expression_e"] = c.opt("_"_cfg | "+"_cfg) + "}}"_cfg;
+		c["expression_b"] = "{{"_cfg + c.opt("-"_cfg | "+"_cfg);
+		c["expression_e"] = c.opt("-"_cfg | "+"_cfg) + "}}"_cfg;
 		c["expression"] =
-			c.ref("padding") +
+			c.ref("padding_b") +
 			c.ref("expression_b") + c.ref("exp_id") + c.ref("expression_e") +
-			c.ref("padding");
+			c.ref("padding_e");
 
 		c["raw"] = c.cls(!(c.ref("expression") | c.ref("comment") | "\n"_cfg));
 
@@ -56,6 +59,8 @@ namespace cg {
 		result._prims = {
 			"whitespace",
 			"padding",
+			"padding_b",
+			"padding_e",
 			"identifier",
 			"exp_id",
 			"comment_b",
@@ -101,6 +106,10 @@ namespace cg {
 			return _codegen_default(node, args);
 		} else if (node.cfg_name() == "padding") {
 			return _codegen_default(node, args);
+		} else if (node.cfg_name() == "padding_b") {
+			return _codegen_ref(node, args);
+		} else if (node.cfg_name() == "padding_e") {
+			return _codegen_ref(node, args);
 		} else if (node.cfg_name() == "identifier") {
 			return _codegen_identifier(node, args);
 		} else if (node.cfg_name() == "exp_id") {
@@ -126,6 +135,14 @@ namespace cg {
 	) const {
 		CG_ASSERT(node.children().size() == 0, "Children count of padding must be 0");
 		return node.consumed();
+	}
+
+	util::Result<std::string, KError> TemplGen::_codegen_ref(
+		AstNode const &node,
+		TemplObj::Dict const &args
+	) const {
+		CG_ASSERT(node.children().size() == 1, "Children count of codegen_ref must be 1");
+		return _codegen(node.children()[0], args);
 	}
 
 	util::Result<std::string, KError> TemplGen::_codegen_identifier(
@@ -164,19 +181,25 @@ namespace cg {
 
 			for (auto &child : node.children()) {
 				auto name = child.cfg_name();
-				if (name == "padding") {
+				if (name == "padding_b" || name == "padding_e") {
 					continue;
 				} else if (name == "expression_b") {
 					if (_tag_keep_padding(child, true).value()) {
-						result += child.consumed();
+						if (auto padding = node.child_with_cfg("padding_b")) {
+							result += _codegen(padding.value(), args).value();
+						}
 					}
 				} else if (name == "expression_e") {
 					if (_tag_keep_padding(child, true).value()) {
-						result += child.consumed();
+						if (auto padding = node.child_with_cfg("padding_e")) {
+							result += _codegen(padding.value(), args).value();
+						}
 					}
+				} else {
+					result += _codegen(child, args).value();
 				}
 			}
-			return KError::codegen("Empty expression");
+			return result;
 		} catch_kerror;
 	}
 
