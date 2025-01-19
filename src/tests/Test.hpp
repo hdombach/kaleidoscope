@@ -66,8 +66,8 @@ void expect_eq(
 
 		os << "\tEXPECT_EQ(" << lhs_string << ", " << rhs_string << ");" << std::endl;
 		os << std::endl;
-		os << "\tlhs: " << lhs << std::endl;
-		os << "\trhs: " << rhs << std::endl;
+		os << "\tlhs: \"" << lhs << "\"" << std::endl;
+		os << "\trhs: \"" << rhs << "\"" << std::endl;
 		os << std::endl;
 	}
 }

@@ -2,6 +2,7 @@
 #include "codegen/SParser.hpp"
 #include "codegen/TemplObj.hpp"
 #include "util/KError.hpp"
+#include "util/log.hpp"
 
 #include <fstream>
 
@@ -29,10 +30,14 @@ namespace cg {
 		c["alnum"] = c.ref("alpha") | c.ref("digit");
 		c["identifier"] = ("_"_cfg | c.ref("alpha")) + c.cls(c.ref("alnum") | "_"_cfg);
 
-		c["exp_id"] = c.ref("whitespace") + c.ref("identifier") + c.ref("whitespace");
-
 		c["padding_b"] = c.ref("padding");
 		c["padding_e"] = c.ref("padding");
+		c["padding_nl"] = c.ref("padding") + c.opt("\n"_cfg);
+
+		c["raw"] = c.cls(!(c.ref("sfrag_endfor") | c.ref("statement") | c.ref("expression") | c.ref("comment") | "\n"_cfg));
+		c["line"] = c.cls(c.ref("statement") | c.ref("expression") | c.ref("comment") | c.ref("raw")) + c.opt("\n"_cfg);
+		c["lines"] = c.cls(c.ref("line"));
+		c["file"] = c.ref("lines");
 
 		c["comment_b"] = "{#"_cfg + c.opt("-"_cfg | "+"_cfg);
 		c["comment_e"] = c.opt("-"_cfg | "+"_cfg) + "#}"_cfg;
@@ -44,33 +49,54 @@ namespace cg {
 		c["expression_b"] = "{{"_cfg + c.opt("-"_cfg | "+"_cfg);
 		c["expression_e"] = c.opt("-"_cfg | "+"_cfg) + "}}"_cfg;
 		c["expression"] =
-			c.ref("padding_b") +
-			c.ref("expression_b") + c.ref("exp_id") + c.ref("expression_e") +
-			c.ref("padding_e");
+			c.ref("padding_b") + c.ref("expression_b") +
+			c.ref("exp") +
+			c.ref("expression_e") + c.ref("padding_e");
+		c["exp"] = c.ref("exp_id");
 
-		c["raw"] = c.cls(!(c.ref("expression") | c.ref("comment") | "\n"_cfg));
+		c["exp_id"] = c.ref("whitespace") + c.ref("identifier") + c.ref("whitespace");
 
-		c["line"] = c.cls(c.ref("expression") | c.ref("comment") | c.ref("raw")) + "\n"_cfg;
+		c["statement_b"] = "{%"_cfg + c.opt("-"_cfg | "+"_cfg);
+		c["statement_e"] = c.opt("-"_cfg | "+"_cfg) + "%}"_cfg;
 
-		c["file"] = c.cls(c.ref("line"));
+		c["sfrag_for"] =
+			c.ref("padding_b") + c.ref("statement_b") +
+			c.ref("padding") + "for"_cfg + c.ref("exp_id") + "in"_cfg + c.ref("exp") +
+			c.ref("statement_e") + c.ref("padding_nl");
+		c["sfrag_endfor"] =
+			c.ref("padding_b") + c.ref("statement_b") +
+			c.ref("whitespace") + "endfor"_cfg +  c.ref("whitespace") +
+			c.ref("statement_e") + c.ref("padding_nl");
+		c["sfor"] = c.ref("sfrag_for") + c.ref("lines") + c.ref("sfrag_endfor");
+
+		c["statement"] = c.ref("sfor");
 
 		TRY(c.prep());
 
 		result._prims = {
 			"whitespace",
 			"padding",
+			"identifier",
 			"padding_b",
 			"padding_e",
-			"identifier",
-			"exp_id",
+			"padding_nl",
+			"raw",
+			"line",
+			"lines",
+			"file",
 			"comment_b",
 			"comment_e",
 			"comment",
 			"expression_b",
 			"expression_e",
 			"expression",
-			"raw",
-			"line"
+			"exp",
+			"exp_id",
+			"statement_b",
+			"statement_e",
+			"statement",
+			"sfrag_for",
+			"sfor",
 		};
 
 		return result;
@@ -103,33 +129,39 @@ namespace cg {
 		TemplObj::Dict const &args
 	) const {
 		if (node.cfg_name() == "whitespace") {
-			return _codegen_default(node, args);
+			return _cg_default(node, args);
 		} else if (node.cfg_name() == "padding") {
-			return _codegen_default(node, args);
-		} else if (node.cfg_name() == "padding_b") {
-			return _codegen_ref(node, args);
-		} else if (node.cfg_name() == "padding_e") {
-			return _codegen_ref(node, args);
+			return _cg_default(node, args);
 		} else if (node.cfg_name() == "identifier") {
-			return _codegen_identifier(node, args);
-		} else if (node.cfg_name() == "exp_id") {
-			return _codegen_exp_id(node, args);
-		} else if (node.cfg_name() == "comment") {
-			return _codegen_comment(node, args);
-		} else if (node.cfg_name() == "expression") {
-			return _codegen_expression(node, args);
+			return _cg_identifier(node, args);
+		} else if (node.cfg_name() == "padding_b") {
+			return _cg_ref(node, args);
+		} else if (node.cfg_name() == "padding_e") {
+			return _cg_ref(node, args);
+		} else if (node.cfg_name() == "padding_nl") {
+			return _cg_ref(node, args);
 		} else if (node.cfg_name() == "raw") {
-			return _codegen_default(node, args);
-		} else if (node.cfg_name() == "file") {
-			return _codegen_file(node, args);
+			return _cg_default(node, args);
 		} else if (node.cfg_name() == "line") {
-			return _codegen_line(node, args);
+			return _cg_line(node, args);
+		} else if (node.cfg_name() == "lines") {
+			return _cg_lines(node, args);
+		} else if (node.cfg_name() == "file") {
+			return _cg_ref(node, args);
+		} else if (node.cfg_name() == "comment") {
+			return _cg_comment(node, args);
+		} else if (node.cfg_name() == "expression") {
+			return _cg_expression(node, args);
+		} else if (node.cfg_name() == "statement") {
+			return _cg_ref(node, args);
+		} else if (node.cfg_name() == "sfor") {
+			return _cg_sfor(node, args);
 		} else {
 			return KError::codegen("Unimplimented AstNode type: " + node.cfg_name());
 		}
 	}
 
-	util::Result<std::string, KError> TemplGen::_codegen_default(
+	util::Result<std::string, KError> TemplGen::_cg_default(
 		AstNode const &node,
 		TemplObj::Dict const &args
 	) const {
@@ -137,7 +169,7 @@ namespace cg {
 		return node.consumed();
 	}
 
-	util::Result<std::string, KError> TemplGen::_codegen_ref(
+	util::Result<std::string, KError> TemplGen::_cg_ref(
 		AstNode const &node,
 		TemplObj::Dict const &args
 	) const {
@@ -145,34 +177,52 @@ namespace cg {
 		return _codegen(node.children()[0], args);
 	}
 
-	util::Result<std::string, KError> TemplGen::_codegen_identifier(
+	util::Result<std::string, KError> TemplGen::_cg_identifier(
 		AstNode const &node,
 		TemplObj::Dict const &args
 	) const {
 		return KError::codegen("Identifier does not have a codegen implimentation");
 	}
 
-	util::Result<std::string, KError> TemplGen::_codegen_exp_id(
+	util::Result<std::string, KError> TemplGen::_cg_line(
 		AstNode const &node,
 		TemplObj::Dict const &args
 	) const {
+		auto result = std::string();
 		for (auto &child : node.children()) {
-			auto name = child.cfg_name();
-			if (name == "identifier") {
-				return args.at(child.consumed()).str();
+			if (auto str = _codegen(child, args)) {
+				result += str.value();
+			} else {
+				return str;
 			}
 		}
-		return KError::codegen("No identifier");
+		result += node.consumed();
+		return result;
 	}
 
-	util::Result<std::string, KError> TemplGen::_codegen_comment(
+	util::Result<std::string, KError> TemplGen::_cg_lines(
+		AstNode const &node,
+		TemplObj::Dict const &args
+	) const {
+		auto result = std::string();
+		for (auto &child : node.children()) {
+			if (auto str = _codegen(child, args)) {
+				result += str.value();
+			} else {
+				return str;
+			}
+		}
+		return result;
+	}
+
+	util::Result<std::string, KError> TemplGen::_cg_comment(
 		AstNode const &node,
 		TemplObj::Dict const &args
 	) const {
 		return {""};
 	}
 
-	util::Result<std::string, KError> TemplGen::_codegen_expression(
+	util::Result<std::string, KError> TemplGen::_cg_expression(
 		AstNode const &node,
 		TemplObj::Dict const &args
 	) const {
@@ -196,44 +246,71 @@ namespace cg {
 						}
 					}
 				} else {
-					result += _codegen(child, args).value();
+					auto obj = _eval(child, args);
+					result += obj->str().value();
 				}
 			}
 			return result;
 		} catch_kerror;
 	}
 
-	util::Result<std::string, KError> TemplGen::_codegen_file(
+	util::Result<std::string, KError> TemplGen::_cg_statement(
 		AstNode const &node,
 		TemplObj::Dict const &args
 	) const {
-		auto result = std::string();
-		for (auto &child : node.children()) {
-			if (auto str = _codegen(child, args)) {
-				result += str.value();
-			} else {
-				return str;
-			}
-		}
-		return result;
+		return KError::codegen("statment not implimented");
 	}
 
-	util::Result<std::string, KError> TemplGen::_codegen_line(
+	util::Result<std::string, KError> TemplGen::_cg_sfor(
 		AstNode const &node,
 		TemplObj::Dict const &args
 	) const {
-		auto result = std::string();
-		for (auto &child : node.children()) {
-			if (auto str = _codegen(child, args)) {
-				result += str.value();
-			} else {
-				return str;
+		try {
+			auto result = std::string();
+
+			auto sfrag_for = node.child_with_cfg("sfrag_for").value();
+			auto iter_name = sfrag_for
+				.child_with_cfg("exp_id")
+				->child_with_cfg("identifier")
+				->consumed();
+			auto iter = sfrag_for.child_with_cfg("exp").value();
+			auto lines = node.child_with_cfg("lines").value();
+
+			auto iter_obj = _eval(iter, args).value();
+			CG_ASSERT(iter_obj.type() == TemplObj::Type::List, "Must pass list object into for loop");
+			for (auto &i : iter_obj.list()) {
+				auto local_args = args;
+				local_args[iter_name] = i;
+				result += _codegen(lines, local_args).value();
 			}
-		}
-		result += node.consumed();
-		return result;
+
+			return result;
+		} catch_kerror;
 	}
 
+	util::Result<TemplObj, KError> TemplGen::_eval(
+		AstNode const &node,
+		TemplObj::Dict const &args
+	) const {
+		if (node.cfg_name() == "exp") {
+			return _eval(node.children()[0], args);
+		} else if (node.cfg_name() == "exp_id") {
+			return _eval_exp_id(node, args);
+		} else {
+			return KError::codegen("Unimplimented AstNode type: " + node.cfg_name());
+		}
+	}
+
+	util::Result<TemplObj, KError> TemplGen::_eval_exp_id(
+		AstNode const &node,
+		TemplObj::Dict const &args
+	) const {
+		auto name = node.child_with_cfg("identifier").value().consumed();
+		if (args.count(name) == 0) {
+			return KError::codegen("Unknown identifier \"" + name + "\"");
+		}
+		return args.at(name);
+	}
 
 	util::Result<bool, KError> TemplGen::_tag_keep_padding(
 		AstNode const &node,

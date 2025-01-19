@@ -21,4 +21,31 @@ namespace cg {
 			"My name is Hezekiah Dombach!\n"
 		);
 	}
+
+	TEST(templ_gen, forloop) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto src =
+			"Shopping list\n"
+			"{\% for item in shopping_list %}\n"
+			"- {{ item }}\n"
+			"{\% endfor %}\n"
+			"";
+
+		auto args = TemplObj::Dict{
+			{"shopping_list", TemplObj::List{
+					"apple",
+					"pears",
+				}
+			}
+		};
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Shopping list\n"
+			"- apple\n"
+			"- pears\n"
+		);
+	}
 }

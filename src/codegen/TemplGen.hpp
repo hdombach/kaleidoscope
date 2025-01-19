@@ -31,36 +31,52 @@ namespace cg {
 				TemplObj::Dict const &args
 			) const;
 
-			util::Result<std::string, KError> _codegen_default(
+			util::Result<std::string, KError> _cg_default(
 				AstNode const &node,
 				TemplObj::Dict const &args
 			) const;
-			util::Result<std::string, KError> _codegen_ref(
-				AstNode const &node,
-				TemplObj::Dict const &args
-			) const;
-			util::Result<std::string, KError> _codegen_identifier(
-				AstNode const &node,
-				TemplObj::Dict const &args
-			) const;
-			util::Result<std::string, KError> _codegen_exp_id(
-				AstNode const &node,
-				TemplObj::Dict const &args
-			) const;
-			util::Result<std::string, KError> _codegen_comment(
-				AstNode const &node,
-				TemplObj::Dict const &args
-			) const;
-			util::Result<std::string, KError> _codegen_expression(
+			util::Result<std::string, KError> _cg_ref(
 				AstNode const &node,
 				TemplObj::Dict const &args
 			) const;
 
-			util::Result<std::string, KError> _codegen_file(
+			util::Result<std::string, KError> _cg_identifier(
 				AstNode const &node,
 				TemplObj::Dict const &args
 			) const;
-			util::Result<std::string, KError> _codegen_line(
+			util::Result<std::string, KError> _cg_line(
+				AstNode const &node,
+				TemplObj::Dict const &args
+			) const;
+			util::Result<std::string, KError> _cg_lines(
+				AstNode const &node,
+				TemplObj::Dict const &args
+			) const;
+
+			util::Result<std::string, KError> _cg_comment(
+				AstNode const &node,
+				TemplObj::Dict const &args
+			) const;
+
+			util::Result<std::string, KError> _cg_expression(
+				AstNode const &node,
+				TemplObj::Dict const &args
+			) const;
+
+			util::Result<std::string, KError> _cg_statement(
+				AstNode const &node,
+				TemplObj::Dict const &args
+			) const;
+			util::Result<std::string, KError> _cg_sfor(
+				AstNode const &node,
+				TemplObj::Dict const &args
+			) const;
+
+			util::Result<TemplObj, KError> _eval(
+				AstNode const &node,
+				TemplObj::Dict const &args
+			) const;
+			util::Result<TemplObj, KError> _eval_exp_id(
 				AstNode const &node,
 				TemplObj::Dict const &args
 			) const;

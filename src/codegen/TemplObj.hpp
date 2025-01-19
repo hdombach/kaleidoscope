@@ -31,11 +31,15 @@ namespace cg {
 			TemplObj(List const &list): _v(list) {}
 			TemplObj(Dict const &dict): _v(dict) {}
 
+			TemplObj(const char *str): _v(str) {}
+
 			TemplObj& operator=(TemplObj const &other) = default;
 			TemplObj& operator=(TemplObj &&other) = default;
 			TemplObj& operator=(String const &str) { _v = str; return *this; }
 			TemplObj& operator=(List const &list) { _v = list; return *this; }
 			TemplObj& operator=(Dict const &dict) { _v = dict; return *this; }
+
+			TemplObj& operator=(const char *str) { _v = str; return *this; }
 
 			/**
 			 * @brief Gets string representation
@@ -43,7 +47,9 @@ namespace cg {
 			 */
 			util::Result<std::string, KError> str(bool convert=true) const;
 
-			Type type() const;
+			Type type() const { return Type(_v.index()); }
+
+			List list() const { return std::get<List>(_v); }
 
 		private:
 			std::variant<String, List, Dict> _v;
