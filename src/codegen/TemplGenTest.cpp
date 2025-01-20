@@ -48,4 +48,33 @@ namespace cg {
 			"- pears\n"
 		);
 	}
+
+	TEST(templ_gen, if) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto src =
+			"foo\n"
+			"{\% if add_bar %}\n"
+			"bar\n"
+			"{\% endif %}\n"
+			"";
+
+		auto args = TemplObj::Dict{
+			{"add_bar", true}
+		};
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"foo\n"
+			"bar\n"
+		);
+
+		args["add_bar"] = false;
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"foo\n"
+		);
+	}
 }

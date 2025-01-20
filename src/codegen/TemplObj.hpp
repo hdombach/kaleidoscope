@@ -21,7 +21,8 @@ namespace cg {
 			enum struct Type: size_t {
 				String,
 				List,
-				Dict
+				Dict,
+				Boolean
 			};
 		public:
 			TemplObj() = default;
@@ -30,6 +31,7 @@ namespace cg {
 			TemplObj(String const &str): _v(str) {}
 			TemplObj(List const &list): _v(list) {}
 			TemplObj(Dict const &dict): _v(dict) {}
+			TemplObj(bool val): _v(val) {}
 
 			TemplObj(const char *str): _v(str) {}
 
@@ -38,6 +40,7 @@ namespace cg {
 			TemplObj& operator=(String const &str) { _v = str; return *this; }
 			TemplObj& operator=(List const &list) { _v = list; return *this; }
 			TemplObj& operator=(Dict const &dict) { _v = dict; return *this; }
+			TemplObj& operator=(bool val) { _v = val; return *this; }
 
 			TemplObj& operator=(const char *str) { _v = str; return *this; }
 
@@ -51,7 +54,9 @@ namespace cg {
 
 			List list() const { return std::get<List>(_v); }
 
+			bool boolean() const { return std::get<bool>(_v); }
+
 		private:
-			std::variant<String, List, Dict> _v;
+			std::variant<String, List, Dict, bool> _v;
 	};
 }

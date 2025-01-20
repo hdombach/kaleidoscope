@@ -27,6 +27,8 @@ namespace cg {
 				return {"<list>"};
 			case Type::Dict:
 				return {"<dict>"};
+			case Type::Boolean:
+				return {"<bool>"};
 		}
 	}
 }

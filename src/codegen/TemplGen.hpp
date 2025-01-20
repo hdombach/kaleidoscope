@@ -67,6 +67,10 @@ namespace cg {
 				AstNode const &node,
 				TemplObj::Dict const &args
 			) const;
+			util::Result<std::string, KError> _cg_sif(
+				AstNode const &node,
+				TemplObj::Dict const &args
+			) const;
 			util::Result<std::string, KError> _cg_sfor(
 				AstNode const &node,
 				TemplObj::Dict const &args

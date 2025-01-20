@@ -34,7 +34,7 @@ namespace cg {
 		c["padding_e"] = c.ref("padding");
 		c["padding_nl"] = c.ref("padding") + c.opt("\n"_cfg);
 
-		c["raw"] = c.cls(!(c.ref("sfrag_endfor") | c.ref("statement") | c.ref("expression") | c.ref("comment") | "\n"_cfg));
+		c["raw"] = c.cls(!(c.ref("sfrag_endfor") | c.ref("sfrag_endif") | c.ref("statement") | c.ref("expression") | c.ref("comment") | "\n"_cfg));
 		c["line"] = c.cls(c.ref("statement") | c.ref("expression") | c.ref("comment") | c.ref("raw")) + c.opt("\n"_cfg);
 		c["lines"] = c.cls(c.ref("line"));
 		c["file"] = c.ref("lines");
@@ -59,6 +59,21 @@ namespace cg {
 		c["statement_b"] = "{%"_cfg + c.opt("-"_cfg | "+"_cfg);
 		c["statement_e"] = c.opt("-"_cfg | "+"_cfg) + "%}"_cfg;
 
+		c["sfrag_else"] =
+			c.ref("padding_b") + c.ref("statement_b") +
+			c.ref("whitespace") + "else"_cfg + c.ref("whitespace") +
+			c.ref("statement_e") + c.ref("padding_nl");
+
+		c["sfrag_if"] =
+			c.ref("padding_b") + c.ref("statement_b") +
+			c.ref("whitespace") + "if"_cfg + c.ref("whitespace") + c.ref("exp") + c.ref("whitespace") +
+			c.ref("statement_e") + c.ref("padding_nl");
+		c["sfrag_endif"] =
+			c.ref("padding_b") + c.ref("statement_b") +
+			c.ref("whitespace") + "endif"_cfg + c.ref("whitespace") +
+			c.ref("statement_e") + c.ref("padding_nl");
+		c["sif"] = c.ref("sfrag_if") + c.ref("lines") + c.ref("sfrag_endif");
+
 		c["sfrag_for"] =
 			c.ref("padding_b") + c.ref("statement_b") +
 			c.ref("padding") + "for"_cfg + c.ref("exp_id") + "in"_cfg + c.ref("exp") +
@@ -69,7 +84,7 @@ namespace cg {
 			c.ref("statement_e") + c.ref("padding_nl");
 		c["sfor"] = c.ref("sfrag_for") + c.ref("lines") + c.ref("sfrag_endfor");
 
-		c["statement"] = c.ref("sfor");
+		c["statement"] = c.ref("sfor") | c.ref("sif");
 
 		TRY(c.prep());
 
@@ -94,9 +109,11 @@ namespace cg {
 			"exp_id",
 			"statement_b",
 			"statement_e",
-			"statement",
+			"sfrag_if",
+			"sif",
 			"sfrag_for",
 			"sfor",
+			"statement",
 		};
 
 		return result;
@@ -154,6 +171,8 @@ namespace cg {
 			return _cg_expression(node, args);
 		} else if (node.cfg_name() == "statement") {
 			return _cg_ref(node, args);
+		} else if (node.cfg_name() == "sif") {
+			return _cg_sif(node, args);
 		} else if (node.cfg_name() == "sfor") {
 			return _cg_sfor(node, args);
 		} else {
@@ -259,6 +278,26 @@ namespace cg {
 		TemplObj::Dict const &args
 	) const {
 		return KError::codegen("statment not implimented");
+	}
+
+	util::Result<std::string, KError> TemplGen::_cg_sif(
+		AstNode const &node,
+		TemplObj::Dict const &args
+	) const {
+		try {
+		auto result = std::string();
+
+		auto sfrag = node.child_with_cfg("sfrag_if").value();
+		auto bool_exp = sfrag.child_with_cfg("exp").value();
+		auto lines = node.child_with_cfg("lines").value();
+
+		auto bool_value = _eval(bool_exp, args).value();
+		if (bool_value.boolean()) {
+			result += _codegen(lines, args).value();
+		}
+
+		return result;
+		} catch_kerror;
 	}
 
 	util::Result<std::string, KError> TemplGen::_cg_sfor(
