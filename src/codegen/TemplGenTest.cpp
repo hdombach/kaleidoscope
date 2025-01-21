@@ -77,4 +77,83 @@ namespace cg {
 			"foo\n"
 		);
 	}
+
+	TEST(templ_gen, if_else) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto src =
+			"reee\n"
+			"{\% if value %}\n"
+			"yes\n"
+			"{\% else %}\n"
+			"no\n"
+			"{\% endif %}\n"
+			"";
+
+		auto args = TemplObj::Dict{
+			{"value", true}
+		};
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"reee\n"
+			"yes\n"
+		);
+
+		args["value"] = false;
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"reee\n"
+			"no\n"
+		);
+	}
+
+	TEST(templ_gen, empty_if) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto src =
+			"foo\n"
+			"{\% if add_bar %}\n"
+			"{\% endif %}\n"
+			"bar\n"
+			"";
+
+		auto args = TemplObj::Dict{
+			{"add_bar", true}
+		};
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"foo\n"
+			"bar\n"
+		);
+	}
+
+	TEST(templ_gen, empty_elseif) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto src =
+			"foo\n"
+			"{\%if add_bar%}\n"
+			"{\%else%}\n"
+			"{\%endif%}\n"
+			"bar\n"
+			"";
+
+		auto args = TemplObj::Dict{
+			{"add_bar", true}
+		};
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"foo\n"
+			"bar\n"
+		);
+	}
+
+
 }
