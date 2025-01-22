@@ -24,7 +24,7 @@ namespace util {
 					return std::holds_alternative<Value>(*this);
 				}
 
-				operator bool() const {
+				explicit operator bool() const {
 					return has_value();
 				}
 

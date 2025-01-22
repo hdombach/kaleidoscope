@@ -32,13 +32,13 @@ namespace types {
 		}
 
 		if (auto id = add_color_material("Default Material", glm::vec3(1.0, 0.0, 1.0))) {
-			_default_material = id;
+			_default_material = id.value();
 		} else {
 			log_fatal_error() << "Couldn't create default material" << std::endl;
 		}
 
 		if (auto id = add_mesh_square("Default mesh")) {
-			_default_mesh = id;
+			_default_mesh = id.value();
 		} else {
 			log_fatal_error() << "Couldn't create default mesh" << std::endl;
 		}

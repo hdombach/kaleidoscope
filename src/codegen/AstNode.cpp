@@ -32,6 +32,16 @@ namespace cg {
 		return KError::codegen(util::f("CfgNode does not contain child with name ", name));
 	}
 
+	std::vector<AstNode> AstNode::children_with_cfg(std::string const &name) const {
+		auto result = std::vector<AstNode>();
+		for (auto &child : _children) {
+			if (child.cfg_name() == name) {
+				result.push_back(child);
+			}
+		}
+		return result;
+	}
+
 	void AstNode::consume(char c) {
 		_consumed.push_back(c);
 		_size = 0; /* Invalidate cache */

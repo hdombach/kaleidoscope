@@ -118,7 +118,7 @@ inline void expect(
 #define EXPECT(value) {\
 	_test.total_test_count++;\
 	try { \
-		expect(_test, value, #value); \
+		expect(_test, static_cast<bool>(value), #value); \
 	} catch (KError const &e) { \
 		auto &os = fail_head(_test) << std::endl; \
 		os << "\tEXPECT(" #value ");" << std::endl; \

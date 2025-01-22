@@ -155,5 +155,54 @@ namespace cg {
 		);
 	}
 
+	TEST(templ_gen, elif_chain) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
 
+		auto src =
+			"Do robots dream of eletric sheep?\n"
+			"{\% if has_yes %}"
+			"Most indefinitely.\n"
+			"{\% elif has_no %}"
+			"Of course not.\n"
+			"{\% elif has_maybe %}"
+			"Maybe its the electric sheep dreaming.\n"
+			"{\% else %}"
+			"I need sleep.\n"
+			"{\% endif %}"
+			"";
+
+		auto args = TemplObj::Dict{
+			{"has_yes", true},
+			{"has_no", true},
+			{"has_maybe", true},
+		};
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Do robots dream of eletric sheep?\n"
+			"Most indefinitely.\n"
+		);
+
+		args["has_yes"] = false;
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Do robots dream of eletric sheep?\n"
+			"Of course not.\n"
+		);
+
+		args["has_no"] = false;
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Do robots dream of eletric sheep?\n"
+			"Maybe its the electric sheep dreaming.\n"
+		);
+
+		args["has_maybe"] = false;
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Do robots dream of eletric sheep?\n"
+			"I need sleep.\n"
+		);
+	}
 }

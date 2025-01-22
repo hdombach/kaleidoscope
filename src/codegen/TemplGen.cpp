@@ -34,7 +34,16 @@ namespace cg {
 		c["padding_e"] = c.ref("padding");
 		c["padding_nl"] = c.ref("padding") + c.opt("\n"_cfg);
 
-		c["raw"] = c.cls(!(c.ref("sfrag_endfor") | c.ref("sfrag_endif") | c.ref("sfrag_else") | c.ref("statement") | c.ref("expression") | c.ref("comment") | "\n"_cfg));
+		c["raw"] = c.cls(!(
+			c.ref("sfrag_endfor") |
+			c.ref("sfrag_endif") |
+			c.ref("sfrag_elif") |
+			c.ref("sfrag_else") |
+			c.ref("statement") |
+			c.ref("expression") |
+			c.ref("comment") |
+			"\n"_cfg
+		));
 		c["line"] = c.cls(c.ref("statement") | c.ref("expression") | c.ref("comment") | c.ref("raw")) + c.opt("\n"_cfg);
 		c["lines"] = c.cls(c.ref("line"));
 		c["file"] = c.ref("lines");
@@ -68,12 +77,22 @@ namespace cg {
 			c.ref("padding_b") + c.ref("statement_b") +
 			c.ref("whitespace") + "if"_cfg + c.ref("whitespace") + c.ref("exp") + c.ref("whitespace") +
 			c.ref("statement_e") + c.ref("padding_nl");
+		c["sfrag_elif"] =
+			c.ref("padding_b") + c.ref("statement_b") +
+			c.ref("whitespace") + "elif"_cfg + c.ref("whitespace") + c.ref("exp") + c.ref("whitespace") +
+			c.ref("statement_e") + c.ref("padding_nl");
 		c["sfrag_endif"] =
 			c.ref("padding_b") + c.ref("statement_b") +
 			c.ref("whitespace") + "endif"_cfg + c.ref("whitespace") +
 			c.ref("statement_e") + c.ref("padding_nl");
-		c["sif_elsechain"] = c.ref("sfrag_else") + c.ref("lines");
-		c["sif"] = c.ref("sfrag_if") + c.ref("lines") + c.opt(c.ref("sif_elsechain")) + c.ref("sfrag_endif");
+		c["sif_start_chain"] = c.ref("sfrag_if") + c.ref("lines");
+		c["sif_elif_chain"] = c.ref("sfrag_elif") + c.ref("lines");
+		c["sif_else_chain"] = c.ref("sfrag_else") + c.ref("lines");
+		c["sif"] =
+			c.ref("sif_start_chain") +
+			c.cls(c.ref("sif_elif_chain")) +
+			c.opt(c.ref("sif_else_chain")) +
+			c.ref("sfrag_endif");
 
 		c["sfrag_for"] =
 			c.ref("padding_b") + c.ref("statement_b") +
@@ -111,8 +130,11 @@ namespace cg {
 			"statement_b",
 			"statement_e",
 			"sfrag_if",
+			"sfrag_elif",
 			"sfrag_else",
-			"sif_elsechain",
+			"sif_start_chain",
+			"sif_elif_chain",
+			"sif_else_chain",
 			"sif",
 			"sfrag_for",
 			"sfor",
@@ -289,20 +311,41 @@ namespace cg {
 	) const {
 		try {
 		auto result = std::string();
+		CG_ASSERT(node.cfg_name() == "sif", "INTERNAL func can only parser sif nodes");
 
-		auto sfrag = node.child_with_cfg("sfrag_if").value();
-		auto bool_exp = sfrag.child_with_cfg("exp").value();
-		auto lines = node.child_with_cfg("lines");
+		for (auto &child : node.children()) {
+			if (child.cfg_name() == "sif_start_chain") {
+				auto if_node = child.child_with_cfg("sfrag_if").value();
+				auto exp_node = if_node.child_with_cfg("exp").value();
 
-		auto bool_value = _eval(bool_exp, args).value();
-		if (bool_value.boolean()) {
-			if (lines) {
-				result += _codegen(lines.value(), args).value();
-			}
-		} else if (auto else_chain = node.child_with_cfg("sif_elsechain")) {
-			auto lines = else_chain->child_with_cfg("lines");
-			if (lines) {
-				result += _codegen(lines.value(), args).value();
+				auto bool_value = _eval(exp_node, args).value();
+				if (bool_value.boolean()) {
+					//if statement could be empty
+					if (auto lines_node = child.child_with_cfg("lines")) {
+						result += _codegen(lines_node.value(), args).value();
+					}
+					break;
+				}
+			} else if (child.cfg_name() == "sif_elif_chain") {
+				auto elif_node = child.child_with_cfg("sfrag_elif").value();
+				auto exp_node = elif_node.child_with_cfg("exp").value();
+
+				auto bool_value = _eval(exp_node, args).value();
+				if (bool_value.boolean()) {
+					//elif statement could be empty
+					if (auto lines_node = child.child_with_cfg("lines")) {
+						result += _codegen(lines_node.value(), args).value();
+					}
+					break;
+				}
+			} else if (child.cfg_name() == "sif_else_chain") {
+				//else statement could be empty
+				if (auto lines_node = child.child_with_cfg("lines")) {
+					result += _codegen(lines_node.value(), args).value();
+				}
+				break;
+			} else {
+				continue;
 			}
 		}
 
