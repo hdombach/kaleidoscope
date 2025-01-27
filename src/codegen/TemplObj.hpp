@@ -22,27 +22,30 @@ namespace cg {
 				String,
 				List,
 				Dict,
-				Boolean
+				Boolean,
+				Integer
 			};
 		public:
 			TemplObj() = default;
 			TemplObj(TemplObj const &other) = default;
 			TemplObj(TemplObj &&other) = default;
-			TemplObj(String const &str): _v(str) {}
-			TemplObj(List const &list): _v(list) {}
-			TemplObj(Dict const &dict): _v(dict) {}
-			TemplObj(bool val): _v(val) {}
+			TemplObj(String const &str);
+			TemplObj(List const &list);
+			TemplObj(Dict const &dict);
+			TemplObj(bool val);
+			TemplObj(int64_t val);
 
 			TemplObj(const char *str): _v(str) {}
 
 			TemplObj& operator=(TemplObj const &other) = default;
 			TemplObj& operator=(TemplObj &&other) = default;
-			TemplObj& operator=(String const &str) { _v = str; return *this; }
-			TemplObj& operator=(List const &list) { _v = list; return *this; }
-			TemplObj& operator=(Dict const &dict) { _v = dict; return *this; }
-			TemplObj& operator=(bool val) { _v = val; return *this; }
+			TemplObj& operator=(String const &str);
+			TemplObj& operator=(List const &list);
+			TemplObj& operator=(Dict const &dict);
+			TemplObj& operator=(bool val);
+			TemplObj& operator=(int64_t val);
 
-			TemplObj& operator=(const char *str) { _v = str; return *this; }
+			TemplObj& operator=(const char *str);
 
 			/**
 			 * @brief Gets string representation
@@ -57,6 +60,8 @@ namespace cg {
 			bool boolean() const { return std::get<bool>(_v); }
 
 		private:
-			std::variant<String, List, Dict, bool> _v;
+			Dict _properties;
+
+			std::variant<String, List, Dict, bool, int64_t> _v;
 	};
 }

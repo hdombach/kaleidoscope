@@ -11,6 +11,56 @@ template<class... Ts>
 Overloaded(Ts...) -> Overloaded<Ts...>;
 
 namespace cg {
+	TemplObj::TemplObj(String const &str) {
+		_v = str;
+	}
+
+	TemplObj::TemplObj(List const &list) {
+		_v = list;
+	}
+
+	TemplObj::TemplObj(Dict const &dict) {
+		_v = dict;
+	}
+
+	TemplObj::TemplObj(bool val) {
+		_v = val;
+	}
+
+	TemplObj::TemplObj(int64_t val) {
+		_v = val;
+	}
+
+	TemplObj& TemplObj::operator=(String const &str) {
+		_v = str;
+		return *this;
+	}
+
+	TemplObj& TemplObj::operator=(List const &list) {
+		_v = list;
+		return *this;
+	}
+
+	TemplObj& TemplObj::operator=(Dict const &dict) {
+		_v = dict;
+		return *this;
+	}
+
+	TemplObj& TemplObj::operator=(bool val) {
+		_v = val;
+		return *this;
+	}
+
+	TemplObj& TemplObj::operator=(int64_t val) {
+		_v = val;
+		return *this;
+	}
+
+	TemplObj& TemplObj::operator=(const char *str) {
+		_v = str;
+		return *this;
+	}
+
 	util::Result<std::string, KError> TemplObj::str(bool convert) const {
 		auto type = static_cast<Type>(_v.index());
 		if (type == Type::String) {
@@ -28,7 +78,9 @@ namespace cg {
 			case Type::Dict:
 				return {"<dict>"};
 			case Type::Boolean:
-				return {"<bool>"};
+				return {std::get<bool>(_v) ? "<true>" : "<false>"};
+			case Type::Integer:
+				return {std::to_string(std::get<int64_t>(_v))};
 		}
 	}
 }
