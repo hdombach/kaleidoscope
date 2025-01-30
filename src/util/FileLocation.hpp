@@ -1,0 +1,48 @@
+#pragma once
+
+#include <cstdint>
+#include <source_location>
+#include <string>
+#include <filesystem>
+
+#include "util/Env.hpp"
+
+namespace util {
+	/**
+	 * @brief A location in either source file or code generated file
+	 */
+	struct FileLocation {
+		std::uint_least32_t line;
+		std::uint_least32_t column;
+		std::string file_name;
+
+		FileLocation() = default;
+
+		FileLocation(
+			std::uint_least32_t line,
+			std::uint_least32_t column,
+			std::string &file_name
+		): line(line), column(column), file_name(file_name) { }
+
+		FileLocation(std::source_location loc):
+			line(loc.line()), column(loc.column()), file_name(loc.file_name()) { }
+
+		FileLocation& operator=(std::source_location loc) {
+			line = loc.line();
+			column = loc.column();
+			file_name = loc.file_name();
+			return *this;
+		}
+
+		void debug(std::ostream &os) const {
+			os
+				<< std::filesystem::relative(file_name, util::g_env.working_dir).c_str()
+				<< "(" << line << ":" << column << ")";
+		}
+	};
+
+	inline std::ostream &operator<<(std::ostream &os, FileLocation const &file) {
+		file.debug(os);
+		return os;
+	}
+}

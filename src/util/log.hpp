@@ -4,6 +4,8 @@
 #include <iostream>
 #include <source_location>
 
+#include "FileLocation.hpp"
+
 #define DEFAULT_LOG_EVENT true
 #define DEFAULT_LOG_WARNING true
 #define DEFAULT_LOG_ERROR true
@@ -38,32 +40,32 @@ namespace util {
 
 	std::ostream& log(
 		Importance importance,
-		std::source_location loc=std::source_location::current()
+		util::FileLocation loc=std::source_location::current()
 	);
 }
 
 void log_assert(
 	bool test,
 	std::string const &desc,
-	std::source_location=std::source_location::current()
+	util::FileLocation=std::source_location::current()
 );
 
-inline std::ostream& log_event(std::source_location loc=std::source_location::current()) {
+inline std::ostream& log_event(util::FileLocation loc=std::source_location::current()) {
 	return log(util::Importance::EVENT, loc);
 }
-inline std::ostream& log_warning(std::source_location loc=std::source_location::current()) {
+inline std::ostream& log_warning(util::FileLocation loc=std::source_location::current()) {
 	return log(util::Importance::WARNING, loc);
 }
-inline std::ostream& log_error(std::source_location loc=std::source_location::current()) {
+inline std::ostream& log_error(util::FileLocation loc=std::source_location::current()) {
 	return log(util::Importance::ERROR, loc);
 }
-inline std::ostream& log_fatal_error(std::source_location loc=std::source_location::current()) {
+inline std::ostream& log_fatal_error(util::FileLocation loc=std::source_location::current()) {
 	return log(util::Importance::FATAL_ERROR, loc);
 }
-inline std::ostream& log_memory(std::source_location loc=std::source_location::current()) {
+inline std::ostream& log_memory(util::FileLocation loc=std::source_location::current()) {
 	return log(util::Importance::MEMORY, loc);
 }
-inline std::ostream& log_debug(std::source_location loc=std::source_location::current()) {
+inline std::ostream& log_debug(util::FileLocation loc=std::source_location::current()) {
 	return log(util::Importance::DEBUG, loc);
 }
 

@@ -2,6 +2,7 @@
 
 #include "CfgContext.hpp"
 #include "CfgNode.hpp"
+#include "util/FileLocation.hpp"
 #include "util/KError.hpp"
 
 namespace cg {
@@ -66,6 +67,7 @@ namespace cg {
 			CfgContext const *_ctx;
 			std::vector<AstNode> _children;
 			std::string _consumed;
+			util::FileLocation _location;
 
 			/**
 			 * @brief The cached size

@@ -1,13 +1,10 @@
 #include <ostream>
-#include <source_location>
 #include <string>
-#include <filesystem>
 
 #include "log.hpp"
-#include "util/Env.hpp"
 
 namespace util {
-	std::ostream& log(Importance importance, std::source_location location) {
+	std::ostream& log(Importance importance, util::FileLocation location) {
 		std::cout << "[";
 
 		if (importance & EVENT) {
@@ -25,7 +22,7 @@ namespace util {
 		}
 		std::cout << color::RESET;
 
-		std::cout << std::filesystem::relative(location.file_name(), util::g_env.working_dir).c_str() << "(" << location.line() << ":" << location.column() << ")" << "] ";
+		std::cout << location << "] ";
 
 		return std::cout;
 	}
@@ -35,7 +32,7 @@ namespace util {
 void log_assert(
 	bool test,
 	std::string const &desc,
-	std::source_location loc
+	util::FileLocation loc
 ) {
 	if (!test) {
 		log(util::Importance::FATAL_ERROR, loc) << desc << std::endl;
