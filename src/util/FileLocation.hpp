@@ -12,16 +12,16 @@ namespace util {
 	 * @brief A location in either source file or code generated file
 	 */
 	struct FileLocation {
-		std::uint_least32_t line;
-		std::uint_least32_t column;
+		std::uint32_t line;
+		std::uint32_t column;
 		std::string file_name;
 
 		FileLocation() = default;
 
 		FileLocation(
-			std::uint_least32_t line,
-			std::uint_least32_t column,
-			std::string &file_name
+			std::uint32_t line,
+			std::uint32_t column,
+			std::string const &file_name
 		): line(line), column(column), file_name(file_name) { }
 
 		FileLocation(std::source_location loc):

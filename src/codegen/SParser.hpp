@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include "util/StringRef.hpp"
 #include "util/result.hpp"
 #include "CfgContext.hpp"
 #include "AstNode.hpp"
@@ -49,25 +50,25 @@ namespace cg {
 			/************************************
 			 * Match helper functions
 			 ************************************/
-			util::Result<size_t, KError> _match(const char *str, CfgNode const &node);
-			util::Result<size_t, KError> _match_lit(const char *str, CfgNode const &node);
-			util::Result<size_t, KError> _match_ref(const char *str, CfgNode const &node);
-			util::Result<size_t, KError> _match_seq(const char *str, CfgNode const &node);
-			util::Result<size_t, KError> _match_alt(const char *str, CfgNode const &node);
-			util::Result<size_t, KError> _match_cls(const char *str, CfgNode const &node);
-			util::Result<size_t, KError> _match_opt(const char *str, CfgNode const &node);
-			util::Result<size_t, KError> _match_neg(const char *str, CfgNode const &node);
+			util::Result<size_t, KError> _match(util::StringRef str, CfgNode const &node);
+			util::Result<size_t, KError> _match_lit(util::StringRef str, CfgNode const &node);
+			util::Result<size_t, KError> _match_ref(util::StringRef str, CfgNode const &node);
+			util::Result<size_t, KError> _match_seq(util::StringRef str, CfgNode const &node);
+			util::Result<size_t, KError> _match_alt(util::StringRef str, CfgNode const &node);
+			util::Result<size_t, KError> _match_cls(util::StringRef str, CfgNode const &node);
+			util::Result<size_t, KError> _match_opt(util::StringRef str, CfgNode const &node);
+			util::Result<size_t, KError> _match_neg(util::StringRef str, CfgNode const &node);
 
 			/***********************************
 			 * Parser helper functions
 			 * *********************************/
-			util::Result<AstNode, KError> _parse(const char *str, CfgNode const &node);
-			util::Result<AstNode, KError> _parse_lit(const char *str, CfgNode const &node);
-			util::Result<AstNode, KError> _parse_ref(const char *str, CfgNode const &node);
-			util::Result<AstNode, KError> _parse_seq(const char *str, CfgNode const &node);
-			util::Result<AstNode, KError> _parse_alt(const char *str, CfgNode const &name);
-			util::Result<AstNode, KError> _parse_cls(const char *str, CfgNode const &name);
-			util::Result<AstNode, KError> _parse_opt(const char *str, CfgNode const &name);
-			util::Result<AstNode, KError> _parse_neg(const char *str, CfgNode const &name);
+			util::Result<AstNode, KError> _parse(util::StringRef str, CfgNode const &node);
+			util::Result<AstNode, KError> _parse_lit(util::StringRef str, CfgNode const &node);
+			util::Result<AstNode, KError> _parse_ref(util::StringRef str, CfgNode const &node);
+			util::Result<AstNode, KError> _parse_seq(util::StringRef str, CfgNode const &node);
+			util::Result<AstNode, KError> _parse_alt(util::StringRef str, CfgNode const &name);
+			util::Result<AstNode, KError> _parse_cls(util::StringRef str, CfgNode const &name);
+			util::Result<AstNode, KError> _parse_opt(util::StringRef str, CfgNode const &name);
+			util::Result<AstNode, KError> _parse_neg(util::StringRef str, CfgNode const &name);
 	};
 }

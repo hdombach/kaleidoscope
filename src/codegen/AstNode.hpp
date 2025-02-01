@@ -14,7 +14,12 @@ namespace cg {
 	class AstNode {
 		public:
 			AstNode();
-			AstNode(uint32_t id, CfgContext const &ctx, uint32_t cfg_id);
+			AstNode(
+				uint32_t id,
+				CfgContext const &ctx,
+				uint32_t cfg_id,
+				util::FileLocation const &file_location
+			);
 
 			uint32_t id() const { return _id; }
 

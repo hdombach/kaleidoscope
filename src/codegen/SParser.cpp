@@ -1,5 +1,6 @@
 #include "SParser.hpp"
 
+#include "util/StringRef.hpp"
 #include "util/Util.hpp"
 #include "util/result.hpp"
 #include "CfgContext.hpp"
@@ -15,14 +16,16 @@ namespace cg {
 		std::string const &str,
 		std::string const &root_node
 	) {
-		return _match(str.c_str(), _ctx.get(root_node));
+		auto ref = util::StringRef(str.c_str(), "codegen");
+		return _match(ref, _ctx.get(root_node));
 	}
 
 	util::Result<AstNode, KError> SParser::parse(
 		std::string const &str,
 		std::string const &root_node
 	) {
-		return _parse(str.c_str(), _ctx.get(root_node));
+		auto ref = util::StringRef(str.c_str(), "codegen");
+		return _parse(ref, _ctx.get(root_node));
 	}
 
 	/************************************
@@ -30,7 +33,7 @@ namespace cg {
 	 ************************************/
 
 	util::Result<size_t, KError> SParser::_match(
-		const char *str,
+		util::StringRef str,
 		CfgNode const &node
 	) {
 		switch (node.type()) {
@@ -54,26 +57,26 @@ namespace cg {
 	}
 
 	util::Result<size_t, KError> SParser::_match_lit(
-		const char *str,
+		util::StringRef str,
 		CfgNode const &node
 	) {
 		auto r = 0;
 		for (auto c : node.content()) {
-			if (str[r] != c) return KError::codegen("Cannot match literal");
+			if (str[r] != c) return KError::codegen("Cannot match literal", str.location());
 			r++;
 		}
 		return r;
 	}
 
 	util::Result<size_t, KError> SParser::_match_ref(
-		const char *str,
+		util::StringRef str,
 		CfgNode const &node
 	) {
 		return _match(str, _ctx.get(node.ref_id()));
 	}
 
 	util::Result<size_t, KError> SParser::_match_seq(
-		const char *str,
+		util::StringRef str,
 		CfgNode const &node
 	) {
 		size_t r = 0;
@@ -81,14 +84,14 @@ namespace cg {
 			if (auto i = _match(str+r, child)) {
 				r += i.value();
 			} else {
-				return KError::codegen("Cannot match sequence");
+				return KError::codegen("Cannot match sequence", str.location());
 			}
 		}
 		return r;
 	}
 
 	util::Result<size_t, KError> SParser::_match_alt(
-		const char *str,
+		util::StringRef str,
 		CfgNode const &node
 	) {
 		for (auto &child : node.children()) {
@@ -96,11 +99,11 @@ namespace cg {
 				return i;
 			} 
 		}
-		return KError::codegen("Cannot match alt");
+		return KError::codegen("Cannot match alt", str.location());
 	}
 
 	util::Result<size_t, KError> SParser::_match_cls(
-		const char *str,
+		util::StringRef str,
 		CfgNode const &node
 	) {
 		size_t r = 0;
@@ -117,21 +120,21 @@ namespace cg {
 	}
 
 	util::Result<size_t, KError> SParser::_match_opt(
-		const char *str,
+		util::StringRef str,
 		CfgNode const &node
 	) {
 		return _match(str, node.children()[0]).value(0);
 	}
 
 	util::Result<size_t, KError> SParser::_match_neg(
-		const char *str,
+		util::StringRef str,
 		CfgNode const &node
 	) {
 		if (str[0] == '\0') {
-			return KError::codegen("Cannot match EOF");
+			return KError::codegen("Cannot match EOF", str.location());
 		}
 		if (auto res = _match(str, node.children()[0])) {
-			return KError::codegen("Cannot match neg");
+			return KError::codegen("Cannot match neg", str.location());
 		} else {
 			return 1;
 		}
@@ -142,12 +145,12 @@ namespace cg {
 	 * *********************************/
 
 	util::Result<AstNode, KError> SParser::_parse(
-		const char *str,
+		util::StringRef str,
 		CfgNode const &node
 	) {
 		switch (node.type()) {
 			case Type::none:
-				return KError::codegen("Trying to parse none CfgNode");
+				return KError::codegen("Trying to parse none CfgNode", str.location());
 			case Type::literal:
 				return _parse_lit(str, node);
 			case Type::reference:
@@ -166,20 +169,20 @@ namespace cg {
 	}
 
 	util::Result<AstNode, KError> SParser::_parse_lit(
-		const char *str,
+		util::StringRef str,
 		CfgNode const &cfg
 	) {
 		size_t r = 0;
-		auto res = AstNode(++_uid, _ctx, cfg.id());
+		auto res = AstNode(++_uid, _ctx, cfg.id(), str.location());
 		for (auto c : cfg.content()) {
 			if (str[r] != c) {
 				return KError::codegen(util::f(
 					"Unexpected character: ",
 					c,
 					" in string: \"",
-					util::escape_str(str),
+					util::escape_str(str.str()),
 					"\""
-				));
+				), str.location());
 			}
 			res.consume(c);
 			r++;
@@ -188,10 +191,10 @@ namespace cg {
 	}
 
 	util::Result<AstNode, KError> SParser::_parse_ref(
-		const char *str,
+		util::StringRef str,
 		CfgNode const &cfg
 	) {
-		auto res = AstNode(++_uid, _ctx, cfg.id());
+		auto res = AstNode(++_uid, _ctx, cfg.id(), str.location());
 		if (auto child = _parse(str, _ctx.get(cfg.ref_id()))) {
 			res.add_child(child.value());
 		} else {
@@ -201,11 +204,11 @@ namespace cg {
 	}
 
 	util::Result<AstNode, KError> SParser::_parse_seq(
-		const char *str,
+		util::StringRef str,
 		CfgNode const &cfg
 	) {
 		size_t r = 0;
-		auto node = AstNode(++_uid, _ctx, cfg.id());
+		auto node = AstNode(++_uid, _ctx, cfg.id(), str.location());
 		for (auto &child_cfg : cfg.children()) {
 			if (auto child = _parse(str+r, child_cfg)) {
 				r += child.value().size();
@@ -218,24 +221,24 @@ namespace cg {
 	}
 
 	util::Result<AstNode, KError> SParser::_parse_alt(
-		const char *str,
+		util::StringRef str,
 		CfgNode const &cfg
 	) {
-		auto node = AstNode(++_uid, _ctx, cfg.id());
+		auto node = AstNode(++_uid, _ctx, cfg.id(), str.location());
 		for (auto &child_cfg : cfg.children()) {
 			if (auto child = _parse(str, child_cfg)) {
 				node.add_child(child.value());
 				return node;
 			}
 		}
-		return KError::codegen("Unmatched alternative: " + _ctx.node_str(cfg));
+		return KError::codegen("Unmatched alternative: " + _ctx.node_str(cfg), str.location());
 	}
 
 	util::Result<AstNode, KError> SParser::_parse_cls(
-		const char *str,
+		util::StringRef str,
 		CfgNode const &cfg
 	) {
-		auto node = AstNode(++_uid, _ctx, cfg.id());
+		auto node = AstNode(++_uid, _ctx, cfg.id(), str.location());
 		size_t r = 0;
 		while (true) {
 			if (auto child = _parse(str + r, cfg.children()[0])) {
@@ -252,10 +255,10 @@ namespace cg {
 	}
 
 	util::Result<AstNode, KError> SParser::_parse_opt(
-		const char *str,
+		util::StringRef str,
 		CfgNode const &cfg
 	) {
-		auto node = AstNode(++_uid, _ctx, cfg.id());
+		auto node = AstNode(++_uid, _ctx, cfg.id(), str.location());
 		if (auto child = _parse(str, cfg.children()[0])) {
 			node.add_child(child.value());
 		}
@@ -263,10 +266,10 @@ namespace cg {
 	}
 
 	util::Result<AstNode, KError> SParser::_parse_neg(
-		const char *str,
+		util::StringRef str,
 		CfgNode const &cfg
 	) {
-		auto node = AstNode(++_uid, _ctx, cfg.id());
+		auto node = AstNode(++_uid, _ctx, cfg.id(), str.location());
 		if (str[0] == '\0') {
 			return KError::codegen("Unexpected EOF");
 		}

@@ -7,11 +7,17 @@ namespace cg {
 		_size(0)
 	{}
 
-	AstNode::AstNode(uint32_t id, CfgContext const &ctx, uint32_t cfg_id) {
+	AstNode::AstNode(
+		uint32_t id,
+		CfgContext const &ctx,
+		uint32_t cfg_id,
+		util::FileLocation const &file_location
+	) {
 		_ctx = &ctx;
 		_size = 0;
 		_id = id;
 		_cfg_id = cfg_id;
+		_location = file_location;
 	}
 
 	bool AstNode::has_value() const {
