@@ -36,6 +36,7 @@ class KError: public std::exception {
 			CODEGEN,
 		};
 
+		KError();
 		KError(Type type, std::string what, FLoc=SLoc::current());
 		KError(VkResult result, FLoc=SLoc::current());
 

@@ -35,13 +35,9 @@ namespace cg {
 		c["padding_nl"] = c.ref("padding") + c.opt("\n"_cfg);
 
 		c["raw"] = c.cls(!(
-			c.ref("sfrag_endfor") |
-			c.ref("sfrag_endif") |
-			c.ref("sfrag_elif") |
-			c.ref("sfrag_else") |
-			c.ref("statement") |
-			c.ref("expression") |
-			c.ref("comment") |
+			c.ref("expression_b") |
+			c.ref("statement_b") |
+			c.ref("comment_b") |
 			"\n"_cfg
 		));
 		c["line"] = c.cls(c.ref("statement") | c.ref("expression") | c.ref("comment") | c.ref("raw")) + c.opt("\n"_cfg);

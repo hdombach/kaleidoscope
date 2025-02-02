@@ -3,6 +3,10 @@
 #include "KError.hpp"
 #include "util/format.hpp"
 
+KError::KError():
+	_type(Type::UNKNOWN)
+{ }
+
 KError::KError(Type type, std::string what, FLoc loc):
 	_type(type),
 	_what(what),

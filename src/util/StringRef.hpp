@@ -9,8 +9,21 @@ namespace util {
 	 */
 	class StringRef {
 		public:
-			StringRef(): _str(nullptr), _filename(nullptr), _i(0) {}
-			StringRef(const char *str, const char *filename): _str(str), _filename(filename), _i(0) {}
+			StringRef():
+				_str(nullptr),
+				_filename(nullptr),
+				_i(0),
+				_line(0),
+				_column(0)
+			{}
+
+			StringRef(const char *str, const char *filename):
+				_str(str),
+				_filename(filename),
+				_i(0),
+				_line(0),
+				_column(0)
+			{}
 
 			void inc(uint32_t count = 1) {
 				for (uint32_t i = 0; i < count; i++) {
@@ -39,6 +52,9 @@ namespace util {
 			}
 			const char *str() const {
 				return _str + _i;
+			}
+			uint32_t cur_offset() const {
+				return _i;
 			}
 
 			StringRef operator+(uint32_t offset) const {

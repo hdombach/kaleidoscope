@@ -131,6 +131,14 @@ namespace util {
 				Value const &value() const {
 					return parent_t::value();
 				}
+
+				Value *operator->() {
+					return &value();
+				}
+				Value const *operator->() const {
+					return &value();
+				}
+
 				void const error() const {
 					return;
 				}

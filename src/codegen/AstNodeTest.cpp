@@ -15,8 +15,8 @@ namespace cg {
 
 		EXPECT(c.prep());
 
-		EXPECT_EQ(parser.match("Hello World", "hello").value(0), 5);
-		EXPECT_EQ(parser.match("hello world", "hello").value(0), 0);
+		EXPECT_EQ(parser.match("Hello", "hello").value(), 5);
+		EXPECT_KERROR(parser.match("hello", "hello"), KError::Type::CODEGEN);
 	}
 
 	TEST(ast_node, match_number) {
@@ -31,19 +31,21 @@ namespace cg {
 
 		EXPECT(c.prep());
 
-		EXPECT_EQ(parser.match("145a", "digit").value(0), 1);
-		EXPECT_EQ(parser.match("abc5", "digit").value(0), 0);
+		EXPECT_EQ(parser.match("1", "digit").value(), 1);
+		EXPECT_KERROR(parser.match("abc5", "digit"), KError::Type::CODEGEN);
 
-		EXPECT_EQ(parser.match("145a", "integer").value(0), 3);
-		EXPECT_EQ(parser.match("abc5", "integer").value(0), 0);
-		EXPECT_EQ(parser.match("91023", "integer").value(0), 5);
+		EXPECT_KERROR(parser.match("145a", "integer"), KError::Type::CODEGEN);
+		EXPECT_EQ(parser.match("145", "integer").value(), 3);
+		EXPECT_KERROR(parser.match("abc5", "integer"), KError::Type::CODEGEN);
+		EXPECT_EQ(parser.match("91023", "integer").value(), 5);
 
-		EXPECT_EQ(parser.match("491f", "decimal").value(0), 0);
-		EXPECT_EQ(parser.match("hello", "decimal").value(0), 0);
-		EXPECT_EQ(parser.match("192.", "decimal").value(0), 4);
-		EXPECT_EQ(parser.match(".89141", "decimal").value(0), 6);
-		EXPECT_EQ(parser.match("..123", "decimal").value(0), 1);
-		EXPECT_EQ(parser.match("15.9", "decimal").value(0), 4);
+		EXPECT_KERROR(parser.match("491f", "decimal"), KError::Type::CODEGEN);
+		EXPECT_KERROR(parser.match("hello", "decimal"), KError::Type::CODEGEN);
+		EXPECT_EQ(parser.match("192.", "decimal").value(), 4);
+		EXPECT_EQ(parser.match(".89141", "decimal").value(), 6);
+		EXPECT_KERROR(parser.match("..123", "decimal"), KError::Type::CODEGEN);
+		EXPECT_EQ(parser.match(".", "decimal").value(), 1);
+		EXPECT_EQ(parser.match("15.9", "decimal").value(), 4);
 	}
 
 	TEST(ast_node, match_math) {
@@ -63,14 +65,14 @@ namespace cg {
 
 		EXPECT(c.prep());
 
-		EXPECT_EQ(parser.match("1", "exp").value(0), 1);
-		EXPECT_EQ(parser.match("42.1", "exp").value(0), 4);
-		EXPECT_EQ(parser.match("192.12+41", "exp").value(0), 9);
-		EXPECT_EQ(parser.match("192.12+41-0.12", "exp").value(0), 14);
-		EXPECT_EQ(parser.match("19*1.0", "exp").value(0), 6);
-		EXPECT_EQ(parser.match("19/1.0*20", "exp").value(0), 9);
-		EXPECT_EQ(parser.match("5+2*12", "exp").value(0), 6);
-		EXPECT_EQ(parser.match("5+-2*-+-12", "exp").value(0), 10);
+		EXPECT_EQ(parser.match("1", "exp").value(), 1);
+		EXPECT_EQ(parser.match("42.1", "exp").value(), 4);
+		EXPECT_EQ(parser.match("192.12+41", "exp").value(), 9);
+		EXPECT_EQ(parser.match("192.12+41-0.12", "exp").value(), 14);
+		EXPECT_EQ(parser.match("19*1.0", "exp").value(), 6);
+		EXPECT_EQ(parser.match("19/1.0*20", "exp").value(), 9);
+		EXPECT_EQ(parser.match("5+2*12", "exp").value(), 6);
+		EXPECT_EQ(parser.match("5+-2*-+-12", "exp").value(), 10);
 	}
 
 	TEST(ast_node, match_neg) {
@@ -84,10 +86,13 @@ namespace cg {
 
 		EXPECT(c.prep());
 
-		EXPECT_EQ(parser.match("abcd", "not_a").value(0), 0);
-		EXPECT_EQ(parser.match("change", "not_a").value(0), 2);
-		EXPECT_EQ(parser.match("mndups", "consonants").value(0), 3);
-		EXPECT_EQ(parser.match("if flse if  false", "mixed").value(0), 8);
+		EXPECT_KERROR(parser.match("abcd", "not_a"), KError::Type::CODEGEN);
+		EXPECT_KERROR(parser.match("change", "not_a"), KError::Type::CODEGEN);
+		EXPECT_EQ(parser.match("ch", "not_a").value(), 2);
+		EXPECT_KERROR(parser.match("mndups", "consonants"), KError::Type::CODEGEN);
+		EXPECT_EQ(parser.match("mnd", "consonants").value(), 3);
+		EXPECT_KERROR(parser.match("if flse if  false", "mixed"), KError::Type::CODEGEN);
+		EXPECT_EQ(parser.match("if flse ", "mixed").value(), 8);
 	}
 
 	TEST(ast_node, parse_match) {

@@ -1,5 +1,6 @@
 #include "SParser.hpp"
 
+#include "util/KError.hpp"
 #include "util/StringRef.hpp"
 #include "util/Util.hpp"
 #include "util/result.hpp"
@@ -16,16 +17,30 @@ namespace cg {
 		std::string const &str,
 		std::string const &root_node
 	) {
-		auto ref = util::StringRef(str.c_str(), "codegen");
-		return _match(ref, _ctx.get(root_node));
+		try {
+			auto ref = util::StringRef(str.c_str(), "codegen");
+			auto size = _match(ref, _ctx.get(root_node)).value();
+			if (size < str.size()) {
+				return KError::codegen("Entire string was not matched");
+			} else {
+				return size;
+			}
+		} catch_kerror;
 	}
 
 	util::Result<AstNode, KError> SParser::parse(
 		std::string const &str,
 		std::string const &root_node
 	) {
-		auto ref = util::StringRef(str.c_str(), "codegen");
-		return _parse(ref, _ctx.get(root_node));
+		try {
+			auto ref = util::StringRef(str.c_str(), "codegen");
+			auto node = _parse(ref, _ctx.get(root_node)).value();
+			if (node.size() < str.size()) {
+				return KError::codegen("Entire string was not matched");
+			} else {
+				return node;
+			}
+		} catch_kerror;
 	}
 
 	/************************************
@@ -62,7 +77,19 @@ namespace cg {
 	) {
 		auto r = 0;
 		for (auto c : node.content()) {
-			if (str[r] != c) return KError::codegen("Cannot match literal", str.location());
+			if (str[r] != c) {
+				if (str[r] == '\0') {
+					return KError::codegen("Unexepcted EOF", str.location());
+				} else {
+					return KError::codegen(util::f(
+						"Unexpected character: ",
+						str[r],
+						" in string: \"",
+						util::escape_str(str.str()),
+						"\""
+					), str.location());
+				}
+			}
 			r++;
 		}
 		return r;
@@ -134,7 +161,7 @@ namespace cg {
 			return KError::codegen("Cannot match EOF", str.location());
 		}
 		if (auto res = _match(str, node.children()[0])) {
-			return KError::codegen("Cannot match neg", str.location());
+			return KError::codegen("Cannot match negation", str.location());
 		} else {
 			return 1;
 		}
@@ -176,13 +203,21 @@ namespace cg {
 		auto res = AstNode(++_uid, _ctx, cfg.id(), str.location());
 		for (auto c : cfg.content()) {
 			if (str[r] != c) {
-				return KError::codegen(util::f(
-					"Unexpected character: ",
-					c,
-					" in string: \"",
-					util::escape_str(str.str()),
-					"\""
-				), str.location());
+				if (str[r] == '\0') {
+					auto msg = util::f(
+						"Unexepcted EOF when parsing literal: ",
+						util::escape_str(cfg.content())
+					);
+					return KError::codegen(msg, str.location());
+				} else {
+					return KError::codegen(util::f(
+						"Unexpected character: ",
+						str[r],
+						" in string: \"",
+						util::escape_str(str.str()),
+						"\""
+					), str.location());
+				}
 			}
 			res.consume(c);
 			r++;
@@ -271,10 +306,10 @@ namespace cg {
 	) {
 		auto node = AstNode(++_uid, _ctx, cfg.id(), str.location());
 		if (str[0] == '\0') {
-			return KError::codegen("Unexpected EOF");
+			return KError::codegen("Unexpected EOF", str.location());
 		}
 		if (auto c = _parse(str, cfg.children()[0])) {
-			return KError::codegen("Unexpected element: " + _ctx.node_str(cfg));
+			return KError::codegen("Unexpected element: " + _ctx.node_str(cfg), str.location());
 		} else {
 			node.consume(str[0]);
 		}

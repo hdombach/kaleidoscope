@@ -3,3 +3,5 @@ set(TEST_SRC
 )
 
 add_library(tests OBJECT ${TEST_SRC})
+
+target_link_libraries(tests PUBLIC util)
