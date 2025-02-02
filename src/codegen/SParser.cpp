@@ -19,12 +19,7 @@ namespace cg {
 	) {
 		try {
 			auto ref = util::StringRef(str.c_str(), "codegen");
-			auto size = _match(ref, _ctx.get(root_node)).value();
-			if (size < str.size()) {
-				return KError::codegen("Entire string was not matched");
-			} else {
-				return size;
-			}
+			return parse(str, root_node)->size();
 		} catch_kerror;
 	}
 
@@ -41,130 +36,6 @@ namespace cg {
 				return node;
 			}
 		} catch_kerror;
-	}
-
-	/************************************
-	 * Match helper functions
-	 ************************************/
-
-	util::Result<size_t, KError> SParser::_match(
-		util::StringRef str,
-		CfgNode const &node
-	) {
-		switch (node.type()) {
-			case Type::none:
-				return 0;
-			case Type::literal:
-				return _match_lit(str, node);
-			case Type::reference:
-				return _match_ref(str, node);
-			case Type::sequence:
-				return _match_seq(str, node);
-			case Type::alternative:
-				return _match_alt(str, node);
-			case Type::closure:
-				return _match_cls(str, node);
-			case Type::optional:
-				return _match_opt(str, node);
-			case Type::negation:
-				return _match_neg(str, node);
-		}
-	}
-
-	util::Result<size_t, KError> SParser::_match_lit(
-		util::StringRef str,
-		CfgNode const &node
-	) {
-		auto r = 0;
-		for (auto c : node.content()) {
-			if (str[r] != c) {
-				if (str[r] == '\0') {
-					return KError::codegen("Unexepcted EOF", str.location());
-				} else {
-					return KError::codegen(util::f(
-						"Unexpected character: ",
-						str[r],
-						" in string: \"",
-						util::escape_str(str.str()),
-						"\""
-					), str.location());
-				}
-			}
-			r++;
-		}
-		return r;
-	}
-
-	util::Result<size_t, KError> SParser::_match_ref(
-		util::StringRef str,
-		CfgNode const &node
-	) {
-		return _match(str, _ctx.get(node.ref_id()));
-	}
-
-	util::Result<size_t, KError> SParser::_match_seq(
-		util::StringRef str,
-		CfgNode const &node
-	) {
-		size_t r = 0;
-		for (auto &child : node.children()) {
-			if (auto i = _match(str+r, child)) {
-				r += i.value();
-			} else {
-				return KError::codegen("Cannot match sequence", str.location());
-			}
-		}
-		return r;
-	}
-
-	util::Result<size_t, KError> SParser::_match_alt(
-		util::StringRef str,
-		CfgNode const &node
-	) {
-		for (auto &child : node.children()) {
-			if (auto i = _match(str, child)) {
-				return i;
-			} 
-		}
-		return KError::codegen("Cannot match alt", str.location());
-	}
-
-	util::Result<size_t, KError> SParser::_match_cls(
-		util::StringRef str,
-		CfgNode const &node
-	) {
-		size_t r = 0;
-		while (true) {
-			if (auto i = _match(str + r, node.children()[0])) {
-				if (i.value() == 0) {
-					return r;
-				}
-				r += i.value();
-			} else {
-				return r;
-			}
-		}
-	}
-
-	util::Result<size_t, KError> SParser::_match_opt(
-		util::StringRef str,
-		CfgNode const &node
-	) {
-		return _match(str, node.children()[0]).value(0);
-	}
-
-	util::Result<size_t, KError> SParser::_match_neg(
-		util::StringRef str,
-		CfgNode const &node
-	) {
-		if (str[0] == '\0') {
-			return KError::codegen("Cannot match EOF", str.location());
-		}
-		if (auto res = _match(str, node.children()[0])) {
-			return KError::codegen("Cannot match negation", str.location());
-		} else {
-			return 1;
-		}
 	}
 
 	/***********************************

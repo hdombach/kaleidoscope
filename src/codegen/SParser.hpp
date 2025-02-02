@@ -47,18 +47,6 @@ namespace cg {
 			CfgContext const &_ctx;
 
 		private:
-			/************************************
-			 * Match helper functions
-			 ************************************/
-			util::Result<size_t, KError> _match(util::StringRef str, CfgNode const &node);
-			util::Result<size_t, KError> _match_lit(util::StringRef str, CfgNode const &node);
-			util::Result<size_t, KError> _match_ref(util::StringRef str, CfgNode const &node);
-			util::Result<size_t, KError> _match_seq(util::StringRef str, CfgNode const &node);
-			util::Result<size_t, KError> _match_alt(util::StringRef str, CfgNode const &node);
-			util::Result<size_t, KError> _match_cls(util::StringRef str, CfgNode const &node);
-			util::Result<size_t, KError> _match_opt(util::StringRef str, CfgNode const &node);
-			util::Result<size_t, KError> _match_neg(util::StringRef str, CfgNode const &node);
-
 			/***********************************
 			 * Parser helper functions
 			 * *********************************/
