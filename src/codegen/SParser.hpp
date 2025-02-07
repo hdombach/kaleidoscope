@@ -45,8 +45,17 @@ namespace cg {
 			 */
 			uint32_t _uid;
 			CfgContext const &_ctx;
+			/**
+			 * @brief Most recent failure (even if it isn't officially error yet)
+			 */
+			KError _last_failure;
 
 		private:
+			/**
+			 * @brief Updates last failure if it is newer
+			 * @returns the failure passed in
+			 */
+			KError _set_failure(KError const &failure);
 			/***********************************
 			 * Parser helper functions
 			 * *********************************/

@@ -87,6 +87,15 @@ namespace util {
 		return res;
 	}
 
+	inline std::string get_str_line(std::string const &str) {
+		auto res = std::string();
+		for (auto c : str) {
+			if (c == '\n') break;
+			res += c;
+		}
+		return res;
+	}
+
 	/**
 	 * @brief Tests whether a ptr exists
 	 */

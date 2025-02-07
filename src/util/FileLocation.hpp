@@ -45,4 +45,20 @@ namespace util {
 		file.debug(os);
 		return os;
 	}
+
+	inline bool operator<(FileLocation const &lhs, FileLocation const &rhs) {
+		if (lhs.line == rhs.line) {
+			return lhs.column < rhs.column;
+		} else {
+			return lhs.line < rhs.line;
+		}
+	}
+
+	inline bool operator>(FileLocation const &lhs, FileLocation const &rhs) {
+		if (lhs.line == rhs.line) {
+			return lhs.column > rhs.column;
+		} else {
+			return lhs.line > rhs.line;
+		}
+	}
 }

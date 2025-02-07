@@ -28,14 +28,27 @@ namespace cg {
 		std::string const &root_node
 	) {
 		try {
+			// _last_failure is a value specific to this function but it is easier to
+			// pass it around everywhere as a property.
+			// Should be fine since can't call multiple parses at same time.
+			_last_failure = KError();
 			auto ref = util::StringRef(str.c_str(), "codegen");
 			auto node = _parse(ref, _ctx.get(root_node)).value();
 			if (node.size() < str.size()) {
-				return KError::codegen("Entire string was not matched");
+				return _last_failure;
 			} else {
 				return node;
 			}
 		} catch_kerror;
+	}
+
+	KError SParser::_set_failure(KError const &failure) {
+		if (_last_failure.type() == KError::Type::UNKNOWN) {
+			_last_failure = failure;
+		} else if (failure.loc() > _last_failure.loc()) {
+			_last_failure = failure;
+		}
+		return failure;
 	}
 
 	/***********************************
@@ -48,7 +61,7 @@ namespace cg {
 	) {
 		switch (node.type()) {
 			case Type::none:
-				return KError::codegen("Trying to parse none CfgNode", str.location());
+				return _set_failure(KError::codegen("Trying to parse none CfgNode", str.location()));
 			case Type::literal:
 				return _parse_lit(str, node);
 			case Type::reference:
@@ -79,15 +92,15 @@ namespace cg {
 						"Unexepcted EOF when parsing literal: ",
 						util::escape_str(cfg.content())
 					);
-					return KError::codegen(msg, str.location());
+					return _set_failure(KError::codegen(msg, str.location()));
 				} else {
-					return KError::codegen(util::f(
+					return _set_failure(KError::codegen(util::f(
 						"Unexpected character: ",
 						str[r],
 						" in string: \"",
-						util::escape_str(str.str()),
+						util::get_str_line(util::escape_str(str.str())),
 						"\""
-					), str.location());
+					), str.location()));
 				}
 			}
 			res.consume(c);
@@ -137,7 +150,7 @@ namespace cg {
 				return node;
 			}
 		}
-		return KError::codegen("Unmatched alternative: " + _ctx.node_str(cfg), str.location());
+		return _set_failure(_last_failure);
 	}
 
 	util::Result<AstNode, KError> SParser::_parse_cls(
@@ -177,10 +190,10 @@ namespace cg {
 	) {
 		auto node = AstNode(++_uid, _ctx, cfg.id(), str.location());
 		if (str[0] == '\0') {
-			return KError::codegen("Unexpected EOF", str.location());
+			return _set_failure(KError::codegen("Unexpected EOF", str.location()));
 		}
 		if (auto c = _parse(str, cfg.children()[0])) {
-			return KError::codegen("Unexpected element: " + _ctx.node_str(cfg), str.location());
+			return _set_failure(KError::codegen("Unexpected element: " + _ctx.node_str(cfg), str.location()));
 		} else {
 			node.consume(str[0]);
 		}
