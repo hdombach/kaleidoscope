@@ -12,7 +12,7 @@ namespace cg {
 			"My name is {{ name }}!\n";
 
 		auto args = TemplObj::Dict{
-			{"name", TemplObj("Hezekiah Dombach")}
+			{"name", "Hezekiah Dombach"}
 		};
 
 		EXPECT_EQ(
@@ -34,7 +34,7 @@ namespace cg {
 			"";
 
 		auto args = TemplObj::Dict{
-			{"shopping_list", TemplObj::List{
+			{"shopping_list", {
 					"apple",
 					"pears",
 				}
@@ -215,7 +215,7 @@ namespace cg {
 
 		auto args = TemplObj::Dict{
 			{
-				"person", TemplObj::Dict{
+				"person", {
 					{"first_name", "John"},
 					{"last_name", "Doe"},
 					{"age", 26}
@@ -229,18 +229,20 @@ namespace cg {
 		);
 	}
 
+	void t(TemplObj::Callable const &test) {}
+
 	TEST(templ_gen, callable) {
 		auto gen = TemplGen::create();
 		EXPECT(gen);
 
 		auto src = "Hello {{get_name()}}\n";
 
-		auto args = TemplObj::Dict{
-			{"get_name", TemplObj::Callable{[](TemplObj::List args) { return "Jared"; }}}
+		auto args = TemplObj{
+			{"get_name", [](TemplObj::List args) { return TemplObj("Jared"); }}
 		};
 
 		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+			gen->codegen(src, args.dict().value()).value(),
 			"Hello Jared\n"
 		);
 	}

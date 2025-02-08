@@ -1,5 +1,6 @@
 #include "TemplObj.hpp"
 
+#include "util/log.hpp"
 #include "util/result.hpp"
 #include "util/KError.hpp"
 
@@ -35,8 +36,31 @@ namespace cg {
 		_v = val;
 	}
 
-	TemplObj::TemplObj(Callable callable) {
+	TemplObj::TemplObj(Callable const &callable) {
 		_v = callable;
+	}
+
+	TemplObj::TemplObj(std::initializer_list<TemplObj> args) {
+		auto dict = TemplObj::Dict();
+
+		if (args.size() == 0) {
+			return;
+		} else {
+			for (auto const &arg : args) {
+				auto b = arg.type() == Type::List &&
+					(arg.list()->size() == 2 &&
+					arg.list()->at(0).type() == Type::String);
+
+				if (b) {
+					auto l = arg.list().value(); // For some reason, using ref breaks things
+					dict[l[0].str().value()] = l[1];
+				} else {
+					_v = List(args);
+					return;
+				}
+			}
+		}
+		_v = dict;
 	}
 
 	TemplObj& TemplObj::operator=(String const &str) {
@@ -69,7 +93,7 @@ namespace cg {
 		return *this;
 	}
 
-	TemplObj& TemplObj::operator=(Callable callable) {
+	TemplObj& TemplObj::operator=(Callable const &callable) {
 		_v = callable;
 		return *this;
 	}

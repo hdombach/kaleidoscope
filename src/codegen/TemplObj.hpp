@@ -37,8 +37,17 @@ namespace cg {
 			TemplObj(bool val);
 			TemplObj(int64_t val);
 			TemplObj(int val);
-			TemplObj(Callable callable);
+			TemplObj(Callable const &callable);
+			/** @brief Catchall prob very dangerous so we'll see*/
+			template<typename T> TemplObj(T const &v): _v(v) {}
 
+			/**
+			 * @brief Creates object or list depending on input
+			 * Empty initializer_list: An empty object
+			 * List of pairs with first element of string: An object
+			 * Anything else: list
+			 */
+			TemplObj(std::initializer_list<TemplObj> args);
 			TemplObj(const char *str): _v(str) {}
 
 			TemplObj& operator=(TemplObj const &other) = default;
@@ -49,7 +58,7 @@ namespace cg {
 			TemplObj& operator=(bool val);
 			TemplObj& operator=(int64_t val);
 			TemplObj& operator=(int val);
-			TemplObj& operator=(Callable callable);
+			TemplObj& operator=(Callable const &callable);
 
 			TemplObj& operator=(const char *str);
 
