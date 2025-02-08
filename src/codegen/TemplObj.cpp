@@ -35,6 +35,10 @@ namespace cg {
 		_v = val;
 	}
 
+	TemplObj::TemplObj(Callable callable) {
+		_v = callable;
+	}
+
 	TemplObj& TemplObj::operator=(String const &str) {
 		_v = str;
 		return *this;
@@ -65,6 +69,11 @@ namespace cg {
 		return *this;
 	}
 
+	TemplObj& TemplObj::operator=(Callable callable) {
+		_v = callable;
+		return *this;
+	}
+
 	TemplObj& TemplObj::operator=(const char *str) {
 		_v = str;
 		return *this;
@@ -90,18 +99,54 @@ namespace cg {
 				return {std::get<bool>(_v) ? "<true>" : "<false>"};
 			case Type::Integer:
 				return {std::to_string(std::get<int64_t>(_v))};
+			case Type::Callable:
+				return {"<callable>"};
+			case Type::None:
+				return {"<none>"};
 		}
 	}
 
-	util::Result<TemplObj, KError> TemplObj::get_attribute(std::string const &name) {
+	util::Result<TemplObj::List, KError> TemplObj::list() const {
+		if (type() == Type::List) {
+			return std::get<List>(_v);
+		} else {
+			return KError::codegen("Object is not a list");
+		}
+	}
+
+	util::Result<bool, KError> TemplObj::boolean() const {
+		if (type() == Type::Boolean) {
+			return std::get<bool>(_v);
+		} else {
+			return KError::codegen("Object is not a boolean");
+		}
+	}
+
+	util::Result<TemplObj::Dict, KError> TemplObj::dict() const {
 		if (type() == Type::Dict) {
-			if (dict().contains(name)) {
-				return dict().at(name);
+			return std::get<Dict>(_v);
+		} else {
+			return KError::codegen("Object is not a dict");
+		}
+	}
+
+	util::Result<TemplObj::Callable, KError> TemplObj::callable() const {
+		if (type() == Type::Callable) {
+			return std::get<Callable>(_v);
+		} else {
+			return KError::codegen("Object is not a callable");
+		}
+	}
+
+	util::Result<TemplObj, KError> TemplObj::get_attribute(std::string const &name) const {
+		if (type() == Type::Dict) {
+			if (dict()->contains(name)) {
+				return dict()->at(name);
 			} else {
 				return KError::codegen("Property " + name + " not found.");
 			}
 		} else {
-			return KError::internal("not implimented yet");
+			return KError::internal("Default properties are not implimented yet");
 		}
 	}
 }

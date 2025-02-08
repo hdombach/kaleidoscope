@@ -16,14 +16,16 @@ namespace cg {
 			using String = std::string;
 			using List = std::vector<TemplObj>;
 			using Dict = std::map<std::string, TemplObj>;
-			using Callable = std::function<void(List)>;
+			using Callable = std::function<TemplObj(List)>;
 
 			enum struct Type: size_t {
 				String,
 				List,
 				Dict,
 				Boolean,
-				Integer
+				Integer,
+				Callable,
+				None
 			};
 		public:
 			TemplObj() = default;
@@ -35,6 +37,7 @@ namespace cg {
 			TemplObj(bool val);
 			TemplObj(int64_t val);
 			TemplObj(int val);
+			TemplObj(Callable callable);
 
 			TemplObj(const char *str): _v(str) {}
 
@@ -46,6 +49,7 @@ namespace cg {
 			TemplObj& operator=(bool val);
 			TemplObj& operator=(int64_t val);
 			TemplObj& operator=(int val);
+			TemplObj& operator=(Callable callable);
 
 			TemplObj& operator=(const char *str);
 
@@ -57,17 +61,19 @@ namespace cg {
 
 			Type type() const { return Type(_v.index()); }
 
-			List list() const { return std::get<List>(_v); }
+			util::Result<List, KError> list() const;
 
-			bool boolean() const { return std::get<bool>(_v); }
+			util::Result<bool, KError> boolean() const;
 
-			Dict const &dict() const { return std::get<Dict>(_v); }
+			util::Result<Dict, KError> dict() const;
 
-			util::Result<TemplObj, KError> get_attribute(std::string const &name);
+			util::Result<Callable, KError> callable() const;
+
+			util::Result<TemplObj, KError> get_attribute(std::string const &name) const;
 
 		private:
 			Dict _properties;
 
-			std::variant<String, List, Dict, bool, int64_t> _v;
+			std::variant<String, List, Dict, bool, int64_t, Callable> _v;
 	};
 }

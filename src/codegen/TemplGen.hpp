@@ -84,7 +84,17 @@ namespace cg {
 				AstNode const &node,
 				TemplObj::Dict const &args
 			) const;
+			util::Result<TemplObj, KError> _eval_exp1(
+				AstNode const &node,
+				TemplObj::Dict const &args
+			) const;
 			util::Result<TemplObj, KError> _eval_exp_member(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplObj::Dict const &args
+			) const;
+			util::Result<TemplObj, KError> _eval_exp_call(
+				TemplObj const &lhs,
 				AstNode const &node,
 				TemplObj::Dict const &args
 			) const;

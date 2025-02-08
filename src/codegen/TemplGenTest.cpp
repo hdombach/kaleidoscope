@@ -228,4 +228,20 @@ namespace cg {
 			"Hello I am John Doe and I am 26 years old."
 		);
 	}
+
+	TEST(templ_gen, callable) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto src = "Hello {{get_name()}}\n";
+
+		auto args = TemplObj::Dict{
+			{"get_name", TemplObj::Callable{[](TemplObj::List args) { return "Jared"; }}}
+		};
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Hello Jared\n"
+		);
+	}
 }

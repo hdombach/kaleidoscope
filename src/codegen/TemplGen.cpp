@@ -57,10 +57,13 @@ namespace cg {
 			c.ref("padding_b") + c.ref("expression_b") +
 			c.ref("exp") +
 			c.ref("expression_e") + c.ref("padding_e");
-		c["exp"] = c.ref("exp_member");
+		c["exp"] = c.ref("exp1");
 
 		c["exp_id"] = c.ref("whitespace") + c.ref("identifier") + c.ref("whitespace");
-		c["exp_member"] = c.ref("exp_id") + c.cls("."_cfg + c.ref("exp_id"));
+
+		c["exp1"] = c.ref("exp_id") + c.cls(c.ref("exp_member") | c.ref("exp_call"));
+		c["exp_member"] = "."_cfg + c.ref("exp_id");
+		c["exp_call"] = "("_cfg + c.opt(c.ref("exp") + c.cls(","_cfg + c.ref("exp"))) + ")"_cfg;
 
 		c["statement_b"] = "{%"_cfg + c.opt("-"_cfg | "+"_cfg);
 		c["statement_e"] = c.opt("-"_cfg | "+"_cfg) + "%}"_cfg;
@@ -124,7 +127,9 @@ namespace cg {
 			"expression",
 			"exp",
 			"exp_id",
+			"exp1",
 			"exp_member",
+			"exp_call",
 			"statement_b",
 			"statement_e",
 			"sfrag_if",
@@ -317,7 +322,7 @@ namespace cg {
 				auto exp_node = if_node.child_with_cfg("exp").value();
 
 				auto bool_value = _eval(exp_node, args).value();
-				if (bool_value.boolean()) {
+				if (bool_value.boolean().value()) {
 					//if statement could be empty
 					if (auto lines_node = child.child_with_cfg("lines")) {
 						result += _codegen(lines_node.value(), args).value();
@@ -329,7 +334,7 @@ namespace cg {
 				auto exp_node = elif_node.child_with_cfg("exp").value();
 
 				auto bool_value = _eval(exp_node, args).value();
-				if (bool_value.boolean()) {
+				if (bool_value.boolean().value()) {
 					//elif statement could be empty
 					if (auto lines_node = child.child_with_cfg("lines")) {
 						result += _codegen(lines_node.value(), args).value();
@@ -366,9 +371,8 @@ namespace cg {
 			auto iter = sfrag_for.child_with_cfg("exp").value();
 			auto lines = node.child_with_cfg("lines").value();
 
-			auto iter_obj = _eval(iter, args).value();
-			CG_ASSERT(iter_obj.type() == TemplObj::Type::List, "Must pass list object into for loop");
-			for (auto &i : iter_obj.list()) {
+			auto iter_obj = _eval(iter, args)->list().value();
+			for (auto &i : iter_obj) {
 				auto local_args = args;
 				local_args[iter_name] = i;
 				result += _codegen(lines, local_args).value();
@@ -386,8 +390,8 @@ namespace cg {
 			return _eval(node.children()[0], args);
 		} else if (node.cfg_name() == "exp_id") {
 			return _eval_exp_id(node, args);
-		} else if (node.cfg_name() == "exp_member") {
-			return _eval_exp_member(node, args);
+		} else if (node.cfg_name() == "exp1") {
+			return _eval_exp1(node, args);
 		} else {
 			return KError::codegen("Unimplimented AstNode type: " + node.cfg_name());
 		}
@@ -406,22 +410,51 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	util::Result<TemplObj, KError> TemplGen::_eval_exp_member(
+	util::Result<TemplObj, KError> TemplGen::_eval_exp1(
 		AstNode const &node,
 		TemplObj::Dict const &args
 	) const {
 		try {
 			auto exp = node.child_with_cfg("exp_id").value();
 			auto res = _eval(exp, args);
+			CG_ASSERT(node.children().size() > 0, "Node must have at least one child");
 
 			auto children = util::Adapt(node.children().begin() + 1, node.children().end());
 			for (auto const &child : children) {
-				CG_ASSERT(child.cfg_name() == "exp_id", "Invalid child of exp_member");
-				auto name = child.child_with_cfg("identifier")->consumed();
-				res = res->get_attribute(name);
+				if (child.cfg_name() == "exp_member") {
+					res = _eval_exp_member(res.value(), child, args);
+				} else if (child.cfg_name() == "exp_call") {
+					res = _eval_exp_call(res.value(), child, args);
+				} else {
+					return KError::codegen("Unrecognized cfg node: " + child.cfg_name());
+				}
 			}
 			return res;
 		} catch_kerror;
+	}
+
+	util::Result<TemplObj, KError> TemplGen::_eval_exp_member(
+		TemplObj const &lhs,
+		AstNode const &node,
+		TemplObj::Dict const &args
+	) const {
+		try {
+			auto name = node.child_with_cfg("exp_id")->child_with_cfg("identifier")->consumed();
+			return lhs.get_attribute(name);
+		} catch_kerror;
+	}
+
+	util::Result<TemplObj, KError> TemplGen::_eval_exp_call(
+		TemplObj const &lhs,
+		AstNode const &node,
+		TemplObj::Dict const &args
+	) const {
+		auto call_args = TemplObj::List();
+		for (auto const &child : node.children()) {
+			CG_ASSERT(child.cfg_name() == "exp", "Function call list must have exp nodes");
+			call_args.push_back(_eval(child, args).value());
+		}
+		return lhs.callable().value()(call_args);
 	}
 
 	util::Result<bool, KError> TemplGen::_tag_keep_padding(
