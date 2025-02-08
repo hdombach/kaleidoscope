@@ -205,4 +205,27 @@ namespace cg {
 			"I need sleep.\n"
 		);
 	}
+
+	TEST(templ_gen, member_access) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto src =
+			"Hello I am {{person.first_name}} {{ person . last_name }} and I am {{person\n.age}} years old.";
+
+		auto args = TemplObj::Dict{
+			{
+				"person", TemplObj::Dict{
+					{"first_name", "John"},
+					{"last_name", "Doe"},
+					{"age", 26}
+				}
+			}
+		};
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Hello I am John Doe and I am 26 years old."
+		);
+	}
 }

@@ -34,6 +34,7 @@ namespace cg {
 			TemplObj(Dict const &dict);
 			TemplObj(bool val);
 			TemplObj(int64_t val);
+			TemplObj(int val);
 
 			TemplObj(const char *str): _v(str) {}
 
@@ -44,6 +45,7 @@ namespace cg {
 			TemplObj& operator=(Dict const &dict);
 			TemplObj& operator=(bool val);
 			TemplObj& operator=(int64_t val);
+			TemplObj& operator=(int val);
 
 			TemplObj& operator=(const char *str);
 
@@ -58,6 +60,10 @@ namespace cg {
 			List list() const { return std::get<List>(_v); }
 
 			bool boolean() const { return std::get<bool>(_v); }
+
+			Dict const &dict() const { return std::get<Dict>(_v); }
+
+			util::Result<TemplObj, KError> get_attribute(std::string const &name);
 
 		private:
 			Dict _properties;

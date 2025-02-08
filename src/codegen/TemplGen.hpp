@@ -84,6 +84,10 @@ namespace cg {
 				AstNode const &node,
 				TemplObj::Dict const &args
 			) const;
+			util::Result<TemplObj, KError> _eval_exp_member(
+				AstNode const &node,
+				TemplObj::Dict const &args
+			) const;
 
 
 			util::Result<bool, KError> _tag_keep_padding(AstNode const &node, bool def) const;

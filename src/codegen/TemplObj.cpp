@@ -31,6 +31,10 @@ namespace cg {
 		_v = val;
 	}
 
+	TemplObj::TemplObj(int val) {
+		_v = val;
+	}
+
 	TemplObj& TemplObj::operator=(String const &str) {
 		_v = str;
 		return *this;
@@ -52,6 +56,11 @@ namespace cg {
 	}
 
 	TemplObj& TemplObj::operator=(int64_t val) {
+		_v = val;
+		return *this;
+	}
+
+	TemplObj& TemplObj::operator=(int val) {
 		_v = val;
 		return *this;
 	}
@@ -81,6 +90,18 @@ namespace cg {
 				return {std::get<bool>(_v) ? "<true>" : "<false>"};
 			case Type::Integer:
 				return {std::to_string(std::get<int64_t>(_v))};
+		}
+	}
+
+	util::Result<TemplObj, KError> TemplObj::get_attribute(std::string const &name) {
+		if (type() == Type::Dict) {
+			if (dict().contains(name)) {
+				return dict().at(name);
+			} else {
+				return KError::codegen("Property " + name + " not found.");
+			}
+		} else {
+			return KError::internal("not implimented yet");
 		}
 	}
 }

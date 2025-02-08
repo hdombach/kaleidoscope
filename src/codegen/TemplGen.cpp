@@ -2,7 +2,7 @@
 #include "codegen/SParser.hpp"
 #include "codegen/TemplObj.hpp"
 #include "util/KError.hpp"
-#include "util/log.hpp"
+#include "util/IterAdapter.hpp"
 
 #include <fstream>
 
@@ -57,9 +57,10 @@ namespace cg {
 			c.ref("padding_b") + c.ref("expression_b") +
 			c.ref("exp") +
 			c.ref("expression_e") + c.ref("padding_e");
-		c["exp"] = c.ref("exp_id");
+		c["exp"] = c.ref("exp_member");
 
 		c["exp_id"] = c.ref("whitespace") + c.ref("identifier") + c.ref("whitespace");
+		c["exp_member"] = c.ref("exp_id") + c.cls("."_cfg + c.ref("exp_id"));
 
 		c["statement_b"] = "{%"_cfg + c.opt("-"_cfg | "+"_cfg);
 		c["statement_e"] = c.opt("-"_cfg | "+"_cfg) + "%}"_cfg;
@@ -123,6 +124,7 @@ namespace cg {
 			"expression",
 			"exp",
 			"exp_id",
+			"exp_member",
 			"statement_b",
 			"statement_e",
 			"sfrag_if",
@@ -384,6 +386,8 @@ namespace cg {
 			return _eval(node.children()[0], args);
 		} else if (node.cfg_name() == "exp_id") {
 			return _eval_exp_id(node, args);
+		} else if (node.cfg_name() == "exp_member") {
+			return _eval_exp_member(node, args);
 		} else {
 			return KError::codegen("Unimplimented AstNode type: " + node.cfg_name());
 		}
@@ -393,11 +397,31 @@ namespace cg {
 		AstNode const &node,
 		TemplObj::Dict const &args
 	) const {
-		auto name = node.child_with_cfg("identifier").value().consumed();
-		if (args.count(name) == 0) {
-			return KError::codegen("Unknown identifier \"" + name + "\"");
-		}
-		return args.at(name);
+		try {
+			auto name = node.child_with_cfg("identifier").value().consumed();
+			if (args.count(name) == 0) {
+				return KError::codegen("Unknown identifier \"" + name + "\"");
+			}
+			return args.at(name);
+		} catch_kerror;
+	}
+
+	util::Result<TemplObj, KError> TemplGen::_eval_exp_member(
+		AstNode const &node,
+		TemplObj::Dict const &args
+	) const {
+		try {
+			auto exp = node.child_with_cfg("exp_id").value();
+			auto res = _eval(exp, args);
+
+			auto children = util::Adapt(node.children().begin() + 1, node.children().end());
+			for (auto const &child : children) {
+				CG_ASSERT(child.cfg_name() == "exp_id", "Invalid child of exp_member");
+				auto name = child.child_with_cfg("identifier")->consumed();
+				res = res->get_attribute(name);
+			}
+			return res;
+		} catch_kerror;
 	}
 
 	util::Result<bool, KError> TemplGen::_tag_keep_padding(
