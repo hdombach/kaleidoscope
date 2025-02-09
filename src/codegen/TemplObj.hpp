@@ -74,6 +74,8 @@ namespace cg {
 
 			util::Result<bool, KError> boolean() const;
 
+			util::Result<int64_t, KError> integer() const;
+
 			util::Result<Dict, KError> dict() const;
 
 			util::Result<Callable, KError> callable() const;

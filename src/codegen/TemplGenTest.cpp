@@ -229,8 +229,6 @@ namespace cg {
 		);
 	}
 
-	void t(TemplObj::Callable const &test) {}
-
 	TEST(templ_gen, callable) {
 		auto gen = TemplGen::create();
 		EXPECT(gen);
@@ -245,5 +243,53 @@ namespace cg {
 			gen->codegen(src, args.dict().value()).value(),
 			"Hello Jared\n"
 		);
+	}
+
+	TEST(templ_gen, call_member_chain) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+
+		auto get_abs_sec = [](TemplObj::List l) {
+			return l[0].get_attribute("seconds")->integer().value()
+				+ l[0].get_attribute("minutes")->integer().value() * 60
+				+ l[0].get_attribute("hours")->integer().value() * 60 * 60;
+		};
+
+		TemplObj date_obj;
+		auto get_date = [&date_obj](TemplObj::List) { return date_obj; };
+
+		date_obj = TemplObj{
+			{
+				"time", {
+					{"seconds", 57},
+					{"minutes", 13},
+					{"hours", 2},
+					{ "get_self", get_date }
+				}
+			}
+		};
+
+
+		auto args = TemplObj{
+			{ "date", date_obj },
+			{ "get_date", get_date },
+		}.dict().value();
+
+		auto src =
+			"The current second is {{date.time.seconds}}s";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"The current second is 57s"
+		);
+
+		src = "The minute is {{get_date().time.get_self().time.minutes}}m";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"The minute is 13m"
+		);
+
 	}
 }

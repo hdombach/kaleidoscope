@@ -146,6 +146,14 @@ namespace cg {
 		}
 	}
 
+	util::Result<int64_t, KError> TemplObj::integer() const {
+		if (type() == Type::Integer) {
+			return std::get<int64_t>(_v);
+		} else {
+			return KError::codegen("Object is not an integer");
+		}
+	}
+
 	util::Result<TemplObj::Dict, KError> TemplObj::dict() const {
 		if (type() == Type::Dict) {
 			return std::get<Dict>(_v);
