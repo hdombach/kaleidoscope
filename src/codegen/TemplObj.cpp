@@ -36,7 +36,7 @@ namespace cg {
 		_v = val;
 	}
 
-	TemplObj::TemplObj(Func const &func) {
+	TemplObj::TemplObj(TemplFunc const &func) {
 		_v = func;
 	}
 
@@ -93,7 +93,7 @@ namespace cg {
 		return *this;
 	}
 
-	TemplObj& TemplObj::operator=(Func const &func) {
+	TemplObj& TemplObj::operator=(TemplFunc const &func) {
 		_v = func;
 		return *this;
 	}
@@ -162,9 +162,9 @@ namespace cg {
 		}
 	}
 
-	util::Result<Func, KError> TemplObj::func() const {
+	util::Result<TemplFunc, KError> TemplObj::func() const {
 		if (type() == Type::Func) {
-			return std::get<Func>(_v);
+			return std::get<TemplFunc>(_v);
 		} else {
 			return KError::codegen("Object is not a callable");
 		}

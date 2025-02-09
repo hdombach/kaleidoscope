@@ -18,8 +18,8 @@ namespace cg {
 	using TemplBool = bool;
 	using TemplInt = int64_t;
 
-	using FuncResult = util::Result<TemplObj, KError>;
-	using Func = std::function<FuncResult(TemplList)>;
+	using TemplFuncRes = util::Result<TemplObj, KError>;
+	using TemplFunc = std::function<TemplFuncRes(TemplList)>;
 
 	class TemplObj {
 		public:
@@ -43,7 +43,7 @@ namespace cg {
 			TemplObj(bool val);
 			TemplObj(int64_t val);
 			TemplObj(int val);
-			TemplObj(Func const &func);
+			TemplObj(TemplFunc const &func);
 			/** @brief Catchall prob very dangerous so we'll see*/
 			template<typename T> TemplObj(T const &v): _v(v) {}
 
@@ -64,7 +64,7 @@ namespace cg {
 			TemplObj& operator=(bool val);
 			TemplObj& operator=(int64_t val);
 			TemplObj& operator=(int val);
-			TemplObj& operator=(Func const &func);
+			TemplObj& operator=(TemplFunc const &func);
 
 			TemplObj& operator=(const char *str);
 
@@ -84,13 +84,63 @@ namespace cg {
 
 			util::Result<TemplDict, KError> dict() const;
 
-			util::Result<Func, KError> func() const;
+			util::Result<TemplFunc, KError> func() const;
 
 			util::Result<TemplObj, KError> get_attribute(std::string const &name) const;
 
 		private:
 			TemplDict _properties;
 
-			std::variant<TemplStr, TemplList, TemplDict, TemplBool, TemplInt, Func> _v;
+			std::variant<TemplStr, TemplList, TemplDict, TemplBool, TemplInt, TemplFunc> _v;
 	};
+
+	/* Forgive me for what I have done */
+
+	inline TemplFunc mk_templfunc(
+		std::function<TemplFuncRes()> func
+	) {
+		return [&](TemplList l) -> TemplFuncRes {
+			if (l.size() != 0) {
+				return KError::codegen("More parameters expected");
+			}
+			return func();
+		};
+	}
+
+	template<class ... Rest>
+	inline TemplFunc mk_templfunc(
+		std::function<TemplFuncRes(int64_t,  Rest...)> func
+	) {
+		return [&](TemplList l) -> TemplFuncRes {
+			if (l.size() == 0) {
+				return KError::codegen("Not enough arguments in function");
+			}
+			if (l[0].type() != TemplObj::Type::Integer) {
+				return KError::codegen("Function expects arg type: int");
+			}
+
+			auto small_l = TemplList(l.begin()+1, l.end());
+			auto small_func = [&](Rest...rest){ return func(l[0].integer().value(), rest...); };
+			return mk_templfunc(std::function(small_func))(small_l);
+		};
+	}
+
+	template<class ... Rest>
+	inline  TemplFunc mk_templfunc(
+		std::function<TemplFuncRes(TemplStr,  Rest...)> func
+	) {
+		return [&](TemplList l) -> TemplFuncRes {
+			if (l.size() == 0) {
+				return KError::codegen("Not enough arguments in function");
+			}
+			if (l[0].type() != TemplObj::Type::String) {
+				return KError::codegen("Function expects arg type: str");
+			}
+
+			auto small_l = TemplList(l.begin()+1, l.end());
+			auto small_func = [&](Rest...rest){ return func(l[0].str().value(), rest...); };
+			return mk_templfunc(std::function(small_func))(small_l);
+		};
+	}
+
 }

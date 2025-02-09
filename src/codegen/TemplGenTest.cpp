@@ -249,7 +249,6 @@ namespace cg {
 		auto gen = TemplGen::create();
 		EXPECT(gen);
 
-
 		auto get_abs_sec = [](TemplList l) {
 			return l[0].get_attribute("seconds")->integer().value()
 				+ l[0].get_attribute("minutes")->integer().value() * 60
@@ -290,6 +289,27 @@ namespace cg {
 			gen->codegen(src, args).value(),
 			"The minute is 13m"
 		);
+	}
 
+	TEST(templ_gen, mk_func) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto combined = [](std::string name, int64_t num) -> TemplFuncRes {
+			return {name + std::to_string(num)};
+		};
+
+		auto args = TemplObj{
+			{"name", "Bob"},
+			{"id", 59},
+			{"combine_str", mk_templfunc(std::function(combined))}
+		}.dict().value();
+
+		auto src = "User id is {{combine_str(name, id)}}";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"User id is Bob59"
+		);
 	}
 }
