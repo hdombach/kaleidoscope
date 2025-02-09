@@ -10,13 +10,19 @@
 #include "util/KError.hpp"
 
 namespace cg {
+	class TemplObj;
+	using TemplFloat = double;
+	using TemplStr = std::string;
+	using TemplList = std::vector<TemplObj>;
+	using TemplDict = std::map<std::string, TemplObj>;
+	using TemplBool = bool;
+	using TemplInt = int64_t;
+
+	using FuncResult = util::Result<TemplObj, KError>;
+	using Func = std::function<FuncResult(TemplList)>;
+
 	class TemplObj {
 		public:
-			using Number = double;
-			using String = std::string;
-			using List = std::vector<TemplObj>;
-			using Dict = std::map<std::string, TemplObj>;
-			using Callable = std::function<TemplObj(List)>;
 
 			enum struct Type: size_t {
 				String,
@@ -24,20 +30,20 @@ namespace cg {
 				Dict,
 				Boolean,
 				Integer,
-				Callable,
+				Func,
 				None
 			};
 		public:
 			TemplObj() = default;
 			TemplObj(TemplObj const &other) = default;
 			TemplObj(TemplObj &&other) = default;
-			TemplObj(String const &str);
-			TemplObj(List const &list);
-			TemplObj(Dict const &dict);
+			TemplObj(TemplStr const &str);
+			TemplObj(TemplList const &list);
+			TemplObj(TemplDict const &dict);
 			TemplObj(bool val);
 			TemplObj(int64_t val);
 			TemplObj(int val);
-			TemplObj(Callable const &callable);
+			TemplObj(Func const &func);
 			/** @brief Catchall prob very dangerous so we'll see*/
 			template<typename T> TemplObj(T const &v): _v(v) {}
 
@@ -52,13 +58,13 @@ namespace cg {
 
 			TemplObj& operator=(TemplObj const &other) = default;
 			TemplObj& operator=(TemplObj &&other) = default;
-			TemplObj& operator=(String const &str);
-			TemplObj& operator=(List const &list);
-			TemplObj& operator=(Dict const &dict);
+			TemplObj& operator=(TemplStr const &str);
+			TemplObj& operator=(TemplList const &list);
+			TemplObj& operator=(TemplDict const &dict);
 			TemplObj& operator=(bool val);
 			TemplObj& operator=(int64_t val);
 			TemplObj& operator=(int val);
-			TemplObj& operator=(Callable const &callable);
+			TemplObj& operator=(Func const &func);
 
 			TemplObj& operator=(const char *str);
 
@@ -70,21 +76,21 @@ namespace cg {
 
 			Type type() const { return Type(_v.index()); }
 
-			util::Result<List, KError> list() const;
+			util::Result<TemplList, KError> list() const;
 
-			util::Result<bool, KError> boolean() const;
+			util::Result<TemplBool, KError> boolean() const;
 
-			util::Result<int64_t, KError> integer() const;
+			util::Result<TemplInt, KError> integer() const;
 
-			util::Result<Dict, KError> dict() const;
+			util::Result<TemplDict, KError> dict() const;
 
-			util::Result<Callable, KError> callable() const;
+			util::Result<Func, KError> func() const;
 
 			util::Result<TemplObj, KError> get_attribute(std::string const &name) const;
 
 		private:
-			Dict _properties;
+			TemplDict _properties;
 
-			std::variant<String, List, Dict, bool, int64_t, Callable> _v;
+			std::variant<TemplStr, TemplList, TemplDict, TemplBool, TemplInt, Func> _v;
 	};
 }

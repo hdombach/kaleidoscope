@@ -11,7 +11,7 @@ namespace cg {
 			"Hello everyone\n"
 			"My name is {{ name }}!\n";
 
-		auto args = TemplObj::Dict{
+		auto args = TemplDict{
 			{"name", "Hezekiah Dombach"}
 		};
 
@@ -33,7 +33,7 @@ namespace cg {
 			"{\% endfor %}\n"
 			"";
 
-		auto args = TemplObj::Dict{
+		auto args = TemplDict{
 			{"shopping_list", {
 					"apple",
 					"pears",
@@ -60,7 +60,7 @@ namespace cg {
 			"{\% endif %}\n"
 			"";
 
-		auto args = TemplObj::Dict{
+		auto args = TemplDict{
 			{"add_bar", true}
 		};
 
@@ -91,7 +91,7 @@ namespace cg {
 			"{\% endif %}\n"
 			"";
 
-		auto args = TemplObj::Dict{
+		auto args = TemplDict{
 			{"value", true}
 		};
 
@@ -121,7 +121,7 @@ namespace cg {
 			"bar\n"
 			"";
 
-		auto args = TemplObj::Dict{
+		auto args = TemplDict{
 			{"add_bar", true}
 		};
 
@@ -144,7 +144,7 @@ namespace cg {
 			"bar\n"
 			"";
 
-		auto args = TemplObj::Dict{
+		auto args = TemplDict{
 			{"add_bar", true}
 		};
 
@@ -172,7 +172,7 @@ namespace cg {
 			"{\% endif %}"
 			"";
 
-		auto args = TemplObj::Dict{
+		auto args = TemplDict{
 			{"has_yes", true},
 			{"has_no", true},
 			{"has_maybe", true},
@@ -213,7 +213,7 @@ namespace cg {
 		auto src =
 			"Hello I am {{person.first_name}} {{ person . last_name }} and I am {{person\n.age}} years old.";
 
-		auto args = TemplObj::Dict{
+		auto args = TemplDict{
 			{
 				"person", {
 					{"first_name", "John"},
@@ -236,7 +236,7 @@ namespace cg {
 		auto src = "Hello {{get_name()}}\n";
 
 		auto args = TemplObj{
-			{"get_name", [](TemplObj::List args) { return TemplObj("Jared"); }}
+			{"get_name", [](TemplList args) { return TemplObj("Jared"); }}
 		};
 
 		EXPECT_EQ(
@@ -250,14 +250,14 @@ namespace cg {
 		EXPECT(gen);
 
 
-		auto get_abs_sec = [](TemplObj::List l) {
+		auto get_abs_sec = [](TemplList l) {
 			return l[0].get_attribute("seconds")->integer().value()
 				+ l[0].get_attribute("minutes")->integer().value() * 60
 				+ l[0].get_attribute("hours")->integer().value() * 60 * 60;
 		};
 
 		TemplObj date_obj;
-		auto get_date = [&date_obj](TemplObj::List) { return date_obj; };
+		auto get_date = [&date_obj](TemplList) { return date_obj; };
 
 		date_obj = TemplObj{
 			{

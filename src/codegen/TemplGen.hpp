@@ -19,7 +19,7 @@ namespace cg {
 
 			util::Result<std::string, KError> codegen(
 				std::string const &str,
-				TemplObj::Dict const &args
+				TemplDict const &args
 			) const;
 		private:
 			CfgContext _ctx;
@@ -28,75 +28,75 @@ namespace cg {
 		private:
 			util::Result<std::string, KError> _codegen(
 				AstNode const &node,
-				TemplObj::Dict const &args
+				TemplDict const &args
 			) const;
 
 			util::Result<std::string, KError> _cg_default(
 				AstNode const &node,
-				TemplObj::Dict const &args
+				TemplDict const &args
 			) const;
 			util::Result<std::string, KError> _cg_ref(
 				AstNode const &node,
-				TemplObj::Dict const &args
+				TemplDict const &args
 			) const;
 
 			util::Result<std::string, KError> _cg_identifier(
 				AstNode const &node,
-				TemplObj::Dict const &args
+				TemplDict const &args
 			) const;
 			util::Result<std::string, KError> _cg_line(
 				AstNode const &node,
-				TemplObj::Dict const &args
+				TemplDict const &args
 			) const;
 			util::Result<std::string, KError> _cg_lines(
 				AstNode const &node,
-				TemplObj::Dict const &args
+				TemplDict const &args
 			) const;
 
 			util::Result<std::string, KError> _cg_comment(
 				AstNode const &node,
-				TemplObj::Dict const &args
+				TemplDict const &args
 			) const;
 
 			util::Result<std::string, KError> _cg_expression(
 				AstNode const &node,
-				TemplObj::Dict const &args
+				TemplDict const &args
 			) const;
 
 			util::Result<std::string, KError> _cg_statement(
 				AstNode const &node,
-				TemplObj::Dict const &args
+				TemplDict const &args
 			) const;
 			util::Result<std::string, KError> _cg_sif(
 				AstNode const &node,
-				TemplObj::Dict const &args
+				TemplDict const &args
 			) const;
 			util::Result<std::string, KError> _cg_sfor(
 				AstNode const &node,
-				TemplObj::Dict const &args
+				TemplDict const &args
 			) const;
 
 			util::Result<TemplObj, KError> _eval(
 				AstNode const &node,
-				TemplObj::Dict const &args
+				TemplDict const &args
 			) const;
 			util::Result<TemplObj, KError> _eval_exp_id(
 				AstNode const &node,
-				TemplObj::Dict const &args
+				TemplDict const &args
 			) const;
 			util::Result<TemplObj, KError> _eval_exp1(
 				AstNode const &node,
-				TemplObj::Dict const &args
+				TemplDict const &args
 			) const;
 			util::Result<TemplObj, KError> _eval_exp_member(
 				TemplObj const &lhs,
 				AstNode const &node,
-				TemplObj::Dict const &args
+				TemplDict const &args
 			) const;
 			util::Result<TemplObj, KError> _eval_exp_call(
 				TemplObj const &lhs,
 				AstNode const &node,
-				TemplObj::Dict const &args
+				TemplDict const &args
 			) const;
 
 

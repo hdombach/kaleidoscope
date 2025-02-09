@@ -12,15 +12,15 @@ template<class... Ts>
 Overloaded(Ts...) -> Overloaded<Ts...>;
 
 namespace cg {
-	TemplObj::TemplObj(String const &str) {
+	TemplObj::TemplObj(TemplStr const &str) {
 		_v = str;
 	}
 
-	TemplObj::TemplObj(List const &list) {
+	TemplObj::TemplObj(TemplList const &list) {
 		_v = list;
 	}
 
-	TemplObj::TemplObj(Dict const &dict) {
+	TemplObj::TemplObj(TemplDict const &dict) {
 		_v = dict;
 	}
 
@@ -36,12 +36,12 @@ namespace cg {
 		_v = val;
 	}
 
-	TemplObj::TemplObj(Callable const &callable) {
-		_v = callable;
+	TemplObj::TemplObj(Func const &func) {
+		_v = func;
 	}
 
 	TemplObj::TemplObj(std::initializer_list<TemplObj> args) {
-		auto dict = TemplObj::Dict();
+		auto dict = TemplDict();
 
 		if (args.size() == 0) {
 			return;
@@ -55,7 +55,7 @@ namespace cg {
 					auto l = arg.list().value(); // For some reason, using ref breaks things
 					dict[l[0].str().value()] = l[1];
 				} else {
-					_v = List(args);
+					_v = TemplList(args);
 					return;
 				}
 			}
@@ -63,17 +63,17 @@ namespace cg {
 		_v = dict;
 	}
 
-	TemplObj& TemplObj::operator=(String const &str) {
+	TemplObj& TemplObj::operator=(TemplStr const &str) {
 		_v = str;
 		return *this;
 	}
 
-	TemplObj& TemplObj::operator=(List const &list) {
+	TemplObj& TemplObj::operator=(TemplList const &list) {
 		_v = list;
 		return *this;
 	}
 
-	TemplObj& TemplObj::operator=(Dict const &dict) {
+	TemplObj& TemplObj::operator=(TemplDict const &dict) {
 		_v = dict;
 		return *this;
 	}
@@ -93,8 +93,8 @@ namespace cg {
 		return *this;
 	}
 
-	TemplObj& TemplObj::operator=(Callable const &callable) {
-		_v = callable;
+	TemplObj& TemplObj::operator=(Func const &func) {
+		_v = func;
 		return *this;
 	}
 
@@ -106,7 +106,7 @@ namespace cg {
 	util::Result<std::string, KError> TemplObj::str(bool convert) const {
 		auto type = static_cast<Type>(_v.index());
 		if (type == Type::String) {
-			return std::get<String>(_v);
+			return std::get<TemplStr>(_v);
 		}
 		if (!convert) {
 			return KError::codegen("Unknown conversion to str");
@@ -123,16 +123,16 @@ namespace cg {
 				return {std::get<bool>(_v) ? "<true>" : "<false>"};
 			case Type::Integer:
 				return {std::to_string(std::get<int64_t>(_v))};
-			case Type::Callable:
-				return {"<callable>"};
+			case Type::Func:
+				return {"<function>"};
 			case Type::None:
 				return {"<none>"};
 		}
 	}
 
-	util::Result<TemplObj::List, KError> TemplObj::list() const {
+	util::Result<TemplList, KError> TemplObj::list() const {
 		if (type() == Type::List) {
-			return std::get<List>(_v);
+			return std::get<TemplList>(_v);
 		} else {
 			return KError::codegen("Object is not a list");
 		}
@@ -154,17 +154,17 @@ namespace cg {
 		}
 	}
 
-	util::Result<TemplObj::Dict, KError> TemplObj::dict() const {
+	util::Result<TemplDict, KError> TemplObj::dict() const {
 		if (type() == Type::Dict) {
-			return std::get<Dict>(_v);
+			return std::get<TemplDict>(_v);
 		} else {
 			return KError::codegen("Object is not a dict");
 		}
 	}
 
-	util::Result<TemplObj::Callable, KError> TemplObj::callable() const {
-		if (type() == Type::Callable) {
-			return std::get<Callable>(_v);
+	util::Result<Func, KError> TemplObj::func() const {
+		if (type() == Type::Func) {
+			return std::get<Func>(_v);
 		} else {
 			return KError::codegen("Object is not a callable");
 		}

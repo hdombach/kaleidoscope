@@ -149,7 +149,7 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::codegen(
 		std::string const &str,
-		TemplObj::Dict const &args
+		TemplDict const &args
 	) const {
 		try {
 			auto parser = SParser(_ctx);
@@ -171,7 +171,7 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_codegen(
 		AstNode const &node,
-		TemplObj::Dict const &args
+		TemplDict const &args
 	) const {
 		if (node.cfg_name() == "whitespace") {
 			return _cg_default(node, args);
@@ -210,7 +210,7 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_default(
 		AstNode const &node,
-		TemplObj::Dict const &args
+		TemplDict const &args
 	) const {
 		CG_ASSERT(node.children().size() == 0, "Children count of padding must be 0");
 		return node.consumed();
@@ -218,7 +218,7 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_ref(
 		AstNode const &node,
-		TemplObj::Dict const &args
+		TemplDict const &args
 	) const {
 		CG_ASSERT(node.children().size() == 1, "Children count of codegen_ref must be 1");
 		return _codegen(node.children()[0], args);
@@ -226,14 +226,14 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_identifier(
 		AstNode const &node,
-		TemplObj::Dict const &args
+		TemplDict const &args
 	) const {
 		return KError::codegen("Identifier does not have a codegen implimentation");
 	}
 
 	util::Result<std::string, KError> TemplGen::_cg_line(
 		AstNode const &node,
-		TemplObj::Dict const &args
+		TemplDict const &args
 	) const {
 		auto result = std::string();
 		for (auto &child : node.children()) {
@@ -249,7 +249,7 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_lines(
 		AstNode const &node,
-		TemplObj::Dict const &args
+		TemplDict const &args
 	) const {
 		auto result = std::string();
 		for (auto &child : node.children()) {
@@ -264,14 +264,14 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_comment(
 		AstNode const &node,
-		TemplObj::Dict const &args
+		TemplDict const &args
 	) const {
 		return {""};
 	}
 
 	util::Result<std::string, KError> TemplGen::_cg_expression(
 		AstNode const &node,
-		TemplObj::Dict const &args
+		TemplDict const &args
 	) const {
 		try {
 			auto result = std::string();
@@ -303,14 +303,14 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_statement(
 		AstNode const &node,
-		TemplObj::Dict const &args
+		TemplDict const &args
 	) const {
 		return KError::codegen("statment not implimented");
 	}
 
 	util::Result<std::string, KError> TemplGen::_cg_sif(
 		AstNode const &node,
-		TemplObj::Dict const &args
+		TemplDict const &args
 	) const {
 		try {
 		auto result = std::string();
@@ -358,7 +358,7 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_sfor(
 		AstNode const &node,
-		TemplObj::Dict const &args
+		TemplDict const &args
 	) const {
 		try {
 			auto result = std::string();
@@ -384,7 +384,7 @@ namespace cg {
 
 	util::Result<TemplObj, KError> TemplGen::_eval(
 		AstNode const &node,
-		TemplObj::Dict const &args
+		TemplDict const &args
 	) const {
 		if (node.cfg_name() == "exp") {
 			return _eval(node.children()[0], args);
@@ -399,7 +399,7 @@ namespace cg {
 
 	util::Result<TemplObj, KError> TemplGen::_eval_exp_id(
 		AstNode const &node,
-		TemplObj::Dict const &args
+		TemplDict const &args
 	) const {
 		try {
 			auto name = node.child_with_cfg("identifier").value().consumed();
@@ -412,7 +412,7 @@ namespace cg {
 
 	util::Result<TemplObj, KError> TemplGen::_eval_exp1(
 		AstNode const &node,
-		TemplObj::Dict const &args
+		TemplDict const &args
 	) const {
 		try {
 			auto exp = node.child_with_cfg("exp_id").value();
@@ -436,7 +436,7 @@ namespace cg {
 	util::Result<TemplObj, KError> TemplGen::_eval_exp_member(
 		TemplObj const &lhs,
 		AstNode const &node,
-		TemplObj::Dict const &args
+		TemplDict const &args
 	) const {
 		try {
 			auto name = node.child_with_cfg("exp_id")->child_with_cfg("identifier")->consumed();
@@ -447,14 +447,14 @@ namespace cg {
 	util::Result<TemplObj, KError> TemplGen::_eval_exp_call(
 		TemplObj const &lhs,
 		AstNode const &node,
-		TemplObj::Dict const &args
+		TemplDict const &args
 	) const {
-		auto call_args = TemplObj::List();
+		auto call_args = TemplList();
 		for (auto const &child : node.children()) {
 			CG_ASSERT(child.cfg_name() == "exp", "Function call list must have exp nodes");
 			call_args.push_back(_eval(child, args).value());
 		}
-		return lhs.callable().value()(call_args);
+		return lhs.func().value()(call_args);
 	}
 
 	util::Result<bool, KError> TemplGen::_tag_keep_padding(
