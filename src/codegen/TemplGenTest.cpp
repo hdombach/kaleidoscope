@@ -302,7 +302,7 @@ namespace cg {
 		auto args = TemplObj{
 			{"name", "Bob"},
 			{"id", 59},
-			{"combine_str", mk_templfunc(std::function(combined))}
+			{"combine_str", mk_templfunc(combined)}
 		}.dict().value();
 
 		auto src = "User id is {{combine_str(name, id)}}";
@@ -311,5 +311,30 @@ namespace cg {
 			gen->codegen(src, args).value(),
 			"User id is Bob59"
 		);
+
+		src = "User id is {{combine_str(name, name)}}";
+		EXPECT_KERROR(
+			gen->codegen(src, args),
+			KError::Type::CODEGEN
+		);
+
+		src = "User id is {{combine_str(id, id)}}";
+		EXPECT_KERROR(
+			gen->codegen(src, args),
+			KError::Type::CODEGEN
+		);
+
+		src = "User id is {{combine_str(name)}}";
+		EXPECT_KERROR(
+			gen->codegen(src, args),
+			KError::Type::CODEGEN
+		);
+
+		src = "User id is {{combine_str(name, id, id)}}";
+		EXPECT_KERROR(
+			gen->codegen(src, args),
+			KError::Type::CODEGEN
+		);
+
 	}
 }

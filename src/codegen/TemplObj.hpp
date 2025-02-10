@@ -6,6 +6,7 @@
 #include <string>
 #include <functional>
 
+#include "util/log.hpp"
 #include "util/result.hpp"
 #include "util/KError.hpp"
 
@@ -96,51 +97,137 @@ namespace cg {
 
 	/* Forgive me for what I have done */
 
-	inline TemplFunc mk_templfunc(
-		std::function<TemplFuncRes()> func
+	template<typename T>
+	inline TemplFunc mk_templfunc(T const &func) {
+		return _mk_templfunc(std::function(func), 0);
+	}
+
+	inline TemplFunc _mk_templfunc(
+		std::function<TemplFuncRes()> const &func,
+		int arg_index
 	) {
-		return [&](TemplList l) -> TemplFuncRes {
+		return [func, arg_index](TemplList l) -> TemplFuncRes {
 			if (l.size() != 0) {
-				return KError::codegen("More parameters expected");
+				return KError::codegen(util::f("Expects ", arg_index, " arguments"));
 			}
 			return func();
 		};
 	}
 
 	template<class ... Rest>
-	inline TemplFunc mk_templfunc(
-		std::function<TemplFuncRes(int64_t,  Rest...)> func
+	inline  TemplFunc _mk_templfunc(
+		std::function<TemplFuncRes(TemplStr,  Rest...)> const &func,
+		int arg_index
 	) {
-		return [&](TemplList l) -> TemplFuncRes {
+		return [func, arg_index](TemplList l) -> TemplFuncRes {
 			if (l.size() == 0) {
-				return KError::codegen("Not enough arguments in function");
+				return KError::codegen(util::f("Requires more than ", arg_index, " args"));
 			}
-			if (l[0].type() != TemplObj::Type::Integer) {
-				return KError::codegen("Function expects arg type: int");
+			if (l[0].type() != TemplObj::Type::String) {
+				return KError::codegen(util::f("Function expects arg at index ", arg_index, " to be string"));
 			}
 
 			auto small_l = TemplList(l.begin()+1, l.end());
-			auto small_func = [&](Rest...rest){ return func(l[0].integer().value(), rest...); };
-			return mk_templfunc(std::function(small_func))(small_l);
+			auto small_func = [func, l](Rest...rest){ return func(l[0].str().value(), rest...); };
+			return _mk_templfunc(std::function(small_func), arg_index+1)(small_l);
 		};
 	}
 
 	template<class ... Rest>
-	inline  TemplFunc mk_templfunc(
-		std::function<TemplFuncRes(TemplStr,  Rest...)> func
+	inline  TemplFunc _mk_templfunc(
+		std::function<TemplFuncRes(TemplList,  Rest...)> const &func,
+		int arg_index
 	) {
-		return [&](TemplList l) -> TemplFuncRes {
+		return [func, arg_index](TemplList l) -> TemplFuncRes {
 			if (l.size() == 0) {
-				return KError::codegen("Not enough arguments in function");
+				return KError::codegen(util::f("Requires more than ", arg_index, " args"));
 			}
-			if (l[0].type() != TemplObj::Type::String) {
-				return KError::codegen("Function expects arg type: str");
+			if (l[0].type() != TemplObj::Type::List) {
+				return KError::codegen(util::f("Function expects arg at index ", arg_index, " to be list"));
 			}
 
 			auto small_l = TemplList(l.begin()+1, l.end());
-			auto small_func = [&](Rest...rest){ return func(l[0].str().value(), rest...); };
-			return mk_templfunc(std::function(small_func))(small_l);
+			auto small_func = [func, l](Rest...rest){ return func(l[0].list().value(), rest...); };
+			return _mk_templfunc(std::function(small_func), arg_index+1)(small_l);
 		};
 	}
+
+	template<class ... Rest>
+	inline  TemplFunc _mk_templfunc(
+		std::function<TemplFuncRes(TemplDict,  Rest...)> const &func,
+		int arg_index
+	) {
+		return [func, arg_index](TemplList l) -> TemplFuncRes {
+			if (l.size() == 0) {
+				return KError::codegen(util::f("Requires more than ", arg_index, " args"));
+			}
+			if (l[0].type() != TemplObj::Type::Dict) {
+				return KError::codegen(util::f("Function expects arg at index ", arg_index, " to be string"));
+			}
+
+			auto small_l = TemplList(l.begin()+1, l.end());
+			auto small_func = [func, l](Rest...rest){ return func(l[0].dict().value(), rest...); };
+			return _mk_templfunc(std::function(small_func), arg_index+1)(small_l);
+		};
+	}
+
+
+	template<class ... Rest>
+	inline  TemplFunc _mk_templfunc(
+		std::function<TemplFuncRes(TemplBool,  Rest...)> const &func,
+		int arg_index
+	) {
+		return [func, arg_index](TemplList l) -> TemplFuncRes {
+			if (l.size() == 0) {
+				return KError::codegen(util::f("Requires more than ", arg_index, " args"));
+			}
+			if (l[0].type() != TemplObj::Type::Boolean) {
+				return KError::codegen(util::f("Function expects arg at index ", arg_index, " to be bool"));
+			}
+
+			auto small_l = TemplList(l.begin()+1, l.end());
+			auto small_func = [func, l](Rest...rest){ return func(l[0].boolean().value(), rest...); };
+			return _mk_templfunc(std::function(small_func), arg_index+1)(small_l);
+		};
+	}
+
+	template<class ... Rest>
+	inline TemplFunc _mk_templfunc(
+		std::function<TemplFuncRes(TemplInt,  Rest...)> const &func,
+		int arg_index
+	) {
+		return [func, arg_index](TemplList l) -> TemplFuncRes {
+			if (l.size() == 0) {
+				return KError::codegen(util::f("Requires more than ", arg_index, " args"));
+			}
+			if (l[0].type() != TemplObj::Type::Integer) {
+				return KError::codegen(util::f("Function expects arg at index ", arg_index, " to be int"));
+			}
+
+			auto small_l = TemplList(l.begin()+1, l.end());
+			auto small_func = [func, l](Rest...rest){ return func(l[0].integer().value(), rest...); };
+			return _mk_templfunc(std::function(small_func), arg_index+1)(small_l);
+		};
+	}
+
+	template<class ... Rest>
+	inline  TemplFunc _mk_templfunc(
+		std::function<TemplFuncRes(TemplFunc,  Rest...)> const &func,
+		int arg_index
+	) {
+		return [func, arg_index](TemplList l) -> TemplFuncRes {
+			if (l.size() == 0) {
+				return KError::codegen(util::f("Requires more than ", arg_index, " args"));
+			}
+			if (l[0].type() != TemplObj::Type::Func) {
+				return KError::codegen(util::f("Function expects arg at index ", arg_index, " to be function"));
+			}
+
+			auto small_l = TemplList(l.begin()+1, l.end());
+			auto small_func = [func, l](Rest...rest){ return func(l[0].func().value(), rest...); };
+			return _mk_templfunc(std::function(small_func), arg_index+1)(small_l);
+		};
+	}
+
 
 }
