@@ -82,7 +82,8 @@ namespace cg {
 		_children = new_children;
 	}
 
-	util::Result<void, KError> AstNode::compress(std::vector<std::string> const &cfg_names) {
+	util::Result<void, KError> AstNode::compress() {
+		auto const &cfg_names = _ctx->prim_names();
 		auto ids = std::vector<uint32_t>();
 		for (auto &name : cfg_names) {
 			if (!_ctx->contains(name)) {
@@ -100,9 +101,9 @@ namespace cg {
 		return result;
 	}
 
-	util::Result<AstNode, KError> AstNode::compressed(std::vector<std::string> const &cfg_names) {
+	util::Result<AstNode, KError> AstNode::compressed() {
 		auto result = *this;
-		TRY(result.compress(cfg_names));
+		TRY(result.compress());
 		return result;
 	}
 

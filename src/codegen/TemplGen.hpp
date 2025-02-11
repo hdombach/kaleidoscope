@@ -23,7 +23,6 @@ namespace cg {
 			) const;
 		private:
 			CfgContext _ctx;
-			std::vector<std::string> _prims;
 
 		private:
 			util::Result<std::string, KError> _codegen(

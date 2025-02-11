@@ -26,7 +26,7 @@ namespace cg {
 			/**
 			 * @brief Wrapper around CfgNode::literal
 			 */
-			CfgNode lit(std::string const &str);
+			CfgNode lit(std::string const &str) const;
 
 			/**
 			 * @brief Creates a reference grammar object
@@ -34,32 +34,32 @@ namespace cg {
 			 * Is a wrapper around CfgNode::ref with a proper lookup
 			 * for the referenced name
 			 */
-			CfgNode ref(std::string const &name);
+			CfgNode ref(std::string const &name) const;
 
 			/**
 			 * @brief Wrapper around CfgNode::seq
 			 */
-			CfgNode seq(CfgNode &&lhs, CfgNode &&rhs);
+			CfgNode seq(CfgNode &&lhs, CfgNode &&rhs) const;
 
 			/**
 			 * @brief Wrapper around CfgNode::alt
 			 */
-			CfgNode alt(CfgNode &&lhs, CfgNode &&rhs);
+			CfgNode alt(CfgNode &&lhs, CfgNode &&rhs) const;
 
 			/**
 			 * @brief Wrapper round CfgNode::cls
 			 */
-			CfgNode cls(CfgNode &&c);
+			CfgNode cls(CfgNode &&c) const;
 
 			/**
 			 * @brief Wrapper around CfgNode::opt
 			 */
-			CfgNode opt(CfgNode &&c);
+			CfgNode opt(CfgNode &&c) const;
 
 			/**
 			 * @brief Wrapper around CfgNode::neg
 			 */
-			CfgNode neg(CfgNode &&c);
+			CfgNode neg(CfgNode &&c) const;
 
 			/**
 			 * @brief Duplicates a node
@@ -76,9 +76,13 @@ namespace cg {
 			bool contains(uint32_t id) const;
 
 			/**
-			 * @brief Gets node or creates an empty one
+			 * @brief Creates a new primary node
 			 */
-			CfgNode &get(std::string const &name);
+			CfgNode &prim(std::string const &name);
+			/**
+			 * @brief Creates a new temporary node
+			 */
+			CfgNode &temp(std::string const &name);
 
 			/**
 			 * @brief Gets node by name
@@ -90,18 +94,23 @@ namespace cg {
 			 */
 			CfgNode const &get(uint32_t id) const;
 
-			CfgNode &operator[](std::string const &name) { return get(name); }
-			CfgNode const &operator[](std::string const &name) const { return get(name); }
-			CfgNode const &operator[](uint32_t id) const { return get(id); }
+			/**
+			 * @brief Create reference of string
+			 */
+			CfgNode operator[](std::string const &name) const { return ref(name); }
 
 			void debug_node(CfgNode const &node, std::ostream &os) const;
 			void debug_node(std::string const &name, std::ostream &os) const;
 			std::string node_str(CfgNode const &name) const;
 			std::string node_str(std::string const &name) const;
 
+			/** @brief Names of primary nodes you compress down to) */
+			std::vector<std::string> const &prim_names() const { return _prim_names; }
+
 		private:
 			std::map<std::string, uint32_t> _cfg_map;
 			util::UIDList<CfgNode> _cfgs;
+			std::vector<std::string> _prim_names;
 	};
 
 	inline CfgNode operator+(CfgNode &&lhs, CfgNode &&rhs) {

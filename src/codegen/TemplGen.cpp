@@ -11,138 +11,102 @@ namespace cg {
 		auto result = TemplGen();
 		auto &c = result._ctx;
 
-		c["whitespace"] = c.cls(" "_cfg | "\t"_cfg | "\n"_cfg);
-		c["padding"] = c.cls(" "_cfg | "\t"_cfg);
-		c["digit"] =
+		c.prim("whitespace") = c.cls(" "_cfg | "\t"_cfg | "\n"_cfg);
+		c.prim("padding") = c.cls(" "_cfg | "\t"_cfg);
+		c.temp("digit") =
 			"0"_cfg | "1"_cfg | "2"_cfg | "3"_cfg | "4"_cfg |
 			"5"_cfg | "6"_cfg | "7"_cfg | "8"_cfg | "9"_cfg;
-		c["lower"] =
+		c.temp("lower") =
 			"a"_cfg | "b"_cfg | "c"_cfg | "d"_cfg | "e"_cfg | "f"_cfg | "g"_cfg | "h"_cfg |
 			"i"_cfg | "j"_cfg | "k"_cfg | "l"_cfg | "m"_cfg | "n"_cfg | "o"_cfg | "p"_cfg |
 			"q"_cfg | "r"_cfg | "s"_cfg | "t"_cfg | "u"_cfg | "v"_cfg | "w"_cfg | "x"_cfg |
 			"y"_cfg | "z"_cfg;
-		c["upper"] =
+		c.temp("upper") =
 			"A"_cfg | "B"_cfg | "C"_cfg | "D"_cfg | "E"_cfg | "F"_cfg | "G"_cfg | "H"_cfg |
 			"I"_cfg | "J"_cfg | "K"_cfg | "L"_cfg | "M"_cfg | "N"_cfg | "O"_cfg | "P"_cfg |
 			"Q"_cfg | "R"_cfg | "S"_cfg | "T"_cfg | "U"_cfg | "V"_cfg | "W"_cfg | "X"_cfg |
 			"Y"_cfg | "Z"_cfg;
-		c["alpha"] = c.ref("lower") | c.ref("uppoer");
-		c["alnum"] = c.ref("alpha") | c.ref("digit");
-		c["identifier"] = ("_"_cfg | c.ref("alpha")) + c.cls(c.ref("alnum") | "_"_cfg);
+		c.temp("alpha") = c["lower"] | c["uppoer"];
+		c.temp("alnum") = c["alpha"] | c["digit"];
+		c.prim("identifier") = ("_"_cfg | c["alpha"]) + c.cls(c["alnum"] | "_"_cfg);
 
-		c["padding_b"] = c.ref("padding");
-		c["padding_e"] = c.ref("padding");
-		c["padding_nl"] = c.ref("padding") + c.opt("\n"_cfg);
+		c.prim("padding_b") = c["padding"];
+		c.prim("padding_e") = c["padding"];
+		c.prim("padding_nl") = c["padding"] + c.opt("\n"_cfg);
 
-		c["raw"] = c.cls(!(
-			c.ref("expression_b") |
-			c.ref("statement_b") |
-			c.ref("comment_b") |
+		c.prim("raw") = c.cls(!(
+			c["expression_b"] |
+			c["statement_b"] |
+			c["comment_b"] |
 			"\n"_cfg
 		));
-		c["line"] = c.cls(c.ref("statement") | c.ref("expression") | c.ref("comment") | c.ref("raw")) + c.opt("\n"_cfg);
-		c["lines"] = c.cls(c.ref("line"));
-		c["file"] = c.ref("lines");
+		c.prim("line") = c.cls(c["statement"] | c["expression"] | c["comment"] | c["raw"]) + c.opt("\n"_cfg);
+		c.prim("lines") = c.cls(c["line"]);
+		c.prim("file") = c["lines"];
 
-		c["comment_b"] = "{#"_cfg + c.opt("-"_cfg | "+"_cfg);
-		c["comment_e"] = c.opt("-"_cfg | "+"_cfg) + "#}"_cfg;
-		c["comment"] =
-			c.ref("padding_b") +
-			c.ref("comment_b") + c.cls(!"#}"_cfg) + c.ref("comment_e") +
-			c.ref("padding_e");
+		c.prim("comment_b") = "{#"_cfg + c.opt("-"_cfg | "+"_cfg);
+		c.prim("comment_e") = c.opt("-"_cfg | "+"_cfg) + "#}"_cfg;
+		c.prim("comment") =
+			c["padding_b"] +
+			c["comment_b"] + c.cls(!"#}"_cfg) + c["comment_e"] +
+			c["padding_e"];
 
-		c["expression_b"] = "{{"_cfg + c.opt("-"_cfg | "+"_cfg);
-		c["expression_e"] = c.opt("-"_cfg | "+"_cfg) + "}}"_cfg;
-		c["expression"] =
-			c.ref("padding_b") + c.ref("expression_b") +
-			c.ref("exp") +
-			c.ref("expression_e") + c.ref("padding_e");
-		c["exp"] = c.ref("exp1");
+		c.prim("expression_b") = "{{"_cfg + c.opt("-"_cfg | "+"_cfg);
+		c.prim("expression_e") = c.opt("-"_cfg | "+"_cfg) + "}}"_cfg;
+		c.prim("expression") =
+			c["padding_b"] + c["expression_b"] +
+			c["exp"] +
+			c["expression_e"] + c["padding_e"];
+		c.prim("exp") = c["exp1"];
 
-		c["exp_id"] = c.ref("whitespace") + c.ref("identifier") + c.ref("whitespace");
+		c.prim("exp_id") = c["whitespace"] + c["identifier"] + c["whitespace"];
 
-		c["exp1"] = c.ref("exp_id") + c.cls(c.ref("exp_member") | c.ref("exp_call"));
-		c["exp_member"] = "."_cfg + c.ref("exp_id");
-		c["exp_call"] = "("_cfg + c.opt(c.ref("exp") + c.cls(","_cfg + c.ref("exp"))) + ")"_cfg;
+		c.prim("exp1") = c["exp_id"] + c.cls(c["exp_member"] | c["exp_call"]);
+		c.prim("exp_member") = "."_cfg + c["exp_id"];
+		c.prim("exp_call") = "("_cfg + c.opt(c["exp"] + c.cls(","_cfg + c["exp"])) + ")"_cfg;
 
-		c["statement_b"] = "{%"_cfg + c.opt("-"_cfg | "+"_cfg);
-		c["statement_e"] = c.opt("-"_cfg | "+"_cfg) + "%}"_cfg;
+		c.prim("statement_b") = "{%"_cfg + c.opt("-"_cfg | "+"_cfg);
+		c.prim("statement_e") = c.opt("-"_cfg | "+"_cfg) + "%}"_cfg;
 
-		c["sfrag_else"] =
-			c.ref("padding_b") + c.ref("statement_b") +
-			c.ref("whitespace") + "else"_cfg + c.ref("whitespace") +
-			c.ref("statement_e") + c.ref("padding_nl");
+		c.prim("sfrag_else") =
+			c["padding_b"] + c["statement_b"] +
+			c["whitespace"] + "else"_cfg + c["whitespace"] +
+			c["statement_e"] + c["padding_nl"];
 
-		c["sfrag_if"] =
-			c.ref("padding_b") + c.ref("statement_b") +
-			c.ref("whitespace") + "if"_cfg + c.ref("whitespace") + c.ref("exp") + c.ref("whitespace") +
-			c.ref("statement_e") + c.ref("padding_nl");
-		c["sfrag_elif"] =
-			c.ref("padding_b") + c.ref("statement_b") +
-			c.ref("whitespace") + "elif"_cfg + c.ref("whitespace") + c.ref("exp") + c.ref("whitespace") +
-			c.ref("statement_e") + c.ref("padding_nl");
-		c["sfrag_endif"] =
-			c.ref("padding_b") + c.ref("statement_b") +
-			c.ref("whitespace") + "endif"_cfg + c.ref("whitespace") +
-			c.ref("statement_e") + c.ref("padding_nl");
-		c["sif_start_chain"] = c.ref("sfrag_if") + c.ref("lines");
-		c["sif_elif_chain"] = c.ref("sfrag_elif") + c.ref("lines");
-		c["sif_else_chain"] = c.ref("sfrag_else") + c.ref("lines");
-		c["sif"] =
-			c.ref("sif_start_chain") +
-			c.cls(c.ref("sif_elif_chain")) +
-			c.opt(c.ref("sif_else_chain")) +
-			c.ref("sfrag_endif");
+		c.prim("sfrag_if") =
+			c["padding_b"] + c["statement_b"] +
+			c["whitespace"] + "if"_cfg + c["whitespace"] + c["exp"] + c["whitespace"] +
+			c["statement_e"] + c["padding_nl"];
+		c.prim("sfrag_elif") =
+			c["padding_b"] + c["statement_b"] +
+			c["whitespace"] + "elif"_cfg + c["whitespace"] + c["exp"] + c["whitespace"] +
+			c["statement_e"] + c["padding_nl"];
+		c.temp("sfrag_endif") =
+			c["padding_b"] + c["statement_b"] +
+			c["whitespace"] + "endif"_cfg + c["whitespace"] +
+			c["statement_e"] + c["padding_nl"];
+		c.prim("sif_start_chain") = c["sfrag_if"] + c["lines"];
+		c.prim("sif_elif_chain") = c["sfrag_elif"] + c["lines"];
+		c.prim("sif_else_chain") = c["sfrag_else"] + c["lines"];
+		c.prim("sif") =
+			c["sif_start_chain"] +
+			c.cls(c["sif_elif_chain"]) +
+			c.opt(c["sif_else_chain"]) +
+			c["sfrag_endif"];
 
-		c["sfrag_for"] =
-			c.ref("padding_b") + c.ref("statement_b") +
-			c.ref("padding") + "for"_cfg + c.ref("exp_id") + "in"_cfg + c.ref("exp") +
-			c.ref("statement_e") + c.ref("padding_nl");
-		c["sfrag_endfor"] =
-			c.ref("padding_b") + c.ref("statement_b") +
-			c.ref("whitespace") + "endfor"_cfg +  c.ref("whitespace") +
-			c.ref("statement_e") + c.ref("padding_nl");
-		c["sfor"] = c.ref("sfrag_for") + c.ref("lines") + c.ref("sfrag_endfor");
+		c.prim("sfrag_for") =
+			c["padding_b"] + c["statement_b"] +
+			c["padding"] + "for"_cfg + c["exp_id"] + "in"_cfg + c["exp"] +
+			c["statement_e"] + c["padding_nl"];
+		c.temp("sfrag_endfor") =
+			c["padding_b"] + c["statement_b"] +
+			c["whitespace"] + "endfor"_cfg +  c["whitespace"] +
+			c["statement_e"] + c["padding_nl"];
+		c.prim("sfor") = c["sfrag_for"] + c["lines"] + c["sfrag_endfor"];
 
-		c["statement"] = c.ref("sfor") | c.ref("sif");
+		c.prim("statement") = c["sfor"] | c["sif"];
 
 		TRY(c.prep());
-
-		result._prims = {
-			"whitespace",
-			"padding",
-			"identifier",
-			"padding_b",
-			"padding_e",
-			"padding_nl",
-			"raw",
-			"line",
-			"lines",
-			"file",
-			"comment_b",
-			"comment_e",
-			"comment",
-			"expression_b",
-			"expression_e",
-			"expression",
-			"exp",
-			"exp_id",
-			"exp1",
-			"exp_member",
-			"exp_call",
-			"statement_b",
-			"statement_e",
-			"sfrag_if",
-			"sfrag_elif",
-			"sfrag_else",
-			"sif_start_chain",
-			"sif_elif_chain",
-			"sif_else_chain",
-			"sif",
-			"sfrag_for",
-			"sfor",
-			"statement",
-		};
 
 		return result;
 	}
@@ -154,7 +118,7 @@ namespace cg {
 		try {
 			auto parser = SParser(_ctx);
 
-			auto node = parser.parse(str, "file")->compressed(_prims).value();
+			auto node = parser.parse(str, "file")->compressed().value();
 
 			std::ofstream file("gen/templgen.gv");
 			node.debug_dot(file);

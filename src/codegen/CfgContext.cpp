@@ -1,42 +1,43 @@
 #include "CfgContext.hpp"
+#include "util/log.hpp"
 
 #include <sstream>
 
 namespace cg {
-	CfgNode CfgContext::lit(std::string const &str) {
+	CfgNode CfgContext::lit(std::string const &str) const {
 		return CfgNode::literal(str);
 	}
 
-	CfgNode CfgContext::ref(std::string const &name) {
+	CfgNode CfgContext::ref(std::string const &name) const {
 		if (_cfg_map.count(name)) {
-			return CfgNode::ref(_cfg_map[name]);
+			return CfgNode::ref(_cfg_map.at(name));
 		} else {
 			return CfgNode::ref(name);
 		}
 	}
 
-	CfgNode CfgContext::seq(CfgNode &&lhs, CfgNode &&rhs) {
+	CfgNode CfgContext::seq(CfgNode &&lhs, CfgNode &&rhs) const {
 		return CfgNode::seq(std::move(lhs), std::move(rhs));
 	}
 
-	CfgNode CfgContext::alt(CfgNode &&lhs, CfgNode &&rhs) {
+	CfgNode CfgContext::alt(CfgNode &&lhs, CfgNode &&rhs) const {
 		return CfgNode::alt(std::move(lhs), std::move(rhs));
 	}
 
-	CfgNode CfgContext::cls(CfgNode &&c) {
+	CfgNode CfgContext::cls(CfgNode &&c) const {
 		return CfgNode::cls(std::move(c));
 	}
 
-	CfgNode CfgContext::opt(CfgNode &&c) {
+	CfgNode CfgContext::opt(CfgNode &&c) const {
 		return CfgNode::opt(std::move(c));
 	}
 
-	CfgNode CfgContext::neg(CfgNode &&c) {
+	CfgNode CfgContext::neg(CfgNode &&c) const {
 		return CfgNode::neg(std::move(c));
 	}
 
 	CfgNode CfgContext::dup(std::string const &name) const {
-		return get(name).dup();
+		return _cfgs[_cfg_map.at(name)].dup();
 	}
 
 	util::Result<void, KError> _update_refs(std::map<std::string, uint32_t> &map, CfgNode &node) {
@@ -77,8 +78,14 @@ namespace cg {
 		return _cfgs.contains(id);
 	}
 
-	CfgNode &CfgContext::get(std::string const &name) {
+	CfgNode &CfgContext::prim(std::string const &name) {
+		_prim_names.push_back(name);
+		return temp(name);
+	}
+
+	CfgNode &CfgContext::temp(std::string const &name) {
 		if (_cfg_map.count(name)) {
+			log_warning() << "Trying to create CfgNode which already exists" << std::endl;
 			auto id = _cfg_map[name];
 			return _cfgs[id];
 		} else {

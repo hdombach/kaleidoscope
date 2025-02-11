@@ -11,7 +11,7 @@ namespace cg {
 		auto c = CfgContext();
 		auto parser = SParser(c);
 
-		c["hello"] = "Hello"_cfg;
+		c.prim("hello") = "Hello"_cfg;
 
 		EXPECT(c.prep());
 
@@ -23,11 +23,11 @@ namespace cg {
 		auto c = CfgContext();
 		auto parser = SParser(c);
 
-		c["digit"] =
+		c.prim("digit") =
 			"0"_cfg | "1"_cfg | "2"_cfg | "3"_cfg | "4"_cfg |
 			"5"_cfg | "6"_cfg | "7"_cfg | "8"_cfg | "9"_cfg;
-		c["integer"] = c.cls(c.ref("digit"));
-		c["decimal"] = c.ref("integer") + "."_cfg + c.ref("integer");
+		c.prim("integer") = c.cls(c.ref("digit"));
+		c.prim("decimal") = c.ref("integer") + "."_cfg + c.ref("integer");
 
 		EXPECT(c.prep());
 
@@ -52,16 +52,16 @@ namespace cg {
 		auto c = CfgContext();
 		auto parser = SParser(c);
 
-		c["digit"] =
+		c.prim("digit") =
 			"0"_cfg | "1"_cfg | "2"_cfg | "3"_cfg | "4"_cfg |
 			"5"_cfg | "6"_cfg | "7"_cfg | "8"_cfg | "9"_cfg;
-		c["integer"] = c.ref("digit") + c.cls(c.ref("digit"));
-		c["decimal"] = c.ref("integer") + c.opt("."_cfg + c.ref("integer"));
-		c["exp_sing"] = c.ref("decimal");
-		c["exp_inc_dec"] = c.cls("+"_cfg | "-"_cfg | "!"_cfg) + c.ref("exp_sing");
-		c["exp_mult_div"] = c.ref("exp_inc_dec") + c.cls(("*"_cfg | "/"_cfg | "%"_cfg) + c.ref("exp_inc_dec"));
-		c["exp_add_sub"] = c.ref("exp_mult_div") + c.cls(("+"_cfg | "-"_cfg) + c.ref("exp_mult_div"));
-		c["exp"] = c.ref("exp_add_sub");
+		c.prim("integer") = c.ref("digit") + c.cls(c.ref("digit"));
+		c.prim("decimal") = c.ref("integer") + c.opt("."_cfg + c.ref("integer"));
+		c.prim("exp_sing") = c.ref("decimal");
+		c.prim("exp_inc_dec") = c.cls("+"_cfg | "-"_cfg | "!"_cfg) + c.ref("exp_sing");
+		c.prim("exp_mult_div") = c.ref("exp_inc_dec") + c.cls(("*"_cfg | "/"_cfg | "%"_cfg) + c.ref("exp_inc_dec"));
+		c.prim("exp_add_sub") = c.ref("exp_mult_div") + c.cls(("+"_cfg | "-"_cfg) + c.ref("exp_mult_div"));
+		c.prim("exp") = c.ref("exp_add_sub");
 
 		EXPECT(c.prep());
 
@@ -79,10 +79,10 @@ namespace cg {
 		auto c = CfgContext();
 		auto parser = SParser(c);
 
-		c["not_a"] = c.cls(!"a"_cfg);
-		c["consonants"] = c.cls(!("a"_cfg | "e"_cfg | "i"_cfg | "o"_cfg | "u"_cfg | "y"_cfg));
-		c["whitespace"] = c.cls(" "_cfg | "\t"_cfg | "\n"_cfg);
-		c["mixed"] = c.cls(!("if"_cfg + c.ref("whitespace") + ("true"_cfg | "false"_cfg)));
+		c.prim("not_a") = c.cls(!"a"_cfg);
+		c.prim("consonants") = c.cls(!("a"_cfg | "e"_cfg | "i"_cfg | "o"_cfg | "u"_cfg | "y"_cfg));
+		c.prim("whitespace") = c.cls(" "_cfg | "\t"_cfg | "\n"_cfg);
+		c.prim("mixed") = c.cls(!("if"_cfg + c.ref("whitespace") + ("true"_cfg | "false"_cfg)));
 
 		EXPECT(c.prep());
 
@@ -99,51 +99,43 @@ namespace cg {
 		auto c = CfgContext();
 		auto parser = SParser(c);
 
-		c["whitespace"] = c.cls(" "_cfg | "\t"_cfg | "\n"_cfg);
-		c["digit"] =
+		c.prim("whitespace") = c.cls(" "_cfg | "\t"_cfg | "\n"_cfg);
+		c.temp("digit") =
 			"0"_cfg | "1"_cfg | "2"_cfg | "3"_cfg | "4"_cfg |
 			"5"_cfg | "6"_cfg | "7"_cfg | "8"_cfg | "9"_cfg;
-		c["integer"] = c.ref("digit") + c.cls(c.ref("digit"));
-		c["decimal"] = c.ref("integer") + c.opt("."_cfg + c.ref("integer"));
-		c["sing_exp"] = c.ref("whitespace") + c.ref("decimal");
-		c["unary_exp"] = c.ref("sing_exp") | (c.opt(c.ref("whitespace") + ("+"_cfg | "-"_cfg | "!"_cfg)) + c.ref("unary_exp"));
-		c["mult_div_exp"] = c.ref("unary_exp") + c.opt(c.ref("whitespace") + ("*"_cfg | "/"_cfg | "%"_cfg) + c.ref("mult_div_exp"));
-		c["add_sub_exp"] = c.ref("mult_div_exp") + c.opt(c.ref("whitespace") + ("+"_cfg | "-"_cfg) + c.ref("add_sub_exp"));
-		c["exp"] = c.ref("add_sub_exp");
+		c.temp("integer") = c.ref("digit") + c.cls(c.ref("digit"));
+		c.temp("decimal") = c.ref("integer") + c.opt("."_cfg + c.ref("integer"));
+		c.prim("sing_exp") = c.ref("whitespace") + c.ref("decimal");
+		c.prim("unary_exp") = c.ref("sing_exp") | (c.opt(c.ref("whitespace") + ("+"_cfg | "-"_cfg | "!"_cfg)) + c.ref("unary_exp"));
+		c.prim("mult_div_exp") = c.ref("unary_exp") + c.opt(c.ref("whitespace") + ("*"_cfg | "/"_cfg | "%"_cfg) + c.ref("mult_div_exp"));
+		c.prim("add_sub_exp") = c.ref("mult_div_exp") + c.opt(c.ref("whitespace") + ("+"_cfg | "-"_cfg) + c.ref("add_sub_exp"));
+		c.prim("exp") = c.ref("add_sub_exp");
 
 		EXPECT(c.prep());
 
-		auto prim_names = std::vector<std::string>{
-			"whitespace",
-			"sing_exp",
-			"unary_exp",
-			"mult_div_exp",
-			"add_sub_exp"
-		};
-
 		EXPECT_EQ(
-			parser.parse("1", "exp")->compressed(prim_names)->pre_order_str(),
+			parser.parse("1", "exp")->compressed()->pre_order_str(),
 			"exp add_sub_exp mult_div_exp unary_exp sing_exp "
 		);
 
 		EXPECT_EQ(
-			parser.parse("501.76", "exp")->compressed(prim_names)->pre_order_str(),
+			parser.parse("501.76", "exp")->compressed()->pre_order_str(),
 			"exp add_sub_exp mult_div_exp unary_exp sing_exp "
 		);
 
 		EXPECT_EQ(
-			parser.parse("41.2+14", "exp")->compressed(prim_names)->pre_order_str(),
+			parser.parse("41.2+14", "exp")->compressed()->pre_order_str(),
 			"exp add_sub_exp "
 			"mult_div_exp unary_exp sing_exp "
 			"add_sub_exp mult_div_exp unary_exp sing_exp "
 		);
 
 		std::ofstream file("gen/ast_node_parse_math.gv");
-		parser.parse("4-3*82  /3+ 2.3", "exp")->compressed(prim_names)->debug_dot(file);
+		parser.parse("4-3*82  /3+ 2.3", "exp")->compressed()->debug_dot(file);
 		file.close();
 
 		EXPECT_EQ(
-			parser.parse("4-3*82  /3+ 2.3", "exp")->compressed(prim_names)->pre_order_str(),
+			parser.parse("4-3*82  /3+ 2.3", "exp")->compressed()->pre_order_str(),
 			"exp add_sub_exp "
 				"mult_div_exp unary_exp sing_exp "
 				"add_sub_exp "
@@ -157,7 +149,7 @@ namespace cg {
 		);
 
 		EXPECT_EQ(
-			parser.parse("5+-2*-+-12", "exp") ->compressed(prim_names) ->pre_order_str(),
+			parser.parse("5+-2*-+-12", "exp") ->compressed() ->pre_order_str(),
 			"exp add_sub_exp "
 				"mult_div_exp unary_exp sing_exp "
 				"add_sub_exp mult_div_exp "
@@ -170,46 +162,33 @@ namespace cg {
 		auto c = CfgContext();
 		auto parser = SParser(c);
 
-		c["whitespace"] = c.cls(" "_cfg | "\t"_cfg | "\n"_cfg);
+		c.prim("whitespace") = c.cls(" "_cfg | "\t"_cfg | "\n"_cfg);
 
-		c["beg_exp"] = "{{"_cfg;
-		c["end_exp"] = "}}"_cfg;
-		c["beg_cmt"] = "{#"_cfg;
-		c["end_cmt"] = "#}"_cfg;
+		c.prim("beg_exp") = "{{"_cfg;
+		c.prim("end_exp") = "}}"_cfg;
+		c.prim("beg_cmt") = "{#"_cfg;
+		c.prim("end_cmt") = "#}"_cfg;
 
-		c["digit"] =
+		c.temp("digit") =
 			"0"_cfg | "1"_cfg | "2"_cfg | "3"_cfg | "4"_cfg |
 			"5"_cfg | "6"_cfg | "7"_cfg | "8"_cfg | "9"_cfg;
-		c["integer"] = c.ref("digit") + c.cls(c.ref("digit"));
+		c.prim("integer") = c.ref("digit") + c.cls(c.ref("digit"));
 
-		c["comment"] = c.ref("beg_cmt") + c.cls(!c.ref("end_cmt")) + c.ref("end_cmt");
-		c["exp"] = c.ref("beg_exp") + c.ref("whitespace") + c.ref("integer") + c.ref("whitespace") + c.ref("end_exp");
+		c.prim("comment") = c.ref("beg_cmt") + c.cls(!c.ref("end_cmt")) + c.ref("end_cmt");
+		c.prim("exp") = c.ref("beg_exp") + c.ref("whitespace") + c.ref("integer") + c.ref("whitespace") + c.ref("end_exp");
 
-		c["raw"] = c.cls(!(c.ref("beg_exp") | c.ref("beg_cmt") | "\n"_cfg));
+		c.prim("raw") = c.cls(!(c.ref("beg_exp") | c.ref("beg_cmt") | "\n"_cfg));
 
-		c["line"] = c.cls(c.ref("comment") | c.ref("exp") | c.ref("raw")) + "\n"_cfg;
+		c.prim("line") = c.cls(c.ref("comment") | c.ref("exp") | c.ref("raw")) + "\n"_cfg;
 
-		c["file"] = c.cls(c.ref("line"));
+		c.prim("file") = c.cls(c.ref("line"));
 
 		c.prep();
-
-		auto prims = std::vector<std::string>{
-			"whitespace",
-			"beg_exp",
-			"end_exp",
-			"beg_cmt",
-			"end_cmt",
-			"comment",
-			"exp",
-			"integer",
-			"raw",
-			"line"
-		};
 
 		{
 			auto src = "Hello world\n";
 			EXPECT_EQ(
-				parser.parse(src, "file")->compressed(prims)->pre_order_str(),
+				parser.parse(src, "file")->compressed()->pre_order_str(),
 				"file line raw "
 			);
 		}
@@ -222,7 +201,7 @@ namespace cg {
 				"#}\n";
 
 			EXPECT_EQ(
-				parser .parse(src, "file")->compressed(prims)->pre_order_str(),
+				parser .parse(src, "file")->compressed()->pre_order_str(),
 				"file "
 					"line raw comment beg_cmt end_cmt raw "
 					"line raw comment beg_cmt end_cmt "
@@ -235,7 +214,7 @@ namespace cg {
 				"}}{# fdf #}\n";
 
 			std::ofstream file("gen/ast_node_parse_neg.gv");
-			parser.parse(src, "file")->compressed(prims)->debug_dot(file);
+			parser.parse(src, "file")->compressed()->debug_dot(file);
 		}
 
 	}
