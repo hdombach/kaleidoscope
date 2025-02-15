@@ -335,6 +335,22 @@ namespace cg {
 			gen->codegen(src, args),
 			KError::Type::CODEGEN
 		);
+	}
 
+	TEST(templ_gen, int_constant) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto src = "The number is {{5}}!";
+		EXPECT_EQ(
+			gen->codegen(src, {}).value(),
+			"The number is 5!"
+		);
+
+		src = "Another number is {{ 49102 }}!";
+		EXPECT_EQ(
+			gen->codegen(src, {}).value(),
+			"Another number is 49102!"
+		);
 	}
 }

@@ -58,9 +58,11 @@ namespace cg {
 			c["exp"] +
 			c["expression_e"] + c["padding_e"];
 
+		c.prim("exp_sing") = c["whitespace"] + (c["exp_id"] | c["exp_int"]) + c["whitespace"];
 		c.prim("exp_id") = c["whitespace"] + c["identifier"] + c["whitespace"];
+		c.prim("exp_int") = c["digit"] + c.cls(c["digit"]);
 
-		c.prim("exp1") = c["exp_id"] + c.cls(c["exp_member"] | c["exp_call"]);
+		c.prim("exp1") = c["exp_sing"] + c.cls(c["exp_member"] | c["exp_call"]);
 		c.prim("exp_member") = "."_cfg + c["exp_id"];
 		c.prim("exp_call") = "("_cfg + c.opt(c["exp"] + c.cls(","_cfg + c["exp"])) + ")"_cfg;
 
@@ -434,8 +436,8 @@ namespace cg {
 		_args = &args;
 		if (node.cfg_name() == "exp") {
 			return _eval(node.children()[0], args);
-		} else if (node.cfg_name() == "exp_id") {
-			return _eval_exp_id(node, args);
+		} else if (node.cfg_name() == "exp_sing") {
+			return _eval_exp_sing(node, args);
 		} else if (node.cfg_name() == "exp1") {
 			return _eval_exp1(node, args);
 		} else if (node.cfg_name() == "exp2") {
@@ -466,6 +468,25 @@ namespace cg {
 		}
 	}
 
+	util::Result<TemplObj, KError> TemplGen::_eval_exp_sing(
+		AstNode const &node,
+		TemplDict const &args
+	) const {
+		CG_ASSERT(node.cfg_name() == "exp_sing", "");
+		for (auto &child : node.children()) {
+			auto name = child.cfg_name();
+			if (name == "whitespace") {
+				continue;
+			} else if (name == "exp_id") {
+				return _eval_exp_id(child, args);
+			} else if (name == "exp_int") {
+				return _eval_exp_int(child, args);
+			} else {
+				return KError::codegen("Unknown node passed to _eval_exp_sing: " + child.cfg_name());
+			}
+		}
+		return KError::codegen("exp_sing is an empty node");
+	}
 	util::Result<TemplObj, KError> TemplGen::_eval_exp_id(
 		AstNode const &node,
 		TemplDict const &args
@@ -478,13 +499,26 @@ namespace cg {
 			return args.at(name);
 		} catch_kerror;
 	}
+	util::Result<TemplObj, KError> TemplGen::_eval_exp_int(
+		AstNode const &node,
+		TemplDict const &args
+	) const {
+		try {
+			CG_ASSERT(node.cfg_name() == "exp_int", "exp_ing must be passed to _eval_exp_int");
+			auto value = TemplInt(0);
+			for (auto c : node.consumed()) {
+				value = value * 10 + c - '0';
+			}
+			return {value};
+		} catch_kerror;
+	}
 
 	util::Result<TemplObj, KError> TemplGen::_eval_exp1(
 		AstNode const &node,
 		TemplDict const &args
 	) const {
 		try {
-			auto exp = node.child_with_cfg("exp_id").value();
+			auto exp = node.child_with_cfg("exp_sing").value();
 			auto res = _eval(exp, args);
 			CG_ASSERT(node.children().size() > 0, "Node must have at least one child");
 
