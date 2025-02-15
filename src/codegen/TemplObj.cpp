@@ -130,6 +130,18 @@ namespace cg {
 		}
 	}
 
+	const char *TemplObj::type_str() const {
+		return std::vector<const char *>{
+			"String",
+			"List",
+			"Dict",
+			"Boolean",
+			"Integer",
+			"Func",
+			"None"
+		}[static_cast<size_t>(type())];
+	}
+
 	util::Result<TemplList, KError> TemplObj::list() const {
 		if (type() == Type::List) {
 			return std::get<TemplList>(_v);

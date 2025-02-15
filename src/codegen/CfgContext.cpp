@@ -85,7 +85,7 @@ namespace cg {
 
 	CfgNode &CfgContext::temp(std::string const &name) {
 		if (_cfg_map.count(name)) {
-			log_warning() << "Trying to create CfgNode which already exists" << std::endl;
+			log_warning() << "Trying to create CfgNode " << name << " which already exists" << std::endl;
 			auto id = _cfg_map[name];
 			return _cfgs[id];
 		} else {

@@ -77,6 +77,8 @@ namespace cg {
 
 			Type type() const { return Type(_v.index()); }
 
+			const char *type_str() const;
+
 			util::Result<TemplList, KError> list() const;
 
 			util::Result<TemplBool, KError> boolean() const;

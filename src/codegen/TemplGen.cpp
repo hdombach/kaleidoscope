@@ -57,13 +57,94 @@ namespace cg {
 			c["padding_b"] + c["expression_b"] +
 			c["exp"] +
 			c["expression_e"] + c["padding_e"];
-		c.prim("exp") = c["exp1"];
 
 		c.prim("exp_id") = c["whitespace"] + c["identifier"] + c["whitespace"];
 
 		c.prim("exp1") = c["exp_id"] + c.cls(c["exp_member"] | c["exp_call"]);
 		c.prim("exp_member") = "."_cfg + c["exp_id"];
 		c.prim("exp_call") = "("_cfg + c.opt(c["exp"] + c.cls(","_cfg + c["exp"])) + ")"_cfg;
+
+		c.prim("exp2") = c["whitespace"] + (
+			c["exp_plus"] |
+			c["exp_min"] |
+			c["exp_log_not"] |
+			c["exp_bit_not"] |
+			c["exp1"]
+		) + c["whitespace"];
+
+		c.prim("exp_plus") = "+"_cfg + c["exp2"];
+		c.prim("exp_min") = "-"_cfg + c["exp2"];
+		c.prim("exp_log_not") = "!"_cfg + c["exp2"];
+		c.prim("exp_bit_not") = "~"_cfg + c["exp2"];
+
+		c.prim("exp3") = c["whitespace"] + c["exp2"] + c.cls(
+			c["exp_mult"] |
+			c["exp_div"] |
+			c["exp_mod"]
+		) + c["whitespace"];
+		c.prim("exp_mult") = "*"_cfg + c["exp2"];
+		c.prim("exp_div")  = "/"_cfg + c["exp2"];
+		c.prim("exp_mod")  = "%"_cfg + c["exp2"];
+
+
+		c.prim("exp4") = c["whitespace"] + c["exp3"] + c.cls(
+			c["exp_add"] |
+			c["exp_min"]
+		) + c["whitespace"];
+		c.prim("exp_add") = "+"_cfg + c["exp3"];
+		c.prim("exp_sub") = "-"_cfg + c["exp3"];
+
+		c.prim("exp5") = c["whitespace"] + c["exp4"] + c.cls(
+			c["exp_bit_shift_l"] |
+			c["exp_bit_shift_r"]
+		) + c["whitespace"];
+		c.prim("exp_bit_shift_l") = "<<"_cfg + c["exp4"];
+		c.prim("exp_bit_shift_r") = ">>"_cfg + c["exp4"];
+
+		c.prim("exp6") = c["whitespace"] + c["exp5"] + c.cls(
+			c["exp_comp_g"] |
+			c["exp_comp_ge"] |
+			c["exp_com_l"] |
+			c["exp_comp_le"]
+		) + c["whitespace"];
+		c.prim("exp_comp_g") = ">"_cfg + c["exp5"];
+		c.prim("exp_comp_ge") = ">="_cfg + c["exp5"];
+		c.prim("exp_comp_l") = "<"_cfg + c["exp5"];
+		c.prim("exp_comp_le") = "<="_cfg + c["exp5"];
+
+		c.prim("exp7") = c["whitespace"] + c["exp6"] + c.cls(
+			c["exp_comp_eq"] |
+			c["exp_comp_neq"]
+		) + c["whitespace"];
+		c.prim("exp_comp_eq") = "=="_cfg + c["exp6"];
+		c.prim("exp_comp_neq") = "!="_cfg + c["exp6"];
+
+		c.prim("exp8") = c["whitespace"] + c["exp7"] + c.cls(
+			c["exp_bitwise_and"]
+		) + c["whitespace"];
+		c.prim("exp_bitwise_and") = "&"_cfg + c["exp7"];
+
+		c.prim("exp9") = c["whitespace"] + c["exp8"] + c.cls(
+			c["exp_bitwise_xor"]
+		) + c["whitespace"];
+		c.prim("exp_bitwise_xor") = "^"_cfg + c["exp8"];
+
+		c.prim("exp10") = c["whitespace"] + c["exp9"] + c.cls(
+			c["exp_bitwise_or"]
+		) + c["whitespace"];
+		c.prim("exp_bitwise_or") = "|"_cfg + c["exp9"];
+
+		c.prim("exp11") = c["whitespace"] + c["exp10"] + c.cls(
+			c["exp_log_and"]
+		) + c["whitespace"];
+		c.prim("exp_log_and") = "&&"_cfg + c["exp10"];
+
+		c.prim("exp12") = c["whitespace"] + c["exp11"] + c.cls(
+			c["exp_log_or"]
+		) + c["whitespace"];
+		c.prim("exp_log_or") = "||"_cfg + c["exp11"];
+
+		c.prim("exp") = c["exp12"];
 
 		c.prim("statement_b") = "{%"_cfg + c.opt("-"_cfg | "+"_cfg);
 		c.prim("statement_e") = c.opt("-"_cfg | "+"_cfg) + "%}"_cfg;
@@ -350,12 +431,36 @@ namespace cg {
 		AstNode const &node,
 		TemplDict const &args
 	) const {
+		_args = &args;
 		if (node.cfg_name() == "exp") {
 			return _eval(node.children()[0], args);
 		} else if (node.cfg_name() == "exp_id") {
 			return _eval_exp_id(node, args);
 		} else if (node.cfg_name() == "exp1") {
 			return _eval_exp1(node, args);
+		} else if (node.cfg_name() == "exp2") {
+			return _eval_exp2(node);
+		} else if (node.cfg_name() == "exp3") {
+			return _eval_exp3(node);
+		} else if (node.cfg_name() == "exp4") {
+			return _eval_exp4(node);
+		} else if (node.cfg_name() == "exp5") {
+			return _eval_exp5(node);
+		} else if (node.cfg_name() == "exp6") {
+			return _eval_exp6(node);
+		} else if (node.cfg_name() == "exp7") {
+			return _eval_exp7(node);
+		} else if (node.cfg_name() == "exp8") {
+			return _eval_exp8(node);
+		} else if (node.cfg_name() == "exp9") {
+			return _eval_exp9(node);
+		} else if (node.cfg_name() == "exp10") {
+			return _eval_exp10(node);
+		} else if (node.cfg_name() == "exp11") {
+			return _eval_exp11(node);
+		} else if (node.cfg_name() == "exp12") {
+			_args = &args;
+			return _eval_exp12(node);
 		} else {
 			return KError::codegen("Unimplimented AstNode type: " + node.cfg_name());
 		}
@@ -413,13 +518,628 @@ namespace cg {
 		AstNode const &node,
 		TemplDict const &args
 	) const {
-		auto call_args = TemplList();
-		for (auto const &child : node.children()) {
-			CG_ASSERT(child.cfg_name() == "exp", "Function call list must have exp nodes");
-			call_args.push_back(_eval(child, args).value());
-		}
-		return lhs.func().value()(call_args);
+		try {
+			auto call_args = TemplList();
+			for (auto const &child : node.children()) {
+				CG_ASSERT(child.cfg_name() == "exp", "Function call list must have exp nodes");
+				call_args.push_back(_eval(child, args).value());
+			}
+			return lhs.func().value()(call_args);
+		} catch_kerror;
 	}
+
+	TemplGen::EvalRes TemplGen::_eval_exp2(AstNode const &node) const {
+		for (auto &child : node.children()) {
+			auto name = child.cfg_name();
+			if (name == "whitespace") {
+				continue;
+			} else if (name == "exp_plus") {
+				return _eval_plus(child);
+			} else if (name == "exp_min") {
+				return _eval_min(child);
+			} else if (name == "exp_log_not") {
+				return _eval_log_not(child);
+			} else if (name == "exp_bit_not") {
+				return _eval_bit_not(child);
+			} else if (name == "exp1") {
+				return _eval(child, *_args);
+			} else {
+				return KError::codegen("Unknown child in _eval_exp2: " + name);
+			}
+		}
+		return KError::codegen("Empty node passed to _eval_exp2");
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_plus(AstNode const &node) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto i = e->integer()) {
+				return {+i.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do unary operator + on expression of type ",
+					e->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_min(AstNode const &node) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto i = e->integer()) {
+				return {-i.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do unary operator - on expression of type ",
+					e->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_log_not(AstNode const &node) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto i = e->integer()) {
+				return {!i.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do unary operator ! on expression of type ",
+					e->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_bit_not(AstNode const &node) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto i = e->integer()) {
+				return {~i.value()};
+			} else {
+				return KError::codegen(util::f("Cannot do unary operator ~ on expression of type ", e->type_str()));
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_exp3(AstNode const &node) const {
+		try {
+			auto exp = node.child_with_cfg("exp2").value();
+			auto res = _eval(exp, *_args);
+
+			for (auto &child : node.children()) {
+				auto name = child.cfg_name();
+				if (name == "whitespace") {
+					continue;
+				} else if (name == "exp2") {
+					continue;
+				} else if (name == "exp_mult") {
+					res = _eval_mult(res.value(), child);
+				} else if (name == "exp_div") {
+					res = _eval_div(res.value(), child);
+				} else if (name == "exp_mod") {
+					res = _eval_mod(res.value(), child);
+				} else {
+					return KError::codegen("Unknown child in _eval_exp3: " + name);
+				}
+			}
+			return res;
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_mult(
+		TemplObj const &lhs,
+		AstNode const &node
+	) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto i = e->integer()) {
+				return {lhs.integer().value() * i.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do binary operation * on expression of type ",
+					e->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_div(
+		TemplObj const &lhs,
+		AstNode const &node
+	) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto i = e->integer()) {
+				return {lhs.integer().value() / i.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do binary operation / on expression of type ",
+					e->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_mod(
+		TemplObj const &lhs,
+		AstNode const &node
+	) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto i = e->integer()) {
+				return {lhs.integer().value() % i.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do binary operation \% on expression of type ",
+					e->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_exp4(AstNode const &node) const {
+		try {
+			auto exp = node.child_with_cfg("exp3").value();
+			auto res = _eval(exp, *_args);
+
+			for (auto &child : node.children()) {
+				auto name = child.cfg_name();
+				if (name == "whitespace") {
+					continue;
+				} else if (name == "exp3") {
+					continue;
+				} else if (name == "exp_add") {
+					res = _eval_add(res.value(), child);
+				} else if (name == "exp_min") {
+					res = _eval_sub(res.value(), child);
+				} else {
+					return KError::codegen("Unknown child in _eval_exp4: " + name);
+				}
+			}
+			return res;
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_add(
+		TemplObj const &lhs,
+		AstNode const &node
+	) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto i = e->integer()) {
+				return {lhs.integer().value() + i.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do binary operation + on expression of type ",
+					e->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_sub(
+		TemplObj const &lhs,
+		AstNode const &node
+	) const {
+		try {
+			auto e =_eval(node, *_args);
+			if (auto i = e->integer()) {
+				return {lhs.integer().value() - i.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do binary operation - on expression of type ",
+					e->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_exp5(AstNode const &node) const {
+		try {
+			auto exp = node.child_with_cfg("exp4").value();
+			auto res = _eval(exp, *_args);
+
+			for (auto &child : node.children()) {
+				auto name = child.cfg_name();
+				if (name == "whitespace") {
+					continue;
+				} else if (name == "exp4") {
+					continue;
+				} else if (name == "exp_bit_shift_l") {
+					res = _eval_bit_shift_l(res.value(), child);
+				} else if (name == "exp_bit_shift_r") {
+					res = _eval_bit_shift_r(res.value(), child);
+				} else {
+					return KError::codegen("Unknown child in _eval_exp5: " + name);
+				}
+			}
+			return res;
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_bit_shift_l(
+		TemplObj const &lhs,
+		AstNode const &node
+	) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto i = e->integer()) {
+				return {lhs.integer().value() << i.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do binary operation << on expression of type ",
+					e->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_bit_shift_r(
+		TemplObj const &lhs,
+		AstNode const &node
+	) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto i = e->integer()) {
+				return {lhs.integer().value() >> i.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do binary operation >> on expression of type ",
+					e->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_exp6(AstNode const &node) const {
+		try {
+			auto exp = node.child_with_cfg("exp5").value();
+			auto res = _eval(exp, *_args);
+
+			for (auto &child : node.children()) {
+				auto name = child.cfg_name();
+				if (name == "whitespace") {
+					continue;
+				} else if (name == "exp5") {
+					continue;
+				} else if (name == "eval_comp_g") {
+					res = _eval_comp_g(res.value(), child);
+				} else if (name == "eval_comp_ge") {
+					res = _eval_comp_ge(res.value(), child);
+				} else if (name == "eval_comp_l") {
+					res = _eval_comp_l(res.value(), child);
+				} else if (name == "eval_comp_le") {
+					res = _eval_comp_le(res.value(), child);
+				} else {
+					return KError::codegen("Unknown child in _eval_exp6: " + name);
+				}
+			}
+			return res;
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_comp_g(
+		TemplObj const &lhs,
+		AstNode const &node
+	) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto i = e->integer()) {
+				return {lhs.integer().value() > i.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do binary operation > on expression of type ",
+					e->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_comp_ge(
+		TemplObj const &lhs,
+		AstNode const &node
+	) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto i = e->integer()) {
+				return {lhs.integer().value() >= i.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do binary operation >= on expression of type ",
+					e->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_comp_l(
+		TemplObj const &lhs,
+		AstNode const &node
+	) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto i = e->integer()) {
+				return {lhs.integer().value() < i.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do binary operation < on expression of type ",
+					e->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_comp_le(
+		TemplObj const &lhs,
+		AstNode const &node
+	) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto i = e->integer()) {
+				return {lhs.integer().value() <= i.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do binary operation <= on expression of type ",
+					e->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_exp7(AstNode const &node) const {
+		try {
+			auto exp = node.child_with_cfg("exp6").value();
+			auto res = _eval(exp, *_args);
+
+			for (auto &child : node.children()) {
+				auto name = child.cfg_name();
+				if (name == "whitespace") {
+					continue;
+				} else if (name == "exp6") {
+					continue;
+				} else if (name == "exp_comp_eq") {
+					res = _eval_comp_eq(res.value(), child);
+				} else if (name == "exp_comp_neq") {
+					res = _eval_comp_neq(res.value(), child);
+				} else {
+					return KError::codegen("Unknown child in _eval_exp7: " + name);
+				}
+			}
+			return res;
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_comp_eq(
+		TemplObj const &lhs,
+		AstNode const &node
+	) const {
+		try {
+			auto e = _eval(node, *_args).value();
+			if (auto i = e.integer()) {
+				return {lhs.integer().value() == i.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do binary operation == on expression of type ",
+					e.type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_comp_neq(
+		TemplObj const &lhs,
+		AstNode const &node
+	) const {
+		try {
+			auto e = _eval(node, *_args).value();
+			if (auto i = e.integer()) {
+				return {lhs.integer().value() != i.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do binary operation == on expression of type ",
+					e.type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_exp8(AstNode const &node) const {
+		try {
+			auto exp = node.child_with_cfg("exp7").value();
+			auto res = _eval(exp, *_args);
+
+			for (auto &child : node.children()) {
+				auto name = child.cfg_name();
+				if (name == "whitespace") {
+					continue;
+				} else if (name == "exp7") {
+					continue;
+				} else if (name == "exp_bitwise_and") {
+					res = _eval_bitwise_and(res.value(), child);
+				} else {
+					return KError::codegen("Unknown child in _eval_exp8: " + name);
+				}
+			}
+			return res;
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_bitwise_and(
+		TemplObj const &lhs,
+		AstNode const &node
+	) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto b = e->boolean()) {
+				return {lhs.boolean().value() & b.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do binary operation & on expression of type: ",
+					e->type_str()
+				));
+
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_exp9(AstNode const &node) const {
+		try {
+			auto exp = node.child_with_cfg("exp8").value();
+			auto res = _eval(exp, *_args);
+
+			for (auto &child : node.children()) {
+				auto name = child.cfg_name();
+				if (name == "whitespace") {
+					continue;
+				} else if (name == "exp8") {
+					continue;
+				} else if (name == "exp_bitwise_xor") {
+					res = _eval_bitwise_and(res.value(), child);
+				} else {
+					return KError::codegen("Unknown child in _eval_exp9: " + name);
+				}
+			}
+			return res;
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_bitwise_xor(
+		TemplObj const &lhs,
+		AstNode const &node
+	) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto b = e->boolean()) {
+				return {lhs.boolean().value() && b.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do binary operation ^ on expression of type: ",
+					e->type_str()
+				));
+
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_exp10(AstNode const &node) const {
+		try {
+			auto exp = node.child_with_cfg("exp9").value();
+			auto res = _eval(exp, *_args);
+
+			for (auto &child : node.children()) {
+				auto name = child.cfg_name();
+				if (name == "whitespace") {
+					continue;
+				} else if (name == "exp9") {
+					continue;
+				} else if (name == "exp_bitwise_or") {
+					res = _eval_bitwise_and(res.value(), child);
+				} else {
+					return KError::codegen("Unknown child in _eval_exp10: " + name);
+				}
+			}
+			return res;
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_bitwise_or(
+		TemplObj const &lhs,
+		AstNode const &node
+	) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto b = e->boolean()) {
+				return {lhs.boolean().value() | b.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do binary operation | on expression of type: ",
+					e->type_str()
+				));
+
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_exp11(AstNode const &node) const {
+		try {
+			auto exp = node.child_with_cfg("exp10").value();
+			auto res = _eval(exp, *_args);
+
+			for (auto &child : node.children()) {
+				auto name = child.cfg_name();
+				if (name == "whitespace") {
+					continue;
+				} else if (name == "exp10") {
+					continue;
+				} else if (name == "exp_log_and") {
+					res = _eval_log_and(res.value(), child);
+				} else {
+					return KError::codegen("Unknown child in _eval_exp11: " + name);
+				}
+			}
+			return res;
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_log_and(
+		TemplObj const &lhs,
+		AstNode const &node
+	) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto b = e->boolean()) {
+				return {lhs.boolean().value() && b.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do binary operation && on expression of type: ",
+					e->type_str()
+				));
+
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_exp12(AstNode const &node) const {
+		try {
+			auto exp = node.child_with_cfg("exp11").value();
+			auto res = _eval(exp, *_args);
+
+			for (auto &child : node.children()) {
+				auto name = child.cfg_name();
+				if (name == "whitespace") {
+					continue;
+				} else if (name == "exp11") {
+					continue;
+				} else if (name == "exp_log_or") {
+					res = _eval_log_or(res.value(), child);
+				} else {
+					return KError::codegen("Unknown child in _eval_exp12: " + name);
+				}
+			}
+			return res;
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_log_or(
+		TemplObj const &lhs,
+		AstNode const &node
+	) const {
+		try {
+			auto e = _eval(node, *_args);
+			if (auto b = e->boolean()) {
+				return {lhs.boolean().value() || b.value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do binary operation || on expression of type: ",
+					e->type_str()
+				));
+
+			}
+		} catch_kerror;
+	}
+
 
 	util::Result<bool, KError> TemplGen::_tag_keep_padding(
 		AstNode const &node,
