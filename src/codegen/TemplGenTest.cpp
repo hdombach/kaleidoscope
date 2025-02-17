@@ -353,4 +353,337 @@ namespace cg {
 			"Another number is 49102!"
 		);
 	}
+
+	TEST(templ_gen, exp2) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto args = TemplObj{
+			{"value", 59},
+			{"zero", 0},
+			{"neg_value", -84},
+			{"true", true},
+			{"false", false}
+		}.dict().value();
+
+		auto src = "Hello {{+value}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Hello 59"
+		);
+
+		src = "Hello2 {{ -value }}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Hello2 -59"
+		);
+
+		src = "zero: {{ -zero }}, raw: {{583}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"zero: 0, raw: 583"
+		);
+
+		// I don't fully know what + does.
+		src = "pos_value: {{ +neg_value }}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"pos_value: -84"
+		);
+
+		src = "bool_value: {{ false }}, {{ true }}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"bool_value: <false>, <true>"
+		);
+
+		src = "bool_value2: {{ !false }}, {{ !true }}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"bool_value2: <true>, <false>"
+		);
+	}
+
+	TEST(templ_gen, exp3) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto args = TemplObj{
+			{"pos_value", 5},
+			{"neg_value", -10}
+		}.dict().value();
+
+		auto src = "4*2 is {{4*2}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"4*2 is 8"
+		);
+
+		src = "-3*9 is {{ - 3 * 9 }}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"-3*9 is -27"
+		);
+
+		src = "5 * -10 is {{ pos_value * neg_value }}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"5 * -10 is -50"
+		);
+
+		src = "5 * 10 is {{ pos_value * -neg_value }}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"5 * 10 is 50"
+		);
+
+		src = "200 / 10 is {{ 200/-neg_value }}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"200 / 10 is 20"
+		);
+
+		src = "7 % 3 is {{7%3}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"7 % 3 is 1"
+		);
+
+		src = "5*10/2 is {{5*-neg_value/2}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"5*10/2 is 25"
+		);
+	}
+
+	TEST(templ_gen, exp4) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto args = TemplObj{
+			{"pos_value", 5},
+			{"neg_value", -10}
+		}.dict().value();
+
+		auto src = "3+12 is {{3+12}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"3+12 is 15"
+		);
+
+		src = "2-5 is {{2-pos_value}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"2-5 is -3"
+		);
+
+		src = "-12 + 2*10 is {{ -12 + 2*10}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"-12 + 2*10 is 8"
+		);
+	}
+
+	TEST(templ_gen, exp6) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto args = TemplObj{
+			{"pos_value", 6},
+			{"neg_value", -8}
+		}.dict().value();
+
+		/* greater than */
+		auto src = "4 > -8 is {{4 > neg_value}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"4 > -8 is <true>"
+		);
+
+		src = "4 > -8 + 12 is {{4 > neg_value + 12}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"4 > -8 + 12 is <false>"
+		);
+
+		src = "4 > 6 is {{4 > pos_value}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"4 > 6 is <false>"
+		);
+
+		/* Greater than or equal */
+		src = "4 >= -8 is {{4 >= neg_value}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"4 >= -8 is <true>"
+		);
+
+		src = "4 >= -8 + 12 is {{4 >= neg_value + 12}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"4 >= -8 + 12 is <true>"
+		);
+
+		src = "4 >= 6 is {{4 >= pos_value}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"4 >= 6 is <false>"
+		);
+
+		/* less than */
+		src = "4 < -8 is {{4 < neg_value}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"4 < -8 is <false>"
+		);
+
+		src = "4 < -8 + 12 is {{4 < neg_value + 12}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"4 < -8 + 12 is <false>"
+		);
+
+		src = "4 < 6 is {{4 < pos_value}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"4 < 6 is <true>"
+		);
+
+		src = "4 <= -8 is {{4 <= neg_value}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"4 <= -8 is <false>"
+		);
+
+		src = "4 <= -8 + 12 is {{4 <= neg_value + 12}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"4 <= -8 + 12 is <true>"
+		);
+
+		src = "4 <= 6 is {{4 <= pos_value}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"4 <= 6 is <true>"
+		);
+	}
+
+	TEST(templ_gen, exp7) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto args = TemplObj{
+			{"pos_value", 6},
+			{"neg_value", -8}
+		}.dict().value();
+
+		auto src = "6 == 6 is {{6 == pos_value}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"6 == 6 is <true>"
+		);
+
+		src = "-8 == 6 is {{neg_value == pos_value}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"-8 == 6 is <false>"
+		);
+		
+		src = "6 == 8 - 2 is {{pos_value == -neg_value-2}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"6 == 8 - 2 is <true>"
+		);
+
+		src = "6 == 8 - 2 is {{pos_value == -neg_value-2}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"6 == 8 - 2 is <true>"
+		);
+
+		src = "6 != 4 is {{pos_value != 4}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"6 != 4 is <true>"
+		);
+
+		src = "6 != -2 + 8 is {{pos_value != -2 - neg_value}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"6 != -2 + 8 is <false>"
+		);
+	}
+
+	TEST(templ_gen, exp11) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto args = TemplObj{
+			{"pos_value", 6},
+			{"neg_value", -8},
+			{"true", true},
+			{"false", false}
+		}.dict().value();
+
+		auto src = "true && true is {{true && true}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"true && true is <true>"
+		);
+
+		src = "true && false is {{true && false}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"true && false is <false>"
+		);
+
+		src = "6 > 0 && -8 + 9 == 1 is {{pos_value > 0 && neg_value+9 == 1}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"6 > 0 && -8 + 9 == 1 is <true>"
+		);
+
+		src = "6 > 0 && -8 + 9 != 1 is {{pos_value > 0 && neg_value+9 != 1}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"6 > 0 && -8 + 9 != 1 is <false>"
+		);
+	}
+
+	TEST(templ_gen, exp12) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto args = TemplObj{
+			{"pos_value", 6},
+			{"neg_value", -8},
+			{"true", true},
+			{"false", false}
+		}.dict().value();
+
+		auto src = "true || false is {{true || false}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"true || false is <true>"
+		);
+
+		src = "false || false is {{false || false}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"false || false is <false>"
+		);
+
+		src = "6 == 0 || true && -8 + 9 == 1 is {{pos_value == 0 || true && neg_value + 9 == 1}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"6 == 0 || true && -8 + 9 == 1 is <true>"
+		);
+
+		src = "6 == 0 || true && -8 + 9 == 1 is {{pos_value == 0 || false && neg_value + 9 == 1}}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"6 == 0 || true && -8 + 9 == 1 is <false>"
+		);
+	}
 }

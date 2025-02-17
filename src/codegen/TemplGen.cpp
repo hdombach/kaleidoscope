@@ -3,6 +3,7 @@
 #include "codegen/TemplObj.hpp"
 #include "util/KError.hpp"
 #include "util/IterAdapter.hpp"
+#include "util/log.hpp"
 
 #include <fstream>
 
@@ -91,7 +92,7 @@ namespace cg {
 
 		c.prim("exp4") = c["whitespace"] + c["exp3"] + c.cls(
 			c["exp_add"] |
-			c["exp_min"]
+			c["exp_sub"]
 		) + c["whitespace"];
 		c.prim("exp_add") = "+"_cfg + c["exp3"];
 		c.prim("exp_sub") = "-"_cfg + c["exp3"];
@@ -106,7 +107,7 @@ namespace cg {
 		c.prim("exp6") = c["whitespace"] + c["exp5"] + c.cls(
 			c["exp_comp_g"] |
 			c["exp_comp_ge"] |
-			c["exp_com_l"] |
+			c["exp_comp_l"] |
 			c["exp_comp_le"]
 		) + c["whitespace"];
 		c.prim("exp_comp_g") = ">"_cfg + c["exp5"];
@@ -586,7 +587,8 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_plus(AstNode const &node) const {
 		try {
-			auto e = _eval(node, *_args);
+			auto n = node.child_with_cfg("exp2").value();
+			auto e = _eval(n, *_args);
 			if (auto i = e->integer()) {
 				return {+i.value()};
 			} else {
@@ -600,7 +602,8 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_min(AstNode const &node) const {
 		try {
-			auto e = _eval(node, *_args);
+			auto n = node.child_with_cfg("exp2").value();
+			auto e = _eval(n, *_args);
 			if (auto i = e->integer()) {
 				return {-i.value()};
 			} else {
@@ -614,9 +617,10 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_log_not(AstNode const &node) const {
 		try {
-			auto e = _eval(node, *_args);
-			if (auto i = e->integer()) {
-				return {!i.value()};
+			auto n = node.child_with_cfg("exp2").value();
+			auto e = _eval(n, *_args);
+			if (auto b = e->boolean()) {
+				return {!b.value()};
 			} else {
 				return KError::codegen(util::f(
 					"Cannot do unary operator ! on expression of type ",
@@ -628,7 +632,8 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_bit_not(AstNode const &node) const {
 		try {
-			auto e = _eval(node, *_args);
+			auto n = node.child_with_cfg("exp2").value();
+			auto e = _eval(n, *_args);
 			if (auto i = e->integer()) {
 				return {~i.value()};
 			} else {
@@ -667,7 +672,8 @@ namespace cg {
 		AstNode const &node
 	) const {
 		try {
-			auto e = _eval(node, *_args);
+			auto n = node.child_with_cfg("exp2").value();
+			auto e = _eval(n, *_args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() * i.value()};
 			} else {
@@ -684,7 +690,8 @@ namespace cg {
 		AstNode const &node
 	) const {
 		try {
-			auto e = _eval(node, *_args);
+			auto n = node.child_with_cfg("exp2").value();
+			auto e = _eval(n, *_args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() / i.value()};
 			} else {
@@ -701,7 +708,8 @@ namespace cg {
 		AstNode const &node
 	) const {
 		try {
-			auto e = _eval(node, *_args);
+			auto n = node.child_with_cfg("exp2").value();
+			auto e = _eval(n, *_args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() % i.value()};
 			} else {
@@ -726,7 +734,7 @@ namespace cg {
 					continue;
 				} else if (name == "exp_add") {
 					res = _eval_add(res.value(), child);
-				} else if (name == "exp_min") {
+				} else if (name == "exp_sub") {
 					res = _eval_sub(res.value(), child);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp4: " + name);
@@ -741,7 +749,8 @@ namespace cg {
 		AstNode const &node
 	) const {
 		try {
-			auto e = _eval(node, *_args);
+			auto n = node.child_with_cfg("exp3").value();
+			auto e = _eval(n, *_args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() + i.value()};
 			} else {
@@ -758,7 +767,8 @@ namespace cg {
 		AstNode const &node
 	) const {
 		try {
-			auto e =_eval(node, *_args);
+			auto n = node.child_with_cfg("exp3").value();
+			auto e = _eval(n, *_args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() - i.value()};
 			} else {
@@ -798,7 +808,8 @@ namespace cg {
 		AstNode const &node
 	) const {
 		try {
-			auto e = _eval(node, *_args);
+			auto n = node.child_with_cfg("exp4").value();
+			auto e = _eval(n, *_args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() << i.value()};
 			} else {
@@ -815,7 +826,8 @@ namespace cg {
 		AstNode const &node
 	) const {
 		try {
-			auto e = _eval(node, *_args);
+			auto n = node.child_with_cfg("exp4").value();
+			auto e = _eval(n, *_args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() >> i.value()};
 			} else {
@@ -838,13 +850,13 @@ namespace cg {
 					continue;
 				} else if (name == "exp5") {
 					continue;
-				} else if (name == "eval_comp_g") {
+				} else if (name == "exp_comp_g") {
 					res = _eval_comp_g(res.value(), child);
-				} else if (name == "eval_comp_ge") {
+				} else if (name == "exp_comp_ge") {
 					res = _eval_comp_ge(res.value(), child);
-				} else if (name == "eval_comp_l") {
+				} else if (name == "exp_comp_l") {
 					res = _eval_comp_l(res.value(), child);
-				} else if (name == "eval_comp_le") {
+				} else if (name == "exp_comp_le") {
 					res = _eval_comp_le(res.value(), child);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp6: " + name);
@@ -859,7 +871,8 @@ namespace cg {
 		AstNode const &node
 	) const {
 		try {
-			auto e = _eval(node, *_args);
+			auto n = node.child_with_cfg("exp5").value();
+			auto e = _eval(n, *_args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() > i.value()};
 			} else {
@@ -876,7 +889,8 @@ namespace cg {
 		AstNode const &node
 	) const {
 		try {
-			auto e = _eval(node, *_args);
+			auto n = node.child_with_cfg("exp5").value();
+			auto e = _eval(n, *_args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() >= i.value()};
 			} else {
@@ -893,7 +907,8 @@ namespace cg {
 		AstNode const &node
 	) const {
 		try {
-			auto e = _eval(node, *_args);
+			auto n = node.child_with_cfg("exp5").value();
+			auto e = _eval(n, *_args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() < i.value()};
 			} else {
@@ -910,7 +925,8 @@ namespace cg {
 		AstNode const &node
 	) const {
 		try {
-			auto e = _eval(node, *_args);
+			auto n = node.child_with_cfg("exp5").value();
+			auto e = _eval(n, *_args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() <= i.value()};
 			} else {
@@ -950,13 +966,14 @@ namespace cg {
 		AstNode const &node
 	) const {
 		try {
-			auto e = _eval(node, *_args).value();
-			if (auto i = e.integer()) {
+			auto n = node.child_with_cfg("exp6").value();
+			auto e = _eval(n, *_args);
+			if (auto i = e->integer()) {
 				return {lhs.integer().value() == i.value()};
 			} else {
 				return KError::codegen(util::f(
 					"Cannot do binary operation == on expression of type ",
-					e.type_str()
+					e->type_str()
 				));
 			}
 		} catch_kerror;
@@ -967,13 +984,14 @@ namespace cg {
 		AstNode const &node
 	) const {
 		try {
-			auto e = _eval(node, *_args).value();
-			if (auto i = e.integer()) {
+			auto n = node.child_with_cfg("exp6").value();
+			auto e = _eval(n, *_args);
+			if (auto i = e->integer()) {
 				return {lhs.integer().value() != i.value()};
 			} else {
 				return KError::codegen(util::f(
 					"Cannot do binary operation == on expression of type ",
-					e.type_str()
+					e->type_str()
 				));
 			}
 		} catch_kerror;
@@ -1005,7 +1023,8 @@ namespace cg {
 		AstNode const &node
 	) const {
 		try {
-			auto e = _eval(node, *_args);
+			auto n = node.child_with_cfg("exp7").value();
+			auto e = _eval(n, *_args);
 			if (auto b = e->boolean()) {
 				return {lhs.boolean().value() & b.value()};
 			} else {
@@ -1044,7 +1063,8 @@ namespace cg {
 		AstNode const &node
 	) const {
 		try {
-			auto e = _eval(node, *_args);
+			auto n = node.child_with_cfg("exp8").value();
+			auto e = _eval(n, *_args);
 			if (auto b = e->boolean()) {
 				return {lhs.boolean().value() && b.value()};
 			} else {
@@ -1083,7 +1103,8 @@ namespace cg {
 		AstNode const &node
 	) const {
 		try {
-			auto e = _eval(node, *_args);
+			auto n = node.child_with_cfg("exp9").value();
+			auto e = _eval(n, *_args);
 			if (auto b = e->boolean()) {
 				return {lhs.boolean().value() | b.value()};
 			} else {
@@ -1122,7 +1143,8 @@ namespace cg {
 		AstNode const &node
 	) const {
 		try {
-			auto e = _eval(node, *_args);
+			auto n = node.child_with_cfg("exp10").value();
+			auto e = _eval(n, *_args);
 			if (auto b = e->boolean()) {
 				return {lhs.boolean().value() && b.value()};
 			} else {
@@ -1161,7 +1183,8 @@ namespace cg {
 		AstNode const &node
 	) const {
 		try {
-			auto e = _eval(node, *_args);
+			auto n = node.child_with_cfg("exp11").value();
+			auto e = _eval(n, *_args);
 			if (auto b = e->boolean()) {
 				return {lhs.boolean().value() || b.value()};
 			} else {
