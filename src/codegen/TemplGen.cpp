@@ -434,7 +434,6 @@ namespace cg {
 		AstNode const &node,
 		TemplDict const &args
 	) const {
-		_args = &args;
 		if (node.cfg_name() == "exp") {
 			return _eval(node.children()[0], args);
 		} else if (node.cfg_name() == "exp_sing") {
@@ -442,28 +441,27 @@ namespace cg {
 		} else if (node.cfg_name() == "exp1") {
 			return _eval_exp1(node, args);
 		} else if (node.cfg_name() == "exp2") {
-			return _eval_exp2(node);
+			return _eval_exp2(node, args);
 		} else if (node.cfg_name() == "exp3") {
-			return _eval_exp3(node);
+			return _eval_exp3(node, args);
 		} else if (node.cfg_name() == "exp4") {
-			return _eval_exp4(node);
+			return _eval_exp4(node, args);
 		} else if (node.cfg_name() == "exp5") {
-			return _eval_exp5(node);
+			return _eval_exp5(node, args);
 		} else if (node.cfg_name() == "exp6") {
-			return _eval_exp6(node);
+			return _eval_exp6(node, args);
 		} else if (node.cfg_name() == "exp7") {
-			return _eval_exp7(node);
+			return _eval_exp7(node, args);
 		} else if (node.cfg_name() == "exp8") {
-			return _eval_exp8(node);
+			return _eval_exp8(node, args);
 		} else if (node.cfg_name() == "exp9") {
-			return _eval_exp9(node);
+			return _eval_exp9(node, args);
 		} else if (node.cfg_name() == "exp10") {
-			return _eval_exp10(node);
+			return _eval_exp10(node, args);
 		} else if (node.cfg_name() == "exp11") {
-			return _eval_exp11(node);
+			return _eval_exp11(node, args);
 		} else if (node.cfg_name() == "exp12") {
-			_args = &args;
-			return _eval_exp12(node);
+			return _eval_exp12(node, args);
 		} else {
 			return KError::codegen("Unimplimented AstNode type: " + node.cfg_name());
 		}
@@ -563,21 +561,24 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	TemplGen::EvalRes TemplGen::_eval_exp2(AstNode const &node) const {
+	TemplGen::EvalRes TemplGen::_eval_exp2(
+		AstNode const &node,
+		TemplDict const &args
+	) const {
 		for (auto &child : node.children()) {
 			auto name = child.cfg_name();
 			if (name == "whitespace") {
 				continue;
 			} else if (name == "exp_plus") {
-				return _eval_plus(child);
+				return _eval_plus(child, args);
 			} else if (name == "exp_min") {
-				return _eval_min(child);
+				return _eval_min(child, args);
 			} else if (name == "exp_log_not") {
-				return _eval_log_not(child);
+				return _eval_log_not(child, args);
 			} else if (name == "exp_bit_not") {
-				return _eval_bit_not(child);
+				return _eval_bit_not(child, args);
 			} else if (name == "exp1") {
-				return _eval(child, *_args);
+				return _eval(child, args);
 			} else {
 				return KError::codegen("Unknown child in _eval_exp2: " + name);
 			}
@@ -585,10 +586,13 @@ namespace cg {
 		return KError::codegen("Empty node passed to _eval_exp2");
 	}
 
-	TemplGen::EvalRes TemplGen::_eval_plus(AstNode const &node) const {
+	TemplGen::EvalRes TemplGen::_eval_plus(
+		AstNode const &node,
+		TemplDict const &args
+	) const {
 		try {
 			auto n = node.child_with_cfg("exp2").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto i = e->integer()) {
 				return {+i.value()};
 			} else {
@@ -600,10 +604,13 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	TemplGen::EvalRes TemplGen::_eval_min(AstNode const &node) const {
+	TemplGen::EvalRes TemplGen::_eval_min(
+		AstNode const &node,
+		TemplDict const &args
+	) const {
 		try {
 			auto n = node.child_with_cfg("exp2").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto i = e->integer()) {
 				return {-i.value()};
 			} else {
@@ -615,10 +622,13 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	TemplGen::EvalRes TemplGen::_eval_log_not(AstNode const &node) const {
+	TemplGen::EvalRes TemplGen::_eval_log_not(
+		AstNode const &node,
+		TemplDict const &args
+	) const {
 		try {
 			auto n = node.child_with_cfg("exp2").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto b = e->boolean()) {
 				return {!b.value()};
 			} else {
@@ -630,10 +640,13 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	TemplGen::EvalRes TemplGen::_eval_bit_not(AstNode const &node) const {
+	TemplGen::EvalRes TemplGen::_eval_bit_not(
+		AstNode const &node,
+		TemplDict const &args
+	) const {
 		try {
 			auto n = node.child_with_cfg("exp2").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto i = e->integer()) {
 				return {~i.value()};
 			} else {
@@ -642,10 +655,13 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	TemplGen::EvalRes TemplGen::_eval_exp3(AstNode const &node) const {
+	TemplGen::EvalRes TemplGen::_eval_exp3(
+		AstNode const &node,
+		TemplDict const &args
+	) const {
 		try {
 			auto exp = node.child_with_cfg("exp2").value();
-			auto res = _eval(exp, *_args);
+			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
 				auto name = child.cfg_name();
@@ -654,11 +670,11 @@ namespace cg {
 				} else if (name == "exp2") {
 					continue;
 				} else if (name == "exp_mult") {
-					res = _eval_mult(res.value(), child);
+					res = _eval_mult(res.value(), child, args);
 				} else if (name == "exp_div") {
-					res = _eval_div(res.value(), child);
+					res = _eval_div(res.value(), child, args);
 				} else if (name == "exp_mod") {
-					res = _eval_mod(res.value(), child);
+					res = _eval_mod(res.value(), child, args);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp3: " + name);
 				}
@@ -669,11 +685,12 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_mult(
 		TemplObj const &lhs,
-		AstNode const &node
+		AstNode const &node,
+		TemplDict const &args
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp2").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() * i.value()};
 			} else {
@@ -687,11 +704,12 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_div(
 		TemplObj const &lhs,
-		AstNode const &node
+		AstNode const &node,
+		TemplDict const &args
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp2").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() / i.value()};
 			} else {
@@ -705,11 +723,12 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_mod(
 		TemplObj const &lhs,
-		AstNode const &node
+		AstNode const &node,
+		TemplDict const &args
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp2").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() % i.value()};
 			} else {
@@ -721,10 +740,13 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	TemplGen::EvalRes TemplGen::_eval_exp4(AstNode const &node) const {
+	TemplGen::EvalRes TemplGen::_eval_exp4(
+		AstNode const &node,
+		TemplDict const &args
+	) const {
 		try {
 			auto exp = node.child_with_cfg("exp3").value();
-			auto res = _eval(exp, *_args);
+			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
 				auto name = child.cfg_name();
@@ -733,9 +755,9 @@ namespace cg {
 				} else if (name == "exp3") {
 					continue;
 				} else if (name == "exp_add") {
-					res = _eval_add(res.value(), child);
+					res = _eval_add(res.value(), child, args);
 				} else if (name == "exp_sub") {
-					res = _eval_sub(res.value(), child);
+					res = _eval_sub(res.value(), child, args);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp4: " + name);
 				}
@@ -746,11 +768,12 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_add(
 		TemplObj const &lhs,
-		AstNode const &node
+		AstNode const &node,
+		TemplDict const &args
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp3").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() + i.value()};
 			} else {
@@ -764,11 +787,12 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_sub(
 		TemplObj const &lhs,
-		AstNode const &node
+		AstNode const &node,
+		TemplDict const &args
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp3").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() - i.value()};
 			} else {
@@ -780,10 +804,13 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	TemplGen::EvalRes TemplGen::_eval_exp5(AstNode const &node) const {
+	TemplGen::EvalRes TemplGen::_eval_exp5(
+		AstNode const &node,
+		TemplDict const &args
+	) const {
 		try {
 			auto exp = node.child_with_cfg("exp4").value();
-			auto res = _eval(exp, *_args);
+			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
 				auto name = child.cfg_name();
@@ -792,9 +819,9 @@ namespace cg {
 				} else if (name == "exp4") {
 					continue;
 				} else if (name == "exp_bit_shift_l") {
-					res = _eval_bit_shift_l(res.value(), child);
+					res = _eval_bit_shift_l(res.value(), child, args);
 				} else if (name == "exp_bit_shift_r") {
-					res = _eval_bit_shift_r(res.value(), child);
+					res = _eval_bit_shift_r(res.value(), child, args);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp5: " + name);
 				}
@@ -805,11 +832,12 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_bit_shift_l(
 		TemplObj const &lhs,
-		AstNode const &node
+		AstNode const &node,
+		TemplDict const &args
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp4").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() << i.value()};
 			} else {
@@ -823,11 +851,12 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_bit_shift_r(
 		TemplObj const &lhs,
-		AstNode const &node
+		AstNode const &node,
+		TemplDict const &args
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp4").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() >> i.value()};
 			} else {
@@ -839,10 +868,13 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	TemplGen::EvalRes TemplGen::_eval_exp6(AstNode const &node) const {
+	TemplGen::EvalRes TemplGen::_eval_exp6(
+		AstNode const &node,
+		TemplDict const &args
+	) const {
 		try {
 			auto exp = node.child_with_cfg("exp5").value();
-			auto res = _eval(exp, *_args);
+			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
 				auto name = child.cfg_name();
@@ -851,13 +883,13 @@ namespace cg {
 				} else if (name == "exp5") {
 					continue;
 				} else if (name == "exp_comp_g") {
-					res = _eval_comp_g(res.value(), child);
+					res = _eval_comp_g(res.value(), child, args);
 				} else if (name == "exp_comp_ge") {
-					res = _eval_comp_ge(res.value(), child);
+					res = _eval_comp_ge(res.value(), child, args);
 				} else if (name == "exp_comp_l") {
-					res = _eval_comp_l(res.value(), child);
+					res = _eval_comp_l(res.value(), child, args);
 				} else if (name == "exp_comp_le") {
-					res = _eval_comp_le(res.value(), child);
+					res = _eval_comp_le(res.value(), child, args);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp6: " + name);
 				}
@@ -868,11 +900,12 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_comp_g(
 		TemplObj const &lhs,
-		AstNode const &node
+		AstNode const &node,
+		TemplDict const &args
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp5").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() > i.value()};
 			} else {
@@ -886,11 +919,12 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_comp_ge(
 		TemplObj const &lhs,
-		AstNode const &node
+		AstNode const &node,
+		TemplDict const &args
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp5").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() >= i.value()};
 			} else {
@@ -904,11 +938,12 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_comp_l(
 		TemplObj const &lhs,
-		AstNode const &node
+		AstNode const &node,
+		TemplDict const &args
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp5").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() < i.value()};
 			} else {
@@ -922,11 +957,12 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_comp_le(
 		TemplObj const &lhs,
-		AstNode const &node
+		AstNode const &node,
+		TemplDict const &args
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp5").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() <= i.value()};
 			} else {
@@ -938,10 +974,13 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	TemplGen::EvalRes TemplGen::_eval_exp7(AstNode const &node) const {
+	TemplGen::EvalRes TemplGen::_eval_exp7(
+		AstNode const &node,
+		TemplDict const &args
+	) const {
 		try {
 			auto exp = node.child_with_cfg("exp6").value();
-			auto res = _eval(exp, *_args);
+			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
 				auto name = child.cfg_name();
@@ -950,9 +989,9 @@ namespace cg {
 				} else if (name == "exp6") {
 					continue;
 				} else if (name == "exp_comp_eq") {
-					res = _eval_comp_eq(res.value(), child);
+					res = _eval_comp_eq(res.value(), child, args);
 				} else if (name == "exp_comp_neq") {
-					res = _eval_comp_neq(res.value(), child);
+					res = _eval_comp_neq(res.value(), child, args);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp7: " + name);
 				}
@@ -963,11 +1002,12 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_comp_eq(
 		TemplObj const &lhs,
-		AstNode const &node
+		AstNode const &node,
+		TemplDict const &args
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp6").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() == i.value()};
 			} else {
@@ -981,11 +1021,12 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_comp_neq(
 		TemplObj const &lhs,
-		AstNode const &node
+		AstNode const &node,
+		TemplDict const &args
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp6").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto i = e->integer()) {
 				return {lhs.integer().value() != i.value()};
 			} else {
@@ -997,10 +1038,13 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	TemplGen::EvalRes TemplGen::_eval_exp8(AstNode const &node) const {
+	TemplGen::EvalRes TemplGen::_eval_exp8(
+		AstNode const &node,
+		TemplDict const &args
+	) const {
 		try {
 			auto exp = node.child_with_cfg("exp7").value();
-			auto res = _eval(exp, *_args);
+			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
 				auto name = child.cfg_name();
@@ -1009,7 +1053,7 @@ namespace cg {
 				} else if (name == "exp7") {
 					continue;
 				} else if (name == "exp_bitwise_and") {
-					res = _eval_bitwise_and(res.value(), child);
+					res = _eval_bitwise_and(res.value(), child, args);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp8: " + name);
 				}
@@ -1020,11 +1064,12 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_bitwise_and(
 		TemplObj const &lhs,
-		AstNode const &node
+		AstNode const &node,
+		TemplDict const &args
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp7").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto b = e->boolean()) {
 				return {lhs.boolean().value() & b.value()};
 			} else {
@@ -1037,10 +1082,13 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	TemplGen::EvalRes TemplGen::_eval_exp9(AstNode const &node) const {
+	TemplGen::EvalRes TemplGen::_eval_exp9(
+		AstNode const &node,
+		TemplDict const &args
+	) const {
 		try {
 			auto exp = node.child_with_cfg("exp8").value();
-			auto res = _eval(exp, *_args);
+			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
 				auto name = child.cfg_name();
@@ -1049,7 +1097,7 @@ namespace cg {
 				} else if (name == "exp8") {
 					continue;
 				} else if (name == "exp_bitwise_xor") {
-					res = _eval_bitwise_and(res.value(), child);
+					res = _eval_bitwise_and(res.value(), child, args);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp9: " + name);
 				}
@@ -1060,11 +1108,12 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_bitwise_xor(
 		TemplObj const &lhs,
-		AstNode const &node
+		AstNode const &node,
+		TemplDict const &args
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp8").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto b = e->boolean()) {
 				return {lhs.boolean().value() && b.value()};
 			} else {
@@ -1077,10 +1126,13 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	TemplGen::EvalRes TemplGen::_eval_exp10(AstNode const &node) const {
+	TemplGen::EvalRes TemplGen::_eval_exp10(
+		AstNode const &node,
+		TemplDict const &args
+	) const {
 		try {
 			auto exp = node.child_with_cfg("exp9").value();
-			auto res = _eval(exp, *_args);
+			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
 				auto name = child.cfg_name();
@@ -1089,7 +1141,7 @@ namespace cg {
 				} else if (name == "exp9") {
 					continue;
 				} else if (name == "exp_bitwise_or") {
-					res = _eval_bitwise_and(res.value(), child);
+					res = _eval_bitwise_and(res.value(), child, args);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp10: " + name);
 				}
@@ -1100,11 +1152,12 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_bitwise_or(
 		TemplObj const &lhs,
-		AstNode const &node
+		AstNode const &node,
+		TemplDict const &args
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp9").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto b = e->boolean()) {
 				return {lhs.boolean().value() | b.value()};
 			} else {
@@ -1117,10 +1170,13 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	TemplGen::EvalRes TemplGen::_eval_exp11(AstNode const &node) const {
+	TemplGen::EvalRes TemplGen::_eval_exp11(
+		AstNode const &node,
+		TemplDict const &args
+	) const {
 		try {
 			auto exp = node.child_with_cfg("exp10").value();
-			auto res = _eval(exp, *_args);
+			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
 				auto name = child.cfg_name();
@@ -1129,7 +1185,7 @@ namespace cg {
 				} else if (name == "exp10") {
 					continue;
 				} else if (name == "exp_log_and") {
-					res = _eval_log_and(res.value(), child);
+					res = _eval_log_and(res.value(), child, args);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp11: " + name);
 				}
@@ -1140,11 +1196,12 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_log_and(
 		TemplObj const &lhs,
-		AstNode const &node
+		AstNode const &node,
+		TemplDict const &args
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp10").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto b = e->boolean()) {
 				return {lhs.boolean().value() && b.value()};
 			} else {
@@ -1157,10 +1214,13 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	TemplGen::EvalRes TemplGen::_eval_exp12(AstNode const &node) const {
+	TemplGen::EvalRes TemplGen::_eval_exp12(
+		AstNode const &node,
+		TemplDict const &args
+	) const {
 		try {
 			auto exp = node.child_with_cfg("exp11").value();
-			auto res = _eval(exp, *_args);
+			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
 				auto name = child.cfg_name();
@@ -1169,7 +1229,7 @@ namespace cg {
 				} else if (name == "exp11") {
 					continue;
 				} else if (name == "exp_log_or") {
-					res = _eval_log_or(res.value(), child);
+					res = _eval_log_or(res.value(), child, args);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp12: " + name);
 				}
@@ -1180,11 +1240,12 @@ namespace cg {
 
 	TemplGen::EvalRes TemplGen::_eval_log_or(
 		TemplObj const &lhs,
-		AstNode const &node
+		AstNode const &node,
+		TemplDict const &args
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp11").value();
-			auto e = _eval(n, *_args);
+			auto e = _eval(n, args);
 			if (auto b = e->boolean()) {
 				return {lhs.boolean().value() || b.value()};
 			} else {

@@ -23,139 +23,160 @@ namespace cg {
 			) const;
 		private:
 			CfgContext _ctx;
-			/** @brief args to share accross all codegen funcs */
-			mutable TemplDict const *_args;
 
 		private:
 			using CodegenRes = util::Result<std::string, KError>;
 			using EvalRes = util::Result<TemplObj, KError>;
 
-			util::Result<std::string, KError> _codegen(
-				AstNode const &node,
-				TemplDict const &args
-			) const;
+			CodegenRes _codegen(AstNode const &node, TemplDict const &args) const;
 
-			util::Result<std::string, KError> _cg_default(
-				AstNode const &node,
-				TemplDict const &args
-			) const;
-			util::Result<std::string, KError> _cg_ref(
-				AstNode const &node,
-				TemplDict const &args
-			) const;
+			CodegenRes _cg_default(AstNode const &node, TemplDict const &args) const;
+			CodegenRes _cg_ref(AstNode const &node, TemplDict const &args) const;
 
-			util::Result<std::string, KError> _cg_identifier(
-				AstNode const &node,
-				TemplDict const &args
-			) const;
-			util::Result<std::string, KError> _cg_line(
-				AstNode const &node,
-				TemplDict const &args
-			) const;
-			util::Result<std::string, KError> _cg_lines(
-				AstNode const &node,
-				TemplDict const &args
-			) const;
+			CodegenRes _cg_identifier(AstNode const &node, TemplDict const &args) const;
+			CodegenRes _cg_line(AstNode const &node, TemplDict const &args) const;
+			CodegenRes _cg_lines(AstNode const &node, TemplDict const &args) const;
 
-			util::Result<std::string, KError> _cg_comment(
-				AstNode const &node,
-				TemplDict const &args
-			) const;
+			CodegenRes _cg_comment(AstNode const &node, TemplDict const &args) const;
 
-			util::Result<std::string, KError> _cg_expression(
-				AstNode const &node,
-				TemplDict const &args
-			) const;
+			CodegenRes _cg_expression(AstNode const &node, TemplDict const &args) const;
 
-			util::Result<std::string, KError> _cg_statement(
-				AstNode const &node,
-				TemplDict const &args
-			) const;
-			util::Result<std::string, KError> _cg_sif(
-				AstNode const &node,
-				TemplDict const &args
-			) const;
-			util::Result<std::string, KError> _cg_sfor(
-				AstNode const &node,
-				TemplDict const &args
-			) const;
+			CodegenRes _cg_statement(AstNode const &node, TemplDict const &args) const;
+			CodegenRes _cg_sif(AstNode const &node, TemplDict const &args) const;
+			CodegenRes _cg_sfor(AstNode const &node, TemplDict const &args) const;
 
-			util::Result<TemplObj, KError> _eval(
-				AstNode const &node,
-				TemplDict const &args
-			) const;
+			EvalRes _eval(AstNode const &node, TemplDict const &args) const;
 
-			util::Result<TemplObj, KError> _eval_exp_sing(
-				AstNode const &node,
-				TemplDict const &args
-			) const;
-			util::Result<TemplObj, KError> _eval_exp_id(
-				AstNode const &node,
-				TemplDict const &args
-			) const;
-			util::Result<TemplObj, KError> _eval_exp_int(
-				AstNode const &node,
-				TemplDict const &args
-			) const;
+			EvalRes _eval_exp_sing(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_exp_id(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_exp_int(AstNode const &node, TemplDict const &args) const;
 
-			util::Result<TemplObj, KError> _eval_exp1(
+			EvalRes _eval_exp1(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_exp_member( TemplObj const &lhs,
 				AstNode const &node,
 				TemplDict const &args
 			) const;
-			util::Result<TemplObj, KError> _eval_exp_member(
-				TemplObj const &lhs,
-				AstNode const &node,
-				TemplDict const &args
-			) const;
-			util::Result<TemplObj, KError> _eval_exp_call(
+			EvalRes _eval_exp_call(
 				TemplObj const &lhs,
 				AstNode const &node,
 				TemplDict const &args
 			) const;
 
-			EvalRes _eval_exp2(AstNode const &node) const;
-			EvalRes _eval_plus(AstNode const &node) const;
-			EvalRes _eval_min(AstNode const &node) const;
-			EvalRes _eval_log_not(AstNode const &node) const;
-			EvalRes _eval_bit_not(AstNode const &node) const;
+			EvalRes _eval_exp2(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_plus(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_min(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_log_not(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_bit_not(AstNode const &node, TemplDict const &args) const;
 
-			EvalRes _eval_exp3(AstNode const &node) const;
-			EvalRes _eval_mult(TemplObj const &lhs, AstNode const &node) const;
-			EvalRes _eval_div(TemplObj const &lhs, AstNode const &node) const;
-			EvalRes _eval_mod(TemplObj const &lhs, AstNode const &node) const;
+			EvalRes _eval_exp3(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_mult(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+			) const;
+			EvalRes _eval_div(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+			) const;
+			EvalRes _eval_mod(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+			) const;
 
-			EvalRes _eval_exp4(AstNode const &node) const;
-			EvalRes _eval_add(TemplObj const &lhs, AstNode const &node) const;
-			EvalRes _eval_sub(TemplObj const &lhs, AstNode const &node) const;
+			EvalRes _eval_exp4(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_add(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+			) const;
+			EvalRes _eval_sub(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+			) const;
 
-			EvalRes _eval_exp5(AstNode const &node) const;
-			EvalRes _eval_bit_shift_l(TemplObj const &lhs, AstNode const &node) const;
-			EvalRes _eval_bit_shift_r(TemplObj const &lhs, AstNode const &node) const;
+			EvalRes _eval_exp5(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_bit_shift_l(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+			) const;
+			EvalRes _eval_bit_shift_r(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+		) const;
 
-			EvalRes _eval_exp6(AstNode const &node) const;
-			EvalRes _eval_comp_g(TemplObj const &lhs, AstNode const &node) const;
-			EvalRes _eval_comp_ge(TemplObj const &lhs, AstNode const &node) const;
-			EvalRes _eval_comp_l(TemplObj const &lhs, AstNode const &node) const;
-			EvalRes _eval_comp_le(TemplObj const &lhs, AstNode const &node) const;
+			EvalRes _eval_exp6(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_comp_g(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+			) const;
+			EvalRes _eval_comp_ge(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+			) const;
+			EvalRes _eval_comp_l(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+			) const;
+			EvalRes _eval_comp_le(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+			) const;
 
-			EvalRes _eval_exp7(AstNode const &node) const;
-			EvalRes _eval_comp_eq(TemplObj const &lhs, AstNode const &node) const;
-			EvalRes _eval_comp_neq(TemplObj const &lhs, AstNode const &node) const;
+			EvalRes _eval_exp7(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_comp_eq(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+			) const;
+			EvalRes _eval_comp_neq(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+			) const;
 
-			EvalRes _eval_exp8(AstNode const &node) const;
-			EvalRes _eval_bitwise_and(TemplObj const &lhs, AstNode const &node) const;
+			EvalRes _eval_exp8(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_bitwise_and(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+			) const;
 
-			EvalRes _eval_exp9(AstNode const &node) const;
-			EvalRes _eval_bitwise_xor(TemplObj const &lhs, AstNode const &node) const;
+			EvalRes _eval_exp9(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_bitwise_xor(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+			) const;
 
-			EvalRes _eval_exp10(AstNode const &node) const;
-			EvalRes _eval_bitwise_or(TemplObj const &lhs, AstNode const &node) const;
+			EvalRes _eval_exp10(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_bitwise_or(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+			) const;
 
-			EvalRes _eval_exp11(AstNode const &node) const;
-			EvalRes _eval_log_and(TemplObj const &lhs, AstNode const &node) const;
+			EvalRes _eval_exp11(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_log_and(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+			) const;
 
-			EvalRes _eval_exp12(AstNode const &node) const;
-			EvalRes _eval_log_or(TemplObj const &lhs, AstNode const &node) const;
+			EvalRes _eval_exp12(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_log_or(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+			) const;
 
 			util::Result<bool, KError> _tag_keep_padding(AstNode const &node, bool def) const;
 
