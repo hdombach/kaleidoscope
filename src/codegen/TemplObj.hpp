@@ -69,6 +69,29 @@ namespace cg {
 
 			TemplObj& operator=(const char *str);
 
+			static TemplFuncRes unary_plus(TemplFuncRes const &val);
+			static TemplFuncRes unary_min(TemplFuncRes const &val);
+			static TemplFuncRes log_not(TemplFuncRes const &val);
+			static TemplFuncRes bit_not(TemplFuncRes const &val);
+			static TemplFuncRes mult(TemplFuncRes const &lhs, TemplFuncRes const &rhs);
+			static TemplFuncRes div(TemplFuncRes const &lhs, TemplFuncRes const &rhs);
+			static TemplFuncRes mod(TemplFuncRes const &lhs, TemplFuncRes const &rhs);
+			static TemplFuncRes add(TemplFuncRes const &lhs, TemplFuncRes const &rhs);
+			static TemplFuncRes sub(TemplFuncRes const &lhs, TemplFuncRes const &rhs);
+			static TemplFuncRes bitshift_l(TemplFuncRes const &lhs, TemplFuncRes const &rhs);
+			static TemplFuncRes bitshift_r(TemplFuncRes const &lhs, TemplFuncRes const &rhs);
+			static TemplFuncRes comp_g(TemplFuncRes const &lhs, TemplFuncRes const &rhs);
+			static TemplFuncRes comp_ge(TemplFuncRes const &lhs, TemplFuncRes const &rhs);
+			static TemplFuncRes comp_l(TemplFuncRes const &lhs, TemplFuncRes const &rhs);
+			static TemplFuncRes comp_le(TemplFuncRes const &lhs, TemplFuncRes const &rhs);
+			static TemplFuncRes comp_eq(TemplFuncRes const &lhs, TemplFuncRes const &rhs);
+			static TemplFuncRes comp_neq(TemplFuncRes const &lhs, TemplFuncRes const &rhs);
+			static TemplFuncRes bit_and(TemplFuncRes const &lhs, TemplFuncRes const &rhs);
+			static TemplFuncRes bit_xor(TemplFuncRes const &lhs, TemplFuncRes const &rhs);
+			static TemplFuncRes bit_or(TemplFuncRes const &lhs, TemplFuncRes const &rhs);
+			static TemplFuncRes log_and(TemplFuncRes const &lhs, TemplFuncRes const &rhs);
+			static TemplFuncRes log_or(TemplFuncRes const &lhs, TemplFuncRes const &rhs);
+
 			/**
 			 * @brief Gets string representation
 			 * @param[in] convert Whether type is automatically converted
@@ -96,6 +119,73 @@ namespace cg {
 
 			std::variant<TemplStr, TemplList, TemplDict, TemplBool, TemplInt, TemplFunc> _v;
 	};
+
+	inline TemplFuncRes operator+(TemplFuncRes const &v) {
+		return TemplObj::unary_plus(v);
+	}
+	inline TemplFuncRes operator-(TemplFuncRes const &v) {
+		return TemplObj::unary_min(v);
+	}
+	inline TemplFuncRes operator!(TemplFuncRes const &v) {
+		return TemplObj::log_not(v);
+	}
+	inline TemplFuncRes operator~(TemplFuncRes const &v) {
+		return TemplObj::bit_not(v);
+	}
+	inline TemplFuncRes operator*(TemplFuncRes const &l, TemplFuncRes const &r) {
+		return TemplObj::mult(l, r);
+	}
+	inline TemplFuncRes operator/(TemplFuncRes const &l, TemplFuncRes const &r) {
+		return TemplObj::div(l, r);
+	}
+	inline TemplFuncRes operator%(TemplFuncRes const &l, TemplFuncRes const &r) {
+		return TemplObj::mod(l, r);
+	}
+	inline TemplFuncRes operator+(TemplFuncRes const &l, TemplFuncRes const &r) {
+		return TemplObj::add(l, r);
+	}
+	inline TemplFuncRes operator-(TemplFuncRes const &l, TemplFuncRes const &r) {
+		return TemplObj::sub(l, r);
+	}
+	inline TemplFuncRes operator<<(TemplFuncRes const &l, TemplFuncRes const &r) {
+		return TemplObj::bitshift_l(l, r);
+	}
+	inline TemplFuncRes operator>>(TemplFuncRes const &l, TemplFuncRes const &r) {
+		return TemplObj::bitshift_r(l, r);
+	}
+	inline TemplFuncRes operator>(TemplFuncRes const &l, TemplFuncRes const &r) {
+		return TemplObj::comp_g(l, r);
+	}
+	inline TemplFuncRes operator>=(TemplFuncRes const &l, TemplFuncRes const &r) {
+		return TemplObj::comp_ge(l, r);
+	}
+	inline TemplFuncRes operator<(TemplFuncRes const &l, TemplFuncRes const &r) {
+		return TemplObj::comp_l(l, r);
+	}
+	inline TemplFuncRes operator<=(TemplFuncRes const &l, TemplFuncRes const &r) {
+		return TemplObj::comp_le(l, r);
+	}
+	inline TemplFuncRes operator==(TemplFuncRes const &l, TemplFuncRes const &r) {
+		return TemplObj::comp_eq(l, r);
+	}
+	inline TemplFuncRes operator!=(TemplFuncRes const &l, TemplFuncRes const &r) {
+		return TemplObj::comp_neq(l, r);
+	}
+	inline TemplFuncRes operator&(TemplFuncRes const &l, TemplFuncRes const &r) {
+		return TemplObj::bit_and(l, r);
+	}
+	inline TemplFuncRes operator^(TemplFuncRes const &l, TemplFuncRes const &r) {
+		return TemplObj::bit_xor(l, r);
+	}
+	inline TemplFuncRes operator|(TemplFuncRes const &l, TemplFuncRes const &r) {
+		return TemplObj::bit_or(l, r);
+	}
+	inline TemplFuncRes operator&&(TemplFuncRes const &l, TemplFuncRes const &r) {
+		return TemplObj::log_and(l, r);
+	}
+	inline TemplFuncRes operator||(TemplFuncRes const &l, TemplFuncRes const &r) {
+		return TemplObj::log_or(l, r);
+	}
 
 	/* Forgive me for what I have done */
 

@@ -103,6 +103,352 @@ namespace cg {
 		return *this;
 	}
 
+	TemplFuncRes TemplObj::unary_plus(TemplFuncRes const &val) {
+		try {
+			auto type = val->type();
+			if (type == Type::Integer) {
+				return {+val->integer().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Invalid operation +",
+					val->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::unary_min(TemplFuncRes const &val) {
+		try {
+			auto type = val->type();
+			if (type == Type::Integer) {
+				return {-val->integer().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Invalid operation -",
+					val->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::log_not(TemplFuncRes const &val) {
+		try {
+			auto type = val->type();
+			if (type == Type::Boolean) {
+				return {!val->boolean().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Invalid operation !",
+					val->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::bit_not(TemplFuncRes const &val) {
+		try {
+			auto type = val->type();
+			if (type == Type::Integer) {
+				return {~val->integer().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Invalid operation ~",
+					val->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::mult(TemplFuncRes const &lhs, TemplFuncRes const &rhs) {
+		try {
+			auto type = lhs->type();
+			if (type == Type::Integer) {
+				return {lhs->integer().value() * rhs->integer().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Invalid operation ",
+					lhs->type_str(),
+					" * ",
+					rhs->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::div(TemplFuncRes const &lhs, TemplFuncRes const &rhs) {
+		try {
+			auto type = lhs->type();
+			if (type == Type::Integer) {
+				return {lhs->integer().value() / rhs->integer().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Invalid operation ",
+					lhs->type_str(),
+					" / ",
+					rhs->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::mod(TemplFuncRes const &lhs, TemplFuncRes const &rhs) {
+		try {
+			auto type = lhs->type();
+			if (type == Type::Integer) {
+				return {lhs->integer().value() % rhs->integer().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Invalid operation ",
+					lhs->type_str(),
+					" % ",
+					rhs->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::add( TemplFuncRes const &lhs, TemplFuncRes const &rhs) {
+		try {
+			auto type = lhs->type();
+			if (type == Type::Integer) {
+				return {lhs->integer().value() + rhs->integer().value()};
+			} else {
+				//TODO: add string conantination
+				return KError::codegen(util::f(
+					"Invalid operation ",
+					lhs->type_str(),
+					" + ",
+					rhs->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::sub( TemplFuncRes const &lhs, TemplFuncRes const &rhs) {
+		try {
+			auto type = lhs->type();
+			if (type == Type::Integer) {
+				return {lhs->integer().value() - rhs->integer().value()};
+			} else {
+				//TODO: add string conantination
+				return KError::codegen(util::f(
+					"Cannot do operator ",
+					lhs->type_str(),
+					" - ",
+					rhs->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::bitshift_l(TemplFuncRes const &l, TemplFuncRes const &r) {
+		try {
+			auto type = l->type();
+			if (type == Type::Integer) {
+				return {l->integer().value() << r->integer().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do operator ",
+					l->type_str(),
+					" << ",
+					r->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::bitshift_r(TemplFuncRes const &l, TemplFuncRes const &r) {
+		try {
+			auto type = l->type();
+			if (type == Type::Integer) {
+				return {l->integer().value() >> r->integer().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do operator ",
+					l->type_str(),
+					" >> ",
+					r->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::comp_g(TemplFuncRes const &l, TemplFuncRes const &r) {
+		try {
+			auto type = l->type();
+			if (type == Type::Integer) {
+				return {l->integer().value() > r->integer().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do operator ",
+					l->type_str(),
+					" > ",
+					r->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::comp_ge(TemplFuncRes const &l, TemplFuncRes const &r) {
+		try {
+			auto type = l->type();
+			if (type == Type::Integer) {
+				return {l->integer().value() >= r->integer().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do operator ",
+					l->type_str(),
+					" >= ",
+					r->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::comp_l(TemplFuncRes const &l, TemplFuncRes const &r) {
+		try {
+			auto type = l->type();
+			if (type == Type::Integer) {
+				return {l->integer().value() < r->integer().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do operator ",
+					l->type_str(),
+					" < ",
+					r->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::comp_le(TemplFuncRes const &l, TemplFuncRes const &r) {
+		try {
+			auto type = l->type();
+			if (type == Type::Integer) {
+				return {l->integer().value() <= r->integer().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do operator ",
+					l->type_str(),
+					" <= ",
+					r->type_str()
+				));
+			} 
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::comp_eq(TemplFuncRes const &l, TemplFuncRes const &r) {
+		try {
+			auto type = l->type();
+			if (type == Type::Integer) {
+				return {l->integer().value() == r->integer().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do operator ",
+					l->type_str(),
+					" == ",
+					r->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::comp_neq(TemplFuncRes const &l, TemplFuncRes const &r) {
+		try {
+			auto type = l->type();
+			if (type == Type::Integer) {
+				return {l->integer().value() != r->integer().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do operator ",
+					l->type_str(),
+					" != ",
+					r->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::bit_and(TemplFuncRes const &l, TemplFuncRes const &r) {
+		try {
+			auto type = l->type();
+			if (type == Type::Integer) {
+				return {l->integer().value() & r->integer().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do operator ",
+					l->type_str(),
+					" & ",
+					r->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::bit_xor(TemplFuncRes const &l, TemplFuncRes const &r) {
+		try {
+			auto type = l->type();
+			if (type == Type::Integer) {
+				return {l->integer().value() ^ r->integer().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do operator ",
+					l->type_str(),
+					" ^ ",
+					r->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::bit_or(TemplFuncRes const &l, TemplFuncRes const &r) {
+		try {
+			auto type = l->type();
+			if (type == Type::Integer) {
+				return {l->integer().value() | r->integer().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do operator ",
+					l->type_str(),
+					" | ",
+					r->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::log_and(TemplFuncRes const &l, TemplFuncRes const &r) {
+		try {
+			auto type = l->type();
+			if (type == Type::Boolean) {
+				return {l->boolean().value() && r->boolean().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do operator ",
+					l->type_str(),
+					" && ",
+					r->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
+	TemplFuncRes TemplObj::log_or(TemplFuncRes const &l, TemplFuncRes const &r) {
+		try {
+			auto type = l->type();
+			if (type == Type::Boolean) {
+				return {l->boolean().value() || r->boolean().value()};
+			} else {
+				return KError::codegen(util::f(
+					"Cannot do operator ",
+					l->type_str(),
+					" || ",
+					r->type_str()
+				));
+			}
+		} catch_kerror;
+	}
+
 	util::Result<std::string, KError> TemplObj::str(bool convert) const {
 		auto type = static_cast<Type>(_v.index());
 		if (type == Type::String) {

@@ -592,15 +592,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp2").value();
-			auto e = _eval(n, args);
-			if (auto i = e->integer()) {
-				return {+i.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do unary operator + on expression of type ",
-					e->type_str()
-				));
-			}
+			return +_eval(n, args);
 		} catch_kerror;
 	}
 
@@ -610,15 +602,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp2").value();
-			auto e = _eval(n, args);
-			if (auto i = e->integer()) {
-				return {-i.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do unary operator - on expression of type ",
-					e->type_str()
-				));
-			}
+			return -_eval(n, args);
 		} catch_kerror;
 	}
 
@@ -628,15 +612,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp2").value();
-			auto e = _eval(n, args);
-			if (auto b = e->boolean()) {
-				return {!b.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do unary operator ! on expression of type ",
-					e->type_str()
-				));
-			}
+			return !_eval(n, args);
 		} catch_kerror;
 	}
 
@@ -646,12 +622,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp2").value();
-			auto e = _eval(n, args);
-			if (auto i = e->integer()) {
-				return {~i.value()};
-			} else {
-				return KError::codegen(util::f("Cannot do unary operator ~ on expression of type ", e->type_str()));
-			}
+			return ~_eval(n, args);
 		} catch_kerror;
 	}
 
@@ -690,15 +661,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp2").value();
-			auto e = _eval(n, args);
-			if (auto i = e->integer()) {
-				return {lhs.integer().value() * i.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do binary operation * on expression of type ",
-					e->type_str()
-				));
-			}
+			return lhs * _eval(n, args);
 		} catch_kerror;
 	}
 
@@ -709,15 +672,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp2").value();
-			auto e = _eval(n, args);
-			if (auto i = e->integer()) {
-				return {lhs.integer().value() / i.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do binary operation / on expression of type ",
-					e->type_str()
-				));
-			}
+			return lhs / _eval(n, args);
 		} catch_kerror;
 	}
 
@@ -728,15 +683,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp2").value();
-			auto e = _eval(n, args);
-			if (auto i = e->integer()) {
-				return {lhs.integer().value() % i.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do binary operation \% on expression of type ",
-					e->type_str()
-				));
-			}
+			return lhs % _eval(n, args);
 		} catch_kerror;
 	}
 
@@ -773,15 +720,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp3").value();
-			auto e = _eval(n, args);
-			if (auto i = e->integer()) {
-				return {lhs.integer().value() + i.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do binary operation + on expression of type ",
-					e->type_str()
-				));
-			}
+			return lhs + _eval(n, args);
 		} catch_kerror;
 	}
 
@@ -792,15 +731,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp3").value();
-			auto e = _eval(n, args);
-			if (auto i = e->integer()) {
-				return {lhs.integer().value() - i.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do binary operation - on expression of type ",
-					e->type_str()
-				));
-			}
+			return lhs - _eval(n, args);
 		} catch_kerror;
 	}
 
@@ -837,15 +768,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp4").value();
-			auto e = _eval(n, args);
-			if (auto i = e->integer()) {
-				return {lhs.integer().value() << i.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do binary operation << on expression of type ",
-					e->type_str()
-				));
-			}
+			return lhs << _eval(n, args);
 		} catch_kerror;
 	}
 
@@ -856,15 +779,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp4").value();
-			auto e = _eval(n, args);
-			if (auto i = e->integer()) {
-				return {lhs.integer().value() >> i.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do binary operation >> on expression of type ",
-					e->type_str()
-				));
-			}
+			return lhs >> _eval(n, args);
 		} catch_kerror;
 	}
 
@@ -905,15 +820,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp5").value();
-			auto e = _eval(n, args);
-			if (auto i = e->integer()) {
-				return {lhs.integer().value() > i.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do binary operation > on expression of type ",
-					e->type_str()
-				));
-			}
+			return lhs > _eval(n, args);
 		} catch_kerror;
 	}
 
@@ -924,15 +831,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp5").value();
-			auto e = _eval(n, args);
-			if (auto i = e->integer()) {
-				return {lhs.integer().value() >= i.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do binary operation >= on expression of type ",
-					e->type_str()
-				));
-			}
+			return lhs >= _eval(n, args);
 		} catch_kerror;
 	}
 
@@ -943,15 +842,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp5").value();
-			auto e = _eval(n, args);
-			if (auto i = e->integer()) {
-				return {lhs.integer().value() < i.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do binary operation < on expression of type ",
-					e->type_str()
-				));
-			}
+			return lhs < _eval(n, args);
 		} catch_kerror;
 	}
 
@@ -962,15 +853,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp5").value();
-			auto e = _eval(n, args);
-			if (auto i = e->integer()) {
-				return {lhs.integer().value() <= i.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do binary operation <= on expression of type ",
-					e->type_str()
-				));
-			}
+			return lhs <= _eval(n, args);
 		} catch_kerror;
 	}
 
@@ -1007,15 +890,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp6").value();
-			auto e = _eval(n, args);
-			if (auto i = e->integer()) {
-				return {lhs.integer().value() == i.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do binary operation == on expression of type ",
-					e->type_str()
-				));
-			}
+			return lhs == _eval(n, args);
 		} catch_kerror;
 	}
 
@@ -1026,15 +901,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp6").value();
-			auto e = _eval(n, args);
-			if (auto i = e->integer()) {
-				return {lhs.integer().value() != i.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do binary operation == on expression of type ",
-					e->type_str()
-				));
-			}
+			return lhs != _eval(n, args);
 		} catch_kerror;
 	}
 
@@ -1069,16 +936,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp7").value();
-			auto e = _eval(n, args);
-			if (auto b = e->boolean()) {
-				return {lhs.boolean().value() & b.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do binary operation & on expression of type: ",
-					e->type_str()
-				));
-
-			}
+			return lhs & _eval(n, args);
 		} catch_kerror;
 	}
 
@@ -1113,16 +971,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp8").value();
-			auto e = _eval(n, args);
-			if (auto b = e->boolean()) {
-				return {lhs.boolean().value() && b.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do binary operation ^ on expression of type: ",
-					e->type_str()
-				));
-
-			}
+			return lhs ^ _eval(n, args);
 		} catch_kerror;
 	}
 
@@ -1157,16 +1006,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp9").value();
-			auto e = _eval(n, args);
-			if (auto b = e->boolean()) {
-				return {lhs.boolean().value() | b.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do binary operation | on expression of type: ",
-					e->type_str()
-				));
-
-			}
+			return lhs | _eval(n, args);
 		} catch_kerror;
 	}
 
@@ -1201,16 +1041,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp10").value();
-			auto e = _eval(n, args);
-			if (auto b = e->boolean()) {
-				return {lhs.boolean().value() && b.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do binary operation && on expression of type: ",
-					e->type_str()
-				));
-
-			}
+			return lhs && _eval(n, args);
 		} catch_kerror;
 	}
 
@@ -1245,16 +1076,7 @@ namespace cg {
 	) const {
 		try {
 			auto n = node.child_with_cfg("exp11").value();
-			auto e = _eval(n, args);
-			if (auto b = e->boolean()) {
-				return {lhs.boolean().value() || b.value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do binary operation || on expression of type: ",
-					e->type_str()
-				));
-
-			}
+			return lhs || _eval(n, args);
 		} catch_kerror;
 	}
 
