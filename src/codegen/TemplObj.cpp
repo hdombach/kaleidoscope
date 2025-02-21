@@ -212,6 +212,8 @@ namespace cg {
 			auto type = lhs->type();
 			if (type == Type::Integer) {
 				return {lhs->integer().value() + rhs->integer().value()};
+			} else if (type == Type::String) {
+				return {lhs->str().value() + rhs->str().value()};
 			} else {
 				//TODO: add string conantination
 				return KError::codegen(util::f(

@@ -686,4 +686,26 @@ namespace cg {
 			"6 == 0 || true && -8 + 9 == 1 is <false>"
 		);
 	}
+
+	TEST(templ_gen, str_constant) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto args = TemplObj{
+			{"first_name", "John"}
+		}.dict().value();
+
+		auto src = "The expression literal is {{ \"{{\" }}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"The expression literal is {{"
+		);
+
+
+		src = "My name is {{ first_name + \" Doe\" }}";
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"My name is John Doe"
+		);
+	}
 }

@@ -51,6 +51,7 @@ namespace cg {
 			EvalRes _eval_exp_sing(AstNode const &node, TemplDict const &args) const;
 			EvalRes _eval_exp_id(AstNode const &node, TemplDict const &args) const;
 			EvalRes _eval_exp_int(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_exp_str(AstNode const &node, TemplDict const &args) const;
 
 			EvalRes _eval_exp1(AstNode const &node, TemplDict const &args) const;
 			EvalRes _eval_exp_member( TemplObj const &lhs,
