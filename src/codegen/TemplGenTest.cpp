@@ -708,4 +708,60 @@ namespace cg {
 			"My name is John Doe"
 		);
 	}
+
+	TEST(templ_gen, list_builtins) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto src =
+			"List length: {{list.length()}}\n"
+			"Is list empty: {{list.empty()}}\n"
+			"List elements:\n"
+			"{\% for element in list %}\n"
+			"- {{element}}\n"
+			"{\% endfor %}\n";
+
+		auto args = TemplObj{
+			{"list", {5, 3, 91, "Totally an int", 2, -29}}
+		}.dict().value();
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"List length: 6\n"
+			"Is list empty: <false>\n"
+			"List elements:\n"
+			"- 5\n"
+			"- 3\n"
+			"- 91\n"
+			"- Totally an int\n"
+			"- 2\n"
+			"- -29\n"
+		);
+
+		args = TemplObj{
+			{"list", {"George", "Sally", "Neo", "Peter"}},
+		}.dict().value();
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"List length: 4\n"
+			"Is list empty: <false>\n"
+			"List elements:\n"
+			"- George\n"
+			"- Sally\n"
+			"- Neo\n"
+			"- Peter\n"
+		);
+
+		args = TemplObj{
+			{"list", TemplList()}
+		}.dict().value();
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"List length: 0\n"
+			"Is list empty: <true>\n"
+			"List elements:\n"
+		);
+	}
 }

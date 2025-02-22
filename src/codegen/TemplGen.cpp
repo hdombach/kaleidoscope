@@ -561,17 +561,19 @@ namespace cg {
 		AstNode const &node,
 		TemplDict const &args
 	) const {
+		TemplDict l_args = args;
 		try {
 			auto exp = node.child_with_cfg("exp_sing").value();
-			auto res = _eval(exp, args);
+			auto res = _eval(exp, l_args);
 			CG_ASSERT(node.children().size() > 0, "Node must have at least one child");
 
 			auto children = util::Adapt(node.children().begin() + 1, node.children().end());
 			for (auto const &child : children) {
 				if (child.cfg_name() == "exp_member") {
-					res = _eval_exp_member(res.value(), child, args);
+					l_args["self"] = res.value();
+					res = _eval_exp_member(res.value(), child, l_args);
 				} else if (child.cfg_name() == "exp_call") {
-					res = _eval_exp_call(res.value(), child, args);
+					res = _eval_exp_call(res.value(), child, l_args);
 				} else {
 					return KError::codegen("Unrecognized cfg node: " + child.cfg_name());
 				}
@@ -598,6 +600,9 @@ namespace cg {
 	) const {
 		try {
 			auto call_args = TemplList();
+			if (args.contains("self")) {
+				call_args.push_back(args.at("self"));
+			}
 			for (auto const &child : node.children()) {
 				CG_ASSERT(child.cfg_name() == "exp", "Function call list must have exp nodes");
 				call_args.push_back(_eval(child, args).value());

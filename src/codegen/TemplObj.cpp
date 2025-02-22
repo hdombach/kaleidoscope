@@ -1,5 +1,7 @@
 #include "TemplObj.hpp"
 
+#include <memory>
+
 #include "util/log.hpp"
 #include "util/result.hpp"
 #include "util/KError.hpp"
@@ -18,6 +20,7 @@ namespace cg {
 
 	TemplObj::TemplObj(TemplList const &list) {
 		_v = list;
+		_builtins = _list_builtins();
 	}
 
 	TemplObj::TemplObj(TemplDict const &dict) {
@@ -56,10 +59,12 @@ namespace cg {
 					dict[l[0].str().value()] = l[1];
 				} else {
 					_v = TemplList(args);
+					_builtins = _list_builtins();
 					return;
 				}
 			}
 		}
+		//TODO: _dict_builtins
 		_v = dict;
 	}
 
@@ -70,6 +75,7 @@ namespace cg {
 
 	TemplObj& TemplObj::operator=(TemplList const &list) {
 		_v = list;
+		_builtins = _list_builtins();
 		return *this;
 	}
 
@@ -531,6 +537,13 @@ namespace cg {
 	}
 
 	util::Result<TemplObj, KError> TemplObj::get_attribute(std::string const &name) const {
+		if (_builtins && _builtins->count(name)) {
+			auto builtin = _builtins->at(name);
+			if (builtin.type() == Type::Func) {
+				return {builtin.func().value()};
+			}
+			return _builtins->at(name);
+		}
 		if (type() == Type::Dict) {
 			if (dict()->contains(name)) {
 				return dict()->at(name);
@@ -540,5 +553,27 @@ namespace cg {
 		} else {
 			return KError::internal("Default properties are not implimented yet");
 		}
+	}
+
+	/** Builtin properties */
+	TemplFuncRes _list_length(TemplList l) {
+		return {TemplInt(l.size())};
+	}
+
+	TemplFuncRes _list_empty(TemplList l) {
+		return {TemplBool(l.empty())};
+	}
+
+	TemplDict *TemplObj::_list_builtins() {
+		static auto properties = TemplDict();
+
+		if (properties.size() == 0) {
+			properties = TemplDict{
+				{"length", mk_templfunc(_list_length)},
+				{"empty", mk_templfunc(_list_empty)}
+			};
+		}
+
+		return &properties;
 	}
 }

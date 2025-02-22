@@ -112,12 +112,19 @@ namespace cg {
 
 			util::Result<TemplFunc, KError> func() const;
 
-			util::Result<TemplObj, KError> get_attribute(std::string const &name) const;
+			TemplFuncRes get_attribute(std::string const &name) const;
 
 		private:
-			TemplDict _properties;
+			TemplDict *_builtins = nullptr;
 
 			std::variant<TemplStr, TemplList, TemplDict, TemplBool, TemplInt, TemplFunc> _v;
+
+		private:
+			static TemplDict *_list_builtins();
+			static TemplDict *_boolean_builtins();
+			static TemplDict *_integer_builtins();
+			static TemplDict *_dict_builtins();
+			static TemplDict *_func_builtins();
 	};
 
 	inline TemplFuncRes operator+(TemplFuncRes const &v) {
