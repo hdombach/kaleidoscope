@@ -764,4 +764,29 @@ namespace cg {
 			"List elements:\n"
 		);
 	}
+
+	TEST(templ_gen, str_builtins) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto args = TemplObj{
+			{"str", "Hello World"},
+		}.dict().value();
+
+		auto src =
+			"string: {{str}}\n"
+			"size: {{str.length()}}\n"
+			"empty: {{str.empty()}}\n"
+			"upper: {{str.upper()}}\n"
+			"lower: {{str.lower()}}\n";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"string: Hello World\n"
+			"size: 11\n"
+			"empty: <false>\n"
+			"upper: HELLO WORLD\n"
+			"lower: hello world\n"
+		);
+	}
 }

@@ -115,16 +115,13 @@ namespace cg {
 			TemplFuncRes get_attribute(std::string const &name) const;
 
 		private:
-			TemplDict *_builtins = nullptr;
+			TemplDict *_builtins;
 
 			std::variant<TemplStr, TemplList, TemplDict, TemplBool, TemplInt, TemplFunc> _v;
 
 		private:
 			static TemplDict *_list_builtins();
-			static TemplDict *_boolean_builtins();
-			static TemplDict *_integer_builtins();
-			static TemplDict *_dict_builtins();
-			static TemplDict *_func_builtins();
+			static TemplDict *_str_builtins();
 	};
 
 	inline TemplFuncRes operator+(TemplFuncRes const &v) {

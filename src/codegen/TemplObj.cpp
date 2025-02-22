@@ -1,5 +1,6 @@
 #include "TemplObj.hpp"
 
+#include <cctype>
 #include <memory>
 
 #include "util/log.hpp"
@@ -16,6 +17,7 @@ Overloaded(Ts...) -> Overloaded<Ts...>;
 namespace cg {
 	TemplObj::TemplObj(TemplStr const &str) {
 		_v = str;
+		_builtins = _str_builtins();
 	}
 
 	TemplObj::TemplObj(TemplList const &list) {
@@ -25,22 +27,27 @@ namespace cg {
 
 	TemplObj::TemplObj(TemplDict const &dict) {
 		_v = dict;
+		_builtins = nullptr;
 	}
 
 	TemplObj::TemplObj(bool val) {
 		_v = val;
+		_builtins = nullptr;
 	}
 
 	TemplObj::TemplObj(int64_t val) {
 		_v = val;
+		_builtins = nullptr;
 	}
 
 	TemplObj::TemplObj(int val) {
 		_v = val;
+		_builtins = nullptr;
 	}
 
 	TemplObj::TemplObj(TemplFunc const &func) {
 		_v = func;
+		_builtins = nullptr;
 	}
 
 	TemplObj::TemplObj(std::initializer_list<TemplObj> args) {
@@ -64,12 +71,13 @@ namespace cg {
 				}
 			}
 		}
-		//TODO: _dict_builtins
 		_v = dict;
+		_builtins = nullptr;
 	}
 
 	TemplObj& TemplObj::operator=(TemplStr const &str) {
 		_v = str;
+		_builtins = _str_builtins();
 		return *this;
 	}
 
@@ -81,31 +89,37 @@ namespace cg {
 
 	TemplObj& TemplObj::operator=(TemplDict const &dict) {
 		_v = dict;
+		_builtins = nullptr;
 		return *this;
 	}
 
 	TemplObj& TemplObj::operator=(bool val) {
 		_v = val;
+		_builtins = nullptr;
 		return *this;
 	}
 
 	TemplObj& TemplObj::operator=(int64_t val) {
 		_v = val;
+		_builtins = nullptr;
 		return *this;
 	}
 
 	TemplObj& TemplObj::operator=(int val) {
 		_v = val;
+		_builtins = nullptr;
 		return *this;
 	}
 
 	TemplObj& TemplObj::operator=(TemplFunc const &func) {
 		_v = func;
+		_builtins = nullptr;
 		return *this;
 	}
 
 	TemplObj& TemplObj::operator=(const char *str) {
 		_v = str;
+		_builtins = nullptr;
 		return *this;
 	}
 
@@ -537,7 +551,7 @@ namespace cg {
 	}
 
 	util::Result<TemplObj, KError> TemplObj::get_attribute(std::string const &name) const {
-		if (_builtins && _builtins->count(name)) {
+		if (_builtins && _builtins->contains(name)) {
 			auto builtin = _builtins->at(name);
 			if (builtin.type() == Type::Func) {
 				return {builtin.func().value()};
@@ -571,6 +585,39 @@ namespace cg {
 			properties = TemplDict{
 				{"length", mk_templfunc(_list_length)},
 				{"empty", mk_templfunc(_list_empty)}
+			};
+		}
+
+		return &properties;
+	}
+
+	TemplFuncRes _str_length(TemplStr s) {
+		return {TemplInt(s.size())};
+	}
+
+	TemplFuncRes _str_empty(TemplStr s) {
+		return {TemplBool(s.empty())};
+	}
+
+	TemplFuncRes _str_lower(TemplStr s) {
+		std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+		return {s};
+	}
+
+	TemplFuncRes _str_upper(TemplStr s) {
+		std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+		return {s};
+	}
+
+	TemplDict *TemplObj::_str_builtins() {
+		static auto properties = TemplDict();
+
+		if (properties.size() == 0) {
+			properties = TemplDict{
+				{"length", mk_templfunc(_str_length)},
+				{"empty", mk_templfunc(_str_empty)},
+				{"upper", mk_templfunc(_str_upper)},
+				{"lower", mk_templfunc(_str_lower)},
 			};
 		}
 
