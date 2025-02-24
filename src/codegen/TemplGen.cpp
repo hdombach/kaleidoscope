@@ -507,9 +507,9 @@ namespace cg {
 		try {
 			auto name = node.child_with_cfg("identifier").value().consumed();
 			if (args.count(name) == 0) {
-				return KError::codegen("Unknown identifier \"" + name + "\"");
+				return KError::codegen("Unknown identifier \"" + name + "\"", node.location());
 			}
-			return args.at(name);
+			return args.at(name).dup().set_location(node.location());
 		} catch_kerror;
 	}
 	util::Result<TemplObj, KError> TemplGen::_eval_exp_int(
@@ -522,7 +522,8 @@ namespace cg {
 			for (auto c : node.consumed()) {
 				value = value * 10 + c - '0';
 			}
-			return {value};
+			auto value_obj = TemplObj(value).set_location(node.location());
+			return {value_obj};
 		} catch_kerror;
 	}
 
@@ -537,7 +538,7 @@ namespace cg {
 		c++;
 		while (*c != '"') {
 			if (*c == '\0') {
-				return KError::codegen("Unexpected end to string sequence");
+				return KError::codegen("Unexpected end to string sequence", node.location());
 			}
 
 			if (*c == '\\') {
@@ -547,14 +548,15 @@ namespace cg {
 						s += '"';
 						break;
 					default:
-						return KError::codegen(util::f("Unknown string escape sequence: \\", *c));
+						return KError::codegen(util::f("Unknown string escape sequence: \\", *c), node.location());
 				}
 			} else {
 				s += *c;
 			}
 			c++;
 		}
-		return {s};
+		auto obj = TemplObj(s).set_location(node.location());
+		return {obj};
 	}
 
 	util::Result<TemplObj, KError> TemplGen::_eval_exp1(
@@ -925,7 +927,7 @@ namespace cg {
 			if (cons[2] == '+') {
 				return true;
 			}
-			return KError::codegen(util::f("Invalid tag ending: ", cons[2]));
+			return KError::codegen(util::f("Invalid tag ending: ", cons[2]), node.location());
 		} else if (name == "commend_e" || name == "expression_e") {
 			if (cons.size() == 2) {
 				return def;
@@ -937,7 +939,7 @@ namespace cg {
 			if (cons[0] == '+') {
 				return true;
 			}
-			return KError::codegen(util::f("Invalid tag beggining: ", cons[0]));
+			return KError::codegen(util::f("Invalid tag beggining: ", cons[0]), node.location());
 		} else {
 			return KError::codegen(util::f("Cannot get tag padding for cfg node ", name));
 		}

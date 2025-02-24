@@ -52,6 +52,8 @@ namespace cg {
 
 			bool is_ref() const;
 
+			util::FileLocation location() const;
+
 			/**
 			 * @brief Combines all nodes that aren't in the list of provided cfg's
 			 */

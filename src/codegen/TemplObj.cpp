@@ -74,7 +74,7 @@ namespace cg {
 		_v = dict;
 		_builtins = nullptr;
 	}
-
+/*
 	TemplObj& TemplObj::operator=(TemplStr const &str) {
 		_v = str;
 		_builtins = _str_builtins();
@@ -122,7 +122,7 @@ namespace cg {
 		_builtins = nullptr;
 		return *this;
 	}
-
+*/
 	TemplFuncRes TemplObj::unary_plus(TemplFuncRes const &val) {
 		try {
 			auto type = val->type();
@@ -565,7 +565,25 @@ namespace cg {
 				return KError::codegen("Property " + name + " not found.");
 			}
 		} else {
-			return KError::internal("Default properties are not implimented yet");
+			return KError::internal(
+				"Default property " + name + " does not exist for type " + type_str(),
+				location(util::FileLocation())
+			);
+		}
+	}
+
+	TemplObj &TemplObj::set_location(util::FileLocation const &location) {
+		_location = location;
+		return *this;
+	}
+
+	util::FileLocation TemplObj::location(
+		util::FileLocation const &default_location
+	) const {
+		if (_location) {
+			return _location.value();
+		} else {
+			return default_location;
 		}
 	}
 

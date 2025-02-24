@@ -64,6 +64,10 @@ namespace cg {
 		return _ctx->get(_cfg_id).type() == CfgNode::Type::reference;
 	}
 
+	util::FileLocation AstNode::location() const {
+		return _location;
+	}
+
 	void AstNode::compress(std::vector<uint32_t> const &cfg_ids) {
 		auto new_children = std::vector<AstNode>();
 		for (auto &child : _children) {

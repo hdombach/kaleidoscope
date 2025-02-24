@@ -55,19 +55,12 @@ namespace cg {
 			 * Anything else: list
 			 */
 			TemplObj(std::initializer_list<TemplObj> args);
-			TemplObj(const char *str): _v(str) {}
+			TemplObj(const char *str): _v(str), _builtins(_str_builtins()) {}
 
 			TemplObj& operator=(TemplObj const &other) = default;
 			TemplObj& operator=(TemplObj &&other) = default;
-			TemplObj& operator=(TemplStr const &str);
-			TemplObj& operator=(TemplList const &list);
-			TemplObj& operator=(TemplDict const &dict);
-			TemplObj& operator=(bool val);
-			TemplObj& operator=(int64_t val);
-			TemplObj& operator=(int val);
-			TemplObj& operator=(TemplFunc const &func);
 
-			TemplObj& operator=(const char *str);
+			TemplObj dup() const { return *this; }
 
 			static TemplFuncRes unary_plus(TemplFuncRes const &val);
 			static TemplFuncRes unary_min(TemplFuncRes const &val);
@@ -114,8 +107,13 @@ namespace cg {
 
 			TemplFuncRes get_attribute(std::string const &name) const;
 
+			TemplObj &set_location(util::FileLocation const &location);
+
+			util::FileLocation location(util::FileLocation const &default_location) const;
+
 		private:
-			TemplDict *_builtins;
+			TemplDict *_builtins = nullptr;
+			std::optional<util::FileLocation> _location = std::nullopt;
 
 			std::variant<TemplStr, TemplList, TemplDict, TemplBool, TemplInt, TemplFunc> _v;
 
