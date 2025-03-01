@@ -72,14 +72,12 @@ namespace cg {
 			c["exp_plus"] |
 			c["exp_min"] |
 			c["exp_log_not"] |
-			c["exp_bit_not"] |
 			c["exp1"]
 		) + c["whitespace"];
 
 		c.prim("exp_plus") = "+"_cfg + c["exp2"];
 		c.prim("exp_min") = "-"_cfg + c["exp2"];
 		c.prim("exp_log_not") = "!"_cfg + c["exp2"];
-		c.prim("exp_bit_not") = "~"_cfg + c["exp2"];
 
 		c.prim("exp3") = c["whitespace"] + c["exp2"] + c.cls(
 			c["exp_mult"] |
@@ -98,23 +96,16 @@ namespace cg {
 		c.prim("exp_add") = "+"_cfg + c["exp3"];
 		c.prim("exp_sub") = "-"_cfg + c["exp3"];
 
-		c.prim("exp5") = c["whitespace"] + c["exp4"] + c.cls(
-			c["exp_bit_shift_l"] |
-			c["exp_bit_shift_r"]
-		) + c["whitespace"];
-		c.prim("exp_bit_shift_l") = "<<"_cfg + c["exp4"];
-		c.prim("exp_bit_shift_r") = ">>"_cfg + c["exp4"];
-
-		c.prim("exp6") = c["whitespace"] + c["exp5"] + c.cls(
+		c.prim("exp6") = c["whitespace"] + c["exp4"] + c.cls(
 			c["exp_comp_g"] |
 			c["exp_comp_ge"] |
 			c["exp_comp_l"] |
 			c["exp_comp_le"]
 		) + c["whitespace"];
-		c.prim("exp_comp_g") = ">"_cfg + c["exp5"];
-		c.prim("exp_comp_ge") = ">="_cfg + c["exp5"];
-		c.prim("exp_comp_l") = "<"_cfg + c["exp5"];
-		c.prim("exp_comp_le") = "<="_cfg + c["exp5"];
+		c.prim("exp_comp_g") = ">"_cfg + c["exp4"];
+		c.prim("exp_comp_ge") = ">="_cfg + c["exp4"];
+		c.prim("exp_comp_l") = "<"_cfg + c["exp4"];
+		c.prim("exp_comp_le") = "<="_cfg + c["exp4"];
 
 		c.prim("exp7") = c["whitespace"] + c["exp6"] + c.cls(
 			c["exp_comp_eq"] |
@@ -123,25 +114,10 @@ namespace cg {
 		c.prim("exp_comp_eq") = "=="_cfg + c["exp6"];
 		c.prim("exp_comp_neq") = "!="_cfg + c["exp6"];
 
-		c.prim("exp8") = c["whitespace"] + c["exp7"] + c.cls(
-			c["exp_bitwise_and"]
-		) + c["whitespace"];
-		c.prim("exp_bitwise_and") = "&"_cfg + c["exp7"];
-
-		c.prim("exp9") = c["whitespace"] + c["exp8"] + c.cls(
-			c["exp_bitwise_xor"]
-		) + c["whitespace"];
-		c.prim("exp_bitwise_xor") = "^"_cfg + c["exp8"];
-
-		c.prim("exp10") = c["whitespace"] + c["exp9"] + c.cls(
-			c["exp_bitwise_or"]
-		) + c["whitespace"];
-		c.prim("exp_bitwise_or") = "|"_cfg + c["exp9"];
-
-		c.prim("exp11") = c["whitespace"] + c["exp10"] + c.cls(
+		c.prim("exp11") = c["whitespace"] + c["exp7"] + c.cls(
 			c["exp_log_and"]
 		) + c["whitespace"];
-		c.prim("exp_log_and") = "&&"_cfg + c["exp10"];
+		c.prim("exp_log_and") = "&&"_cfg + c["exp7"];
 
 		c.prim("exp12") = c["whitespace"] + c["exp11"] + c.cls(
 			c["exp_log_or"]
@@ -458,18 +434,10 @@ namespace cg {
 			return _eval_exp3(node, args);
 		} else if (node.cfg_name() == "exp4") {
 			return _eval_exp4(node, args);
-		} else if (node.cfg_name() == "exp5") {
-			return _eval_exp5(node, args);
 		} else if (node.cfg_name() == "exp6") {
 			return _eval_exp6(node, args);
 		} else if (node.cfg_name() == "exp7") {
 			return _eval_exp7(node, args);
-		} else if (node.cfg_name() == "exp8") {
-			return _eval_exp8(node, args);
-		} else if (node.cfg_name() == "exp9") {
-			return _eval_exp9(node, args);
-		} else if (node.cfg_name() == "exp10") {
-			return _eval_exp10(node, args);
 		} else if (node.cfg_name() == "exp11") {
 			return _eval_exp11(node, args);
 		} else if (node.cfg_name() == "exp12") {
@@ -629,8 +597,6 @@ namespace cg {
 				return -_eval(exp2, args);
 			} else if (name == "exp_log_not") {
 				return !_eval(exp2, args);
-			} else if (name == "exp_bit_not") {
-				return ~_eval(exp2, args);
 			} else if (name == "exp1") {
 				return _eval(child, args);
 			} else {
@@ -698,7 +664,7 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	TemplGen::EvalRes TemplGen::_eval_exp5(
+	TemplGen::EvalRes TemplGen::_eval_exp6(
 		AstNode const &node,
 		TemplDict const &args
 	) const {
@@ -713,41 +679,14 @@ namespace cg {
 					continue;
 				} else if (name == "exp4") {
 					continue;
-				} else if (name == "exp_bit_shift_l") {
-					res = res << _eval(exp4, args);
-				} else if (name == "exp_bit_shift_r") {
-					res = res >> _eval(exp4, args);
-				} else {
-					return KError::codegen("Unknown child in _eval_exp5: " + name);
-				}
-			}
-			return res;
-		} catch_kerror;
-	}
-
-	TemplGen::EvalRes TemplGen::_eval_exp6(
-		AstNode const &node,
-		TemplDict const &args
-	) const {
-		try {
-			auto exp = node.child_with_cfg("exp5").value();
-			auto res = _eval(exp, args);
-
-			for (auto &child : node.children()) {
-				auto name = child.cfg_name();
-				auto exp5 = child.child_with_cfg("exp5");
-				if (name == "whitespace") {
-					continue;
-				} else if (name == "exp5") {
-					continue;
 				} else if (name == "exp_comp_g") {
-					res = res > _eval(exp5, args);
+					res = res > _eval(exp4, args);
 				} else if (name == "exp_comp_ge") {
-					res = res >= _eval(exp5, args);
+					res = res >= _eval(exp4, args);
 				} else if (name == "exp_comp_l") {
-					res = res < _eval(exp5, args);
+					res = res < _eval(exp4, args);
 				} else if (name == "exp_comp_le") {
-					res = res <= _eval(exp5, args);
+					res = res <= _eval(exp4, args);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp6: " + name);
 				}
@@ -783,7 +722,7 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	TemplGen::EvalRes TemplGen::_eval_exp8(
+	TemplGen::EvalRes TemplGen::_eval_exp11(
 		AstNode const &node,
 		TemplDict const &args
 	) const {
@@ -798,83 +737,8 @@ namespace cg {
 					continue;
 				} else if (name == "exp7") {
 					continue;
-				} else if (name == "exp_bitwise_and") {
-					res = res & _eval(exp7, args);
-				} else {
-					return KError::codegen("Unknown child in _eval_exp8: " + name);
-				}
-			}
-			return res;
-		} catch_kerror;
-	}
-
-	TemplGen::EvalRes TemplGen::_eval_exp9(
-		AstNode const &node,
-		TemplDict const &args
-	) const {
-		try {
-			auto exp = node.child_with_cfg("exp8").value();
-			auto res = _eval(exp, args);
-
-			for (auto &child : node.children()) {
-				auto name = child.cfg_name();
-				auto exp8 = child.child_with_cfg("exp8");
-				if (name == "whitespace") {
-					continue;
-				} else if (name == "exp8") {
-					continue;
-				} else if (name == "exp_bitwise_xor") {
-					res = res ^ _eval(exp8, args);
-				} else {
-					return KError::codegen("Unknown child in _eval_exp9: " + name);
-				}
-			}
-			return res;
-		} catch_kerror;
-	}
-
-	TemplGen::EvalRes TemplGen::_eval_exp10(
-		AstNode const &node,
-		TemplDict const &args
-	) const {
-		try {
-			auto exp = node.child_with_cfg("exp9").value();
-			auto res = _eval(exp, args);
-
-			for (auto &child : node.children()) {
-				auto name = child.cfg_name();
-				auto exp9 = child.child_with_cfg("exp9");
-				if (name == "whitespace") {
-					continue;
-				} else if (name == "exp9") {
-					continue;
-				} else if (name == "exp_bitwise_or") {
-					res = res & _eval(exp9, args);
-				} else {
-					return KError::codegen("Unknown child in _eval_exp10: " + name);
-				}
-			}
-			return res;
-		} catch_kerror;
-	}
-
-	TemplGen::EvalRes TemplGen::_eval_exp11(
-		AstNode const &node,
-		TemplDict const &args
-	) const {
-		try {
-			auto exp = node.child_with_cfg("exp10").value();
-			auto res = _eval(exp, args);
-
-			for (auto &child : node.children()) {
-				auto name = child.cfg_name();
-				auto exp10 = child.child_with_cfg("exp10");
-				if (name == "whitespace") {
-					continue;
-				} else if (name == "exp10") {
-					continue;
 				} else if (name == "exp_log_and") {
-					res = res && _eval(exp10, args);
+					res = res && _eval(exp7, args);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp11: " + name);
 				}

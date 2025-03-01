@@ -67,12 +67,8 @@ namespace cg {
 			EvalRes _eval_exp2(AstNode const &node, TemplDict const &args) const;
 			EvalRes _eval_exp3(AstNode const &node, TemplDict const &args) const;
 			EvalRes _eval_exp4(AstNode const &node, TemplDict const &args) const;
-			EvalRes _eval_exp5(AstNode const &node, TemplDict const &args) const;
 			EvalRes _eval_exp6(AstNode const &node, TemplDict const &args) const;
 			EvalRes _eval_exp7(AstNode const &node, TemplDict const &args) const;
-			EvalRes _eval_exp8(AstNode const &node, TemplDict const &args) const;
-			EvalRes _eval_exp9(AstNode const &node, TemplDict const &args) const;
-			EvalRes _eval_exp10(AstNode const &node, TemplDict const &args) const;
 			EvalRes _eval_exp11(AstNode const &node, TemplDict const &args) const;
 			EvalRes _eval_exp12(AstNode const &node, TemplDict const &args) const;
 

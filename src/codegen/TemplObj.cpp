@@ -74,55 +74,7 @@ namespace cg {
 		_v = dict;
 		_builtins = nullptr;
 	}
-/*
-	TemplObj& TemplObj::operator=(TemplStr const &str) {
-		_v = str;
-		_builtins = _str_builtins();
-		return *this;
-	}
 
-	TemplObj& TemplObj::operator=(TemplList const &list) {
-		_v = list;
-		_builtins = _list_builtins();
-		return *this;
-	}
-
-	TemplObj& TemplObj::operator=(TemplDict const &dict) {
-		_v = dict;
-		_builtins = nullptr;
-		return *this;
-	}
-
-	TemplObj& TemplObj::operator=(bool val) {
-		_v = val;
-		_builtins = nullptr;
-		return *this;
-	}
-
-	TemplObj& TemplObj::operator=(int64_t val) {
-		_v = val;
-		_builtins = nullptr;
-		return *this;
-	}
-
-	TemplObj& TemplObj::operator=(int val) {
-		_v = val;
-		_builtins = nullptr;
-		return *this;
-	}
-
-	TemplObj& TemplObj::operator=(TemplFunc const &func) {
-		_v = func;
-		_builtins = nullptr;
-		return *this;
-	}
-
-	TemplObj& TemplObj::operator=(const char *str) {
-		_v = str;
-		_builtins = nullptr;
-		return *this;
-	}
-*/
 	TemplFuncRes TemplObj::unary_plus(TemplFuncRes const &val) {
 		try {
 			auto type = val->type();
@@ -159,20 +111,6 @@ namespace cg {
 			} else {
 				return KError::codegen(util::f(
 					"Invalid operation !",
-					val->type_str()
-				));
-			}
-		} catch_kerror;
-	}
-
-	TemplFuncRes TemplObj::bit_not(TemplFuncRes const &val) {
-		try {
-			auto type = val->type();
-			if (type == Type::Integer) {
-				return {~val->integer().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Invalid operation ~",
 					val->type_str()
 				));
 			}
@@ -258,38 +196,6 @@ namespace cg {
 					lhs->type_str(),
 					" - ",
 					rhs->type_str()
-				));
-			}
-		} catch_kerror;
-	}
-
-	TemplFuncRes TemplObj::bitshift_l(TemplFuncRes const &l, TemplFuncRes const &r) {
-		try {
-			auto type = l->type();
-			if (type == Type::Integer) {
-				return {l->integer().value() << r->integer().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do operator ",
-					l->type_str(),
-					" << ",
-					r->type_str()
-				));
-			}
-		} catch_kerror;
-	}
-
-	TemplFuncRes TemplObj::bitshift_r(TemplFuncRes const &l, TemplFuncRes const &r) {
-		try {
-			auto type = l->type();
-			if (type == Type::Integer) {
-				return {l->integer().value() >> r->integer().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do operator ",
-					l->type_str(),
-					" >> ",
-					r->type_str()
 				));
 			}
 		} catch_kerror;
@@ -385,54 +291,6 @@ namespace cg {
 					"Cannot do operator ",
 					l->type_str(),
 					" != ",
-					r->type_str()
-				));
-			}
-		} catch_kerror;
-	}
-
-	TemplFuncRes TemplObj::bit_and(TemplFuncRes const &l, TemplFuncRes const &r) {
-		try {
-			auto type = l->type();
-			if (type == Type::Integer) {
-				return {l->integer().value() & r->integer().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do operator ",
-					l->type_str(),
-					" & ",
-					r->type_str()
-				));
-			}
-		} catch_kerror;
-	}
-
-	TemplFuncRes TemplObj::bit_xor(TemplFuncRes const &l, TemplFuncRes const &r) {
-		try {
-			auto type = l->type();
-			if (type == Type::Integer) {
-				return {l->integer().value() ^ r->integer().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do operator ",
-					l->type_str(),
-					" ^ ",
-					r->type_str()
-				));
-			}
-		} catch_kerror;
-	}
-
-	TemplFuncRes TemplObj::bit_or(TemplFuncRes const &l, TemplFuncRes const &r) {
-		try {
-			auto type = l->type();
-			if (type == Type::Integer) {
-				return {l->integer().value() | r->integer().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do operator ",
-					l->type_str(),
-					" | ",
 					r->type_str()
 				));
 			}
