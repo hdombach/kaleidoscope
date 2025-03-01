@@ -59,10 +59,11 @@ namespace cg {
 			c["exp"] +
 			c["expression_e"] + c["padding_e"];
 
-		c.prim("exp_sing") = c["whitespace"] + (c["exp_id"] | c["exp_int"] | c["exp_str"]) + c["whitespace"];
+		c.prim("exp_sing") = c["whitespace"] + (c["exp_id"] | c["exp_int"] | c["exp_str"] | c["exp_paran"]) + c["whitespace"];
 		c.prim("exp_id") = c["whitespace"] + c["identifier"] + c["whitespace"];
 		c.prim("exp_int") = c["digit"] + c.cls(c["digit"]);
 		c.prim("exp_str") = "\""_cfg + c.cls(!("\""_cfg | "\\"_cfg) | "\\\""_cfg) + "\""_cfg;
+		c.temp("exp_paran") = "("_cfg + c["exp"] + ")"_cfg;
 
 		c.prim("exp1") = c["exp_sing"] + c.cls(c["exp_member"] | c["exp_call"]);
 		c.prim("exp_member") = "."_cfg + c["exp_id"];
@@ -462,6 +463,8 @@ namespace cg {
 				return _eval_exp_int(child, args);
 			} else if (name == "exp_str") {
 				return _eval_exp_str(child, args);
+			} else if (name == "exp") {
+				return _eval(child, args);
 			} else {
 				return KError::codegen("Unknown node passed to _eval_exp_sing: " + child.cfg_name());
 			}

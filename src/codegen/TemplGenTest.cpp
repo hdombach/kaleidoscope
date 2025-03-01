@@ -789,4 +789,30 @@ namespace cg {
 			"lower: hello world\n"
 		);
 	}
+
+	TEST(templ_gen, paranthesis) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto args = TemplObj{
+			{"foo", 5},
+			{"bar", 10}
+		}.dict().value();
+
+		auto src = 
+			"value is {{(foo+4)*bar}}";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"value is 90"
+		);
+
+		src =
+			"value is {{foo+ ( 4*bar ) }}";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"value is 45"
+		);
+	}
 }
