@@ -170,6 +170,25 @@ namespace cg {
 
 	/* Forgive me for what I have done */
 
+	inline TemplFunc mk_templfuncs() {
+		return [](TemplList) -> TemplFuncRes {
+			return KError::codegen("Unknown ");
+		};
+	}
+
+	template<typename T, typename ... Rest>
+	inline TemplFunc mk_templfuncs(T first, Rest...rest) {
+		auto first_func = mk_templfunc(first);
+		auto rest_func = mk_templfuncs(rest...);
+		return [first_func, rest_func](TemplList l) -> TemplFuncRes {
+			if (auto res = first_func(l)) {
+				return res;
+			} else {
+				return rest_func(l);
+			}
+		};
+	}
+
 	template<typename T>
 	inline TemplFunc mk_templfunc(T const &func) {
 		return _mk_templfunc(std::function(func), 0);

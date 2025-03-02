@@ -852,4 +852,95 @@ namespace cg {
 			"Hello with prepend is hi hello"
 		);
 	}
+
+	TEST(templ_gen, overloaded_functions) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto indent_str_str = [](std::string s, std::string indent) -> TemplFuncRes {
+			auto r = indent;
+			for (auto c : s) {
+				r += c;
+				if (c == '\n') {
+					r += indent;
+				}
+			}
+			return {r};
+		};
+
+		auto indent_str = [indent_str_str](std::string s) -> TemplFuncRes {
+			return indent_str_str(s, "\t");
+		};
+
+		auto indent_str_int = [indent_str_str](std::string s, TemplInt indent) -> TemplFuncRes {
+			auto indent_str = std::string();
+			for (auto i = 0; i < indent; i++) {
+				indent_str += "\t";
+			}
+			return indent_str_str(s, indent_str);
+		};
+
+		auto indent = mk_templfuncs(indent_str_str, indent_str, indent_str_int);
+
+		auto args = TemplObj{
+			{"indent_str", indent},
+			{"quote",
+				"A single raindrop,\n"
+				"Mixed with brine and oily smoke,\n"
+				"Glistens in the web.\n"
+			}
+		}.dict().value();
+
+		auto src =
+			"A haiku:\n"
+			"{{quote|indent_str}}";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"A haiku:\n"
+			"\tA single raindrop,\n"
+			"\tMixed with brine and oily smoke,\n"
+			"\tGlistens in the web.\n"
+			"\t"
+		);
+
+		src =
+			"A haiku:\n"
+			"{{quote|indent_str(2)}}";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"A haiku:\n"
+			"\t\tA single raindrop,\n"
+			"\t\tMixed with brine and oily smoke,\n"
+			"\t\tGlistens in the web.\n"
+			"\t\t"
+		);
+
+		src =
+			"A haiku:\n"
+			"{{quote|indent_str(\"--\")}}";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"A haiku:\n"
+			"--A single raindrop,\n"
+			"--Mixed with brine and oily smoke,\n"
+			"--Glistens in the web.\n"
+			"--"
+		);
+
+		src =
+			"A haiku:\n"
+			"{{indent_str(quote, \"> \")}}";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"A haiku:\n"
+			"> A single raindrop,\n"
+			"> Mixed with brine and oily smoke,\n"
+			"> Glistens in the web.\n"
+			"> "
+		);
+	}
 }
