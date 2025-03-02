@@ -125,7 +125,12 @@ namespace cg {
 		) + c["whitespace"];
 		c.prim("exp_log_or") = "||"_cfg + c["exp11"];
 
-		c.prim("exp") = c["exp12"];
+		c.prim("exp_filter_frag") = c["exp_id"] + c.opt(c["exp_call"]);
+		c.prim("exp_filter") = c["whitespace"] +
+			c["exp12"] + c.cls("|"_cfg + c["exp_filter_frag"]) +
+			c["whitespace"];
+
+		c.prim("exp") = c["exp_filter"];
 
 		c.prim("statement_b") = "{%"_cfg + c.opt("-"_cfg | "+"_cfg);
 		c.prim("statement_e") = c.opt("-"_cfg | "+"_cfg) + "%}"_cfg;
@@ -423,26 +428,29 @@ namespace cg {
 		AstNode const &node,
 		TemplDict const &args
 	) const {
-		if (node.cfg_name() == "exp") {
+		auto name = node.cfg_name();
+		if (name == "exp") {
 			return _eval(node.children()[0], args);
-		} else if (node.cfg_name() == "exp_sing") {
+		} else if (name == "exp_sing") {
 			return _eval_exp_sing(node, args);
-		} else if (node.cfg_name() == "exp1") {
+		} else if (name == "exp1") {
 			return _eval_exp1(node, args);
-		} else if (node.cfg_name() == "exp2") {
+		} else if (name == "exp2") {
 			return _eval_exp2(node, args);
-		} else if (node.cfg_name() == "exp3") {
+		} else if (name == "exp3") {
 			return _eval_exp3(node, args);
-		} else if (node.cfg_name() == "exp4") {
+		} else if (name == "exp4") {
 			return _eval_exp4(node, args);
-		} else if (node.cfg_name() == "exp6") {
+		} else if (name == "exp6") {
 			return _eval_exp6(node, args);
-		} else if (node.cfg_name() == "exp7") {
+		} else if (name == "exp7") {
 			return _eval_exp7(node, args);
-		} else if (node.cfg_name() == "exp11") {
+		} else if (name == "exp11") {
 			return _eval_exp11(node, args);
-		} else if (node.cfg_name() == "exp12") {
+		} else if (name == "exp12") {
 			return _eval_exp12(node, args);
+		} else if (name == "exp_filter") {
+			return _eval_filter(node, args);
 		} else {
 			return KError::codegen("Unimplimented AstNode type: " + node.cfg_name());
 		}
@@ -770,6 +778,48 @@ namespace cg {
 					res = res || _eval(exp11, args);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp12: " + name);
+				}
+			}
+			return res;
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_filter_frag(
+		TemplObj const &lhs,
+		AstNode const &node,
+		TemplDict const &args
+	) const {
+		try {
+			CG_ASSERT(node.cfg_name() == "exp_filter_frag", "Must be an filter frag");
+			auto filter = _eval_exp_id(node.child_with_cfg("exp_id").value(), args);
+			auto l_args = args;
+			l_args["self"] = lhs;
+			if (auto call = node.child_with_cfg("exp_call")) {
+				return _eval_exp_call(filter.value(), call.value(), l_args);
+			} else {
+				auto call_args = TemplList();
+				call_args.push_back(lhs);
+				return filter->func().value()(call_args);
+			}
+		} catch_kerror;
+	}
+
+	TemplGen::EvalRes TemplGen::_eval_filter(
+		AstNode const &node,
+		TemplDict const &args
+	) const {
+		try {
+			auto exp = node.child_with_cfg("exp12").value();
+			auto res = _eval(exp, args);
+
+			for (auto &child : node.children()) {
+				auto name = child.cfg_name();
+				if (name == "whitespace") {
+					continue;
+				} else if (name == "exp12") {
+					continue;
+				} else if (name == "exp_filter_frag") {
+					res = _eval_filter_frag(res.value(), child, args);
 				}
 			}
 			return res;

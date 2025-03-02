@@ -815,4 +815,41 @@ namespace cg {
 			"value is 45"
 		);
 	}
+
+	TEST(templ_gen, filter) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto str_reverse = [](std::string str) -> TemplFuncRes {
+			auto res = str;
+			std::reverse(res.begin(), res.end());
+			return {res};
+		};
+
+		auto str_prepend = [](std::string str, std::string begin) -> TemplFuncRes {
+			return {begin + str};
+		};
+
+		auto args = TemplObj{
+			{"str_reverse", mk_templfunc(str_reverse)},
+			{"str_prepend", mk_templfunc(str_prepend)},
+			{"hello", "hello"}
+		}.dict().value();
+
+		auto src =
+			"Hello in reverse is {{hello|str_reverse}}";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Hello in reverse is olleh"
+		);
+
+		src =
+			"Hello with prepend is {{hello|str_prepend(\"hi \")}}";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Hello with prepend is hi hello"
+		);
+	}
 }

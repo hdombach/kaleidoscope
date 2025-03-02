@@ -54,7 +54,8 @@ namespace cg {
 			EvalRes _eval_exp_str(AstNode const &node, TemplDict const &args) const;
 
 			EvalRes _eval_exp1(AstNode const &node, TemplDict const &args) const;
-			EvalRes _eval_exp_member( TemplObj const &lhs,
+			EvalRes _eval_exp_member(
+				TemplObj const &lhs,
 				AstNode const &node,
 				TemplDict const &args
 			) const;
@@ -71,6 +72,12 @@ namespace cg {
 			EvalRes _eval_exp7(AstNode const &node, TemplDict const &args) const;
 			EvalRes _eval_exp11(AstNode const &node, TemplDict const &args) const;
 			EvalRes _eval_exp12(AstNode const &node, TemplDict const &args) const;
+			EvalRes _eval_filter_frag(
+				TemplObj const &lhs,
+				AstNode const &node,
+				TemplDict const &args
+			) const;
+			EvalRes _eval_filter(AstNode const &node, TemplDict const &args) const;
 
 			util::Result<bool, KError> _tag_keep_padding(AstNode const &node, bool def) const;
 
