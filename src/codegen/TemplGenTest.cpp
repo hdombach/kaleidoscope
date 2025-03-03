@@ -943,4 +943,87 @@ namespace cg {
 			"> "
 		);
 	}
+
+	TEST(templ_gen, abs_filter) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto args = TemplObj{
+			{"value", -42},
+		}.dict().value();
+
+		auto src =
+			"abs of value is {{value|abs}}";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"abs of value is 42"
+		);
+
+		src =
+			"abs of expression is {{-10-2|abs}}";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"abs of expression is 8"
+		);
+	}
+
+	TEST(templ_gen, capitilize) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto args = TemplObj{
+			{"first_name", "hezekiah"},
+			{"last_name", "dombach"},
+		}.dict().value();
+
+		auto src =
+			"My name is {{first_name|capitilize}} {{last_name|capitilize}}";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"My name is Hezekiah Dombach"
+		);
+	}
+
+	TEST(templ_gen, center) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto args = TemplObj{
+			{"title_str", "title"}
+		}.dict().value();
+
+		auto src =
+			"Title format is:\n"
+			"{{title_str|center}}";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Title format is:\n"
+			"                                     title"
+		);
+
+		src =
+			"Title format is:\n"
+			"{{title_str|center(12)}}";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Title format is:\n"
+			"   title"
+		);
+
+		src =
+			"Title format is:\n"
+			"{{title_str|capitilize|center(12)}}";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Title format is:\n"
+			"   Title"
+		);
+
+	}
 }

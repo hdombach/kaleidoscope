@@ -81,5 +81,11 @@ namespace cg {
 
 			util::Result<bool, KError> _tag_keep_padding(AstNode const &node, bool def) const;
 
+			util::Result<void, KError> _add_builtin_filter(
+				std::string const &name,
+				TemplFunc const &func,
+				TemplDict &args
+			) const;
+			util::Result<void, KError> _add_builtin_filters(TemplDict &args) const;
 	};
 }

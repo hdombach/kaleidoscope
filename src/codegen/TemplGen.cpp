@@ -191,7 +191,9 @@ namespace cg {
 			node.debug_dot(file);
 			file.close();
 
-			return _codegen(node, args);
+			auto l_args = args;
+			TRY(_add_builtin_filters(l_args));
+			return _codegen(node, l_args);
 		} catch_kerror;
 	}
 
@@ -860,5 +862,61 @@ namespace cg {
 		} else {
 			return KError::codegen(util::f("Cannot get tag padding for cfg node ", name));
 		}
+	}
+
+	util::Result<void, KError> TemplGen::_add_builtin_filter(
+		std::string const &name,
+		TemplFunc const &func,
+		TemplDict &args
+	) const {
+		if (args.contains(name)) {
+			return KError::codegen(
+				util::f("Cannot pass in arg with name ", name, " because it is a builtin arg")
+			);
+		} else {
+			args[name] = func;
+		}
+		return {};
+	}
+
+	TemplFuncRes _builtin_abs(TemplInt i) {
+		return {std::abs(i)};
+	}
+	TemplFuncRes _builtin_capitilize(std::string s) {
+		auto r = s;
+		std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+		if (r.size() > 0) {
+			r[0] = ::toupper(r[0]);
+		}
+		return {r};
+	}
+	TemplFuncRes _builtin_center_int(TemplStr s, TemplInt i) {
+		auto r = std::string();
+		auto cur = s.begin();
+		auto end = s.end();
+		while (cur != end) {
+			auto line_start = cur;
+			do {
+				cur++;
+			} while (cur != end && *cur != '\n');
+
+			auto padding = (i - (cur - line_start)) / 2;
+			r += std::string(padding, ' ') + std::string(line_start, cur);
+		}
+		return {r};
+	}
+	TemplFuncRes _builtin_center(TemplStr s) {
+		return _builtin_center_int(s, 80);
+	}
+
+	util::Result<void, KError> TemplGen::_add_builtin_filters(TemplDict &args) const {
+		TRY(_add_builtin_filter("abs", mk_templfunc(_builtin_abs), args));
+		TRY(_add_builtin_filter("capitilize", mk_templfunc(_builtin_capitilize), args));
+		TRY(_add_builtin_filter(
+				"center",
+				mk_templfuncs(_builtin_center, _builtin_center_int),
+				args
+		));
+		return {};
 	}
 }
