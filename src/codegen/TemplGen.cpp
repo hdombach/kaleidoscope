@@ -908,6 +908,12 @@ namespace cg {
 	TemplFuncRes _builtin_center(TemplStr s) {
 		return _builtin_center_int(s, 80);
 	}
+	TemplFuncRes _builtin_first(TemplList l) {
+		if (l.size() == 0) {
+			return KError::codegen("Cannot take first of list with size 0");
+		}
+		return {l[0]};
+	}
 
 	util::Result<void, KError> TemplGen::_add_builtin_filters(TemplDict &args) const {
 		TRY(_add_builtin_filter("abs", mk_templfunc(_builtin_abs), args));
@@ -917,6 +923,7 @@ namespace cg {
 				mk_templfuncs(_builtin_center, _builtin_center_int),
 				args
 		));
+		TRY(_add_builtin_filter("first", mk_templfunc(_builtin_first), args));
 		return {};
 	}
 }

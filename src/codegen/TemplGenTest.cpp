@@ -1024,6 +1024,28 @@ namespace cg {
 			"Title format is:\n"
 			"   Title"
 		);
+	}
 
+	TEST(templ_gen, first) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto args = TemplObj{
+			{"my_list", {"apple", "bannanna", "nuclear rod"}},
+		}.dict().value();
+
+		auto src =
+			"First element of list is {{my_list|first}}";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"First element of list is apple"
+		);
+
+		args = TemplObj{
+			{"my_list", TemplList()}
+		}.dict().value();
+
+		EXPECT_KERROR(gen->codegen(src, args), KError::CODEGEN);
 	}
 }
