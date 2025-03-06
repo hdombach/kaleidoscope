@@ -25,16 +25,16 @@ namespace util {
 			return *this;
 		}
 
-		filter_iterator& operator++(int) {
+		filter_iterator operator++(int) {
 			auto ret = *_begin;
 			++(*this);
 			return ret;
 		}
 
-		bool operator==(filter_iterator other) const {
+		bool operator==(filter_iterator const &other) const {
 			return _begin == other._begin;
 		}
-		bool operator!=(filter_iterator other) const {
+		bool operator!=(filter_iterator const &other) const {
 			return !(*this == other);
 		}
 

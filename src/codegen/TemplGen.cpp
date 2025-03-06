@@ -4,7 +4,10 @@
 #include "util/KError.hpp"
 #include "util/IterAdapter.hpp"
 #include "util/log.hpp"
+#include "util/lines_iterator.hpp"
 
+#include <algorithm>
+#include <cctype>
 #include <fstream>
 
 namespace cg {
@@ -192,7 +195,7 @@ namespace cg {
 			file.close();
 
 			auto l_args = args;
-			TRY(_add_builtin_filters(l_args));
+			TRY(_add_builtin_identifiers(l_args));
 			return _codegen(node, l_args);
 		} catch_kerror;
 	}
@@ -864,14 +867,14 @@ namespace cg {
 		}
 	}
 
-	util::Result<void, KError> TemplGen::_add_builtin_filter(
+	util::Result<void, KError> TemplGen::_add_builtin_identifier(
 		std::string const &name,
-		TemplFunc const &func,
+		TemplObj const &func,
 		TemplDict &args
 	) const {
 		if (args.contains(name)) {
 			return KError::codegen(
-				util::f("Cannot pass in arg with name ", name, " because it is a builtin arg")
+				util::f("Cannot pass in arg with name ", name, " because it is a builtin identifier")
 			);
 		} else {
 			args[name] = func;
@@ -892,16 +895,9 @@ namespace cg {
 	}
 	TemplFuncRes _builtin_center_int(TemplStr s, TemplInt i) {
 		auto r = std::string();
-		auto cur = s.begin();
-		auto end = s.end();
-		while (cur != end) {
-			auto line_start = cur;
-			do {
-				cur++;
-			} while (cur != end && *cur != '\n');
-
-			auto padding = (i - (cur - line_start)) / 2;
-			r += std::string(padding, ' ') + std::string(line_start, cur);
+		for (auto line : util::get_lines(s)) {
+			auto padding = (i - line.size()) / 2;
+			r += std::string(padding, ' ') + std::string(line);
 		}
 		return {r};
 	}
@@ -914,16 +910,69 @@ namespace cg {
 		}
 		return {l[0]};
 	}
+	TemplFuncRes _builtin_indent(TemplList args) {
+		try {
+			if (args.size() < 1 || args.size() > 4) {
+				return KError::codegen(util::f(args.size(), " is not a valid arg count for filter."));
+			}
+			auto r = std::string();
+			auto str = args[0].str().value();
+			auto indent_str = std::string("    ");
+			auto indent = false;
+			auto indent_blank = false;
 
-	util::Result<void, KError> TemplGen::_add_builtin_filters(TemplDict &args) const {
-		TRY(_add_builtin_filter("abs", mk_templfunc(_builtin_abs), args));
-		TRY(_add_builtin_filter("capitilize", mk_templfunc(_builtin_capitilize), args));
-		TRY(_add_builtin_filter(
+			//Parse args
+
+			// Indent Value
+			if (args.size() >= 2) {
+				if (auto str = args[1].str(false)) {
+					indent_str = str.value();
+				} else if (auto i = args[1].integer()) {
+					indent_str = std::string(i.value(), ' ');
+				};
+			}
+
+			// Indent first?
+			if (args.size() >= 3) {
+				// indent first?
+				indent = args[2].boolean().value();
+			}
+
+			//Skip empty?
+			if (args.size() >= 4) {
+				indent_blank = args[3].boolean().value();
+			}
+
+			for (auto line : util::get_lines(str)) {
+				bool is_blank = std::all_of(line.begin(), line.end(), isspace);
+
+				if (indent) {
+					if (!is_blank || indent_blank) {
+						r += indent_str;
+					}
+				} else {
+					indent = true;
+				}
+				r += std::string(line) + "\n";
+			}
+
+			return {r};
+		} catch_kerror;
+	}
+
+	util::Result<void, KError> TemplGen::_add_builtin_identifiers(TemplDict &args) const {
+		TRY(_add_builtin_identifier("true", true, args));
+		TRY(_add_builtin_identifier("false", false, args));
+
+		TRY(_add_builtin_identifier("abs", mk_templfunc(_builtin_abs), args));
+		TRY(_add_builtin_identifier("capitilize", mk_templfunc(_builtin_capitilize), args));
+		TRY(_add_builtin_identifier(
 				"center",
 				mk_templfuncs(_builtin_center, _builtin_center_int),
 				args
 		));
-		TRY(_add_builtin_filter("first", mk_templfunc(_builtin_first), args));
+		TRY(_add_builtin_identifier("first", mk_templfunc(_builtin_first), args));
+		TRY(_add_builtin_identifier("indent", _builtin_indent, args));
 		return {};
 	}
 }

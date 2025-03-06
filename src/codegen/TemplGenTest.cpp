@@ -362,8 +362,6 @@ namespace cg {
 			{"value", 59},
 			{"zero", 0},
 			{"neg_value", -84},
-			{"true", true},
-			{"false", false}
 		}.dict().value();
 
 		auto src = "Hello {{+value}}";
@@ -622,8 +620,6 @@ namespace cg {
 		auto args = TemplObj{
 			{"pos_value", 6},
 			{"neg_value", -8},
-			{"true", true},
-			{"false", false}
 		}.dict().value();
 
 		auto src = "true && true is {{true && true}}";
@@ -658,8 +654,6 @@ namespace cg {
 		auto args = TemplObj{
 			{"pos_value", 6},
 			{"neg_value", -8},
-			{"true", true},
-			{"false", false}
 		}.dict().value();
 
 		auto src = "true || false is {{true || false}}";
@@ -1047,5 +1041,117 @@ namespace cg {
 		}.dict().value();
 
 		EXPECT_KERROR(gen->codegen(src, args), KError::CODEGEN);
+	}
+
+	TEST(templ_gen, indent) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto args = TemplObj{
+			{"quote",
+				"The day has sunk\n"
+				"Into the depths of time untold.\n"
+				" \n"
+				"The dawn has shattered\n"
+				"Leaving fragments strewn about.\n"
+			}
+		}.dict().value();
+
+		auto src =
+			"<quote>\n"
+			"    {{quote|indent}}"
+			"</quote>\n";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"<quote>\n"
+			"    The day has sunk\n"
+			"    Into the depths of time untold.\n"
+			" \n"
+			"    The dawn has shattered\n"
+			"    Leaving fragments strewn about.\n"
+			"</quote>\n"
+		);
+
+		src =
+			"<quote>\n"
+			"   {{quote|indent(3)}}"
+			"</quote>\n";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"<quote>\n"
+			"   The day has sunk\n"
+			"   Into the depths of time untold.\n"
+			" \n"
+			"   The dawn has shattered\n"
+			"   Leaving fragments strewn about.\n"
+			"</quote>\n"
+		);
+
+		src =
+			"<quote>\n"
+			"> {{quote|indent(\"> \")}}"
+			"</quote>\n";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"<quote>\n"
+			"> The day has sunk\n"
+			"> Into the depths of time untold.\n"
+			" \n"
+			"> The dawn has shattered\n"
+			"> Leaving fragments strewn about.\n"
+			"</quote>\n"
+		);
+
+		src =
+			"<quote>\n"
+			"> {{quote|indent(\"> \", false)}}"
+			"</quote>\n";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"<quote>\n"
+			"> The day has sunk\n"
+			"> Into the depths of time untold.\n"
+			" \n"
+			"> The dawn has shattered\n"
+			"> Leaving fragments strewn about.\n"
+			"</quote>\n"
+		);
+
+		src =
+			"<quote>\n"
+			"{{quote|indent(\"> \", true)}}"
+			"</quote>\n";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"<quote>\n"
+			"> The day has sunk\n"
+			"> Into the depths of time untold.\n"
+			" \n"
+			"> The dawn has shattered\n"
+			"> Leaving fragments strewn about.\n"
+			"</quote>\n"
+		);
+
+		src =
+			"<quote>\n"
+			"{{quote|indent(\"> \", true, true)}}"
+			"</quote>\n";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"<quote>\n"
+			"> The day has sunk\n"
+			"> Into the depths of time untold.\n"
+			">  \n"
+			"> The dawn has shattered\n"
+			"> Leaving fragments strewn about.\n"
+			"</quote>\n"
+		);
+
 	}
 }
