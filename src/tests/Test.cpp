@@ -9,12 +9,29 @@ int test_main() {
 		uint32_t suite_total = 0;
 		uint32_t suite_passed = 0;
 		for (auto &test : suite.second) {
-			test.second.fn(test.second);
-			auto test_total = test.second.total_test_count;
-			auto test_passed = test.second.passed_test_count;
+			try {
+				test.second.fn(test.second);
+				auto test_total = test.second.total_test_count;
+				auto test_passed = test.second.passed_test_count;
 
-			suite_total += test_total;
-			suite_passed += test_passed;
+				suite_passed += test_passed;
+				suite_total += test_total;
+			} catch (KError const &e) {
+				suite_total++;
+				auto &os = fail_head(test.second) << std::endl;
+				os << std::endl;
+				os << "\tException was thrown:" << std::endl << "\t";
+				log_error(e) << std::endl;
+			} catch (std::exception const &e) {
+				suite_total++;
+				auto &os = fail_head(test.second) << std::endl;
+				os << std::endl;
+				os << "\tException was thrown:" << std::endl << "\t";
+				log_error() << "Exception thrown " << e.what() << std::endl;
+			} catch (...) {
+				suite_total++;
+				log_error() << "Unknown exception was thrown" << std::endl;
+			}
 		}
 
 		all_total += suite_total;
