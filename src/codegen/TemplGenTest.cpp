@@ -1173,4 +1173,98 @@ namespace cg {
 			"Hello World\n"
 		);
 	}
+
+	TEST(templ_gen, macro_w_args) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto args = TemplDict();
+
+		auto src =
+			"{\% macro hello(name, id) %}\n"
+			"Hello {{name}}.\n"
+			"Your user id is {{id}}.\n"
+			"{\% endmacro %}\n"
+			"{{hello(\"Alex\", 423)}}"
+			"";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Hello Alex.\n"
+			"Your user id is 423.\n"
+		);
+
+		src =
+			"{\% macro hello(name, id) %}\n"
+			"Hello {{name}}.\n"
+			"Your user id is {{id}}.\n"
+			"{\% endmacro %}\n"
+			"{{hello(\"Alex\")}}"
+			"";
+
+		EXPECT_KERROR(
+			gen->codegen(src, args),
+			KError::CODEGEN
+		);
+
+		src =
+			"{\% macro hello(name, id) %}\n"
+			"Hello {{name}}.\n"
+			"Your user id is {{id}}.\n"
+			"{\% endmacro %}\n"
+			"{{hello(\"Alex\", 142, \"Extra\")}}"
+			"";
+
+		EXPECT_KERROR(
+			gen->codegen(src, args),
+			KError::CODEGEN
+		);
+
+		src =
+			"{\% macro hello(name, id, role=\"Unknown\") %}\n"
+			"Hello {{name}}.\n"
+			"Your user id is {{id}}.\n"
+			"Your role is {{role}}.\n"
+			"{\% endmacro %}\n"
+			"{{hello(\"Alex\", 142)}}"
+			"";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Hello Alex.\n"
+			"Your user id is 142.\n"
+			"Your role is Unknown.\n"
+		);
+
+		src =
+			"{\% macro hello(name, id, role=\"Unknown\") %}\n"
+			"Hello {{name}}.\n"
+			"Your user id is {{id}}.\n"
+			"Your role is {{role}}.\n"
+			"{\% endmacro %}\n"
+			"{{hello(\"Alex\", 142, \"Admin\")}}"
+			"";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Hello Alex.\n"
+			"Your user id is 142.\n"
+			"Your role is Admin.\n"
+		);
+
+		src =
+			"{\% macro hello(name, id, role=\"Unknown\") %}\n"
+			"Hello {{name}}.\n"
+			"Your user id is {{id}}.\n"
+			"Your role is {{role}}.\n"
+			"{\% endmacro %}\n"
+			"{{hello(\"Alex\")}}"
+			"";
+
+		EXPECT_KERROR(
+			gen->codegen(src, args),
+			KError::CODEGEN
+		);
+
+	}
 }

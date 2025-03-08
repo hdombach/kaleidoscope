@@ -447,7 +447,7 @@ namespace cg {
 		try {
 			auto arg_def = node.child_with_cfg("sfrag_macro").value();
 			auto macro_name = arg_def.child_with_cfg("identifier")->consumed();
-			auto arg_list = arg_def.child_with_cfg("sfrag_argdef_list").value();
+			auto macro_arg_list = arg_def.child_with_cfg("sfrag_argdef_list").value();
 			auto content = node.child_with_cfg("lines").value();
 
 			if (args.contains(macro_name)) {
@@ -457,24 +457,45 @@ namespace cg {
 					" because identifier already exists"
 				));
 			}
+
+			auto macro_args = std::vector<std::tuple<std::string, TemplObj>>();
+			for (auto &macro_arg_node : macro_arg_list.children()) {
+				auto macro_arg_name = macro_arg_node.child_with_cfg("identifier")->consumed();
+				auto macro_arg_value = TemplObj();
+				if (auto exp_node = macro_arg_node.child_with_cfg("exp")) {
+					macro_arg_value = _eval(exp_node, args).value();
+				}
+				macro_args.push_back({macro_arg_name, macro_arg_value});
+			}
 			
-			TemplFunc func = [this, arg_list, args, macro_name, content](TemplList l) -> TemplFuncRes {
+			TemplFunc func = [this, macro_args, args, macro_name, content](TemplList l) -> TemplFuncRes {
 				auto local_args = args;
-				if (arg_list.size() != l.size()) {
+				if (macro_args.size() < l.size()) {
 					return KError::codegen(util::f(
-						"Wrong number of arguments provided to macro ",
+						"Too many arguments provided to macro ",
 						macro_name,
 						". ",
-						arg_list.size(),
+						macro_args.size(),
 						" expected, ",
 						l.size(),
 						" received."
 					));
 				}
 				int i = 0;
-				for (auto &arg_node : arg_list.children()) {
-					auto arg_name = arg_node.child_with_cfg("exp_id")->consumed();
-					local_args[arg_name] = l[i];
+				for (auto &arg_node : macro_args) {
+					auto &[arg_name, arg_value] = arg_node;
+					if (i < l.size()) {
+						local_args[arg_name] = l[i];
+					} else {
+						if (arg_value.type() == TemplObj::Type::None) {
+							return KError::codegen(util::f(
+								"Not enough arguments passed to macro:",
+								macro_name
+							));
+						} else {
+							local_args[arg_name] = arg_value;
+						}
+					}
 					i++;
 				}
 				return {_codegen(content, local_args).value()};

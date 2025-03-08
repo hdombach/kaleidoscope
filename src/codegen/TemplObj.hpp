@@ -12,6 +12,7 @@
 
 namespace cg {
 	class TemplObj;
+	struct TemplNone {};
 	using TemplFloat = double;
 	using TemplStr = std::string;
 	using TemplList = std::vector<TemplObj>;
@@ -26,13 +27,13 @@ namespace cg {
 		public:
 
 			enum struct Type: size_t {
+				None,
 				String,
 				List,
 				Dict,
 				Boolean,
 				Integer,
 				Func,
-				None
 			};
 		public:
 			TemplObj() = default;
@@ -85,7 +86,7 @@ namespace cg {
 			 */
 			util::Result<std::string, KError> str(bool convert=true) const;
 
-			Type type() const { return Type(_v.index()); }
+			Type type() const;
 
 			const char *type_str() const;
 
@@ -109,7 +110,7 @@ namespace cg {
 			TemplDict *_builtins = nullptr;
 			std::optional<util::FileLocation> _location = std::nullopt;
 
-			std::variant<TemplStr, TemplList, TemplDict, TemplBool, TemplInt, TemplFunc> _v;
+			std::variant<TemplNone, TemplStr, TemplList, TemplDict, TemplBool, TemplInt, TemplFunc> _v;
 
 		private:
 			static TemplDict *_list_builtins();

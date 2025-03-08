@@ -356,6 +356,10 @@ namespace cg {
 		}
 	}
 
+	TemplObj::Type TemplObj::type() const {
+		return Type(_v.index());
+	}
+
 	const char *TemplObj::type_str() const {
 		return std::vector<const char *>{
 			"String",
