@@ -1152,6 +1152,25 @@ namespace cg {
 			"> Leaving fragments strewn about.\n"
 			"</quote>\n"
 		);
+	}
 
+	TEST(templ_gen, macro) {
+		auto gen = TemplGen::create();
+		EXPECT(gen);
+
+		auto args = TemplDict();
+
+		auto src =
+			"{\% macro hello() %}\n"
+			"Hello World"
+			"{\% endmacro %}\n"
+			"{{hello()}}\n"
+			"{{hello()}}\n";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Hello World\n"
+			"Hello World\n"
+		);
 	}
 }

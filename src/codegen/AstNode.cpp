@@ -68,17 +68,17 @@ namespace cg {
 		return _location;
 	}
 
-	void AstNode::compress(std::vector<uint32_t> const &cfg_ids) {
+	void AstNode::compress(std::vector<uint32_t> const &cfg_ids, bool keep_empty) {
 		auto new_children = std::vector<AstNode>();
 		for (auto &child : _children) {
-			child.compress(cfg_ids);
+			child.compress(cfg_ids, keep_empty);
 			if (std::find(cfg_ids.begin(), cfg_ids.end(), child._cfg_id) == cfg_ids.end()) {
 				//Combine the current child into slef
 				_consumed += child._consumed;
 				new_children.insert(new_children.end(), child.children().begin(), child.children().end());
 			} else {
 				//Keep the current child if it is not empty
-				if (!child.consumed().empty() || child.children().size() > 0) {
+				if (keep_empty || (!child.consumed().empty() || child.children().size() > 0)) {
 					new_children.push_back(child);
 				}
 			}
@@ -86,7 +86,7 @@ namespace cg {
 		_children = new_children;
 	}
 
-	util::Result<void, KError> AstNode::compress() {
+	util::Result<void, KError> AstNode::compress(bool keep_empty) {
 		auto const &cfg_names = _ctx->prim_names();
 		auto ids = std::vector<uint32_t>();
 		for (auto &name : cfg_names) {
@@ -95,19 +95,19 @@ namespace cg {
 			}
 			ids.push_back(_ctx->get(name).id());
 		}
-		compress(ids);
+		compress(ids, keep_empty);
 		return {};
 	}
 
-	AstNode AstNode::compressed(std::vector<uint32_t> const &cfg_ids) {
+	AstNode AstNode::compressed(std::vector<uint32_t> const &cfg_ids, bool keep_empty) {
 		auto result = *this;
-		result.compress(cfg_ids);
+		result.compress(cfg_ids, keep_empty);
 		return result;
 	}
 
-	util::Result<AstNode, KError> AstNode::compressed() {
+	util::Result<AstNode, KError> AstNode::compressed(bool keep_empty) {
 		auto result = *this;
-		TRY(result.compress());
+		TRY(result.compress(keep_empty));
 		return result;
 	}
 

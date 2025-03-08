@@ -174,7 +174,25 @@ namespace cg {
 			c["statement_e"] + c["padding_nl"];
 		c.prim("sfor") = c["sfrag_for"] + c["lines"] + c["sfrag_endfor"];
 
-		c.prim("statement") = c["sfor"] | c["sif"];
+		c.prim("sfrag_argdef_list") =
+			c.opt(c["sfrag_argdef"] + c.cls(","_cfg + c["sfrag_argdef"]));
+		c.prim("sfrag_argdef") =
+			c["padding"] + c["identifier"] + c["padding"] +
+			c.opt("="_cfg + c["exp"]);
+
+		c.prim("sfrag_macro") =
+			c["padding_b"] + c["statement_b"] +
+			c["padding"] + "macro"_cfg +
+			c["padding"] + c["identifier"] + c["padding"] +
+			"("_cfg + c["sfrag_argdef_list"] + ")"_cfg + c["padding"] +
+			c["statement_e"] + c["padding_nl"];
+		c.prim("sfrag_endmacro") =
+			c["padding_b"] + c["statement_b"] +
+			c["whitespace"] + "endmacro"_cfg + c["whitespace"] +
+			c["statement_e"] + c["padding_nl"];
+		c.prim("smacro") = c["sfrag_macro"] + c["lines"] + c["sfrag_endmacro"];
+
+		c.prim("statement") = c["sfor"] | c["sif"] | c["smacro"];
 
 		TRY(c.prep());
 
@@ -188,7 +206,7 @@ namespace cg {
 		try {
 			auto parser = SParser(_ctx);
 
-			auto node = parser.parse(str, "file")->compressed().value();
+			auto node = parser.parse(str, "file")->compressed(true).value();
 
 			std::ofstream file("gen/templgen.gv");
 			node.debug_dot(file);
@@ -207,7 +225,7 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_codegen(
 		AstNode const &node,
-		TemplDict const &args
+		TemplDict &args
 	) const {
 		if (node.cfg_name() == "whitespace") {
 			return _cg_default(node, args);
@@ -239,6 +257,9 @@ namespace cg {
 			return _cg_sif(node, args);
 		} else if (node.cfg_name() == "sfor") {
 			return _cg_sfor(node, args);
+		} else if (node.cfg_name() == "smacro") {
+			_cg_smacro(node, args);
+			return {""};
 		} else {
 			return KError::codegen("Unimplimented AstNode type: " + node.cfg_name());
 		}
@@ -246,7 +267,7 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_default(
 		AstNode const &node,
-		TemplDict const &args
+		TemplDict &args
 	) const {
 		CG_ASSERT(node.children().size() == 0, "Children count of padding must be 0");
 		return node.consumed();
@@ -254,7 +275,7 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_ref(
 		AstNode const &node,
-		TemplDict const &args
+		TemplDict &args
 	) const {
 		CG_ASSERT(node.children().size() == 1, "Children count of codegen_ref must be 1");
 		return _codegen(node.children()[0], args);
@@ -262,14 +283,14 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_identifier(
 		AstNode const &node,
-		TemplDict const &args
+		TemplDict &args
 	) const {
 		return KError::codegen("Identifier does not have a codegen implimentation");
 	}
 
 	util::Result<std::string, KError> TemplGen::_cg_line(
 		AstNode const &node,
-		TemplDict const &args
+		TemplDict &args
 	) const {
 		auto result = std::string();
 		for (auto &child : node.children()) {
@@ -285,11 +306,12 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_lines(
 		AstNode const &node,
-		TemplDict const &args
+		TemplDict &args
 	) const {
+		auto scope = args;
 		auto result = std::string();
 		for (auto &child : node.children()) {
-			if (auto str = _codegen(child, args)) {
+			if (auto str = _codegen(child, scope)) {
 				result += str.value();
 			} else {
 				return str;
@@ -300,14 +322,14 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_comment(
 		AstNode const &node,
-		TemplDict const &args
+		TemplDict &args
 	) const {
 		return {""};
 	}
 
 	util::Result<std::string, KError> TemplGen::_cg_expression(
 		AstNode const &node,
-		TemplDict const &args
+		TemplDict &args
 	) const {
 		try {
 			auto result = std::string();
@@ -339,14 +361,14 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_statement(
 		AstNode const &node,
-		TemplDict const &args
+		TemplDict &args
 	) const {
 		return KError::codegen("statment not implimented");
 	}
 
 	util::Result<std::string, KError> TemplGen::_cg_sif(
 		AstNode const &node,
-		TemplDict const &args
+		TemplDict &args
 	) const {
 		try {
 		auto result = std::string();
@@ -394,7 +416,7 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_sfor(
 		AstNode const &node,
-		TemplDict const &args
+		TemplDict &args
 	) const {
 		try {
 			auto result = std::string();
@@ -415,6 +437,50 @@ namespace cg {
 			}
 
 			return result;
+		} catch_kerror;
+	}
+
+	util::Result<void, KError> TemplGen::_cg_smacro(
+		AstNode const &node,
+		TemplDict &args
+	) const {
+		try {
+			auto arg_def = node.child_with_cfg("sfrag_macro").value();
+			auto macro_name = arg_def.child_with_cfg("identifier")->consumed();
+			auto arg_list = arg_def.child_with_cfg("sfrag_argdef_list").value();
+			auto content = node.child_with_cfg("lines").value();
+
+			if (args.contains(macro_name)) {
+				return KError::codegen(util::f(
+					"Cannot create macro with name ",
+					macro_name,
+					" because identifier already exists"
+				));
+			}
+			
+			TemplFunc func = [this, arg_list, args, macro_name, content](TemplList l) -> TemplFuncRes {
+				auto local_args = args;
+				if (arg_list.size() != l.size()) {
+					return KError::codegen(util::f(
+						"Wrong number of arguments provided to macro ",
+						macro_name,
+						". ",
+						arg_list.size(),
+						" expected, ",
+						l.size(),
+						" received."
+					));
+				}
+				int i = 0;
+				for (auto &arg_node : arg_list.children()) {
+					auto arg_name = arg_node.child_with_cfg("exp_id")->consumed();
+					local_args[arg_name] = l[i];
+					i++;
+				}
+				return {_codegen(content, local_args).value()};
+			};
+			args[macro_name] = func;
+			return {};
 		} catch_kerror;
 	}
 

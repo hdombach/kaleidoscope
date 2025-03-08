@@ -57,11 +57,11 @@ namespace cg {
 			/**
 			 * @brief Combines all nodes that aren't in the list of provided cfg's
 			 */
-			void compress(std::vector<uint32_t> const &cfg_ids);
-			util::Result<void, KError> compress();
+			void compress(std::vector<uint32_t> const &cfg_ids, bool keep_empty);
+			util::Result<void, KError> compress(bool keep_empty=false);
 
-			AstNode compressed(std::vector<uint32_t> const &cfg_ids);
-			util::Result<AstNode, KError> compressed();
+			AstNode compressed(std::vector<uint32_t> const &cfg_ids, bool keep_empty);
+			util::Result<AstNode, KError> compressed(bool keep_empty=false);
 
 			void debug_pre_order(std::ostream &os) const;
 			void debug_dot(std::ostream &os) const;
