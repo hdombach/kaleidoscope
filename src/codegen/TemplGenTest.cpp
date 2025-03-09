@@ -1265,6 +1265,54 @@ namespace cg {
 			gen->codegen(src, args),
 			KError::CODEGEN
 		);
+	}
 
+	TEST(templ_gen, for_loop_var) {
+		auto gen = TemplGen::create();
+
+		auto args = TemplObj{
+			{"list", {152, "apple", -3, "hash map"}}
+		};
+
+		auto src =
+			"Here be the list.\n"
+			"{\%for element in list %}\n"
+			"----\n"
+			"element: {{element}}\n"
+			"index: {{loop.index}}\n"
+			"index0: {{loop.index0}}\n"
+			"first: {{loop.first}}\n"
+			"last: {{loop.last}}\n"
+			"{\% endfor %}\n"
+			"";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Here be the list.\n"
+			"----\n"
+			"element: 152\n"
+			"index: 1\n"
+			"index0: 0\n"
+			"first: <true>\n"
+			"last: <false>\n"
+			"----\n"
+			"element: apple\n"
+			"index: 2\n"
+			"index0: 1\n"
+			"first: <false>\n"
+			"last: <false>\n"
+			"----\n"
+			"element: -3\n"
+			"index: 3\n"
+			"index0: 2\n"
+			"first: <false>\n"
+			"last: <false>\n"
+			"----\n"
+			"element: hash map\n"
+			"index: 4\n"
+			"index0: 3\n"
+			"first: <false>\n"
+			"last: <true>\n"
+		);
 	}
 }

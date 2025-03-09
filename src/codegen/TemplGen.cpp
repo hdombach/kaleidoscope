@@ -432,6 +432,7 @@ namespace cg {
 		try {
 			auto result = std::string();
 
+
 			auto sfrag_for = node.child_with_cfg("sfrag_for").value();
 			auto iter_name = sfrag_for
 				.child_with_cfg("exp_id")
@@ -441,10 +442,20 @@ namespace cg {
 			auto lines = node.child_with_cfg("lines").value();
 
 			auto iter_obj = _eval(iter, args)->list().value();
+			int index = 0;
 			for (auto &i : iter_obj) {
+				auto loop = TemplObj{
+					{"index", index+1},
+					{"index0", index},
+					{"first", index==0},
+					{"last", index==iter_obj.size()-1}
+				};
+
 				auto local_args = args;
 				local_args[iter_name] = i;
+				local_args["loop"] = loop;
 				result += _codegen(lines, local_args).value();
+				index++;
 			}
 
 			return result;
