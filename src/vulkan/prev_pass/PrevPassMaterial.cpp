@@ -360,11 +360,7 @@ namespace vulkan {
 	{
 		auto gen = cg::TemplGen::create();
 
-		frag_source = util::readEnvFile("assets/shaders/preview_material_templ.frag");
-		util::replace_substr(
-				frag_source,
-				"/*GLOBAL_UNIFORM_CONTENT*/",
-				GlobalPrevPassUniform::declaration_content_str());
+		frag_source = util::readEnvFile("assets/shaders/preview_material.frag.cg");
 
 		vert_source = util::readEnvFile("assets/shaders/preview_material.vert.cg");
 		auto vert_args = cg::TemplObj{
@@ -373,7 +369,13 @@ namespace vulkan {
 		};
 		vert_source = gen->codegen(vert_source, vert_args.dict().value()).value();
 
-		auto material_uniform_content = prev_pass::cg_uniform_content(material->resources());
+		auto frag_args = cg::TemplObj{
+			{"global_declarations", GlobalPrevPassUniform::declaration_content},
+			{"material_declarations", material->resources().templ_declarations()},
+			{"texture_count", cg::TemplInt(textures.size())}
+		};
+		frag_source = gen->codegen(frag_source, frag_args.dict().value()).value();
+
 		auto frag_main_args = std::string();
 		auto frag_main_call = std::string();
 
@@ -413,7 +415,6 @@ namespace vulkan {
 				+ "];";
 		}
 
-		util::replace_substr(frag_source, "/*MATERIAL_UNIFORM_CONTENT*/\n", material_uniform_content);
 		util::replace_substr(frag_source, "/*FRAG_MAIN_SRC*/\n", material->frag_shader_src());
 		util::replace_substr(frag_source, "/*FRAG_MAIN_ARGS*/", frag_main_args);
 		util::replace_substr(frag_source, "/*FRAG_MAIN_CALL*/\n", frag_main_call);

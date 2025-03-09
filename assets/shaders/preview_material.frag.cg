@@ -1,0 +1,39 @@
+#version 450
+
+{% macro declaration(decl) %}
+{{decl.type}} {{decl.name}};
+{% endmacro %}
+
+{% if texture_count > 0 %}
+layout(set = 1, binding = 1) uniform sampler2D textures[{{texture_count}}];
+{% endif %}
+
+layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
+	{% for decl in global_declarations %}
+	{{declaration(decl)}}
+	{% endfor %}
+} global_uniform;
+
+layout(set = 1, binding = 0) uniform MaterialUniformBuffer {
+	{% for decl in material_declarations %}
+	{{declaration(decl)}}
+	{% endfor %}
+} material_uniform;
+
+layout(location = 0) in vec3 fragColor;
+layout(location = 1) in vec2 fragTexCoord;
+
+layout(location = 0) out vec4 outColor;
+layout(location = 1) out uint outNode;
+layout(location = 2) out float outDepth;
+
+void frag_main(/*FRAG_MAIN_ARGS*/) {
+	/*FRAG_MAIN_SRC*/
+}
+
+void main() {
+	/*FRAG_MAIN_CALL*/
+	outNode = material_uniform.node_id; /* hard coded by ShaderResource */
+	//Do I know why this works? no.
+	outDepth = gl_FragCoord.z / gl_FragCoord.w / global_uniform.z_far;
+}
