@@ -6,8 +6,19 @@
 
 #include "types/Camera.hpp"
 #include "MappedUniform.hpp"
+#include "codegen/TemplObj.hpp"
 
 namespace vulkan {
+	inline cg::TemplObj templ_property(
+		std::string const &type,
+		std::string const &name
+	) {
+		return cg::TemplObj{
+			{"type", type},
+			{"name", name}
+		};
+	}
+
 	struct GlobalPrevPassUniform {
 		alignas(16) glm::mat4 camera_rotation;
 		alignas(16) glm::mat4 camera_transformation;
@@ -33,18 +44,31 @@ namespace vulkan {
 			};
 		}
 
-		static constexpr const char *declaration_content() {
-			return 
-				"\tmat4 camera_rotation;\n"
-				"\tmat4 camera_transformation;\n"
-				"\tvec4 camera_translation;\n"
-				"\tfloat aspect;\n"
-				"\tfloat fovy;\n"
-				"\tfloat z_near;\n"
-				"\tfloat z_far;\n"
-				"\tint de_iterations;\n"
-				"\tfloat de_small_step;\n";
-		};
+		inline const static auto declaration_content = std::vector{
+				templ_property("mat4", "camera_rotation"),
+				templ_property("mat4", "camera_transformation"),
+				templ_property("vec4", "camera_translation"),
+				templ_property("float", "aspect"),
+				templ_property("float", "fovy"),
+				templ_property("float", "z_near"),
+				templ_property("float", "z_far"),
+				templ_property("int", "de_iterations"),
+				templ_property("float", "de_small_step")
+			};
+
+			static constexpr const char *declaration_content_str() {
+				return
+					"\tmat4 camera_rotation;\n"
+					"\tmat4 camera_transformation;\n"
+					"\tvec4 camera_translation;\n"
+					"\tfloat aspect;\n"
+					"\tfloat fovy;\n"
+					"\tfloat z_near;\n"
+					"\tfloat z_far;\n"
+					"\tint de_iterations;\n"
+					"\tfloat de_small_step;\n";
+			};
+
 	};
 
 	struct OverlayUniform {
@@ -67,7 +91,7 @@ namespace vulkan {
 		alignas(4) int32_t de_iterations;
 		alignas(4) float de_small_step;
 
-		static constexpr const char *declaration_content() {
+		static constexpr const char *declaration_content_str() {
 			return
 				"\tmat4 rotation;\n"
 				"\tvec4 translation;\n"

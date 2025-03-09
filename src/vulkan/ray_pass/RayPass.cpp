@@ -799,7 +799,7 @@ namespace vulkan {
 		util::replace_substr(source, "/*BVNODE_DECL*/\n", BVNode::declaration());
 		util::replace_substr(source, "/*NODE_DECL*/\n", RayPassNode::VImpl::declaration());
 		util::replace_substr(source, "/*RESOURCE_DECL*/", resource_decls);
-		util::replace_substr(source, "/*GLOBAL_UNIFORM_CONTENT*/\n", ComputeUniform::declaration_content());
+		util::replace_substr(source, "/*GLOBAL_UNIFORM_CONTENT*/\n", ComputeUniform::declaration_content_str());
 		util::replace_substr(source, "/*DE_FUNCS*/\n", de_funcs);
 		util::replace_substr(source, "/*DE_FUNC_CALLS*/\n", de_func_calls);
 		util::replace_substr(source, "/*TEXTURE_COUNT*/", std::to_string(texture_count));

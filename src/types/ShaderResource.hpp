@@ -5,6 +5,7 @@
 
 #include <glm/glm.hpp>
 
+#include "codegen/TemplObj.hpp"
 #include "vulkan/MappedUniform.hpp"
 #include "vulkan/Texture.hpp"
 #include "util/result.hpp"
@@ -42,6 +43,7 @@ namespace types {
 			std::string const &name() const { return _name; }
 			std::string const &declaration() const { return _declaration; }
 			size_t alignment() const { return _alignment; }
+			cg::TemplObj templ_declaration() const;
 
 			util::Result<void, KError> set_texture(const vulkan::Texture *texture);
 			util::Result<vulkan::Texture const &, void> as_texture() const;
@@ -66,6 +68,7 @@ namespace types {
 		private:
 			std::string _name;
 			std::string _declaration;
+			std::string _glsl_declaration;
 
 			union {
 				uint32_t _as_uint32;
@@ -95,6 +98,8 @@ namespace types {
 
 			std::vector<ShaderResource const *> get() const;
 			ShaderResource const *get(std::string name) const;
+
+			cg::TemplObj templ_declarations() const;
 
 			ShaderResource const & operator[](std::string name) const { return *get(name); }
 

@@ -201,6 +201,17 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::codegen(
 		std::string const &str,
+		TemplObj const &obj
+	) const {
+		if (auto dict = obj.dict()) {
+			return codegen(str, dict.value());
+		} else {
+			return dict.error();
+		}
+	}
+
+	util::Result<std::string, KError> TemplGen::codegen(
+		std::string const &str,
 		TemplDict const &args
 	) const {
 		try {

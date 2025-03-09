@@ -11,6 +11,8 @@
 #include "util/file.hpp"
 #include "util/Util.hpp"
 #include "types/Material.hpp"
+#include "codegen/TemplObj.hpp"
+#include "codegen/TemplGen.hpp"
 
 namespace vulkan {
 	util::Result<PrevPassMaterial, KError> PrevPassMaterial::create(
@@ -356,17 +358,20 @@ namespace vulkan {
 			const types::Material *material,
 			std::vector<std::string> &textures)
 	{
+		auto gen = cg::TemplGen::create();
+
 		frag_source = util::readEnvFile("assets/shaders/preview_material_templ.frag");
 		util::replace_substr(
 				frag_source,
 				"/*GLOBAL_UNIFORM_CONTENT*/",
-				GlobalPrevPassUniform::declaration_content());
+				GlobalPrevPassUniform::declaration_content_str());
 
-		vert_source = util::readEnvFile("assets/shaders/preview_material_templ.vert");
-		util::replace_substr(
-				vert_source, 
-				"/*GLOBAL_UNIFORM_CONTENT*/", 
-				GlobalPrevPassUniform::declaration_content());
+		vert_source = util::readEnvFile("assets/shaders/preview_material.vert.cg");
+		auto vert_args = cg::TemplObj{
+			{"global_declarations", GlobalPrevPassUniform::declaration_content},
+			{"material_declarations", material->resources().templ_declarations()}
+		};
+		vert_source = gen->codegen(vert_source, vert_args.dict().value()).value();
 
 		auto material_uniform_content = prev_pass::cg_uniform_content(material->resources());
 		auto frag_main_args = std::string();
@@ -408,7 +413,6 @@ namespace vulkan {
 				+ "];";
 		}
 
-		util::replace_substr(vert_source, "/*MATERIAL_UNIFORM_CONTENT*/\n", material_uniform_content);
 		util::replace_substr(frag_source, "/*MATERIAL_UNIFORM_CONTENT*/\n", material_uniform_content);
 		util::replace_substr(frag_source, "/*FRAG_MAIN_SRC*/\n", material->frag_shader_src());
 		util::replace_substr(frag_source, "/*FRAG_MAIN_ARGS*/", frag_main_args);
@@ -417,6 +421,7 @@ namespace vulkan {
 
 		util::replace_substr(frag_source, "/*TEXTURE_UNIFORM*/", texture_uniform);
 
+		log_debug() << "vert codegen:\n" << util::add_strnum(vert_source) << std::endl;
 		log_debug() << "frag codegen:\n" << util::add_strnum(frag_source) << std::endl;
 	}
 }

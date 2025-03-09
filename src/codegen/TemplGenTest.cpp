@@ -343,13 +343,13 @@ namespace cg {
 
 		auto src = "The number is {{5}}!";
 		EXPECT_EQ(
-			gen->codegen(src, {}).value(),
+			gen->codegen(src, TemplDict()).value(),
 			"The number is 5!"
 		);
 
 		src = "Another number is {{ 49102 }}!";
 		EXPECT_EQ(
-			gen->codegen(src, {}).value(),
+			gen->codegen(src, TemplDict()).value(),
 			"Another number is 49102!"
 		);
 	}

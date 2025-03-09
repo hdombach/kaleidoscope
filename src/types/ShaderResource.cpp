@@ -20,6 +20,7 @@ namespace types {
 		result._as_float = val;
 		result._primitive_size = sizeof(uint32_t);
 		result._declaration = util::f("uint ", name);
+		result._glsl_declaration = "uint";
 		result._alignment = 4;
 		return result;
 
@@ -33,6 +34,7 @@ namespace types {
 		result._as_float = val;
 		result._primitive_size = sizeof(float);
 		result._declaration = util::f("float ", name);
+		result._glsl_declaration = "float";
 		result._alignment = 4;
 		return result;
 	}
@@ -45,6 +47,7 @@ namespace types {
 		result._as_mat4 = mat;
 		result._primitive_size = sizeof(mat);
 		result._declaration = util::f("mat4 ", name);
+		result._glsl_declaration = "mat4";
 		result._alignment = 16;
 		return result;
 	}
@@ -57,6 +60,7 @@ namespace types {
 		result._as_vec3 = vec;
 		result._primitive_size = sizeof(vec);
 		result._declaration = util::f("vec3 ", name);
+		result._glsl_declaration = "vec3";
 		result._alignment = 16;
 		return result;
 	}
@@ -75,6 +79,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		result._as_texture = texture;
 		result._primitive_size = sizeof(uint32_t);
 		result._declaration = util::f("sampler2D ", name);
+		result._glsl_declaration = "uint"; // reference to a list of textures
 		result._alignment = 4;
 		return result;
 	}
@@ -90,6 +95,13 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 			default:
 				return false;
 		}
+	}
+
+	cg::TemplObj ShaderResource::templ_declaration() const {
+		return cg::TemplObj{
+			{"type", _glsl_declaration},
+			{"name", _name}
+		};
 	}
 
 	util::Result<void, KError> ShaderResource::set_texture(const vulkan::Texture *texture) {
@@ -280,6 +292,14 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		} else {
 			return nullptr;
 		}
+	}
+
+	cg::TemplObj ShaderResources::templ_declarations() const {
+		auto result = cg::TemplList();
+		for (auto &resource : get()) {
+			result.push_back(resource->templ_declaration());
+		}
+		return result;
 	}
 
 	void ShaderResources::set_texture(

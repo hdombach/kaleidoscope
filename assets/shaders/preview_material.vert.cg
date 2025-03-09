@@ -1,12 +1,21 @@
 #version 450
 
+{% macro declaration(decl) %}
+{{decl.type}} {{decl.name}};
+{% endmacro %}
+
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
-	/*GLOBAL_UNIFORM_CONTENT*/
+	{% for decl in global_declarations %}
+	{{declaration(decl)}}
+	{% endfor %}
 } global_uniform;
 
 layout(set = 1, binding = 0) uniform MaterialUniformBuffer {
-/*MATERIAL_UNIFORM_CONTENT*/
+	{% for decl in material_declarations %}
+	{{declaration(decl)}}
+	{% endfor %}
 } material_uniform;
+
 
 
 layout(location = 0) in vec3 inPosition;
@@ -24,3 +33,4 @@ void main() {
 	fragColor = inColor;
 	fragTexCoord = inTexCoord;
 }
+

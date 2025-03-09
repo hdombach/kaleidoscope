@@ -56,7 +56,7 @@ namespace cg {
 			 * Anything else: list
 			 */
 			TemplObj(std::initializer_list<TemplObj> args);
-			TemplObj(const char *str): _v(str), _builtins(_str_builtins()) {}
+			TemplObj(const char *str);
 
 			TemplObj& operator=(TemplObj const &other) = default;
 			TemplObj& operator=(TemplObj &&other) = default;

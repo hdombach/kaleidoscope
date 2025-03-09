@@ -19,6 +19,11 @@ namespace cg {
 
 			util::Result<std::string, KError> codegen(
 				std::string const &str,
+				TemplObj const &obj
+			) const;
+
+			util::Result<std::string, KError> codegen(
+				std::string const &str,
 				TemplDict const &args
 			) const;
 		private:
