@@ -322,5 +322,18 @@ namespace cg {
 		};
 	}
 
-
+	template<class ... Rest>
+	inline TemplFunc _mk_templfunc(
+		std::function<TemplFuncRes(TemplObj, Rest...)> const &func,
+		int arg_index
+	) {
+		return [func, arg_index](TemplList l) -> TemplFuncRes {
+			if (l.size() == 0) {
+				return KError::codegen(util::f("Requires more than ", arg_index, "args"));
+			}
+			auto small_l = TemplList(l.begin()+1, l.end());
+			auto small_func = [func, l](Rest...rest){ return func(l[0], rest...); };
+			return _mk_templfunc(std::function(small_func), arg_index+1)(small_l);
+		};
+	}
 }

@@ -272,6 +272,8 @@ namespace cg {
 			auto type = l->type();
 			if (type == Type::Integer) {
 				return {l->integer().value() == r->integer().value()};
+			} else if (type == Type::String) {
+				return {l->str(false).value() == r->str(false).value()};
 			} else {
 				return KError::codegen(util::f(
 					"Cannot do operator ",
@@ -378,7 +380,7 @@ namespace cg {
 		if (type() == Type::List) {
 			return std::get<TemplList>(_v);
 		} else {
-			return KError::codegen("Object is not a list");
+			return KError::codegen("Object is not a list", util::FileLocation());
 		}
 	}
 
@@ -386,7 +388,7 @@ namespace cg {
 		if (type() == Type::Boolean) {
 			return std::get<bool>(_v);
 		} else {
-			return KError::codegen("Object is not a boolean");
+			return KError::codegen("Object is not a boolean", util::FileLocation());
 		}
 	}
 
@@ -394,7 +396,7 @@ namespace cg {
 		if (type() == Type::Integer) {
 			return std::get<int64_t>(_v);
 		} else {
-			return KError::codegen("Object is not an integer");
+			return KError::codegen("Object is not an integer", location(util::FileLocation()));
 		}
 	}
 
@@ -402,7 +404,7 @@ namespace cg {
 		if (type() == Type::Dict) {
 			return std::get<TemplDict>(_v);
 		} else {
-			return KError::codegen("Object is not a dict");
+			return KError::codegen("Object is not a dict", location(util::FileLocation()));
 		}
 	}
 
@@ -410,7 +412,7 @@ namespace cg {
 		if (type() == Type::Func) {
 			return std::get<TemplFunc>(_v);
 		} else {
-			return KError::codegen("Object is not a callable");
+			return KError::codegen("Object is not a callable", location(util::FileLocation()));
 		}
 	}
 
@@ -460,13 +462,23 @@ namespace cg {
 		return {TemplBool(l.empty())};
 	}
 
+	TemplFuncRes _list_index(TemplList l, TemplObj element) {
+		int i = 0;
+		for (auto &e : l) {
+			if ((e == element)->boolean().value()) return {i};
+			i++;
+		}
+		return KError::codegen(util::f("Element ", element.str().value(), " not found in list"));
+	}
+
 	TemplDict *TemplObj::_list_builtins() {
 		static auto properties = TemplDict();
 
 		if (properties.size() == 0) {
 			properties = TemplDict{
 				{"length", mk_templfunc(_list_length)},
-				{"empty", mk_templfunc(_list_empty)}
+				{"empty", mk_templfunc(_list_empty)},
+				{"index", mk_templfunc(_list_index)}
 			};
 		}
 

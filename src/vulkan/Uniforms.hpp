@@ -14,7 +14,7 @@ namespace vulkan {
 		std::string const &name
 	) {
 		return cg::TemplObj{
-			{"type", type},
+			{"uniform_type", type},
 			{"name", name}
 		};
 	}

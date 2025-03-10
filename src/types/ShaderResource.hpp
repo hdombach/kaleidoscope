@@ -69,6 +69,7 @@ namespace types {
 			std::string _name;
 			std::string _declaration;
 			std::string _glsl_declaration;
+			std::string _uniform_declaration;
 
 			union {
 				uint32_t _as_uint32;

@@ -1,11 +1,15 @@
 #version 450
 
 {% macro declaration(decl) %}
-{{decl.type}} {{decl.name}};
+{{decl.uniform_type}} {{decl.name}};
 {% endmacro %}
 
-{% if texture_count > 0 %}
-layout(set = 1, binding = 1) uniform sampler2D textures[{{texture_count}}];
+{% macro opt_comma(b) %}
+{% if b %},{% endif %}
+{% endmacro %}
+
+{% if textures.length() > 0 %}
+layout(set = 1, binding = 1) uniform sampler2D textures[{{textures.length()}}];
 {% endif %}
 
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
@@ -27,12 +31,26 @@ layout(location = 0) out vec4 outColor;
 layout(location = 1) out uint outNode;
 layout(location = 2) out float outDepth;
 
-void frag_main(/*FRAG_MAIN_ARGS*/) {
-	/*FRAG_MAIN_SRC*/
+void frag_main(
+	{% for decl in material_declarations %}
+	in {{decl.arg_type}} {{decl.name}}{{ opt_comma(!loop.last) }}
+
+	{% endfor %}
+) {
+	{{frag_source}}
 }
 
 void main() {
-	/*FRAG_MAIN_CALL*/
+	frag_main(
+		{% for decl in material_declarations %}
+		{% if decl.is_texture %}
+		textures[{{textures.index(decl.name)}}]
+		{% else %}
+		material_uniform.{{decl.name}}
+		{% endif %}
+		{{ opt_comma(!loop.last) }}
+		{% endfor %}
+	);
 	outNode = material_uniform.node_id; /* hard coded by ShaderResource */
 	//Do I know why this works? no.
 	outDepth = gl_FragCoord.z / gl_FragCoord.w / global_uniform.z_far;

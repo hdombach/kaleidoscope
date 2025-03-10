@@ -1,7 +1,7 @@
 #version 450
 
 {% macro declaration(decl) %}
-{{decl.type}} {{decl.name}};
+{{decl.uniform_type}} {{decl.name}};
 {% endmacro %}
 
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer {

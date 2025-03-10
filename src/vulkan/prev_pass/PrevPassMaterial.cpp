@@ -369,58 +369,18 @@ namespace vulkan {
 		};
 		vert_source = gen->codegen(vert_source, vert_args.dict().value()).value();
 
+		auto templ_textures = cg::TemplList();
+		for (auto &t : textures) {
+			templ_textures.push_back(t);
+		}
+
 		auto frag_args = cg::TemplObj{
 			{"global_declarations", GlobalPrevPassUniform::declaration_content},
 			{"material_declarations", material->resources().templ_declarations()},
-			{"texture_count", cg::TemplInt(textures.size())}
+			{"textures", templ_textures},
+			{"frag_source", material->frag_shader_src()}
 		};
 		frag_source = gen->codegen(frag_source, frag_args.dict().value()).value();
-
-		auto frag_main_args = std::string();
-		auto frag_main_call = std::string();
-
-		frag_main_call += "frag_main(";
-		bool first = true;
-		for (auto &resource : material->resources().get()) {
-
-			if (first) {
-				first = false;
-			} else {
-				frag_main_args += ", ";
-				frag_main_call += ", ";
-			}
-
-			frag_main_args += "in " + resource->declaration();
-			if (resource->is_primitive()) {
-				frag_main_call += "material_uniform.";
-				frag_main_call += resource->name();
-			} else if (resource->type() == types::ShaderResource::Type::Texture) {
-				int i = 0;
-				while (textures[i] != resource->name()) {
-					i++;
-					if (i >= textures.size()) {
-						log_fatal_error() << "INTERNAL: unknown texture name: " << resource->name() << std::endl;
-						return;
-					}
-				}
-				frag_main_call += "textures[" + std::to_string(i) + "]";
-			}
-		}
-		frag_main_call += ");\n";
-
-		auto texture_uniform = std::string();
-		if (textures.size() > 0) {
-			texture_uniform = "layout(set = 1, binding = 1) uniform sampler2D textures["
-				+ std::to_string(textures.size())
-				+ "];";
-		}
-
-		util::replace_substr(frag_source, "/*FRAG_MAIN_SRC*/\n", material->frag_shader_src());
-		util::replace_substr(frag_source, "/*FRAG_MAIN_ARGS*/", frag_main_args);
-		util::replace_substr(frag_source, "/*FRAG_MAIN_CALL*/\n", frag_main_call);
-
-
-		util::replace_substr(frag_source, "/*TEXTURE_UNIFORM*/", texture_uniform);
 
 		log_debug() << "vert codegen:\n" << util::add_strnum(vert_source) << std::endl;
 		log_debug() << "frag codegen:\n" << util::add_strnum(frag_source) << std::endl;

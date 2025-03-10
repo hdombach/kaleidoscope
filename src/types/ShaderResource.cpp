@@ -20,7 +20,7 @@ namespace types {
 		result._as_float = val;
 		result._primitive_size = sizeof(uint32_t);
 		result._declaration = util::f("uint ", name);
-		result._glsl_declaration = "uint";
+		result._uniform_declaration = result._glsl_declaration = "uint";
 		result._alignment = 4;
 		return result;
 
@@ -34,7 +34,7 @@ namespace types {
 		result._as_float = val;
 		result._primitive_size = sizeof(float);
 		result._declaration = util::f("float ", name);
-		result._glsl_declaration = "float";
+		result._uniform_declaration = result._glsl_declaration = "float";
 		result._alignment = 4;
 		return result;
 	}
@@ -47,7 +47,7 @@ namespace types {
 		result._as_mat4 = mat;
 		result._primitive_size = sizeof(mat);
 		result._declaration = util::f("mat4 ", name);
-		result._glsl_declaration = "mat4";
+		result._uniform_declaration = result._glsl_declaration = "mat4";
 		result._alignment = 16;
 		return result;
 	}
@@ -60,7 +60,7 @@ namespace types {
 		result._as_vec3 = vec;
 		result._primitive_size = sizeof(vec);
 		result._declaration = util::f("vec3 ", name);
-		result._glsl_declaration = "vec3";
+		result._uniform_declaration = result._glsl_declaration = "vec3";
 		result._alignment = 16;
 		return result;
 	}
@@ -79,7 +79,8 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		result._as_texture = texture;
 		result._primitive_size = sizeof(uint32_t);
 		result._declaration = util::f("sampler2D ", name);
-		result._glsl_declaration = "uint"; // reference to a list of textures
+		result._glsl_declaration = "sampler2D"; // reference to a list of textures
+		result._uniform_declaration = "uint";
 		result._alignment = 4;
 		return result;
 	}
@@ -99,8 +100,10 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 
 	cg::TemplObj ShaderResource::templ_declaration() const {
 		return cg::TemplObj{
-			{"type", _glsl_declaration},
-			{"name", _name}
+			{"uniform_type", _uniform_declaration},
+			{"arg_type", _glsl_declaration},
+			{"name", _name},
+			{"is_texture", type() == Type::Texture}
 		};
 	}
 
