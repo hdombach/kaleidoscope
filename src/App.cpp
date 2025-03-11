@@ -47,7 +47,7 @@ App::Ptr App::create(std::string const &name) {
 	if (auto scene = vulkan::Scene::create(*(result->_resource_manager))) {
 		result->_scene = std::move(scene.value());
 	} else {
-		log_error() << scene.error() << std::endl;
+		log_fatal_error() << scene.error() << std::endl;
 	}
 
 	if (auto id = result->_scene->add_node(

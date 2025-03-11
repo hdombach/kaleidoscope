@@ -5,6 +5,7 @@
 #include <glm/fwd.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
+#include "codegen/TemplGen.hpp"
 #include "imgui_impl_vulkan.h"
 
 #include "PrevPass.hpp"
@@ -544,7 +545,10 @@ namespace vulkan {
 	}
 
 	util::Result<void, KError> PrevPass::_create_overlay_pipeline() {
+		try {
 		_destroy_overlay_pipeline();
+
+		auto gen = cg::TemplGen::create();
 
 		auto buffer = MappedOverlayUniform::create();
 		TRY(buffer);
@@ -571,12 +575,15 @@ namespace vulkan {
 		TRY(descriptor_sets);
 		_overlay_descriptor_set = std::move(descriptor_sets.value());
 
-		auto source_code = util::readEnvFile("assets/shaders/preview_overlay.comp");
-		util::replace_substr(source_code, "/*OVERLAY_UNIFORM_CONTENT*/\n", OverlayUniform::declaration_content());
+		auto codegen_args = cg::TemplObj{
+			{"overlay_declarations", OverlayUniform::declaration_content}
+		};
+		auto source_code = util::readEnvFile("assets/shaders/preview_overlay.comp.cg");
+		source_code = gen->codegen(source_code, codegen_args).value();
 		auto compute_shader = Shader::from_source_code(source_code, Shader::Type::Compute);
+		log_debug() << "\n" << util::add_strnum(source_code) << std::endl;
 		if (!compute_shader) {
-			log_debug() << "\n" << util::add_strnum(source_code) << std::endl;
-			log_error() << compute_shader.error() << std::endl;
+			log_fatal_error() << "Overlay error " << compute_shader.error() << std::endl;
 			return compute_shader.error();
 		}
 
@@ -617,6 +624,7 @@ namespace vulkan {
 		}
 
 		return {};
+		} catch_kerror;
 	}
 
 	void PrevPass::_destroy_overlay_pipeline() {

@@ -74,7 +74,11 @@ namespace vulkan {
 	struct OverlayUniform {
 		alignas(4) uint32_t selected_node;
 
-		static constexpr const char *declaration_content() {
+		inline const static auto declaration_content = std::vector{
+			templ_property("uint", "selected_node")
+		};
+
+		static constexpr const char *declaration_content_str() {
 			return
 				"\tuint selected_node;\n";
 		}
