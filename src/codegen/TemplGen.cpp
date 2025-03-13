@@ -217,7 +217,7 @@ namespace cg {
 		try {
 			auto parser = SParser(_ctx);
 
-			auto node = parser.parse(str, "file")->compressed(true).value();
+			auto node = parser.parse(str, "file")->compressed().value();
 
 			std::ofstream file("gen/templgen.gv");
 			node.debug_dot(file);

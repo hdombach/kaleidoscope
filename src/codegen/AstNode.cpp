@@ -68,25 +68,22 @@ namespace cg {
 		return _location;
 	}
 
-	void AstNode::compress(std::vector<uint32_t> const &cfg_ids, bool keep_empty) {
+	void AstNode::compress(std::vector<uint32_t> const &cfg_ids) {
 		auto new_children = std::vector<AstNode>();
 		for (auto &child : _children) {
-			child.compress(cfg_ids, keep_empty);
+			child.compress(cfg_ids);
 			if (std::find(cfg_ids.begin(), cfg_ids.end(), child._cfg_id) == cfg_ids.end()) {
 				//Combine the current child into slef
 				_consumed += child._consumed;
 				new_children.insert(new_children.end(), child.children().begin(), child.children().end());
 			} else {
-				//Keep the current child if it is not empty
-				if (keep_empty || (!child.consumed().empty() || child.children().size() > 0)) {
-					new_children.push_back(child);
-				}
+				new_children.push_back(child);
 			}
 		}
 		_children = new_children;
 	}
 
-	util::Result<void, KError> AstNode::compress(bool keep_empty) {
+	util::Result<void, KError> AstNode::compress() {
 		auto const &cfg_names = _ctx->prim_names();
 		auto ids = std::vector<uint32_t>();
 		for (auto &name : cfg_names) {
@@ -95,20 +92,39 @@ namespace cg {
 			}
 			ids.push_back(_ctx->get(name).id());
 		}
-		compress(ids, keep_empty);
+		compress(ids);
 		return {};
 	}
 
-	AstNode AstNode::compressed(std::vector<uint32_t> const &cfg_ids, bool keep_empty) {
+	AstNode AstNode::compressed(std::vector<uint32_t> const &cfg_ids) const {
 		auto result = *this;
-		result.compress(cfg_ids, keep_empty);
+		result.compress(cfg_ids);
 		return result;
 	}
 
-	util::Result<AstNode, KError> AstNode::compressed(bool keep_empty) {
+	util::Result<AstNode, KError> AstNode::compressed() const {
 		auto result = *this;
-		TRY(result.compress(keep_empty));
+		TRY(result.compress());
 		return result;
+	}
+
+	void AstNode::trim() {
+		auto new_children = std::vector<AstNode>();
+
+		for (auto &child : _children) {
+			child.trim();
+			if (child.consumed().size() > 0 || child.children().size() > 0) {
+				new_children.push_back(child);
+			}
+		}
+
+		_children = new_children;
+	}
+
+	AstNode AstNode::trimmed() const {
+		auto r = *this;
+		r.trim();
+		return r;
 	}
 
 	void AstNode::debug_pre_order(std::ostream &os) const {

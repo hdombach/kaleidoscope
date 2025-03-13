@@ -114,28 +114,28 @@ namespace cg {
 		EXPECT(c.prep());
 
 		EXPECT_EQ(
-			parser.parse("1", "exp")->compressed()->pre_order_str(),
+			parser.parse("1", "exp")->compressed()->trimmed().pre_order_str(),
 			"exp add_sub_exp mult_div_exp unary_exp sing_exp "
 		);
 
 		EXPECT_EQ(
-			parser.parse("501.76", "exp")->compressed()->pre_order_str(),
+			parser.parse("501.76", "exp")->compressed()->trimmed().pre_order_str(),
 			"exp add_sub_exp mult_div_exp unary_exp sing_exp "
 		);
 
 		EXPECT_EQ(
-			parser.parse("41.2+14", "exp")->compressed()->pre_order_str(),
+			parser.parse("41.2+14", "exp")->compressed()->trimmed().pre_order_str(),
 			"exp add_sub_exp "
 			"mult_div_exp unary_exp sing_exp "
 			"add_sub_exp mult_div_exp unary_exp sing_exp "
 		);
 
 		std::ofstream file("gen/ast_node_parse_math.gv");
-		parser.parse("4-3*82  /3+ 2.3", "exp")->compressed()->debug_dot(file);
+		parser.parse("4-3*82  /3+ 2.3", "exp")->compressed()->trimmed().debug_dot(file);
 		file.close();
 
 		EXPECT_EQ(
-			parser.parse("4-3*82  /3+ 2.3", "exp")->compressed()->pre_order_str(),
+			parser.parse("4-3*82  /3+ 2.3", "exp")->compressed()->trimmed().pre_order_str(),
 			"exp add_sub_exp "
 				"mult_div_exp unary_exp sing_exp "
 				"add_sub_exp "
@@ -149,7 +149,7 @@ namespace cg {
 		);
 
 		EXPECT_EQ(
-			parser.parse("5+-2*-+-12", "exp") ->compressed() ->pre_order_str(),
+			parser.parse("5+-2*-+-12", "exp")->compressed()->trimmed().pre_order_str(),
 			"exp add_sub_exp "
 				"mult_div_exp unary_exp sing_exp "
 				"add_sub_exp mult_div_exp "
@@ -188,7 +188,7 @@ namespace cg {
 		{
 			auto src = "Hello world\n";
 			EXPECT_EQ(
-				parser.parse(src, "file")->compressed()->pre_order_str(),
+				parser.parse(src, "file")->compressed()->trimmed().pre_order_str(),
 				"file line raw "
 			);
 		}
@@ -201,7 +201,7 @@ namespace cg {
 				"#}\n";
 
 			EXPECT_EQ(
-				parser .parse(src, "file")->compressed()->pre_order_str(),
+				parser .parse(src, "file")->compressed()->trimmed().pre_order_str(),
 				"file "
 					"line raw comment beg_cmt end_cmt raw "
 					"line raw comment beg_cmt end_cmt "
