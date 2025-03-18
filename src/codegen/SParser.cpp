@@ -33,7 +33,8 @@ namespace cg {
 			// Should be fine since can't call multiple parses at same time.
 			_last_failure = KError();
 			auto ref = util::StringRef(str.c_str(), "codegen");
-			auto node = _parse(ref, _ctx.get(root_node)).value();
+			//TODO: error handling for root
+			auto node = _parse(ref, *_ctx.get(root_node)).value();
 			if (node.size() < str.size()) {
 				return _last_failure;
 			} else {

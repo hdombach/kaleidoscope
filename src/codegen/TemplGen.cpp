@@ -3,6 +3,7 @@
 #include "codegen/TemplObj.hpp"
 #include "util/KError.hpp"
 #include "util/IterAdapter.hpp"
+#include "util/file.hpp"
 #include "util/log.hpp"
 #include "util/lines_iterator.hpp"
 
@@ -192,7 +193,13 @@ namespace cg {
 			c["statement_e"] + c["padding_nl"];
 		c.prim("smacro") = c["sfrag_macro"] + c["lines"] + c["sfrag_endmacro"];
 
-		c.prim("statement") = c["sfor"] | c["sif"] | c["smacro"];
+		c.prim("sinclude") =
+			c["padding_b"] + c["statement_b"] +
+			c["padding"] + "include"_cfg +
+			c["padding"] + c["exp_str"] + c["padding"] +
+			c["statement_e"] + c["padding_nl"];
+
+		c.prim("statement") = c["sfor"] | c["sif"] | c["smacro"] | c["sinclude"];
 
 		TRY(c.prep());
 
@@ -225,7 +232,7 @@ namespace cg {
 
 			auto l_args = args;
 			TRY(_add_builtin_identifiers(l_args));
-			return _codegen(node, l_args);
+			return _codegen(node, l_args, parser);
 		} catch_kerror;
 	}
 
@@ -234,43 +241,77 @@ namespace cg {
 		return KError::codegen(msg); \
 	}
 
+	util::Result<std::string, KError> _unpack_str(std::string const &str) {
+		auto s = std::string();
+		auto c = str.c_str();
+
+		CG_ASSERT(*c == '"', "String literal must start with '\"'");
+		c++;
+		while (*c != '"') {
+			if (*c == '\0') {
+				return KError::codegen("Unexpected end to string sequence");
+			}
+
+			if (*c == '\\') {
+				c++;
+				switch (*c) {
+					case '"':
+						s += '"';
+						break;
+					default:
+						return KError::codegen(util::f(
+							"Unknown string escape sequence: \\",
+							*c
+						));
+				}
+			} else {
+				s += *c;
+			}
+			c++;
+		}
+		return s;
+	}
+
 	util::Result<std::string, KError> TemplGen::_codegen(
 		AstNode const &node,
-		TemplDict &args
+		TemplDict &args,
+		SParser &parser
 	) const {
 		if (node.cfg_name() == "whitespace") {
-			return _cg_default(node, args);
+			return _cg_default(node, args, parser);
 		} else if (node.cfg_name() == "padding") {
-			return _cg_default(node, args);
+			return _cg_default(node, args, parser);
 		} else if (node.cfg_name() == "identifier") {
-			return _cg_identifier(node, args);
+			return _cg_identifier(node, args, parser);
 		} else if (node.cfg_name() == "padding_b") {
-			return _cg_ref(node, args);
+			return _cg_ref(node, args, parser);
 		} else if (node.cfg_name() == "padding_e") {
-			return _cg_ref(node, args);
+			return _cg_ref(node, args, parser);
 		} else if (node.cfg_name() == "padding_nl") {
-			return _cg_ref(node, args);
+			return _cg_ref(node, args, parser);
 		} else if (node.cfg_name() == "raw") {
-			return _cg_default(node, args);
+			return _cg_default(node, args, parser);
 		} else if (node.cfg_name() == "line") {
-			return _cg_line(node, args);
+			return _cg_line(node, args, parser);
 		} else if (node.cfg_name() == "lines") {
-			return _cg_lines(node, args);
+			return _cg_lines(node, args, parser);
 		} else if (node.cfg_name() == "file") {
-			return _cg_ref(node, args);
+			return _cg_ref(node, args, parser);
 		} else if (node.cfg_name() == "comment") {
-			return _cg_comment(node, args);
+			return _cg_comment(node, args, parser);
 		} else if (node.cfg_name() == "expression") {
-			return _cg_expression(node, args);
+			return _cg_expression(node, args, parser);
 		} else if (node.cfg_name() == "statement") {
-			return _cg_ref(node, args);
+			return _cg_ref(node, args, parser);
 		} else if (node.cfg_name() == "sif") {
-			return _cg_sif(node, args);
+			return _cg_sif(node, args, parser);
 		} else if (node.cfg_name() == "sfor") {
-			return _cg_sfor(node, args);
+			return _cg_sfor(node, args, parser);
 		} else if (node.cfg_name() == "smacro") {
-			_cg_smacro(node, args);
+			_cg_smacro(node, args, parser);
 			return {""};
+		} else if (node.cfg_name() == "sinclude") {
+			return _cg_sinclude(node, args, parser);
 		} else {
 			return KError::codegen("Unimplimented AstNode type: " + node.cfg_name());
 		}
@@ -278,7 +319,8 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_default(
 		AstNode const &node,
-		TemplDict &args
+		TemplDict &args,
+		SParser &parser
 	) const {
 		CG_ASSERT(node.children().size() == 0, "Children count of padding must be 0");
 		return node.consumed();
@@ -286,26 +328,29 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_ref(
 		AstNode const &node,
-		TemplDict &args
+		TemplDict &args,
+		SParser &parser
 	) const {
 		CG_ASSERT(node.children().size() == 1, "Children count of codegen_ref must be 1");
-		return _codegen(node.children()[0], args);
+		return _codegen(node.children()[0], args, parser);
 	}
 
 	util::Result<std::string, KError> TemplGen::_cg_identifier(
 		AstNode const &node,
-		TemplDict &args
+		TemplDict &args,
+		SParser &parser
 	) const {
 		return KError::codegen("Identifier does not have a codegen implimentation");
 	}
 
 	util::Result<std::string, KError> TemplGen::_cg_line(
 		AstNode const &node,
-		TemplDict &args
+		TemplDict &args,
+		SParser &parser
 	) const {
 		auto result = std::string();
 		for (auto &child : node.children()) {
-			if (auto str = _codegen(child, args)) {
+			if (auto str = _codegen(child, args, parser)) {
 				result += str.value();
 			} else {
 				return str;
@@ -317,12 +362,12 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_lines(
 		AstNode const &node,
-		TemplDict &args
+		TemplDict &args,
+		SParser &parser
 	) const {
-		auto scope = args;
 		auto result = std::string();
 		for (auto &child : node.children()) {
-			if (auto str = _codegen(child, scope)) {
+			if (auto str = _codegen(child, args, parser)) {
 				result += str.value();
 			} else {
 				return str;
@@ -333,14 +378,16 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_comment(
 		AstNode const &node,
-		TemplDict &args
+		TemplDict &args,
+		SParser &parser
 	) const {
 		return {""};
 	}
 
 	util::Result<std::string, KError> TemplGen::_cg_expression(
 		AstNode const &node,
-		TemplDict &args
+		TemplDict &args,
+		SParser &parser
 	) const {
 		try {
 			auto result = std::string();
@@ -352,13 +399,13 @@ namespace cg {
 				} else if (name == "expression_b") {
 					if (_tag_keep_padding(child, true).value()) {
 						if (auto padding = node.child_with_cfg("padding_b")) {
-							result += _codegen(padding.value(), args).value();
+							result += _codegen(padding.value(), args, parser).value();
 						}
 					}
 				} else if (name == "expression_e") {
 					if (_tag_keep_padding(child, true).value()) {
 						if (auto padding = node.child_with_cfg("padding_e")) {
-							result += _codegen(padding.value(), args).value();
+							result += _codegen(padding.value(), args, parser).value();
 						}
 					}
 				} else {
@@ -372,14 +419,16 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_statement(
 		AstNode const &node,
-		TemplDict &args
+		TemplDict &args,
+		SParser &parser
 	) const {
 		return KError::codegen("statment not implimented");
 	}
 
 	util::Result<std::string, KError> TemplGen::_cg_sif(
 		AstNode const &node,
-		TemplDict &args
+		TemplDict &args,
+		SParser &parser
 	) const {
 		try {
 		auto result = std::string();
@@ -394,7 +443,8 @@ namespace cg {
 				if (bool_value.boolean().value()) {
 					//if statement could be empty
 					if (auto lines_node = child.child_with_cfg("lines")) {
-						result += _codegen(lines_node.value(), args).value();
+						auto scope = args;
+						result += _codegen(lines_node.value(), scope, parser).value();
 					}
 					break;
 				}
@@ -406,14 +456,16 @@ namespace cg {
 				if (bool_value.boolean().value()) {
 					//elif statement could be empty
 					if (auto lines_node = child.child_with_cfg("lines")) {
-						result += _codegen(lines_node.value(), args).value();
+						auto scope = args;
+						result += _codegen(lines_node.value(), scope, parser).value();
 					}
 					break;
 				}
 			} else if (child.cfg_name() == "sif_else_chain") {
 				//else statement could be empty
 				if (auto lines_node = child.child_with_cfg("lines")) {
-					result += _codegen(lines_node.value(), args).value();
+					auto scope = args;
+					result += _codegen(lines_node.value(), args, parser).value();
 				}
 				break;
 			} else {
@@ -427,7 +479,8 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_sfor(
 		AstNode const &node,
-		TemplDict &args
+		TemplDict &args,
+		SParser &parser
 	) const {
 		try {
 			auto result = std::string();
@@ -454,7 +507,7 @@ namespace cg {
 				auto local_args = args;
 				local_args[iter_name] = i;
 				local_args["loop"] = loop;
-				result += _codegen(lines, local_args).value();
+				result += _codegen(lines, local_args, parser).value();
 				index++;
 			}
 
@@ -464,7 +517,8 @@ namespace cg {
 
 	util::Result<void, KError> TemplGen::_cg_smacro(
 		AstNode const &node,
-		TemplDict &args
+		TemplDict &args,
+		SParser &parser
 	) const {
 		try {
 			auto arg_def = node.child_with_cfg("sfrag_macro").value();
@@ -490,7 +544,7 @@ namespace cg {
 				macro_args.push_back({macro_arg_name, macro_arg_value});
 			}
 			
-			TemplFunc func = [this, macro_args, args, macro_name, content](TemplList l) -> TemplFuncRes {
+			TemplFunc func = [this, macro_args, args, macro_name, content, &parser](TemplList l) -> TemplFuncRes {
 				auto local_args = args;
 				if (macro_args.size() < l.size()) {
 					return KError::codegen(util::f(
@@ -520,10 +574,29 @@ namespace cg {
 					}
 					i++;
 				}
-				return {_codegen(content, local_args).value()};
+				return {_codegen(content, local_args, parser).value()};
 			};
 			args[macro_name] = func;
 			return {};
+		} catch_kerror;
+	}
+
+	TemplGen::CodegenRes TemplGen::_cg_sinclude(
+		AstNode const &node,
+		TemplDict &args,
+		SParser &parser
+	) const {
+		try {
+			auto exp_str_node = node.child_with_cfg("exp_str");
+			auto filename = _unpack_str(exp_str_node->consumed()).value();
+			auto include_src = util::readEnvFile(filename);
+			auto include_node = parser.parse(include_src, "file")->compressed().value();
+
+			std::ofstream file("gen/templgen-include.gv");
+			include_node.debug_dot(file);
+			file.close();
+
+			return _codegen(include_node, args, parser);
 		} catch_kerror;
 	}
 
@@ -624,32 +697,10 @@ namespace cg {
 		AstNode const &node,
 		TemplDict const &args
 	) const {
-		auto s = std::string();
-		auto c = node.consumed().c_str();
-	
-		CG_ASSERT(*c == '"', "String literal must start with '\"'");
-		c++;
-		while (*c != '"') {
-			if (*c == '\0') {
-				return KError::codegen("Unexpected end to string sequence", node.location());
-			}
-
-			if (*c == '\\') {
-				c++;
-				switch (*c) {
-					case '"':
-						s += '"';
-						break;
-					default:
-						return KError::codegen(util::f("Unknown string escape sequence: \\", *c), node.location());
-				}
-			} else {
-				s += *c;
-			}
-			c++;
-		}
-		auto obj = TemplObj(s).set_location(node.location());
-		return {obj};
+		try {
+			return TemplObj(_unpack_str(node.consumed()).value())
+				.set_location(node.location());
+		} catch_kerror;
 	}
 
 	util::Result<TemplObj, KError> TemplGen::_eval_exp1(

@@ -6,6 +6,7 @@
 #include "CfgContext.hpp"
 #include "TemplObj.hpp"
 #include "AstNode.hpp"
+#include "SParser.hpp"
 #include "util/result.hpp"
 #include "util/KError.hpp"
 
@@ -33,23 +34,24 @@ namespace cg {
 			using CodegenRes = util::Result<std::string, KError>;
 			using EvalRes = util::Result<TemplObj, KError>;
 
-			CodegenRes _codegen(AstNode const &node, TemplDict &args) const;
+			CodegenRes _codegen(AstNode const &node, TemplDict &args, SParser &parser) const;
 
-			CodegenRes _cg_default(AstNode const &node, TemplDict &args) const;
-			CodegenRes _cg_ref(AstNode const &node, TemplDict &args) const;
+			CodegenRes _cg_default(AstNode const &node, TemplDict &args, SParser &parser) const;
+			CodegenRes _cg_ref(AstNode const &node, TemplDict &args, SParser &sparser) const;
 
-			CodegenRes _cg_identifier(AstNode const &node, TemplDict &args) const;
-			CodegenRes _cg_line(AstNode const &node, TemplDict &args) const;
-			CodegenRes _cg_lines(AstNode const &node, TemplDict &args) const;
+			CodegenRes _cg_identifier(AstNode const &node, TemplDict &args, SParser &sparser) const;
+			CodegenRes _cg_line(AstNode const &node, TemplDict &args, SParser &sparser) const;
+			CodegenRes _cg_lines(AstNode const &node, TemplDict &args, SParser &sparser) const;
 
-			CodegenRes _cg_comment(AstNode const &node, TemplDict &args) const;
+			CodegenRes _cg_comment(AstNode const &node, TemplDict &args, SParser &parser) const;
 
-			CodegenRes _cg_expression(AstNode const &node, TemplDict &args) const;
+			CodegenRes _cg_expression(AstNode const &node, TemplDict &args, SParser &parser) const;
 
-			CodegenRes _cg_statement(AstNode const &node, TemplDict &args) const;
-			CodegenRes _cg_sif(AstNode const &node, TemplDict &args) const;
-			CodegenRes _cg_sfor(AstNode const &node, TemplDict &args) const;
-			util::Result<void, KError> _cg_smacro(AstNode const &node, TemplDict &args) const;
+			CodegenRes _cg_statement(AstNode const &node, TemplDict &args, SParser &parser) const;
+			CodegenRes _cg_sif(AstNode const &node, TemplDict &args, SParser &parser) const;
+			CodegenRes _cg_sfor(AstNode const &node, TemplDict &args, SParser &parser) const;
+			util::Result<void, KError> _cg_smacro(AstNode const &node, TemplDict &args, SParser &parser) const;
+			CodegenRes _cg_sinclude(AstNode const &node, TemplDict &args, SParser &parser) const;
 
 			EvalRes _eval(util::Result<AstNode, KError> const &node, TemplDict const &args) const;
 			EvalRes _eval(AstNode const &node, TemplDict const &args) const;

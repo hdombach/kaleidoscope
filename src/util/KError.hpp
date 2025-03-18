@@ -74,7 +74,8 @@ inline std::ostream &operator <<(std::ostream &os, KError const &error) {
 	return os;
 }
 
-#define catch_kerror catch (KError const &err) { return {err}; }
+#define catch_kerror catch (KError const &err) { return {err}; } \
+	catch (...) { throw; }
 
 inline std::ostream& log_fatal_error(KError const &err) {
 	return log_fatal_error(err.loc()) << err;

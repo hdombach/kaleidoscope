@@ -86,8 +86,9 @@ namespace cg {
 
 			/**
 			 * @brief Gets node by name
+			 * @returns Node or null if not found
 			 */
-			CfgNode const &get(std::string const &name) const;
+			CfgNode const *get(std::string const &name) const;
 
 			/**
 			 * @brief Gets node by id

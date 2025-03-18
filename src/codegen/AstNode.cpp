@@ -87,10 +87,11 @@ namespace cg {
 		auto const &cfg_names = _ctx->prim_names();
 		auto ids = std::vector<uint32_t>();
 		for (auto &name : cfg_names) {
-			if (!_ctx->contains(name)) {
+			if (auto node = _ctx->get(name)) {
+				ids.push_back(node->id());
+			} else {
 				return KError::codegen("Internal: Unknown cfg name in compress: " + name);
 			}
-			ids.push_back(_ctx->get(name).id());
 		}
 		compress(ids);
 		return {};

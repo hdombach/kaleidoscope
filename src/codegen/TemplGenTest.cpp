@@ -1315,4 +1315,26 @@ namespace cg {
 			"last: <true>\n"
 		);
 	}
+
+	TEST(templ_gen, macro_import) {
+		auto gen = TemplGen::create();
+
+		auto args = TemplDict{};
+
+		auto src =
+			"{\% include \"assets/tests/common_include.cg\" %}"
+			"{{say_hello()}}\n"
+			"{{wrap(\"reee\")}}\n";
+
+		EXPECT_EQ(
+			gen->codegen(src, args).value(),
+			"Common Header\n"
+			"\n"
+			"\n"
+			"Hello World\n"
+			"\n"
+			"< reee >\n"
+			"\n"
+		);
+	}
 }

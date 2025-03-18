@@ -99,8 +99,12 @@ namespace cg {
 		}
 	}
 
-	CfgNode const &CfgContext::get(std::string const &name) const {
-		return _cfgs[_cfg_map.at(name)];
+	CfgNode const *CfgContext::get(std::string const &name) const {
+		if (_cfg_map.contains(name)) {
+			return &_cfgs[_cfg_map.at(name)];
+		} else  {
+			return nullptr;
+		}
 	}
 
 	CfgNode const &CfgContext::get(uint32_t id) const {
@@ -174,7 +178,11 @@ namespace cg {
 	}
 
 	void CfgContext::debug_node(std::string const &name, std::ostream &os) const {
-		debug_node(get(name), os);
+		if (auto node = get(name)) {
+			debug_node(*node, os);
+		} else {
+			os << "<anon node>";
+		}
 	}
 
 	std::string CfgContext::node_str(CfgNode const &node) const {
