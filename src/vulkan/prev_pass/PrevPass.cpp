@@ -1278,11 +1278,14 @@ namespace vulkan {
 	}
 
 	std::string PrevPass::_codegen_de() {
-		auto source_code = util::readEnvFile("assets/shaders/preview_de.frag");
-		auto common_source_code = util::readEnvFile("assets/shaders/common.hpp");
+		auto gen = cg::TemplGen::create();
+
+		auto source_code = util::readEnvFile("assets/shaders/preview_de.frag.cg");
 		util::replace_substr(source_code, "/*GLOBAL_UNIFORM_CONTENT*/\n", GlobalPrevPassUniform::declaration_content_str());
 		util::replace_substr(source_code, "/*NODE_BUFFER_DECL*/\n", PrevPassNode::VImpl::declaration());
-		util::replace_substr(source_code, "/*COMMON_INCL*/\n", common_source_code);
+
+		auto args = cg::TemplDict{};
+		source_code = gen->codegen(source_code, args).value();
 
 		auto de_funcs = std::string();
 

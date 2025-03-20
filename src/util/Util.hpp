@@ -77,7 +77,7 @@ namespace util {
 				case '"':
 					res += "\\\"";
 					break;
-				case '/':
+				case '\\':
 					res += "\\\\";
 					break;
 				default:

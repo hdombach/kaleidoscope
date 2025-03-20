@@ -14,6 +14,11 @@ namespace cg {
 	class SParser {
 		public:
 			using Type = CfgNode::Type;
+			struct Stack {
+				util::StringRef str;
+				CfgNode const &node;
+				Stack *parent = nullptr;
+			};
 		public:
 			SParser(CfgContext const &ctx);
 
@@ -59,13 +64,13 @@ namespace cg {
 			/***********************************
 			 * Parser helper functions
 			 * *********************************/
-			util::Result<AstNode, KError> _parse(util::StringRef str, CfgNode const &node);
-			util::Result<AstNode, KError> _parse_lit(util::StringRef str, CfgNode const &node);
-			util::Result<AstNode, KError> _parse_ref(util::StringRef str, CfgNode const &node);
-			util::Result<AstNode, KError> _parse_seq(util::StringRef str, CfgNode const &node);
-			util::Result<AstNode, KError> _parse_alt(util::StringRef str, CfgNode const &name);
-			util::Result<AstNode, KError> _parse_cls(util::StringRef str, CfgNode const &name);
-			util::Result<AstNode, KError> _parse_opt(util::StringRef str, CfgNode const &name);
-			util::Result<AstNode, KError> _parse_neg(util::StringRef str, CfgNode const &name);
+			util::Result<AstNode, KError> _parse(Stack stack);
+			util::Result<AstNode, KError> _parse_lit(Stack stack);
+			util::Result<AstNode, KError> _parse_ref(Stack stack);
+			util::Result<AstNode, KError> _parse_seq(Stack stack);
+			util::Result<AstNode, KError> _parse_alt(Stack stack);
+			util::Result<AstNode, KError> _parse_cls(Stack stack);
+			util::Result<AstNode, KError> _parse_opt(Stack stack);
+			util::Result<AstNode, KError> _parse_neg(Stack stack);
 	};
 }

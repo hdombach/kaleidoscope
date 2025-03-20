@@ -34,7 +34,7 @@ namespace cg {
 			_last_failure = KError();
 			auto ref = util::StringRef(str.c_str(), "codegen");
 			//TODO: error handling for root
-			auto node = _parse(ref, *_ctx.get(root_node)).value();
+			auto node = _parse({ref, *_ctx.get(root_node)}).value();
 			if (node.size() < str.size()) {
 				return _last_failure;
 			} else {
@@ -57,51 +57,59 @@ namespace cg {
 	 * *********************************/
 
 	util::Result<AstNode, KError> SParser::_parse(
-		util::StringRef str,
-		CfgNode const &node
+		Stack s
 	) {
-		switch (node.type()) {
+		auto new_stack = Stack{s.str, s.node, &s};
+		switch (s.node.type()) {
 			case Type::none:
-				return _set_failure(KError::codegen("Trying to parse none CfgNode", str.location()));
+				return _set_failure(KError::codegen("Trying to parse none CfgNode", s.str.location()));
 			case Type::literal:
-				return _parse_lit(str, node);
+				return _parse_lit(s);
 			case Type::reference:
-				return _parse_ref(str, node);
+				return _parse_ref(s);
 			case Type::sequence:
-				return _parse_seq(str, node);
+				return _parse_seq(s);
 			case Type::alternative:
-				return _parse_alt(str, node);
+				return _parse_alt(s);
 			case Type::closure:
-				return _parse_cls(str, node);
+				return _parse_cls(s);
 			case Type::optional:
-				return _parse_opt(str, node);
+				return _parse_opt(s);
 			case Type::negation:
-				return _parse_neg(str, node);
+				return _parse_neg(s);
 		}
 	}
 
-	util::Result<AstNode, KError> SParser::_parse_lit(
-		util::StringRef str,
-		CfgNode const &cfg
-	) {
+	util::Result<AstNode, KError> SParser::_parse_lit(Stack s) {
 		size_t r = 0;
-		auto res = AstNode(++_uid, _ctx, cfg.id(), str.location());
-		for (auto c : cfg.content()) {
-			if (str[r] != c) {
-				if (str[r] == '\0') {
+		auto res = AstNode(++_uid, _ctx, s.node.id(), s.str.location());
+		for (auto c : s.node.content()) {
+			if (s.str[r] != c) {
+				if (s.str[r] == '\0') {
 					auto msg = util::f(
 						"Unexepcted EOF when parsing literal: ",
-						util::escape_str(cfg.content())
+						util::escape_str(s.node.content())
 					);
-					return _set_failure(KError::codegen(msg, str.location()));
+					return _set_failure(KError::codegen(msg, s.str.location()));
 				} else {
-					return _set_failure(KError::codegen(util::f(
+					auto msg = util::f(
 						"Unexpected character: ",
-						str[r],
-						" in string: \"",
-						util::get_str_line(util::escape_str(str.str())),
-						"\""
-					), str.location()));
+						s.str[r],
+						" when parsing string: ",
+						util::get_str_line(util::escape_str(s.str.str())),
+						". Parse stack: "
+					);
+					auto i = &s;
+					while (i) {
+						if (i->node.has_name()) {
+							msg += i->node.name() + " ";
+						} else {
+							msg += "<anon> ";
+						}
+						i = i->parent;
+					}
+
+					return _set_failure(KError::codegen(msg, s.str.location()));
 				}
 			}
 			res.consume(c);
@@ -110,12 +118,10 @@ namespace cg {
 		return res;
 	}
 
-	util::Result<AstNode, KError> SParser::_parse_ref(
-		util::StringRef str,
-		CfgNode const &cfg
-	) {
-		auto res = AstNode(++_uid, _ctx, cfg.id(), str.location());
-		if (auto child = _parse(str, _ctx.get(cfg.ref_id()))) {
+	util::Result<AstNode, KError> SParser::_parse_ref(Stack s) {
+		auto res = AstNode(++_uid, _ctx, s.node.id(), s.str.location());
+		auto child_stack = Stack{s.str, _ctx.get(s.node.ref_id()), &s};
+		if (auto child = _parse(child_stack)) {
 			res.add_child(child.value());
 		} else {
 			return child.error();
@@ -123,14 +129,12 @@ namespace cg {
 		return res;
 	}
 
-	util::Result<AstNode, KError> SParser::_parse_seq(
-		util::StringRef str,
-		CfgNode const &cfg
-	) {
+	util::Result<AstNode, KError> SParser::_parse_seq(Stack s) {
 		size_t r = 0;
-		auto node = AstNode(++_uid, _ctx, cfg.id(), str.location());
-		for (auto &child_cfg : cfg.children()) {
-			if (auto child = _parse(str+r, child_cfg)) {
+		auto node = AstNode(++_uid, _ctx, s.node.id(), s.str.location());
+		for (auto &child_cfg : s.node.children()) {
+			auto child_stack = Stack{s.str + r, child_cfg, &s};
+			if (auto child = _parse(child_stack)) {
 				r += child.value().size();
 				node.add_child(child.value());
 			} else {
@@ -140,13 +144,11 @@ namespace cg {
 		return node;
 	}
 
-	util::Result<AstNode, KError> SParser::_parse_alt(
-		util::StringRef str,
-		CfgNode const &cfg
-	) {
-		auto node = AstNode(++_uid, _ctx, cfg.id(), str.location());
-		for (auto &child_cfg : cfg.children()) {
-			if (auto child = _parse(str, child_cfg)) {
+	util::Result<AstNode, KError> SParser::_parse_alt(Stack s) {
+		auto node = AstNode(++_uid, _ctx, s.node.id(), s.str.location());
+		for (auto &child_cfg : s.node.children()) {
+			auto child_stack = Stack{s.str, child_cfg, &s};
+			if (auto child = _parse(child_stack)) {
 				node.add_child(child.value());
 				return node;
 			}
@@ -154,14 +156,12 @@ namespace cg {
 		return _set_failure(_last_failure);
 	}
 
-	util::Result<AstNode, KError> SParser::_parse_cls(
-		util::StringRef str,
-		CfgNode const &cfg
-	) {
-		auto node = AstNode(++_uid, _ctx, cfg.id(), str.location());
+	util::Result<AstNode, KError> SParser::_parse_cls(Stack s) {
+		auto node = AstNode(++_uid, _ctx, s.node.id(), s.str.location());
 		size_t r = 0;
 		while (true) {
-			if (auto child = _parse(str + r, cfg.children()[0])) {
+			auto child_stack = Stack{s.str + r, s.node.children()[0], &s};
+			if (auto child = _parse(child_stack)) {
 				auto s = child.value().size();
 				if (s == 0) { // Can happen with nested closures
 					return node; 
@@ -174,29 +174,24 @@ namespace cg {
 		}
 	}
 
-	util::Result<AstNode, KError> SParser::_parse_opt(
-		util::StringRef str,
-		CfgNode const &cfg
-	) {
-		auto node = AstNode(++_uid, _ctx, cfg.id(), str.location());
-		if (auto child = _parse(str, cfg.children()[0])) {
+	util::Result<AstNode, KError> SParser::_parse_opt(Stack s) {
+		auto node = AstNode(++_uid, _ctx, s.node.id(), s.str.location());
+		if (auto child = _parse(Stack{s.str, s.node.children()[0], &s})) {
 			node.add_child(child.value());
 		}
 		return node;
 	}
 
-	util::Result<AstNode, KError> SParser::_parse_neg(
-		util::StringRef str,
-		CfgNode const &cfg
-	) {
-		auto node = AstNode(++_uid, _ctx, cfg.id(), str.location());
-		if (str[0] == '\0') {
-			return _set_failure(KError::codegen("Unexpected EOF", str.location()));
+	util::Result<AstNode, KError> SParser::_parse_neg(Stack s) {
+		auto node = AstNode(++_uid, _ctx, s.node.id(), s.str.location());
+		if (s.str[0] == '\0') {
+			return _set_failure(KError::codegen("Unexpected EOF", s.str.location()));
 		}
-		if (auto c = _parse(str, cfg.children()[0])) {
-			return _set_failure(KError::codegen("Unexpected element: " + _ctx.node_str(cfg), str.location()));
+		auto child_stack = Stack{s.str, s.node.children()[0], &s};
+		if (auto c = _parse(child_stack)) {
+			return _set_failure(KError::codegen("Unexpected element: " + _ctx.node_str(s.node), s.str.location()));
 		} else {
-			node.consume(str[0]);
+			node.consume(s.str[0]);
 		}
 		return node;
 	}
