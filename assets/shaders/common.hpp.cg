@@ -2,7 +2,7 @@
 {{decl.uniform_type}} {{decl.name}};
 {% endmacro %}
 
-{% macro struct_delcs() %}
+{% macro struct_decls() %}
 struct Ray {
 	vec4 pos;
 	vec4 dir;
@@ -19,7 +19,7 @@ struct HitInfo {
 };
 {% endmacro %}
 
-{% de_funcs() %}
+{% macro de_funcs() %}
 /*DE_FUNCS*/
 
 float de(uint mesh_id, vec3 pos) {

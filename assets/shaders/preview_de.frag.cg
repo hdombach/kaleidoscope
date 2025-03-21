@@ -2,7 +2,7 @@
 #
 {%include "assets/shaders/common.hpp.cg"%}
 
-{{struct_decl()}}
+{{struct_decls()}}
 
 /*NODE_BUFFER_DECL*/
 
