@@ -41,7 +41,8 @@ namespace cg {
 			 */
 			util::Result<AstNode, KError> parse(
 				std::string const &str,
-				std::string const &root_node
+				std::string const &root_node,
+				std::string const &filename = "codegen"
 			);
 
 		private:

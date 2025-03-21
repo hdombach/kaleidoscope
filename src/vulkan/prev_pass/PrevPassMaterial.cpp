@@ -367,7 +367,7 @@ namespace vulkan {
 			{"global_declarations", GlobalPrevPassUniform::declaration_content},
 			{"material_declarations", material->resources().templ_declarations()}
 		};
-		vert_source = gen->codegen(vert_source, vert_args.dict().value()).value();
+		vert_source = gen->codegen(vert_source, vert_args.dict().value(), "preview_material.vert.cg").value();
 
 		auto templ_textures = cg::TemplList();
 		for (auto &t : textures) {
@@ -380,7 +380,7 @@ namespace vulkan {
 			{"textures", templ_textures},
 			{"frag_source", material->frag_shader_src()}
 		};
-		frag_source = gen->codegen(frag_source, frag_args.dict().value()).value();
+		frag_source = gen->codegen(frag_source, frag_args.dict().value(), "preview_material.frag.cg").value();
 
 		log_debug() << "vert codegen:\n" << util::add_strnum(vert_source) << std::endl;
 		log_debug() << "frag codegen:\n" << util::add_strnum(frag_source) << std::endl;

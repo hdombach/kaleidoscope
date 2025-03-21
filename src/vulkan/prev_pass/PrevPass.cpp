@@ -579,7 +579,7 @@ namespace vulkan {
 			{"overlay_declarations", OverlayUniform::declaration_content}
 		};
 		auto source_code = util::readEnvFile("assets/shaders/preview_overlay.comp.cg");
-		source_code = gen->codegen(source_code, codegen_args).value();
+		source_code = gen->codegen(source_code, codegen_args, "preview_overlay.comp.cg").value();
 		auto compute_shader = Shader::from_source_code(source_code, Shader::Type::Compute);
 		log_debug() << "\n" << util::add_strnum(source_code) << std::endl;
 		if (!compute_shader) {
@@ -1285,7 +1285,7 @@ namespace vulkan {
 		util::replace_substr(source_code, "/*NODE_BUFFER_DECL*/\n", PrevPassNode::VImpl::declaration());
 
 		auto args = cg::TemplDict{};
-		source_code = gen->codegen(source_code, args).value();
+		source_code = gen->codegen(source_code, args, "preview_de.frag.cg").value();
 
 		auto de_funcs = std::string();
 

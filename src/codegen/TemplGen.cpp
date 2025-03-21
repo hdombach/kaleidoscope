@@ -208,10 +208,11 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::codegen(
 		std::string const &str,
-		TemplObj const &obj
+		TemplObj const &args,
+		std::string const &filename
 	) const {
-		if (auto dict = obj.dict()) {
-			return codegen(str, dict.value());
+		if (auto dict = args.dict()) {
+			return codegen(str, dict.value(), filename);
 		} else {
 			return dict.error();
 		}
@@ -219,12 +220,13 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::codegen(
 		std::string const &str,
-		TemplDict const &args
+		TemplDict const &args,
+		std::string const &filename
 	) const {
 		try {
 			auto parser = SParser(_ctx);
 
-			auto node = parser.parse(str, "file")->compressed().value();
+			auto node = parser.parse(str, "file", filename)->compressed().value();
 
 			std::ofstream file("gen/templgen.gv");
 			node.debug_dot(file);
@@ -590,7 +592,7 @@ namespace cg {
 			auto exp_str_node = node.child_with_cfg("exp_str");
 			auto filename = _unpack_str(exp_str_node->consumed()).value();
 			auto include_src = util::readEnvFile(filename);
-			auto include_node = parser.parse(include_src, "file")->compressed().value();
+			auto include_node = parser.parse(include_src, "file", filename)->compressed().value();
 
 			std::ofstream file("gen/templgen-include.gv");
 			include_node.debug_dot(file);

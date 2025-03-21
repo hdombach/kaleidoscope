@@ -25,14 +25,15 @@ namespace cg {
 
 	util::Result<AstNode, KError> SParser::parse(
 		std::string const &str,
-		std::string const &root_node
+		std::string const &root_node,
+		std::string const &filename
 	) {
 		try {
 			// _last_failure is a value specific to this function but it is easier to
 			// pass it around everywhere as a property.
 			// Should be fine since can't call multiple parses at same time.
 			_last_failure = KError();
-			auto ref = util::StringRef(str.c_str(), "codegen");
+			auto ref = util::StringRef(str.c_str(), filename.c_str());
 			//TODO: error handling for root
 			auto node = _parse({ref, *_ctx.get(root_node)}).value();
 			if (node.size() < str.size()) {

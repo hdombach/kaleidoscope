@@ -20,12 +20,14 @@ namespace cg {
 
 			util::Result<std::string, KError> codegen(
 				std::string const &str,
-				TemplObj const &obj
+				TemplObj const &args,
+				std::string const &filename = "codegen"
 			) const;
 
 			util::Result<std::string, KError> codegen(
 				std::string const &str,
-				TemplDict const &args
+				TemplDict const &args,
+				std::string const &filename = "codegen"
 			) const;
 		private:
 			CfgContext _ctx;

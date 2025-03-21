@@ -13,16 +13,16 @@ namespace util {
 				_str(nullptr),
 				_filename(nullptr),
 				_i(0),
-				_line(0),
-				_column(0)
+				_line(1),
+				_column(1)
 			{}
 
 			StringRef(const char *str, const char *filename):
 				_str(str),
 				_filename(filename),
 				_i(0),
-				_line(0),
-				_column(0)
+				_line(1),
+				_column(1)
 			{}
 
 			void inc(uint32_t count = 1) {
