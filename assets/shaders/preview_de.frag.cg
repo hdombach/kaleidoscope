@@ -4,7 +4,11 @@
 
 {{struct_decls()}}
 
-/*NODE_BUFFER_DECL*/
+struct Node {
+	{% for decl in node_declarations %}
+	{{declaration(decl)}}
+	{% endfor %}
+};
 
 //sampler2DShadow
 
@@ -14,7 +18,9 @@ layout(location = 0) out vec4 outColor;
 layout(location = 1) out uint outNode;
 
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
-	/*GLOBAL_UNIFORM_CONTENT*/
+	{% for decl in global_declarations %}
+	{{declaration(decl)}}
+	{% endfor %}
 } global_uniform;
 
 layout(set = 1, binding = 0) uniform sampler2D depthSampler;

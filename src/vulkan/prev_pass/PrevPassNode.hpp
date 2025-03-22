@@ -1,12 +1,14 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <vector>
 
 #include "vulkan/DescriptorSet.hpp"
 #include "vulkan/MappedUniform.hpp"
 #include "util/result.hpp"
 #include "util/KError.hpp"
 #include "types/Node.hpp"
+#include "vulkan/TemplUtils.hpp"
 
 namespace vulkan {
 	class Scene;
@@ -22,7 +24,14 @@ namespace vulkan {
 
 				static VImpl create_empty();
 
-				static constexpr const char *declaration() {
+				inline const static auto declaration = std::vector{
+					templ_property("uint", "mesh_id"),
+					templ_property("vec3", "position"),
+					templ_property("mat4", "transformation"),
+					templ_property("mat4", "inverse_transformation")
+				};
+
+				static constexpr const char *declaration_str() {
 					return
 						"struct Node {\n"
 						"\tuint mesh_id;\n"

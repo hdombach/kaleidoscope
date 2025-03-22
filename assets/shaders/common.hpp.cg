@@ -20,10 +20,19 @@ struct HitInfo {
 {% endmacro %}
 
 {% macro de_funcs() %}
-/*DE_FUNCS*/
+
+{% for de_func in mesh_de_list %}
+float de_{{de_func.id}}(vec3 pos) {
+	{{de_func.de}}
+}
+{% endfor %}
 
 float de(uint mesh_id, vec3 pos) {
-	/*DE_FUNC_CALLS*/
+	{% for de_func in mesh_de_list %}
+	if (mesh_id == {{de_func.id}}) {
+		return de_{{de_func.id}}(pos);
+	}
+	{% endfor %}
 	return 0;
 }
 

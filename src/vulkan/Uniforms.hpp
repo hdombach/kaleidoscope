@@ -6,19 +6,9 @@
 
 #include "types/Camera.hpp"
 #include "MappedUniform.hpp"
-#include "codegen/TemplObj.hpp"
+#include "TemplUtils.hpp"
 
 namespace vulkan {
-	inline cg::TemplObj templ_property(
-		std::string const &type,
-		std::string const &name
-	) {
-		return cg::TemplObj{
-			{"uniform_type", type},
-			{"name", name}
-		};
-	}
-
 	struct GlobalPrevPassUniform {
 		alignas(16) glm::mat4 camera_rotation;
 		alignas(16) glm::mat4 camera_transformation;

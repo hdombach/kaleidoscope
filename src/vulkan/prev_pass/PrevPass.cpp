@@ -1281,34 +1281,22 @@ namespace vulkan {
 		auto gen = cg::TemplGen::create();
 
 		auto source_code = util::readEnvFile("assets/shaders/preview_de.frag.cg");
-		util::replace_substr(source_code, "/*GLOBAL_UNIFORM_CONTENT*/\n", GlobalPrevPassUniform::declaration_content_str());
-		util::replace_substr(source_code, "/*NODE_BUFFER_DECL*/\n", PrevPassNode::VImpl::declaration());
 
-		auto args = cg::TemplDict{};
+		auto mesh_de_list = cg::TemplList();
+		for (auto &m : _meshes) {
+			if (!m || !m.is_de()) continue;
+			mesh_de_list.push_back(cg::TemplObj{
+				{"id", m.base()->id()},
+				{"de", m.base()->de()}
+			});
+		}
+
+		auto args = cg::TemplObj{
+			{"global_declarations", GlobalPrevPassUniform::declaration_content},
+			{"node_declarations", PrevPassNode::VImpl::declaration},
+			{"mesh_de_list", mesh_de_list}
+		};
 		source_code = gen->codegen(source_code, args, "preview_de.frag.cg").value();
-
-		auto de_funcs = std::string();
-
-		for (auto &m : _meshes) {
-			if (!m || !m.is_de()) continue;
-			de_funcs += util::f("float de_", m.base()->id(), "(vec3 pos) {\n");
-			de_funcs += util::indented(m.base()->de(), "\t");
-			de_funcs += "}\n";
-			de_funcs += "\n";
-		}
-
-		util::replace_substr(source_code, "/*DE_FUNCS*/\n", de_funcs);
-
-		auto de_func_calls = std::string();
-
-		for (auto &m : _meshes) {
-			if (!m || !m.is_de()) continue;
-			de_func_calls += util::f("if (mesh_id == ", m.base()->id(), ") {\n");
-			de_func_calls += util::f("\treturn de_", m.base()->id(), "(pos);\n");
-			de_func_calls += util::f("}\n");
-		}
-
-		util::replace_substr(source_code, "/*DE_FUNC_CALLS*/\n", de_func_calls);
 
 		log_debug() << "Prev pass de code: " << util::add_strnum(source_code) << std::endl;
 
