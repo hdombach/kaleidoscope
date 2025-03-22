@@ -777,7 +777,9 @@ namespace vulkan {
 			{"global_declarations", ComputeUniform::declarations}
 		};
 
+		auto start = log_start_timer();
 		source = gen->codegen(source, args, "raytrace.comp.cg").value();
+		log_debug() << "raypass codegen took " << start << std::endl;
 
 		auto resource_decls = std::string();
 		auto material_bufs = std::string();

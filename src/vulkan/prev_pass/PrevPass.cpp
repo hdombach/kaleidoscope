@@ -579,7 +579,9 @@ namespace vulkan {
 			{"overlay_declarations", OverlayUniform::declaration_content}
 		};
 		auto source_code = util::readEnvFile("assets/shaders/preview_overlay.comp.cg");
+		auto start = log_start_timer();
 		source_code = gen->codegen(source_code, codegen_args, "preview_overlay.comp.cg").value();
+		log_debug() << "preview_overlay codegen took " << start << std::endl;
 		auto compute_shader = Shader::from_source_code(source_code, Shader::Type::Compute);
 		log_debug() << "\n" << util::add_strnum(source_code) << std::endl;
 		if (!compute_shader) {

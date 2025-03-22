@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <ostream>
 #include <iostream>
 #include <source_location>
@@ -42,6 +43,10 @@ namespace util {
 		Importance importance,
 		util::FileLocation loc=std::source_location::current()
 	);
+
+	struct TimePoint {
+		std::chrono::time_point<std::chrono::steady_clock> value;
+	};
 }
 
 void log_assert(
@@ -68,4 +73,13 @@ inline std::ostream& log_memory(util::FileLocation loc=std::source_location::cur
 inline std::ostream& log_debug(util::FileLocation loc=std::source_location::current()) {
 	return log(util::Importance::DEBUG, loc);
 }
+inline util::TimePoint log_start_timer() {
+	return {std::chrono::steady_clock::now()};
+}
 
+inline std::ostream& operator<<(std::ostream& os, util::TimePoint const &start) {
+	auto now = std::chrono::steady_clock::now();
+	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - start.value);
+	os << elapsed.count() << "ms";
+	return os;
+}
