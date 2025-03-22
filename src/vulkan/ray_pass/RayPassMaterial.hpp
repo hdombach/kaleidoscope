@@ -4,6 +4,7 @@
 #include "util/result.hpp"
 #include "util/KError.hpp"
 #include "types/Material.hpp"
+#include "codegen/TemplObj.hpp"
 
 namespace vulkan {
 	class RayPass;
@@ -37,6 +38,10 @@ namespace vulkan {
 			 */
 			std::string const &cg_frag_call();
 			/**
+			 * Get templobj description for codegen
+			 */
+			cg::TemplObj const &cg_templobj();
+			/**
 			 * @brief Gets underlying generic material
 			 */
 			const types::Material *get() const { return _material; }
@@ -50,11 +55,13 @@ namespace vulkan {
 			std::string _cg_buf_decl;
 			std::string _cg_frag_def;
 			std::string _cg_frag_call;
+			cg::TemplObj _cg_templobj;
 
 		private:
 			void _create_struct_decl();
 			void _create_buf_decl();
 			void _create_frag_def();
 			void _create_frag_call();
+			void _create_cg_templobj();
 	};
 }

@@ -43,6 +43,9 @@ namespace types {
 			std::string const &name() const { return _name; }
 			std::string const &declaration() const { return _declaration; }
 			size_t alignment() const { return _alignment; }
+			/**
+			 * @brief The codegen templobj for struct declaration
+			 */
 			cg::TemplObj templ_declaration() const;
 
 			util::Result<void, KError> set_texture(const vulkan::Texture *texture);

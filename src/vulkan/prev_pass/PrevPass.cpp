@@ -1282,10 +1282,10 @@ namespace vulkan {
 
 		auto source_code = util::readEnvFile("assets/shaders/preview_de.frag.cg");
 
-		auto mesh_de_list = cg::TemplList();
+		auto meshes = cg::TemplList();
 		for (auto &m : _meshes) {
 			if (!m || !m.is_de()) continue;
-			mesh_de_list.push_back(cg::TemplObj{
+			meshes.push_back(cg::TemplObj{
 				{"id", m.base()->id()},
 				{"de", m.base()->de()}
 			});
@@ -1294,7 +1294,7 @@ namespace vulkan {
 		auto args = cg::TemplObj{
 			{"global_declarations", GlobalPrevPassUniform::declaration_content},
 			{"node_declarations", PrevPassNode::VImpl::declaration},
-			{"mesh_de_list", mesh_de_list}
+			{"mesh_de_list", meshes}
 		};
 		source_code = gen->codegen(source_code, args, "preview_de.frag.cg").value();
 

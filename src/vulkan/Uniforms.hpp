@@ -85,6 +85,20 @@ namespace vulkan {
 		alignas(4) int32_t de_iterations;
 		alignas(4) float de_small_step;
 
+		inline const static auto declarations = std::vector{
+			templ_property("mat4", "rotation"),
+			templ_property("vec4", "translation"),
+			templ_property("float", "aspect"),
+			templ_property("float", "fovy"),
+			templ_property("float", "z_near"),
+			templ_property("float", "z_far"),
+			templ_property("uvec4", "seed"),
+			templ_property("uint", "ray_count"),
+			templ_property("uint", "compute_index"),
+			templ_property("int", "de_iterations"),
+			templ_property("float", "de_small_step")
+		};
+
 		static constexpr const char *declaration_content_str() {
 			return
 				"\tmat4 rotation;\n"

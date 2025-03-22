@@ -11,6 +11,7 @@
 #include <vulkan/vulkan.h>
 
 #include "util/format.hpp"
+#include "vulkan/TemplUtils.hpp"
 
 namespace vulkan {
 	struct Vertex {
@@ -34,7 +35,13 @@ namespace vulkan {
 				tex_coord(tex_coord)
 			{}
 
-			static constexpr const char *declaration() {
+			inline const static auto declaration = std::vector{
+				templ_property("vec3", "pos"),
+				templ_property("vec3", "color"),
+				templ_property("vec2", "tex_coord")
+			};
+
+			static constexpr const char *declaration_str() {
 				return
 					"struct Vertex {\n"
 					"\tvec3 pos;\n"

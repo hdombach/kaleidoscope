@@ -3,6 +3,7 @@
 #include <string>
 #include <memory>
 
+#include "codegen/TemplObj.hpp"
 #include "vulkan/Vertex.hpp"
 
 namespace types {

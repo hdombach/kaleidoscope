@@ -50,6 +50,14 @@ namespace vulkan {
 		}
 	}
 
+	cg::TemplObj RayPassMesh::cg_templobj() {
+		return cg::TemplObj{
+			{"id", _mesh->id()},
+			{"de_src", _mesh->de()},
+			{"is_de", _mesh->is_de()}
+		};
+	}
+
 	void BVNodeBuilder::add_vertex(Vertex v) {
 		float small = 0.0001;
 		_pos_sum += v.pos;
@@ -102,7 +110,7 @@ namespace vulkan {
 		_lchild = std::unique_ptr<BVNodeBuilder>(new BVNodeBuilder());
 		_rchild = std::unique_ptr<BVNodeBuilder>(new BVNodeBuilder());
 
-		auto avg_pos = _pos_sum / _verts.size();
+		auto avg_pos = _pos_sum / static_cast<float>(_verts.size());
 		for (int i = 0; i < _verts.size(); i += 3) {
 			auto v1 = _verts[i + 0];
 			auto v2 = _verts[i + 1];

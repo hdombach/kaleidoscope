@@ -7,6 +7,7 @@
 #include "RayPassMaterial.hpp"
 #include "RayPassMesh.hpp"
 #include "RayPassNode.hpp"
+#include "codegen/TemplGen.hpp"
 #include "util/log.hpp"
 #include "util/result.hpp"
 #include "vulkan/Shader.hpp"
@@ -752,8 +753,31 @@ namespace vulkan {
 	}
 
 	std::string RayPass::_codegen(uint32_t texture_count) {
-		auto source = util::readEnvFile("assets/shaders/raytrace.comp");
+		auto gen = cg::TemplGen::create();
+
+		auto source = util::readEnvFile("assets/shaders/raytrace.comp.cg");
 		auto common_source = util::readEnvFile("assets/shaders/common.hpp");
+
+		auto materials = cg::TemplList();
+		for (auto &material : _materials) {
+			materials.push_back(material.cg_templobj());
+		}
+		auto meshes = cg::TemplList();
+		for (auto &mesh : _meshes) {
+			meshes.push_back(mesh.cg_templobj());
+		}
+
+		auto args = cg::TemplObj{
+			{"vertex_declarations", Vertex::declaration},
+			{"bvnode_declarations", BVNode::declaration},
+			{"bvnode_defines", BVNode::defines},
+			{"node_declarations", RayPassNode::VImpl::declaration},
+			{"materials", materials},
+			{"meshes", meshes},
+			{"global_declarations", ComputeUniform::declarations}
+		};
+
+		source = gen->codegen(source, args, "raytrace.comp.cg").value();
 
 		auto resource_decls = std::string();
 		auto material_bufs = std::string();
@@ -795,11 +819,6 @@ namespace vulkan {
 		}
 
 		util::replace_substr(source, "/*COMMON_INCL*/\n", common_source);
-		util::replace_substr(source, "/*VERTEX_DECL*/\n", Vertex::declaration());
-		util::replace_substr(source, "/*BVNODE_DECL*/\n", BVNode::declaration());
-		util::replace_substr(source, "/*NODE_DECL*/\n", RayPassNode::VImpl::declaration());
-		util::replace_substr(source, "/*RESOURCE_DECL*/", resource_decls);
-		util::replace_substr(source, "/*GLOBAL_UNIFORM_CONTENT*/\n", ComputeUniform::declaration_content_str());
 		util::replace_substr(source, "/*DE_FUNCS*/\n", de_funcs);
 		util::replace_substr(source, "/*DE_FUNC_CALLS*/\n", de_func_calls);
 		util::replace_substr(source, "/*TEXTURE_COUNT*/", std::to_string(texture_count));

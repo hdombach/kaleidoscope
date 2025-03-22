@@ -2,6 +2,10 @@
 {{decl.uniform_type}} {{decl.name}};
 {% endmacro %}
 
+{% macro define(def) %}
+#define {{def.name}} {{def.value}}
+{% endmacro %}
+
 {% macro struct_decls() %}
 struct Ray {
 	vec4 pos;

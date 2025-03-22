@@ -12,4 +12,14 @@ namespace vulkan {
 			{"name", name}
 		};
 	}
+
+	inline cg::TemplObj templ_define(
+		std::string const &name,
+		std::string const &value
+	) {
+		return cg::TemplObj{
+			{"name", name},
+			{"value", value}
+		};
+	}
 }

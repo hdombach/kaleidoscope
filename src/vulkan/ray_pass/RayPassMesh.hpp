@@ -5,6 +5,7 @@
 #include <ostream>
 
 #include "types/Mesh.hpp"
+#include "vulkan/TemplUtils.hpp"
 //#include "BVNode.hpp"
 
 namespace vulkan {
@@ -48,6 +49,8 @@ namespace vulkan {
 			 */
 			const types::Mesh *base_mesh() { return _mesh; }
 
+			cg::TemplObj cg_templobj();
+
 		private:
 			const types::Mesh *_mesh;
 			const RayPass *_ray_pass;
@@ -88,10 +91,26 @@ namespace vulkan {
 		 */
 		static BVNode create_empty();
 
+		inline const static auto declaration = std::vector{
+			templ_property("vec3", "min_pos"),
+			templ_property("vec3", "max_pos"),
+			templ_property("uint", "type"),
+			templ_property("uint", "lchild"),
+			templ_property("uint", "rchild"),
+			templ_property("uint", "parent")
+		};
+
+		inline const static auto defines = std::vector{
+			templ_define("BV_UNKNOWN", "0"),
+			templ_define("BV_MESH", "1"),
+			templ_define("BV_NODE", "2"),
+			templ_define("BV_DE", "3")
+		};
+
 		/**
 		 * @brief Vulkan source code declaration for bvnode
 		 */
-		static constexpr const char *declaration() {
+		static constexpr const char *declaration_str() {
 			return
 			"#define BV_UNKNOWN 0\n"
 			"#define BV_MESH 1\n"

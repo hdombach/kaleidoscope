@@ -4,6 +4,7 @@
 #include <ostream>
 
 #include "types/Node.hpp"
+#include "vulkan/TemplUtils.hpp"
 
 namespace vulkan {
 	class RayPass;
@@ -37,10 +38,17 @@ namespace vulkan {
 				 */
 				static VImpl create_empty();
 
+				inline const static auto declaration = std::vector{
+					templ_property("uint", "node_id"),
+					templ_property("uint", "mesh_id"),
+					templ_property("uint", "material_id"),
+					templ_property("mat4", "object_transformation")
+				};
+
 				/**
 				 * @brief Vulkan source code declaration for node
 				 */
-				static constexpr const char *declaration() {
+				static constexpr const char *declaration_str() {
 					return
 					"struct Node {\n"
 					"\tuint node_id;\n"
