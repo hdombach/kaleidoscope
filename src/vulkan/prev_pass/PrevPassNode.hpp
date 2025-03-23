@@ -30,16 +30,6 @@ namespace vulkan {
 					templ_property("mat4", "transformation"),
 					templ_property("mat4", "inverse_transformation")
 				};
-
-				static constexpr const char *declaration_str() {
-					return
-						"struct Node {\n"
-						"\tuint mesh_id;\n"
-						"\tvec3 position;\n"
-						"\tmat4 transformation;\n"
-						"\tmat4 inverse_transformation;\n"
-						"};\n";
-				};
 			} __attribute__((packed));
 
 			PrevPassNode() = default;

@@ -41,15 +41,6 @@ namespace vulkan {
 				templ_property("vec2", "tex_coord")
 			};
 
-			static constexpr const char *declaration_str() {
-				return
-					"struct Vertex {\n"
-					"\tvec3 pos;\n"
-					"\tvec3 color;\n"
-					"\tvec2 tex_coord;\n"
-					"};\n";
-			}
-
 			bool operator==(const Vertex& other) const {
 				return pos == other.pos && color == other.color && tex_coord == other.tex_coord;
 			}

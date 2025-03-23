@@ -105,25 +105,6 @@ namespace vulkan {
 			templ_define("BV_DE", "3")
 		};
 
-		/**
-		 * @brief Vulkan source code declaration for bvnode
-		 */
-		static constexpr const char *declaration_str() {
-			return
-			"#define BV_UNKNOWN 0\n"
-			"#define BV_MESH 1\n"
-			"#define BV_NODE 2\n"
-			"#define BV_DE   3\n"
-			"struct BVNode {\n"
-			"\tvec3 min_pos;\n"
-			"\tvec3 max_pos;\n"
-			"\tuint type;\n"
-			"\tuint lchild;\n"
-			"\tuint rchild;\n"
-			"\tuint parent;\n"
-			"};\n";
-		}
-
 		std::ostream& print_debug(std::ostream& os) const;
 	} __attribute__((packed));
 

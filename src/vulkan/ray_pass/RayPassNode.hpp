@@ -45,19 +45,6 @@ namespace vulkan {
 					templ_property("mat4", "object_transformation")
 				};
 
-				/**
-				 * @brief Vulkan source code declaration for node
-				 */
-				static constexpr const char *declaration_str() {
-					return
-					"struct Node {\n"
-					"\tuint node_id;\n"
-					"\tuint mesh_id;\n"
-					"\tuint material_id;\n"
-					"\tmat4 object_transformation;\n"
-					"};\n";
-				}
-
 				std::ostream& print_debug(std::ostream& os) const;
 			} __attribute__((packed));
 

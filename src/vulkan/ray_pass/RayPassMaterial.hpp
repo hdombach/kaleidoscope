@@ -21,25 +21,6 @@ namespace vulkan {
 			operator bool() const { return has_value(); }
 			uint32_t id() const { return _material->id(); }
 
-			/**
-			 * @brief Creates definition for struct containing properties in vulkan shader
-			 */
-			std::string const &cg_struct_decl();
-			/**
-			 * @brief Creates buffer decl using material struct in vulkan shader
-			 */
-			std::string const &cg_buf_decl();
-			/**
-			 * @brief Defines function for calculating material color in vulkan shader
-			 */
-			std::string const &cg_frag_def();
-			/**
-			 * @brief Code for calling frag function using material buffer in vulkan shader
-			 */
-			std::string const &cg_frag_call();
-			/**
-			 * Get templobj description for codegen
-			 */
 			cg::TemplObj const &cg_templobj();
 			/**
 			 * @brief Gets underlying generic material
@@ -58,10 +39,6 @@ namespace vulkan {
 			cg::TemplObj _cg_templobj;
 
 		private:
-			void _create_struct_decl();
-			void _create_buf_decl();
-			void _create_frag_def();
-			void _create_frag_call();
 			void _create_cg_templobj();
 	};
 }
