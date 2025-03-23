@@ -1286,17 +1286,13 @@ namespace vulkan {
 
 		auto meshes = cg::TemplList();
 		for (auto &m : _meshes) {
-			if (!m || !m.is_de()) continue;
-			meshes.push_back(cg::TemplObj{
-				{"id", m.base()->id()},
-				{"de", m.base()->de()}
-			});
+			meshes.push_back(m.base()->cg_templobj());
 		}
 
 		auto args = cg::TemplObj{
 			{"global_declarations", GlobalPrevPassUniform::declaration_content},
 			{"node_declarations", PrevPassNode::VImpl::declaration},
-			{"mesh_de_list", meshes}
+			{"meshes", meshes}
 		};
 		source_code = gen->codegen(source_code, args, "preview_de.frag.cg").value();
 

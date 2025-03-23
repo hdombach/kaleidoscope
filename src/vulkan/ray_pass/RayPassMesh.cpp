@@ -50,14 +50,6 @@ namespace vulkan {
 		}
 	}
 
-	cg::TemplObj RayPassMesh::cg_templobj() {
-		return cg::TemplObj{
-			{"id", _mesh->id()},
-			{"de_src", _mesh->de()},
-			{"is_de", _mesh->is_de()}
-		};
-	}
-
 	void BVNodeBuilder::add_vertex(Vertex v) {
 		float small = 0.0001;
 		_pos_sum += v.pos;

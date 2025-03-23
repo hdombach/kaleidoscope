@@ -756,7 +756,6 @@ namespace vulkan {
 		auto gen = cg::TemplGen::create();
 
 		auto source = util::readEnvFile("assets/shaders/raytrace.comp.cg");
-		auto common_source = util::readEnvFile("assets/shaders/common.hpp");
 
 		auto materials = cg::TemplList();
 		for (auto &material : _materials) {
@@ -764,7 +763,7 @@ namespace vulkan {
 		}
 		auto meshes = cg::TemplList();
 		for (auto &mesh : _meshes) {
-			meshes.push_back(mesh.cg_templobj());
+			meshes.push_back(mesh.base_mesh()->cg_templobj());
 		}
 
 		auto args = cg::TemplObj{
@@ -774,59 +773,13 @@ namespace vulkan {
 			{"node_declarations", RayPassNode::VImpl::declaration},
 			{"materials", materials},
 			{"meshes", meshes},
-			{"global_declarations", ComputeUniform::declarations}
+			{"global_declarations", ComputeUniform::declarations},
+			{"texture_count", texture_count}
 		};
 
 		auto start = log_start_timer();
 		source = gen->codegen(source, args, "raytrace.comp.cg").value();
 		log_debug() << "raypass codegen took " << start << std::endl;
-
-		auto resource_decls = std::string();
-		auto material_bufs = std::string();
-		auto material_srcs = std::string();
-		for (auto &material : _materials) {
-			resource_decls += material.cg_struct_decl() + "\n";
-			material_bufs += material.cg_buf_decl();
-			material_srcs += material.cg_frag_def();
-		}
-
-		auto material_call = std::string();
-		bool first_call = true;
-		for (auto &material : _materials) {
-			auto id = std::to_string(material.get()->id());
-			if (first_call) {
-				first_call = false;
-			} else {
-				material_call += " else ";
-			}
-			material_call += "if (nodes[hit_info.node_id].material_id == " + id + ") {\n";
-			material_call += "\t\t\t\t" + material.cg_frag_call() + ";\n";
-			material_call += "\t\t\t}\n";
-		}
-
-		auto de_funcs = std::string();
-		auto de_func_calls = std::string();
-
-		for (auto &rp_mesh : _meshes) {
-			auto const &m = rp_mesh.base_mesh();
-			if (!m->is_de()) continue;
-			de_funcs += util::f("float de_", m->id(), "(vec3 pos) {\n");
-			de_funcs += util::indented(m->de(), "\t");
-			de_funcs += "}\n";
-			de_funcs += "\n";
-
-			de_func_calls += util::f("if (mesh_id == ", m->id(), ") {\n");
-			de_func_calls += util::f("\treturn de_", m->id(), "(pos);\n");
-			de_func_calls += util::f("}\n");
-		}
-
-		util::replace_substr(source, "/*COMMON_INCL*/\n", common_source);
-		util::replace_substr(source, "/*DE_FUNCS*/\n", de_funcs);
-		util::replace_substr(source, "/*DE_FUNC_CALLS*/\n", de_func_calls);
-		util::replace_substr(source, "/*TEXTURE_COUNT*/", std::to_string(texture_count));
-		util::replace_substr(source, "/*MATERIAL_BUFFERS*/\n", material_bufs);
-		util::replace_substr(source, "/*MATERIAL_SRCS*/\n", material_srcs);
-		util::replace_substr(source, "/*MATERIAL_CALLS*/\n", material_call);
 
 		log_debug() << "raytrace codegen: \n" << util::add_strnum(source) << std::endl;
 

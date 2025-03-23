@@ -25,20 +25,25 @@ struct HitInfo {
 
 {% macro de_funcs() %}
 
-{% for de_func in mesh_de_list %}
-float de_{{de_func.id}}(vec3 pos) {
-	{{de_func.de}}
+{% for mesh in meshes %}
+{% if mesh.is_de %}
+float de_{{mesh.id}}(vec3 pos) {
+	{{mesh.de_src}}
 }
+{% endif %}
 {% endfor %}
 
 float de(uint mesh_id, vec3 pos) {
-	{% for de_func in mesh_de_list %}
-	if (mesh_id == {{de_func.id}}) {
-		return de_{{de_func.id}}(pos);
+	{% for mesh in meshes %}
+	{% if mesh.is_de %}
+	if (mesh_id == {{mesh.id}}) {
+		return de_{{mesh.id}}(pos);
 	}
+	{% endif %}
 	{% endfor %}
 	return 0;
 }
+
 
 vec3 de_normal(uint mesh_id, vec3 pos) {
 	//e is an abitrary number

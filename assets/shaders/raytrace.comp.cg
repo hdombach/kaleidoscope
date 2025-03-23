@@ -2,6 +2,8 @@
 
 {%include "assets/shaders/common.hpp.cg"%}
 
+{{struct_decls()}}
+
 layout(set = 0, binding = 0, rgba8) uniform image2D result;
 
 layout(binding = 1, rgba16f) uniform image2D accumulator;
@@ -54,16 +56,21 @@ layout(binding = 4) readonly buffer mesh_buffer {
 layout(binding = 5) readonly buffer node_buffer {
 	Node nodes[];
 };
-layout(binding = 6) uniform sampler2D textures[/*TEXTURE_COUNT*/];
-/*MATERIAL_BUFFERS*/
+layout(binding = 6) uniform sampler2D textures[{{texture_count}}];
+{% for material in materials %}
+layout(binding = 7) readonly buffer material_buffer{{material.id}}{
+	Material{{material.id}} material{{material.id}}[];
+};
+{% endfor %}
 
 float PI = 3.14159265358979;
+
 
 struct Triangle {
 	vec3 v1, v2, v3;
 };
 
-/*COMMON_INCL*/
+{{de_funcs()}}
 
 //---------------- RAND helper functions
 //https://blog.bithole.dev/blogposts/random-float/
@@ -113,7 +120,17 @@ vec3 rand_unit_vec3(inout uvec4 s) {
 	return normalize(rand_in_sphere(s));
 }
 
-/*MATERIAL_SRCS*/
+{% for material in materials %}
+void material{{material.id}}_main(
+	inout vec4 outColor,
+	inout vec2 fragTexCoord
+	{% for declaration in material.declarations %}
+	, in {{declaration.arg_type}} {{declaration.name}}
+	{% endfor %}
+) {
+	{{material.frag_src}}
+}
+{% endfor %}
 
 // https://gist.github.com/DomNomNom/46bb1ce47f68d255fd5d
 // returns (near, far)
@@ -316,7 +333,24 @@ vec3 raytrace(Ray ray, inout uvec4 seed) {
 	for (int i = 0; i < 5; i++) {
 		hit_info.dist = 3.402823466e+38;
 		if (intersect_nodes(ray, hit_info)) {
-			/*MATERIAL_CALLS*/
+			switch (nodes[hit_info.node_id].material_id) {
+			{% for material in materials %}
+				case {{material.id}}:
+					material{{material.id}}_main(
+						color,
+						hit_info.uv
+						{% for declaration in material.declarations %}
+						,
+						{% if declaration.is_texture %}
+						textures[material{{material.id}}[hit_info.node_id].{{declaration.name}}]
+						{% else %}
+						material{{material.id}}[hit_info.node_id].{{declaration.name}}
+						{% endif %}
+						{% endfor %}
+					);
+					break;
+			{% endfor %}
+			}
 			absorbed *= color.xyz;
 			ray.pos += ray.dir * (hit_info.dist - 0.0001);
 

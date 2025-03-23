@@ -49,8 +49,6 @@ namespace vulkan {
 			 */
 			const types::Mesh *base_mesh() { return _mesh; }
 
-			cg::TemplObj cg_templobj();
-
 		private:
 			const types::Mesh *_mesh;
 			const RayPass *_ray_pass;

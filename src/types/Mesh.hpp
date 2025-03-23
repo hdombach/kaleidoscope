@@ -22,5 +22,14 @@ namespace types {
 			
 			virtual bool is_de() const { return false; }
 			virtual std::string const &de() const { static std::string s = ""; return s; };
+
+		public:
+			cg::TemplObj cg_templobj() const {
+				return cg::TemplObj{
+					{"id", id()},
+					{"de_src", de()},
+					{"is_de", is_de()}
+				};
+			}
 	};
 }
