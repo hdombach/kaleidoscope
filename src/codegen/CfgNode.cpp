@@ -3,6 +3,19 @@
 #include "util/log.hpp"
 
 namespace cg {
+	const char *CfgNode::type_str(Type const &t) {
+		return std::array{
+			"none",
+			"literal",
+			"reference",
+			"sequence",
+			"alternative",
+			"closure",
+			"optional",
+			"negation"
+		}[static_cast<size_t>(t)];
+	}
+
 	CfgNode::CfgNode(): _type(Type::none), _id(0), _ref_id(0) {}
 
 	CfgNode::CfgNode(CfgNode &&other) {

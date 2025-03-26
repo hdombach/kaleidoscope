@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -31,6 +32,8 @@ namespace cg {
 				optional,
 				negation,
 			};
+
+			static const char *type_str(Type const &t);
 
 		public:
 			CfgNode();
@@ -155,5 +158,10 @@ namespace cg {
 
 	inline CfgNode operator ""_cfg(const char *str, size_t) {
 		return CfgNode::literal(str);
+	}
+
+	inline std::ostream& operator<<(std::ostream& os, CfgNode::Type const &type) {
+		os << CfgNode::type_str(type);
+		return os;
 	}
 }
