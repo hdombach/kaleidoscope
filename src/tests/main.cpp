@@ -16,9 +16,11 @@ int parse_args(int argc, char **argv) {
 
 int main(int argc, char **argv) {
 	int i = 1;
+	log_event() << "flags was " << std::bitset<8>(util::g_log_flags) << std::endl;
 	while (i < argc) {
 		i += parse_args(argc - i, argv + i);
 	}
+	log_event() << "flags is " << std::bitset<8>(util::g_log_flags) << std::endl;
 
 	return test_main();
 }

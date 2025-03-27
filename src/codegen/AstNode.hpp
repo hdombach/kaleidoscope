@@ -42,6 +42,10 @@ namespace cg {
 			std::string cfg_name() const { return cfg_node().name(); }
 
 			std::string const &consumed() const { return _consumed; }
+			/**
+			 * @brief Combines all consumed characters recursively.
+			 */
+			std::string consumed_all() const;
 
 			void consume(char c);
 

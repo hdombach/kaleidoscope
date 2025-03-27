@@ -3,6 +3,7 @@
 #include "util/KError.hpp"
 #include "util/StringRef.hpp"
 #include "util/Util.hpp"
+#include "util/log.hpp"
 #include "util/result.hpp"
 #include "CfgContext.hpp"
 #include "AstNode.hpp"
@@ -82,6 +83,10 @@ namespace cg {
 	}
 
 	util::Result<AstNode, KError> SParser::_parse_lit(Stack s) {
+		if (s.node.has_name()) {
+			log_trace() << "Parsing lit: " << s.node.name() << std::endl;
+		}
+
 		size_t r = 0;
 		auto res = AstNode(++_uid, _ctx, s.node.id(), s.str.location());
 		for (auto c : s.node.content()) {
@@ -120,6 +125,10 @@ namespace cg {
 	}
 
 	util::Result<AstNode, KError> SParser::_parse_ref(Stack s) {
+		if (s.node.has_name()) {
+			log_trace() << "Parsing ref: " << s.node.name() << std::endl;
+		}
+
 		auto res = AstNode(++_uid, _ctx, s.node.id(), s.str.location());
 		auto child_stack = Stack{s.str, _ctx.get(s.node.ref_id()), &s};
 		if (auto child = _parse(child_stack)) {
@@ -131,6 +140,10 @@ namespace cg {
 	}
 
 	util::Result<AstNode, KError> SParser::_parse_seq(Stack s) {
+		if (s.node.has_name()) {
+			log_trace() << "Parsing seq: " << s.node.name() << std::endl;
+		}
+
 		size_t r = 0;
 		auto node = AstNode(++_uid, _ctx, s.node.id(), s.str.location());
 		for (auto &child_cfg : s.node.children()) {
@@ -146,6 +159,10 @@ namespace cg {
 	}
 
 	util::Result<AstNode, KError> SParser::_parse_alt(Stack s) {
+		if (s.node.has_name()) {
+			log_trace() << "Parsing alt: " << s.node.name() << std::endl;
+		}
+
 		auto node = AstNode(++_uid, _ctx, s.node.id(), s.str.location());
 		for (auto &child_cfg : s.node.children()) {
 			auto child_stack = Stack{s.str, child_cfg, &s};
@@ -158,6 +175,10 @@ namespace cg {
 	}
 
 	util::Result<AstNode, KError> SParser::_parse_cls(Stack s) {
+		if (s.node.has_name()) {
+			log_trace() << "Parsing cls: " << s.node.name() << std::endl;
+		}
+
 		auto node = AstNode(++_uid, _ctx, s.node.id(), s.str.location());
 		size_t r = 0;
 		while (true) {
@@ -176,6 +197,10 @@ namespace cg {
 	}
 
 	util::Result<AstNode, KError> SParser::_parse_opt(Stack s) {
+		if (s.node.has_name()) {
+			log_trace() << "Parsing opt: " << s.node.name() << std::endl;
+		}
+
 		auto node = AstNode(++_uid, _ctx, s.node.id(), s.str.location());
 		if (auto child = _parse(Stack{s.str, s.node.children()[0], &s})) {
 			node.add_child(child.value());
@@ -184,13 +209,20 @@ namespace cg {
 	}
 
 	util::Result<AstNode, KError> SParser::_parse_neg(Stack s) {
+		if (s.node.has_name()) {
+			log_trace() << "Parsing neg: " << s.node.name() << std::endl;
+		}
+
 		auto node = AstNode(++_uid, _ctx, s.node.id(), s.str.location());
 		if (s.str[0] == '\0') {
 			return _set_failure(KError::codegen("Unexpected EOF", s.str.location()));
 		}
 		auto child_stack = Stack{s.str, s.node.children()[0], &s};
 		if (auto c = _parse(child_stack)) {
-			return _set_failure(KError::codegen("Unexpected element: " + _ctx.node_str(s.node), s.str.location()));
+			return _set_failure(KError::codegen(
+				util::f("Unexpected element: ", s.str[0], " expected ", _ctx.node_str(s.node)),
+				s.str.location()
+			));
 		} else {
 			node.consume(s.str[0]);
 		}

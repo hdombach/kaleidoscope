@@ -48,6 +48,14 @@ namespace cg {
 		return result;
 	}
 
+	std::string AstNode::consumed_all() const {
+		auto r = _consumed;
+		for (auto &child : _children) {
+			r += child.consumed_all();
+		}
+		return r;
+	}
+
 	void AstNode::consume(char c) {
 		_consumed.push_back(c);
 		_size = 0; /* Invalidate cache */

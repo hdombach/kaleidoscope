@@ -39,6 +39,7 @@ namespace cg {
 			CodegenRes _codegen(AstNode const &node, TemplDict &args, SParser &parser) const;
 
 			CodegenRes _cg_default(AstNode const &node, TemplDict &args, SParser &parser) const;
+			CodegenRes _cg_recursive(AstNode const &node, TemplDict &args, SParser &parser) const;
 			CodegenRes _cg_ref(AstNode const &node, TemplDict &args, SParser &sparser) const;
 
 			CodegenRes _cg_identifier(AstNode const &node, TemplDict &args, SParser &sparser) const;

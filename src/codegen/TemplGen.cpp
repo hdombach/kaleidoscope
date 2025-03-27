@@ -16,8 +16,16 @@ namespace cg {
 		auto result = TemplGen();
 		auto &c = result._ctx;
 
-		c.prim("whitespace") = c.cls(" "_cfg | "\t"_cfg | "\n"_cfg);
-		c.prim("padding") = c.cls(" "_cfg | "\t"_cfg);
+		c.prim("whitespace")
+			= " "_cfg + c["whitespace"]
+			| "\t"_cfg + c["whitespace"]
+			| "\n"_cfg + c["whitespace"]
+			| ""_cfg;
+
+		c.prim("padding")
+			= " "_cfg + c["padding"]
+			| "\t"_cfg + c["padding"]
+			| ""_cfg;
 		c.temp("digit") =
 			"0"_cfg | "1"_cfg | "2"_cfg | "3"_cfg | "4"_cfg |
 			"5"_cfg | "6"_cfg | "7"_cfg | "8"_cfg | "9"_cfg;
@@ -33,20 +41,40 @@ namespace cg {
 			"Y"_cfg | "Z"_cfg;
 		c.temp("alpha") = c["lower"] | c["uppoer"];
 		c.temp("alnum") = c["alpha"] | c["digit"];
-		c.prim("identifier") = ("_"_cfg | c["alpha"]) + c.cls(c["alnum"] | "_"_cfg);
+		c.temp("identifier_start") = "_"_cfg | c["alpha"];
+		c.temp("identifier_rest")
+			= c["alnum"] + c["identifier_rest"]
+			| "_"_cfg + c["identifier_rest"]
+			| ""_cfg;
+		c.prim("identifier") = c["identifier_start"] + c["identifier_rest"];
 
 		c.prim("padding_b") = c["padding"];
 		c.prim("padding_e") = c["padding"];
-		c.prim("padding_nl") = c["padding"] + c.opt("\n"_cfg);
+		c.prim("padding_nl")
+			= c["padding"] + "\n"_cfg
+			| c["padding"];
 
-		c.prim("raw") = c.cls(!(
-			c["expression_b"] |
-			c["statement_b"] |
-			c["comment_b"] |
-			"\n"_cfg
-		));
-		c.prim("line") = c.cls(c["statement"] | c["expression"] | c["comment"] | c["raw"]) + c.opt("\n"_cfg);
-		c.prim("lines") = c.cls(c["line"]);
+		c.temp("raw_opt")
+			= c["raw"]
+			| ""_cfg;
+		c.prim("raw")
+			= !("{"_cfg | "\n"_cfg) + c["raw_opt"]
+			| "{"_cfg + !("{"_cfg | "#"_cfg | "%"_cfg) + c["raw_opt"];
+
+		c.temp("line_single")
+			= c["statement"]
+			| c["expression"]
+			| c["comment"]
+			| c["raw"];
+		c.prim("line")
+			= c["line_single"] + c["line"]
+			| c["line_single"]
+			| "\n"_cfg;
+
+		c.prim("lines")
+			= c["line"] + c["lines"]
+			| ""_cfg;
+
 		c.prim("file") = c["lines"];
 
 		c.prim("comment_b") = "{#"_cfg + c.opt("-"_cfg | "+"_cfg);
@@ -282,7 +310,7 @@ namespace cg {
 		if (node.cfg_name() == "whitespace") {
 			return _cg_default(node, args, parser);
 		} else if (node.cfg_name() == "padding") {
-			return _cg_default(node, args, parser);
+			return _cg_recursive(node, args, parser);
 		} else if (node.cfg_name() == "identifier") {
 			return _cg_identifier(node, args, parser);
 		} else if (node.cfg_name() == "padding_b") {
@@ -292,7 +320,7 @@ namespace cg {
 		} else if (node.cfg_name() == "padding_nl") {
 			return _cg_ref(node, args, parser);
 		} else if (node.cfg_name() == "raw") {
-			return _cg_default(node, args, parser);
+			return _cg_recursive(node, args, parser);
 		} else if (node.cfg_name() == "line") {
 			return _cg_line(node, args, parser);
 		} else if (node.cfg_name() == "lines") {
@@ -324,8 +352,19 @@ namespace cg {
 		TemplDict &args,
 		SParser &parser
 	) const {
-		CG_ASSERT(node.children().size() == 0, "Children count of padding must be 0");
+		CG_ASSERT(
+			node.children().size() == 0,
+			util::f("Children count of ", node.cfg_name(), " must be 0")
+		);
 		return node.consumed();
+	}
+
+	TemplGen::CodegenRes TemplGen::_cg_recursive(
+		AstNode const &node,
+		TemplDict &args,
+		SParser &parser
+	) const {
+		return node.consumed_all();
 	}
 
 	util::Result<std::string, KError> TemplGen::_cg_ref(
