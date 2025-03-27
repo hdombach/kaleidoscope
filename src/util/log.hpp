@@ -21,7 +21,8 @@ namespace util {
 		FATAL_ERROR  = 0b00010000,
 		MEMORY       = 0b00001000,
 		DEBUG        = 0b00000100,
-		ALL          = 0b11111100,
+		TRACE        = 0b00000010,
+		ALL          = 0b11111110,
 		NONE         = 0b00000000,
 	};
 
@@ -37,7 +38,7 @@ namespace util {
 		static const char *WHILE    = "\033[37m";
 	}
 
-	extern Importance g_log_flags;
+	extern uint8_t g_log_flags;
 
 	std::ostream& log(
 		Importance importance,
@@ -72,6 +73,9 @@ inline std::ostream& log_memory(util::FileLocation loc=std::source_location::cur
 }
 inline std::ostream& log_debug(util::FileLocation loc=std::source_location::current()) {
 	return log(util::Importance::DEBUG, loc);
+}
+inline std::ostream& log_trace(util::FileLocation loc=std::source_location::current()) {
+	return log(util::Importance::TRACE, loc);
 }
 inline util::TimePoint log_start_timer() {
 	return {std::chrono::steady_clock::now()};
