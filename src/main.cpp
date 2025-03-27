@@ -10,6 +10,9 @@ int parse_args(int argc, char **argv) {
 		return 0;
 	}
 	if (strcmp(argv[0], "-v") == 0) {
+		util::g_log_flags |= util::Importance::DEBUG;
+		return 1;
+	} else if (strcmp(argv[0], "-vv") == 0) {
 		util::g_log_flags |= util::Importance::DEBUG | util::Importance::TRACE;
 		return 1;
 	} else {

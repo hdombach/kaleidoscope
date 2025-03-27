@@ -77,95 +77,152 @@ namespace cg {
 
 		c.prim("file") = c["lines"];
 
-		c.prim("comment_b") = "{#"_cfg + c.opt("-"_cfg | "+"_cfg);
-		c.prim("comment_e") = c.opt("-"_cfg | "+"_cfg) + "#}"_cfg;
+		c.prim("comment_b")
+			= "{#-"_cfg
+			| "{#+"_cfg
+			| "{#"_cfg;
+		c.prim("comment_e")
+			= "-#}"_cfg
+			| "+#}"_cfg
+			| "#}"_cfg;
+		c.temp("comment_cls")
+			= !"#"_cfg + c["comment_cls"]
+			| "#"_cfg + !"}"_cfg + c["comment_cls"]
+			| ""_cfg;
 		c.prim("comment") =
 			c["padding_b"] +
-			c["comment_b"] + c.cls(!"#}"_cfg) + c["comment_e"] +
+			c["comment_b"] + c["comment_cls"] + c["comment_e"] +
 			c["padding_e"];
 
-		c.prim("expression_b") = "{{"_cfg + c.opt("-"_cfg | "+"_cfg);
-		c.prim("expression_e") = c.opt("-"_cfg | "+"_cfg) + "}}"_cfg;
+		c.prim("expression_b")
+			= "{{-"_cfg
+			| "{{+"_cfg
+			| "{{"_cfg;
+		c.prim("expression_e")
+			= "-}}"_cfg
+			| "+}}"_cfg
+			| "}}"_cfg;
 		c.prim("expression") =
 			c["padding_b"] + c["expression_b"] +
 			c["exp"] +
 			c["expression_e"] + c["padding_e"];
 
-		c.prim("exp_sing") = c["whitespace"] + (c["exp_id"] | c["exp_int"] | c["exp_str"] | c["exp_paran"]) + c["whitespace"];
+		c.prim("exp_sing")
+			= c["whitespace"] + c["exp_id"] + c["whitespace"]
+			| c["whitespace"] + c["exp_int"] + c["whitespace"]
+			| c["whitespace"] + c["exp_str"] + c["whitespace"]
+			| c["whitespace"] + c["exp_paran"] + c["whitespace"];
+
 		c.prim("exp_id") = c["whitespace"] + c["identifier"] + c["whitespace"];
-		c.prim("exp_int") = c["digit"] + c.cls(c["digit"]);
-		c.prim("exp_str") = "\""_cfg + c.cls(!("\""_cfg | "\\"_cfg) | "\\\""_cfg) + "\""_cfg;
+		c.prim("exp_int")
+			= c["digit"] + c["exp_int"]
+			| c["digit"];
+
+		c.temp("exp_str_rest")
+			= !("\""_cfg | "\\"_cfg) + c["exp_str_rest"]
+			| "\\\\"_cfg + c["exp_str_cont"]
+			| "\\\""_cfg + c["exp_str_cont"]
+			| "\""_cfg;
+
+		c.prim("exp_str") = "\""_cfg + c["exp_str_rest"];
 		c.temp("exp_paran") = "("_cfg + c["exp"] + ")"_cfg;
 
-		c.prim("exp1") = c["exp_sing"] + c.cls(c["exp_member"] | c["exp_call"]);
+		c.temp("exp1_cls")
+			= c["exp_member"] + c["exp1_cls"]
+			| c["exp_call"] + c["exp1_cls"]
+			| ""_cfg;
+		c.prim("exp1") = c["exp_sing"] + c["exp1_cls"];
 		c.prim("exp_member") = "."_cfg + c["exp_id"];
-		c.prim("exp_call") = "("_cfg + c.opt(c["exp"] + c.cls(","_cfg + c["exp"])) + ")"_cfg;
+		c.temp("exp_call_args_cls")
+			= ","_cfg + c["exp"] + c["exp_call_args_cls"]
+			| ""_cfg;
+		c.temp("exp_call_args")
+			= c["exp"] + c["exp_call_args_cls"]
+			| ""_cfg;
+		c.prim("exp_call") = "("_cfg + c["exp_call_args"] + ")"_cfg;
 
-		c.prim("exp2") = c["whitespace"] + (
-			c["exp_plus"] |
-			c["exp_min"] |
-			c["exp_log_not"] |
-			c["exp1"]
-		) + c["whitespace"];
+		c.prim("exp2")
+			= c["whitespace"] + c["exp_plus"] + c["whitespace"]
+			| c["whitespace"] + c["exp_min"] + c["whitespace"]
+			| c["whitespace"] + c["exp_log_not"] + c["whitespace"]
+			| c["whitespace"] + c["exp1"] + c["whitespace"];
 
 		c.prim("exp_plus") = "+"_cfg + c["exp2"];
 		c.prim("exp_min") = "-"_cfg + c["exp2"];
 		c.prim("exp_log_not") = "!"_cfg + c["exp2"];
 
-		c.prim("exp3") = c["whitespace"] + c["exp2"] + c.cls(
-			c["exp_mult"] |
-			c["exp_div"] |
-			c["exp_mod"]
-		) + c["whitespace"];
+		c.temp("exp3_cls")
+			= c["exp_mult"] + c["exp3_cls"]
+			| c["exp_div"] + c["exp3_cls"]
+			| c["exp_mod"] + c["exp3_cls"]
+			| ""_cfg;
+		c.prim("exp3") = c["whitespace"] + c["exp2"] + c["exp3_cls"] + c["whitespace"];
 		c.prim("exp_mult") = "*"_cfg + c["exp2"];
 		c.prim("exp_div")  = "/"_cfg + c["exp2"];
 		c.prim("exp_mod")  = "%"_cfg + c["exp2"];
 
 
-		c.prim("exp4") = c["whitespace"] + c["exp3"] + c.cls(
-			c["exp_add"] |
-			c["exp_sub"]
-		) + c["whitespace"];
+		c.temp("exp4_cls")
+			= c["exp_add"] + c["exp4_cls"]
+			| c["exp_sub"] + c["exp4_cls"]
+			| ""_cfg;
+		c.prim("exp4") = c["whitespace"] + c["exp3"] + c["exp4_cls"] + c["whitespace"];
 		c.prim("exp_add") = "+"_cfg + c["exp3"];
 		c.prim("exp_sub") = "-"_cfg + c["exp3"];
 
-		c.prim("exp6") = c["whitespace"] + c["exp4"] + c.cls(
-			c["exp_comp_g"] |
-			c["exp_comp_ge"] |
-			c["exp_comp_l"] |
-			c["exp_comp_le"]
-		) + c["whitespace"];
+		c.temp("exp6_cls")
+			= c["exp_comp_g"] + c["exp6_cls"]
+			| c["exp_comp_ge"] + c["exp6_cls"]
+			| c["exp_comp_l"] + c["exp6_cls"]
+			| c["exp_comp_le"] + c["exp6_cls"]
+			| ""_cfg;
+		c.prim("exp6") = c["whitespace"] + c["exp4"] + c["exp6_cls"] + c["whitespace"];
 		c.prim("exp_comp_g") = ">"_cfg + c["exp4"];
 		c.prim("exp_comp_ge") = ">="_cfg + c["exp4"];
 		c.prim("exp_comp_l") = "<"_cfg + c["exp4"];
 		c.prim("exp_comp_le") = "<="_cfg + c["exp4"];
 
-		c.prim("exp7") = c["whitespace"] + c["exp6"] + c.cls(
-			c["exp_comp_eq"] |
-			c["exp_comp_neq"]
-		) + c["whitespace"];
+		c.temp("exp7_cls")
+			= c["exp_comp_eq"] + c["exp7_cls"]
+			| c["exp_comp_neq"] + c["exp7_cls"]
+			| ""_cfg;
+		c.prim("exp7") = c["whitespace"] + c["exp6"] + c["exp7_cls"] + c["whitespace"];
 		c.prim("exp_comp_eq") = "=="_cfg + c["exp6"];
 		c.prim("exp_comp_neq") = "!="_cfg + c["exp6"];
 
-		c.prim("exp11") = c["whitespace"] + c["exp7"] + c.cls(
-			c["exp_log_and"]
-		) + c["whitespace"];
+		c.temp("exp11_cls")
+			= c["exp_log_and"] + c["exp11_cls"]
+			| ""_cfg;
+		c.prim("exp11") = c["whitespace"] + c["exp7"] + c["exp11_cls"] + c["whitespace"];
 		c.prim("exp_log_and") = "&&"_cfg + c["exp7"];
 
-		c.prim("exp12") = c["whitespace"] + c["exp11"] + c.cls(
-			c["exp_log_or"]
-		) + c["whitespace"];
+		c.temp("exp12_cls")
+			= c["exp_log_or"] + c["exp12_cls"]
+			| ""_cfg;
+		c.prim("exp12") = c["whitespace"] + c["exp11"] + c["exp12_cls"] + c["whitespace"];
 		c.prim("exp_log_or") = "||"_cfg + c["exp11"];
 
-		c.prim("exp_filter_frag") = c["exp_id"] + c.opt(c["exp_call"]);
+		c.prim("exp_filter_frag")
+			= c["exp_id"] + c["exp_call"]
+			| c["exp_id"];
+
+		c.temp("exp_filter_cls")
+			= "|"_cfg + c["exp_filter_frag"] + c["exp_filter_cls"]
+			| ""_cfg;
 		c.prim("exp_filter") = c["whitespace"] +
-			c["exp12"] + c.cls("|"_cfg + c["exp_filter_frag"]) +
+			c["exp12"] + c["exp_filter_cls"] +
 			c["whitespace"];
 
 		c.prim("exp") = c["exp_filter"];
 
-		c.prim("statement_b") = "{%"_cfg + c.opt("-"_cfg | "+"_cfg);
-		c.prim("statement_e") = c.opt("-"_cfg | "+"_cfg) + "%}"_cfg;
+		c.prim("statement_b")
+			= "{%-"_cfg
+			| "{%+"_cfg
+			| "{%"_cfg;
+		c.prim("statement_e")
+			= "-%}"_cfg
+			| "+%}"_cfg
+			| "%}"_cfg;
 
 		c.prim("sfrag_else") =
 			c["padding_b"] + c["statement_b"] +
@@ -186,11 +243,16 @@ namespace cg {
 			c["statement_e"] + c["padding_nl"];
 		c.prim("sif_start_chain") = c["sfrag_if"] + c["lines"];
 		c.prim("sif_elif_chain") = c["sfrag_elif"] + c["lines"];
-		c.prim("sif_else_chain") = c["sfrag_else"] + c["lines"];
+		c.temp("sif_elif_chain_cls")
+			= c["sif_elif_chain"] + c["sif_elif_chain_cls"]
+			| ""_cfg;
+		c.prim("sif_else_chain")
+			= c["sfrag_else"] + c["lines"]
+			| ""_cfg;
 		c.prim("sif") =
 			c["sif_start_chain"] +
-			c.cls(c["sif_elif_chain"]) +
-			c.opt(c["sif_else_chain"]) +
+			c["sif_elif_chain_cls"] +
+			c["sif_else_chain"] +
 			c["sfrag_endif"];
 
 		c.prim("sfrag_for") =
@@ -203,8 +265,12 @@ namespace cg {
 			c["statement_e"] + c["padding_nl"];
 		c.prim("sfor") = c["sfrag_for"] + c["lines"] + c["sfrag_endfor"];
 
-		c.prim("sfrag_argdef_list") =
-			c.opt(c["sfrag_argdef"] + c.cls(","_cfg + c["sfrag_argdef"]));
+		c.temp("sfrag_argdef_cls")
+			= ","_cfg + c["sfrag_argdef"] + c["sfrag_argdef_cls"]
+			| ""_cfg;
+		c.prim("sfrag_argdef_list")
+			= c["sfrag_argdef"] + c["sfrag_argdef_cls"]
+			| ""_cfg;
 		c.prim("sfrag_argdef") =
 			c["padding"] + c["identifier"] + c["padding"] +
 			c.opt("="_cfg + c["exp"]);
@@ -726,7 +792,7 @@ namespace cg {
 		try {
 			CG_ASSERT(node.cfg_name() == "exp_int", "exp_ing must be passed to _eval_exp_int");
 			auto value = TemplInt(0);
-			for (auto c : node.consumed()) {
+			for (auto c : node.consumed_all()) {
 				value = value * 10 + c - '0';
 			}
 			auto value_obj = TemplObj(value).set_location(node.location());
@@ -1051,7 +1117,7 @@ namespace cg {
 				return true;
 			}
 			return KError::codegen(util::f("Invalid tag ending: ", cons[2]), node.location());
-		} else if (name == "commend_e" || name == "expression_e") {
+		} else if (name == "comment_e" || name == "expression_e") {
 			if (cons.size() == 2) {
 				return def;
 			}
