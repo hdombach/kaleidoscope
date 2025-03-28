@@ -3,6 +3,64 @@
 #include "util/log.hpp"
 
 namespace cg {
+	CfgLeaf::CfgLeaf(): _type(Type::none) {}
+
+	CfgLeaf CfgLeaf::str(std::string const &str) {
+		return CfgLeaf(Type::str, str, true);
+	}
+	CfgLeaf CfgLeaf::include(std::string const &str) {
+		return CfgLeaf(Type::set, str, true);
+	}
+	CfgLeaf CfgLeaf::exclude(std::string const &str) {
+		return CfgLeaf(Type::set, str, false);
+	}
+	CfgLeaf CfgLeaf::var(std::string const &str) {
+		return CfgLeaf(Type::var, str, true);
+	}
+
+	uint32_t CfgLeaf::match(std::string const &str) const {
+		switch (_type) {
+			case Type::str:
+				return str.starts_with(_content) ? _content.size() : 0;
+			case Type::set:
+				return (std::find(_content.begin(), _content.end(), str[0]) != _content.end()) == _include;
+			default:
+				return 0;
+		}
+	}
+
+	CfgLeaf::CfgLeaf(Type type, std::string const &str, bool include):
+		_type(type),
+		_content(str),
+		_include(include)
+	{}
+
+	CfgRule::CfgRule(CfgLeaf const &leaf): _leaves{leaf} { }
+
+	CfgRule::CfgRule(CfgRule const &lhs, CfgRule const &rhs) {
+		_leaves = lhs._leaves;
+		for (auto &leaf : rhs._leaves) {
+			_leaves.push_back(leaf);
+		}
+	}
+
+	CfgRuleSet::CfgRuleSet(std::string const &name): _name(name) { }
+
+	CfgRuleSet& CfgRuleSet::operator=(CfgRuleSet const &other) {
+		add_rules(other);
+		return *this;
+	}
+
+	void CfgRuleSet::add_rule(CfgRule const &rule) {
+		_rules.push_back(rule);
+	}
+
+	void CfgRuleSet::add_rules(CfgRuleSet const &set) {
+		for (auto &rule : set.rules()) {
+			add_rule(rule);
+		}
+	}
+
 	const char *CfgNode::type_str(Type const &t) {
 		return std::array{
 			"none",

@@ -4,6 +4,59 @@
 #include <sstream>
 
 namespace cg {
+	CfgRuleSet &CfgContextTemp::prim(std::string const &name) {
+		_prim_names.insert(name);
+		return _cfg_map[name];
+	}
+	CfgRuleSet &CfgContextTemp::temp(std::string const &name) {
+		return _cfg_map[name];
+	}
+
+	CfgRuleSet const *CfgContextTemp::get(std::string const &name) const {
+		if (_cfg_map.contains(name)) {
+			return &_cfg_map.at(name);
+		} else {
+			return nullptr;
+		}
+	}
+
+	void CfgContextTemp::debug_set(
+		CfgRuleSet const &set,
+		std::ostream &os
+	) const {
+		for (auto &rule : set.rules()) {
+			os << set.name() << " -> ";
+		}
+		return;
+	}
+
+	void CfgContextTemp::debug_set(
+		std::string const &set,
+		std::ostream &os
+	) const {
+		if (auto node = get(set)) {
+			debug_set(*node, os);
+		} else {
+			os << "<anon node>";
+		}
+	}
+
+	std::string CfgContextTemp::set_str(CfgRuleSet const &set) const {
+		auto ss = std::stringstream();
+
+		debug_set(set, ss);
+
+		return ss.str();
+	}
+
+	std::string CfgContextTemp::set_str(std::string const &name) const {
+		auto ss = std::stringstream();
+
+		debug_set(name, ss);
+
+		return ss.str();
+	}
+
 	CfgNode CfgContext::lit(std::string const &str) const {
 		return CfgNode::literal(str);
 	}

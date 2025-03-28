@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <set>
 #include <string>
 
 #include "util/UIDList.hpp"
@@ -9,6 +10,42 @@
 #include "codegen/CfgNode.hpp"
 
 namespace cg {
+	class CfgContextTemp {
+		public:
+			CfgContextTemp() = default;
+
+			/**
+			 * @brief Creates a new primary node
+			 *
+			 * A primary node means the node will remain in the created
+			 * abstract syntax tree after collapsing.
+			 */
+			CfgRuleSet &prim(std::string const &name);
+			/**
+			 * @brief Creates a new temporary node
+			 *
+			 * A temporary node means the node will automatically be collapsed
+			 * in the created syntax tree.
+			 */
+			CfgRuleSet &temp(std::string const &name);
+
+			/**
+			 * @brief Gets a node by name
+			 * @returns Node or null if not found
+			 */
+			CfgRuleSet const *get(std::string const &name) const;
+
+			void debug_set(CfgRuleSet const &set, std::ostream &os) const;
+			void debug_set(std::string const &set, std::ostream &os) const;
+			std::string set_str(CfgRuleSet const &set) const;
+			std::string set_str(std::string const &name) const;
+
+			std::set<std::string> const &prim_names() const { return _prim_names; }
+		private:
+			std::map<std::string, CfgRuleSet> _cfg_map;
+			std::set<std::string> _prim_names;
+	};
+
 	/**
 	 * @brief Helps build and store CfgNodes
 	 */
