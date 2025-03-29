@@ -18,6 +18,10 @@ struct Test {
 	std::string test_name;
 	uint32_t total_test_count = 0;
 	uint32_t passed_test_count;
+
+	std::string full_name() const {
+		return suite_name + "::" + test_name;
+	}
 };
 
 using TestSuite = std::map<std::string, Test>;
@@ -47,7 +51,7 @@ inline std::ostream &fail_head(
 	std::cout << util::color::RED << "FAILED_TEST " << util::color::RESET;
 	std::cout	<< std::filesystem::relative(loc.file_name(), util::g_env.working_dir).c_str();
 	std::cout << "(" << loc.line() << ":" << loc.column() << ")] ";
-	std::cout << test.suite_name << "::" << test.test_name;
+	std::cout << test.full_name();
 
 	return std::cout;
 }
@@ -213,4 +217,4 @@ inline void expect_kerror(
 }
 
 
-int test_main();
+int test_main(std::vector<std::string> const &filters);

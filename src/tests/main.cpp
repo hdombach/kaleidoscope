@@ -1,5 +1,9 @@
+#include <vector>
+
 #include "Test.hpp"
 #include "util/log.hpp"
+
+std::vector<std::string> g_filters;
 
 int parse_args(int argc, char **argv) {
 	if (argc <= 0) {
@@ -12,7 +16,7 @@ int parse_args(int argc, char **argv) {
 		util::g_log_flags |= util::Importance::DEBUG | util::Importance::TRACE;
 		return 1;
 	} else {
-		log_fatal_error() << "Unknown arg: " << argv[0] << std::endl;
+		g_filters.push_back(argv[0]);
 		return 1;
 	}
 }
@@ -25,5 +29,5 @@ int main(int argc, char **argv) {
 	}
 	log_event() << "flags is " << std::bitset<8>(util::g_log_flags) << std::endl;
 
-	return test_main();
+	return test_main(g_filters);
 }

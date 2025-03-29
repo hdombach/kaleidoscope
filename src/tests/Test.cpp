@@ -3,7 +3,20 @@
 
 std::map<std::string, TestSuite> suites;
 
-int test_main() {
+bool _in_filter(
+	std::string const &test_name,
+	std::vector<std::string> const &filters
+) {
+	if (filters.empty()) return true;
+	for (auto const &filter : filters) {
+		if (test_name.find(filter) != std::string::npos) {
+			return true;
+		}
+	}
+	return false;
+}
+
+int test_main(std::vector<std::string> const &filters) {
 	uint32_t all_total = 0;
 	uint32_t all_passed = 0;
 	for (auto &suite : suites) {
@@ -11,6 +24,11 @@ int test_main() {
 		uint32_t suite_total = 0;
 		uint32_t suite_passed = 0;
 		for (auto &test : suite.second) {
+			if (!_in_filter(test.second.full_name(), filters)) {
+				log_trace() << "Skipping test: " << test.second.full_name() << std::endl;
+				continue;
+			}
+
 			try {
 				log_trace() << "Starting test: " << test.first << std::endl;
 				test.second.fn(test.second);
