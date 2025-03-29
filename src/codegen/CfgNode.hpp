@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include "util/result.hpp"
+
 namespace cg {
 	/**
 	 * @brief Represents a leaf node for the context free grammar
@@ -39,7 +41,7 @@ namespace cg {
 			 * @brief Matches against a string
 			 * @returns number of characters consumed or 0 if there is mismatch
 			 */
-			uint32_t match(std::string const &str) const;
+			util::Result<uint32_t, void> match(std::string const &str) const;
 
 			std::string const &var_name() const { return _content; }
 

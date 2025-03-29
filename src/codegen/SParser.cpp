@@ -66,8 +66,9 @@ namespace cg {
 		Stack const &s,
 		CfgRuleSet const &set
 	) {
+		log_trace() << "Parsing rule set: " << set.name() << std::endl;
 		for (auto &rule : set.rules()) {
-			if (auto const &node = _parse(s.child(0, set.name()), rule)) {
+			if (auto node = _parse(s.child(0, set.name()), rule)) {
 				return node;
 			}
 		}
@@ -78,11 +79,12 @@ namespace cg {
 		Stack const &s,
 		CfgRule const &rule
 	) {
+		log_trace() << "Parsing rule: " << rule << std::endl;
 		try {
 			auto node = AstNode::create_rule(++_uid, s.rule, s.str.location());
 			uint32_t i = 0;
 			for (auto &leaf : rule.leaves()) {
-				node.add_child(_parse(s.child(i), leaf).value());
+				node.add_child(_parse(s.child(node.size()), leaf).value());
 			}
 			return node;
 		} catch_kerror;
@@ -100,24 +102,28 @@ namespace cg {
 					leaf.var_name(),
 					" used in grammar but not defined"
 				);
-				return KError::codegen(msg);
+				return _set_failure(KError::codegen(msg));
 			}
 			return _parse(s.child(0, leaf.var_name()), *set);
 		}
 
 		auto parsed = leaf.match(s.str.str());
 		if (parsed) {
+			log_trace() << "leaf matched: " << leaf << std::endl;
 			auto begin = s.str.str();
-			auto end = s.str.str() + parsed;
+			auto end = s.str.str() + parsed.value();
 			return AstNode::create_str(++_uid, {begin, end}, s.str.location());
 		} else {
+			log_trace() << "leaf " << leaf << " didn't match: " << "\"" << util::get_str_line(s.str.str()) << "\"" << std::endl;
 			auto msg = util::f(
 				"Expected ",
 				leaf.str(),
 				" but got ",
-				util::get_str_line(util::escape_str(s.str.str()))
+				"\"",
+				util::get_str_line(util::escape_str(s.str.str())),
+				"\""
 			);
-			return KError::codegen(msg);
+			return _set_failure(KError::codegen(msg));
 		}
 	}
 }

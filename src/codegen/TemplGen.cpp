@@ -119,8 +119,8 @@ namespace cg {
 
 		c.temp("exp_str_rest")
 			= c.e("\"\\") + c["exp_str_rest"]
-			| c.s("\\\\") + c["exp_str_cont"]
-			| c.s("\\\"") + c["exp_str_cont"]
+			| c.s("\\\\") + c["exp_str_rest"]
+			| c.s("\\\"") + c["exp_str_rest"]
 			| c.s("\"");
 
 		c.prim("exp_str") = c.s("\"") + c["exp_str_rest"];

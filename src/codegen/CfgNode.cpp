@@ -1,5 +1,6 @@
 #include "CfgNode.hpp"
 
+#include "util/Util.hpp"
 #include "util/log.hpp"
 #include <sstream>
 
@@ -19,19 +20,44 @@ namespace cg {
 		return CfgLeaf(Type::var, str, true);
 	}
 
-	uint32_t CfgLeaf::match(std::string const &str) const {
+	util::Result<uint32_t, void> CfgLeaf::match(std::string const &str) const {
 		switch (_type) {
 			case Type::str:
-				return str.starts_with(_content) ? _content.size() : 0;
-			case Type::set:
-				return (std::find(_content.begin(), _content.end(), str[0]) != _content.end()) == _include;
+				for (int i = 0; i < _content.size(); i++) {
+					if (str[i] != _content[i]) {
+						return {};
+					}
+				}
+				return _content.size();
+			case Type::set: {
+				if ((std::find(_content.begin(), _content.end(), str[0]) != _content.end()) == _include) {
+					return 1;
+				} else {
+					return {};
+				}
+			}
 			default:
-				return 0;
+				return {};
 		}
 	}
 
 	std::ostream& CfgLeaf::print_debug(std::ostream &os) const {
-		os << "TODO_print_debug";
+		switch (_type) {
+			case Type::str:
+				os << "\"" << util::escape_str(_content) << "\"";
+				break;
+			case Type::var:
+				os << "<" << _content << ">";
+				break;
+			case Type::set:
+				if (!_include) {
+					os << "!";
+				}
+				os << "[" << _content << "]";
+				break;
+			case Type::none:
+				os << "<unknown>";
+		}
 		return os;
 	}
 
@@ -54,6 +80,13 @@ namespace cg {
 		for (auto &leaf : rhs._leaves) {
 			_leaves.push_back(leaf);
 		}
+	}
+
+	std::ostream& CfgRule::print_debug(std::ostream &os) const {
+		for (auto &leaf : _leaves) {
+			os << leaf << " ";
+		}
+		return os;
 	}
 
 	CfgRuleSet::CfgRuleSet(std::string const &name): _name(name) { }
@@ -81,6 +114,19 @@ namespace cg {
 		for (auto &rule : set.rules()) {
 			add_rule(rule);
 		}
+	}
+
+	std::ostream& CfgRuleSet::print_debug(std::ostream &os) const {
+		bool is_first;
+		for (auto &rule : _rules) {
+			if (is_first) {
+				is_first = false;
+			} else {
+				os << "| ";
+			}
+			os << rule;
+		}
+		return os;
 	}
 
 	const char *CfgNode::type_str(Type const &t) {

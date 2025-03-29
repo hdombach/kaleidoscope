@@ -19,9 +19,15 @@ namespace cg {
 
 	CfgRuleSet &CfgContextTemp::prim(std::string const &name) {
 		_prim_names.insert(name);
+		if (!_cfg_map.contains(name)) {
+			_cfg_map.emplace(name, name);
+		}
 		return _cfg_map[name];
 	}
 	CfgRuleSet &CfgContextTemp::temp(std::string const &name) {
+		if (!_cfg_map.contains(name)) {
+			_cfg_map[name] = CfgRuleSet(name);
+		}
 		return _cfg_map[name];
 	}
 
@@ -77,7 +83,7 @@ namespace cg {
 					if (leaf.type() == CfgLeaf::Type::var) {
 						if (!_cfg_map.contains(leaf.var_name())) {
 							return KError::codegen(util::f(
-								"Varialbe name ",
+								"Variable name ",
 								leaf.var_name(),
 								" does not exist."
 							));

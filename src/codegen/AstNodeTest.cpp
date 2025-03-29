@@ -25,9 +25,9 @@ namespace cg {
 
 		c.prim("digit") = c.i("0123456789");
 		c.prim("integer")
-			= c["digit"]
+			= c["digit"] + c["integer"]
 			| c.s("");
-		c.prim("digit") = c["integer"] + c.s(".") + c["integer"];
+		c.prim("decimal") = c["integer"] + c.s(".") + c["integer"];
 
 		EXPECT(c.prep());
 
@@ -47,21 +47,36 @@ namespace cg {
 		EXPECT_EQ(parser.match(".", "decimal").value(), 1);
 		EXPECT_EQ(parser.match("15.9", "decimal").value(), 4);
 	}
-/*
+
 	TEST(ast_node, match_math) {
-		auto c = CfgContext();
+		auto c = CfgContextTemp();
 		auto parser = SParser(c);
 
 		c.prim("digit") =
-			"0"_cfg | "1"_cfg | "2"_cfg | "3"_cfg | "4"_cfg |
-			"5"_cfg | "6"_cfg | "7"_cfg | "8"_cfg | "9"_cfg;
-		c.prim("integer") = c.ref("digit") + c.cls(c.ref("digit"));
-		c.prim("decimal") = c.ref("integer") + c.opt("."_cfg + c.ref("integer"));
-		c.prim("exp_sing") = c.ref("decimal");
-		c.prim("exp_inc_dec") = c.cls("+"_cfg | "-"_cfg | "!"_cfg) + c.ref("exp_sing");
-		c.prim("exp_mult_div") = c.ref("exp_inc_dec") + c.cls(("*"_cfg | "/"_cfg | "%"_cfg) + c.ref("exp_inc_dec"));
-		c.prim("exp_add_sub") = c.ref("exp_mult_div") + c.cls(("+"_cfg | "-"_cfg) + c.ref("exp_mult_div"));
-		c.prim("exp") = c.ref("exp_add_sub");
+			c.s("0") | c.s("1") | c.s("2") | c.s("3") | c.s("4") |
+			c.s("5") | c.s("6") | c.s("7") | c.s("8") | c.s("9");
+		c.prim("integer")
+			= c["digit"] + c["integer"]
+			| c.s("");
+		c.prim("decimal")
+			= c["integer"] + c.s(".") + c["integer"]
+			| c["integer"];
+		c.prim("exp_sing") = c["decimal"];
+		c.prim("exp_inc_dec")
+			= c.s("+") + c["exp_inc_dec"]
+			| c.s("-") + c["exp_inc_dec"]
+			| c.s("!") + c["exp_inc_dec"]
+			| c["exp_sing"];
+		c.prim("exp_mult_div")
+			= c["exp_inc_dec"] + c.s("*") + c["exp_mult_div"]
+			| c["exp_inc_dec"] + c.s("/") + c["exp_mult_div"]
+			| c["exp_inc_dec"] + c.s("%") + c["exp_mult_div"]
+			| c["exp_inc_dec"];
+		c.prim("exp_add_sub")
+			= c["exp_mult_div"] + c.s("+") + c["exp_add_sub"]
+			| c["exp_mult_div"] + c.s("-") + c["exp_add_sub"]
+			| c["exp_mult_div"];
+		c.prim("exp") = c["exp_add_sub"];
 
 		EXPECT(c.prep());
 
@@ -75,6 +90,7 @@ namespace cg {
 		EXPECT_EQ(parser.match("5+-2*-+-12", "exp").value(), 10);
 	}
 
+/*
 	TEST(ast_node, match_neg) {
 		auto c = CfgContext();
 		auto parser = SParser(c);
