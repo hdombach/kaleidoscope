@@ -16,11 +16,25 @@ namespace cg {
 			using Type = CfgNode::Type;
 			struct Stack {
 				util::StringRef str;
-				CfgNode const &node;
-				Stack *parent = nullptr;
+				std::string rule;
+				Stack const *parent = nullptr;
+
+
+				Stack() = default;
+				Stack(util::StringRef const &s, std::string const &r, Stack const *p):
+					str(s), rule(r), parent(p)
+				{}
+
+				Stack child(size_t offset) const {
+					return {str+offset, rule, this};
+				}
+
+				Stack child(size_t offset, std::string const &new_rule) const {
+					return {str+offset, new_rule, this};
+				}
 			};
 		public:
-			SParser(CfgContext const &ctx);
+			SParser(CfgContextTemp const &ctx);
 
 			/**
 			 * @brief Matches a string against a CfgNode specified by name
@@ -50,7 +64,7 @@ namespace cg {
 			 * @brief uid for constructing AstNodes
 			 */
 			uint32_t _uid;
-			CfgContext const &_ctx;
+			CfgContextTemp const &_ctx;
 			/**
 			 * @brief Most recent failure (even if it isn't officially error yet)
 			 */
@@ -65,13 +79,8 @@ namespace cg {
 			/***********************************
 			 * Parser helper functions
 			 * *********************************/
-			util::Result<AstNode, KError> _parse(Stack stack);
-			util::Result<AstNode, KError> _parse_lit(Stack stack);
-			util::Result<AstNode, KError> _parse_ref(Stack stack);
-			util::Result<AstNode, KError> _parse_seq(Stack stack);
-			util::Result<AstNode, KError> _parse_alt(Stack stack);
-			util::Result<AstNode, KError> _parse_cls(Stack stack);
-			util::Result<AstNode, KError> _parse_opt(Stack stack);
-			util::Result<AstNode, KError> _parse_neg(Stack stack);
+			util::Result<AstNode, KError> _parse(Stack const &stack, CfgRuleSet const &set);
+			util::Result<AstNode, KError> _parse(Stack const &stack, CfgRule const &rule);
+			util::Result<AstNode, KError> _parse(Stack const &stack, CfgLeaf const &leaf);
 	};
 }

@@ -1,9 +1,11 @@
 #pragma once
 
-#include "CfgContext.hpp"
-#include "CfgNode.hpp"
+#include <vector>
+#include <set>
+
 #include "util/FileLocation.hpp"
 #include "util/KError.hpp"
+#include "util/result.hpp"
 
 namespace cg {
 	/**
@@ -13,14 +15,31 @@ namespace cg {
 
 	class AstNode {
 		public:
+			enum class Type {
+				None,
+				Rule,
+				String
+			};
+		public:
 			AstNode();
-			AstNode(
+			/**
+			 * @brief Create an astnode based on a rule
+			 */
+			static AstNode create_rule(
 				uint32_t id,
-				CfgContext const &ctx,
-				uint32_t cfg_id,
+				std::string const &cfg_name,
+				util::FileLocation const &file_location
+			);
+			/**
+			 * @brief Create an astnode containg a string literal
+			 */
+			static AstNode create_str(
+				uint32_t id,
+				std::string const &str,
 				util::FileLocation const &file_location
 			);
 
+			Type type() const { return _type; }
 			uint32_t id() const { return _id; }
 
 			bool has_value() const;
@@ -36,36 +55,27 @@ namespace cg {
 
 			/**
 			 * @brief The rule that was used to generate this node
+			 * Undefined behavior if this node is not of type rule
 			 */
-			CfgNode const &cfg_node() const { return _ctx->get(_cfg_id); }
-
-			std::string cfg_name() const { return cfg_node().name(); }
+			std::string const &cfg_rule() const { return _cfg_rule; }
 
 			std::string const &consumed() const { return _consumed; }
-			/**
-			 * @brief Combines all consumed characters recursively.
-			 */
-			std::string consumed_all() const;
-
-			void consume(char c);
 
 			/**
 			 * @brief Number of characters by this node and any children node
 			 */
 			size_t size() const;
 
-			bool is_ref() const;
-
 			util::FileLocation location() const;
 
 			/**
 			 * @brief Combines all nodes that aren't in the list of provided cfg's
 			 */
-			void compress(std::vector<uint32_t> const &cfg_ids);
-			util::Result<void, KError> compress();
+			void compress(std::set<std::string> const &cfg_names);
 
-			AstNode compressed(std::vector<uint32_t> const &cfg_ids) const;
-			util::Result<AstNode, KError> compressed() const;
+			AstNode compressed(
+				std::set<std::string> const &cfg_names
+			) const;
 
 			/**
 			 * @brief Trims nodes that do not have children or consumed characters
@@ -76,18 +86,18 @@ namespace cg {
 			 */
 			AstNode trimmed() const;
 
-			void debug_pre_order(std::ostream &os) const;
-			void debug_dot(std::ostream &os) const;
+			std::ostream &print_pre_order(std::ostream &os) const;
+			std::ostream &print_dot(std::ostream &os) const;
 
-			std::string pre_order_str() const;
+			std::string str_pre_order() const;
 
 		private:
+			Type _type;
 			uint32_t _id;
-			uint32_t _cfg_id;
-			CfgContext const *_ctx;
-			std::vector<AstNode> _children;
+			std::string _cfg_rule;
 			std::string _consumed;
 			util::FileLocation _location;
+			std::vector<AstNode> _children;
 
 			/**
 			 * @brief The cached size
@@ -96,7 +106,7 @@ namespace cg {
 
 		private:
 			size_t _calc_size() const;
-			void _debug_dot_attributes(std::ostream &os) const;
-			void _debug_dot_paths(std::ostream &os) const;
+			void _print_dot_attributes(std::ostream &os) const;
+			void _print_dot_paths(std::ostream &os) const;
 	};
 }

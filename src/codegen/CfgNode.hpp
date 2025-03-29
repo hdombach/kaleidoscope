@@ -44,6 +44,7 @@ namespace cg {
 			std::string const &var_name() const { return _content; }
 
 			std::ostream& print_debug(std::ostream &os) const;
+			std::string str() const;
 		private:
 			CfgLeaf(Type type, std::string const &str, bool include);
 		private:
@@ -77,7 +78,9 @@ namespace cg {
 
 			CfgRuleSet(std::string const &name);
 
-			CfgRuleSet& operator=(CfgRuleSet const &other);
+			CfgRuleSet& operator=(CfgRuleSet const &set);
+			CfgRuleSet& operator=(CfgRule const &rule);
+			CfgRuleSet& operator=(CfgLeaf const &leaf);
 
 			void add_rule(CfgRule const &rule);
 			void add_rules(CfgRuleSet const &set);
@@ -245,16 +248,6 @@ namespace cg {
 
 	/******* CfgLeaf ********/
 
-	inline CfgLeaf operator ""_cg_s(const char *str, size_t) {
-		return CfgLeaf::str(str);
-	}
-	inline CfgLeaf operator ""_cg_i(const char *str, size_t) {
-		return CfgLeaf::include(str);
-	}
-	inline CfgLeaf operator ""_cg_e(const char *str, size_t) {
-		return CfgLeaf::exclude(str);
-	}
-
 	inline std::ostream &operator<<(std::ostream &os, CfgLeaf const &leaf) {
 		return leaf.print_debug(os);
 	}
@@ -280,6 +273,12 @@ namespace cg {
 		set.add_rule(lhs);
 		set.add_rule(rhs);
 		return set;
+	}
+
+	inline CfgRuleSet operator | (CfgRuleSet const &lhs, CfgRule const &rhs) {
+		auto r = lhs;
+		r.add_rule(rhs);
+		return r;
 	}
 
 	inline std::ostream &operator<<(std::ostream &os, CfgRuleSet const &set) {

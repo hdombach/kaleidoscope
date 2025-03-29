@@ -42,7 +42,7 @@ namespace util {
 			char get(uint32_t offset = 0) const {
 				return _str[_i + offset];
 			}
-			FileLocation location() {
+			FileLocation location() const {
 				return FileLocation(_line, _column, _filename);
 			}
 			StringRef dup(uint32_t offset) const {

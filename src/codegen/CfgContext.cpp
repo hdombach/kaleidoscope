@@ -4,6 +4,19 @@
 #include <sstream>
 
 namespace cg {
+	CfgLeaf CfgContextTemp::s(std::string const &str) const {
+		return CfgLeaf::str(str);
+	}
+	CfgLeaf CfgContextTemp::i(std::string const &str) const {
+		return CfgLeaf::include(str);
+	}
+	CfgLeaf CfgContextTemp::e(std::string const &str) const {
+		return CfgLeaf::exclude(str);
+	}
+	CfgLeaf CfgContextTemp::operator[](std::string const &str) const {
+		return CfgLeaf::var(str);
+	}
+
 	CfgRuleSet &CfgContextTemp::prim(std::string const &name) {
 		_prim_names.insert(name);
 		return _cfg_map[name];
@@ -55,6 +68,25 @@ namespace cg {
 		debug_set(name, ss);
 
 		return ss.str();
+	}
+
+	util::Result<void, KError> CfgContextTemp::prep() {
+		for (auto &[key, set] : _cfg_map) {
+			for (auto &rule : set.rules()) {
+				for (auto &leaf : rule.leaves()) {
+					if (leaf.type() == CfgLeaf::Type::var) {
+						if (!_cfg_map.contains(leaf.var_name())) {
+							return KError::codegen(util::f(
+								"Varialbe name ",
+								leaf.var_name(),
+								" does not exist."
+							));
+						}
+					}
+				}
+			}
+		}
+		return {};
 	}
 
 	CfgNode CfgContext::lit(std::string const &str) const {

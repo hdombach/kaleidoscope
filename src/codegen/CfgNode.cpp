@@ -1,6 +1,7 @@
 #include "CfgNode.hpp"
 
 #include "util/log.hpp"
+#include <sstream>
 
 namespace cg {
 	CfgLeaf::CfgLeaf(): _type(Type::none) {}
@@ -29,6 +30,17 @@ namespace cg {
 		}
 	}
 
+	std::ostream& CfgLeaf::print_debug(std::ostream &os) const {
+		os << "TODO_print_debug";
+		return os;
+	}
+
+	std::string CfgLeaf::str() const {
+		auto ss = std::stringstream();
+		print_debug(ss);
+		return ss.str();
+	}
+
 	CfgLeaf::CfgLeaf(Type type, std::string const &str, bool include):
 		_type(type),
 		_content(str),
@@ -46,8 +58,18 @@ namespace cg {
 
 	CfgRuleSet::CfgRuleSet(std::string const &name): _name(name) { }
 
-	CfgRuleSet& CfgRuleSet::operator=(CfgRuleSet const &other) {
-		add_rules(other);
+	CfgRuleSet& CfgRuleSet::operator=(CfgRuleSet const &set) {
+		add_rules(set);
+		return *this;
+	}
+
+	CfgRuleSet& CfgRuleSet::operator=(CfgRule const &rule) {
+		add_rule(rule);
+		return *this;
+	}
+
+	CfgRuleSet& CfgRuleSet::operator=(CfgLeaf const &leaf) {
+		add_rule(leaf);
 		return *this;
 	}
 

@@ -15,6 +15,26 @@ namespace cg {
 			CfgContextTemp() = default;
 
 			/**
+			 * @brief Wrapper around CfgLeaf::str
+			 */
+			CfgLeaf s(std::string const &str) const;
+
+			/**
+			 * @brief Wrapper around CfgLeaf::include
+			 */
+			CfgLeaf i(std::string const &str) const;
+
+			/**
+			 * @brief Wrapper around CfgLeaf::exclude
+			 */
+			CfgLeaf e(std::string const &str) const;
+
+			/**
+			 * @brief Wrapper around CfgLeaf::var
+			 */
+			CfgLeaf operator [](std::string const &str) const;
+
+			/**
 			 * @brief Creates a new primary node
 			 *
 			 * A primary node means the node will remain in the created
@@ -41,6 +61,11 @@ namespace cg {
 			std::string set_str(std::string const &name) const;
 
 			std::set<std::string> const &prim_names() const { return _prim_names; }
+
+			/**
+			 * @brief Does some validation to make sure the context free grammar is correct
+			 */
+			util::Result<void, KError> prep();
 		private:
 			std::map<std::string, CfgRuleSet> _cfg_map;
 			std::set<std::string> _prim_names;

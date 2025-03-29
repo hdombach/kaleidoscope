@@ -15,51 +15,50 @@ namespace cg {
 	util::Result<TemplGen, KError> TemplGen::create() {
 		auto result = TemplGen();
 		auto &c = result._ctx;
+		
+		c.prim("whitespace")
+			= c.s(" ") + c["whitespace"]
+			| c.s("\t") + c["whitespace"]
+			| c.s("\n") + c["whitespace"]
+			| c.s("");
 
 		c.prim("whitespace")
-			= " "_cfg + c["whitespace"]
-			| "\t"_cfg + c["whitespace"]
-			| "\n"_cfg + c["whitespace"]
-			| ""_cfg;
+			= c.s(" ") + c["whitespace"]
+			| c.s("\t") + c["whitespace"]
+			| c.s("\n") + c["whitespace"]
+			| c.s("");
 
 		c.prim("padding")
-			= " "_cfg + c["padding"]
-			| "\t"_cfg + c["padding"]
-			| ""_cfg;
-		c.temp("digit") =
-			"0"_cfg | "1"_cfg | "2"_cfg | "3"_cfg | "4"_cfg |
-			"5"_cfg | "6"_cfg | "7"_cfg | "8"_cfg | "9"_cfg;
-		c.temp("lower") =
-			"a"_cfg | "b"_cfg | "c"_cfg | "d"_cfg | "e"_cfg | "f"_cfg | "g"_cfg | "h"_cfg |
-			"i"_cfg | "j"_cfg | "k"_cfg | "l"_cfg | "m"_cfg | "n"_cfg | "o"_cfg | "p"_cfg |
-			"q"_cfg | "r"_cfg | "s"_cfg | "t"_cfg | "u"_cfg | "v"_cfg | "w"_cfg | "x"_cfg |
-			"y"_cfg | "z"_cfg;
-		c.temp("upper") =
-			"A"_cfg | "B"_cfg | "C"_cfg | "D"_cfg | "E"_cfg | "F"_cfg | "G"_cfg | "H"_cfg |
-			"I"_cfg | "J"_cfg | "K"_cfg | "L"_cfg | "M"_cfg | "N"_cfg | "O"_cfg | "P"_cfg |
-			"Q"_cfg | "R"_cfg | "S"_cfg | "T"_cfg | "U"_cfg | "V"_cfg | "W"_cfg | "X"_cfg |
-			"Y"_cfg | "Z"_cfg;
-		c.temp("alpha") = c["lower"] | c["uppoer"];
-		c.temp("alnum") = c["alpha"] | c["digit"];
-		c.temp("identifier_start") = "_"_cfg | c["alpha"];
+			= c.s(" ") + c["padding"]
+			| c.s("\t") + c["padding"]
+			| c.s("");
+
+		c.temp("digit") = c.i("0123456789");
+
+		c.temp("lower") = c.i("abcdefghijklmnopqrstuvwxyz");
+		c.temp("upper") = c.i("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+		c.temp("alpha") = c.s("lower") | c.s("upper");
+		c.temp("alnum") = c.s("alpha") | c.s("digit");
+		c.temp("identifier_start") = c.s("_") | c["alpha"];
 		c.temp("identifier_rest")
 			= c["alnum"] + c["identifier_rest"]
-			| "_"_cfg + c["identifier_rest"]
-			| ""_cfg;
+			| c.s("_") + c["identifier_rest"]
+			| c.s("");
+
 		c.prim("identifier") = c["identifier_start"] + c["identifier_rest"];
 
 		c.prim("padding_b") = c["padding"];
 		c.prim("padding_e") = c["padding"];
 		c.prim("padding_nl")
-			= c["padding"] + "\n"_cfg
+			= c["padding"] + c.s("\n")
 			| c["padding"];
 
 		c.temp("raw_opt")
 			= c["raw"]
-			| ""_cfg;
+			| c.s("");
 		c.prim("raw")
-			= !("{"_cfg | "\n"_cfg) + c["raw_opt"]
-			| "{"_cfg + !("{"_cfg | "#"_cfg | "%"_cfg) + c["raw_opt"];
+			= c.e("{\n") + c["raw_opt"]
+			| c.s("{") + c.e("{#%") + c["raw_opt"];
 
 		c.temp("line_single")
 			= c["statement"]
@@ -69,39 +68,39 @@ namespace cg {
 		c.prim("line")
 			= c["line_single"] + c["line"]
 			| c["line_single"]
-			| "\n"_cfg;
+			| c.s("\n");
 
 		c.prim("lines")
 			= c["line"] + c["lines"]
-			| ""_cfg;
+			| c.s("");
 
 		c.prim("file") = c["lines"];
 
 		c.prim("comment_b")
-			= "{#-"_cfg
-			| "{#+"_cfg
-			| "{#"_cfg;
+			= c.s("{#-")
+			| c.s("{#+")
+			| c.s("{#");
 		c.prim("comment_e")
-			= "-#}"_cfg
-			| "+#}"_cfg
-			| "#}"_cfg;
+			= c.s("-#}")
+			| c.s("+#}")
+			| c.s("#}");
 		c.temp("comment_cls")
-			= !"#"_cfg + c["comment_cls"]
-			| "#"_cfg + !"}"_cfg + c["comment_cls"]
-			| ""_cfg;
+			= c.e("#") + c["comment_cls"]
+			| c.s("#") + c.e("}") + c["comment_cls"]
+			| c.s("");
 		c.prim("comment") =
 			c["padding_b"] +
 			c["comment_b"] + c["comment_cls"] + c["comment_e"] +
 			c["padding_e"];
 
 		c.prim("expression_b")
-			= "{{-"_cfg
-			| "{{+"_cfg
-			| "{{"_cfg;
+			= c.s("{{-")
+			| c.s("{{+")
+			| c.s("{{");
 		c.prim("expression_e")
-			= "-}}"_cfg
-			| "+}}"_cfg
-			| "}}"_cfg;
+			= c.s("-}}")
+			| c.s("+}}")
+			| c.s("}}");
 		c.prim("expression") =
 			c["padding_b"] + c["expression_b"] +
 			c["exp"] +
@@ -119,27 +118,27 @@ namespace cg {
 			| c["digit"];
 
 		c.temp("exp_str_rest")
-			= !("\""_cfg | "\\"_cfg) + c["exp_str_rest"]
-			| "\\\\"_cfg + c["exp_str_cont"]
-			| "\\\""_cfg + c["exp_str_cont"]
-			| "\""_cfg;
+			= c.e("\"\\") + c["exp_str_rest"]
+			| c.s("\\\\") + c["exp_str_cont"]
+			| c.s("\\\"") + c["exp_str_cont"]
+			| c.s("\"");
 
-		c.prim("exp_str") = "\""_cfg + c["exp_str_rest"];
-		c.temp("exp_paran") = "("_cfg + c["exp"] + ")"_cfg;
+		c.prim("exp_str") = c.s("\"") + c["exp_str_rest"];
+		c.temp("exp_paran") = c.s("(") + c["exp"] + c.s(")");
 
 		c.temp("exp1_cls")
 			= c["exp_member"] + c["exp1_cls"]
 			| c["exp_call"] + c["exp1_cls"]
-			| ""_cfg;
+			| c.s("");
 		c.prim("exp1") = c["exp_sing"] + c["exp1_cls"];
-		c.prim("exp_member") = "."_cfg + c["exp_id"];
+		c.prim("exp_member") = c.s(".") + c["exp_id"];
 		c.temp("exp_call_args_cls")
-			= ","_cfg + c["exp"] + c["exp_call_args_cls"]
-			| ""_cfg;
+			= c.s(",") + c["exp"] + c["exp_call_args_cls"]
+			| c.s("");
 		c.temp("exp_call_args")
 			= c["exp"] + c["exp_call_args_cls"]
-			| ""_cfg;
-		c.prim("exp_call") = "("_cfg + c["exp_call_args"] + ")"_cfg;
+			| c.s("");
+		c.prim("exp_call") = c.s("(") + c["exp_call_args"] + c.s(")");
 
 		c.prim("exp2")
 			= c["whitespace"] + c["exp_plus"] + c["whitespace"]
@@ -147,68 +146,68 @@ namespace cg {
 			| c["whitespace"] + c["exp_log_not"] + c["whitespace"]
 			| c["whitespace"] + c["exp1"] + c["whitespace"];
 
-		c.prim("exp_plus") = "+"_cfg + c["exp2"];
-		c.prim("exp_min") = "-"_cfg + c["exp2"];
-		c.prim("exp_log_not") = "!"_cfg + c["exp2"];
+		c.prim("exp_plus") = c.s("+") + c["exp2"];
+		c.prim("exp_min") = c.s("-") + c["exp2"];
+		c.prim("exp_log_not") = c.s("!") + c["exp2"];
 
 		c.temp("exp3_cls")
 			= c["exp_mult"] + c["exp3_cls"]
 			| c["exp_div"] + c["exp3_cls"]
 			| c["exp_mod"] + c["exp3_cls"]
-			| ""_cfg;
+			| c.s("");
 		c.prim("exp3") = c["whitespace"] + c["exp2"] + c["exp3_cls"] + c["whitespace"];
-		c.prim("exp_mult") = "*"_cfg + c["exp2"];
-		c.prim("exp_div")  = "/"_cfg + c["exp2"];
-		c.prim("exp_mod")  = "%"_cfg + c["exp2"];
+		c.prim("exp_mult") = c.s("*") + c["exp2"];
+		c.prim("exp_div")  = c.s("/") + c["exp2"];
+		c.prim("exp_mod")  = c.s("%") + c["exp2"];
 
 
 		c.temp("exp4_cls")
 			= c["exp_add"] + c["exp4_cls"]
 			| c["exp_sub"] + c["exp4_cls"]
-			| ""_cfg;
+			| c.s("");
 		c.prim("exp4") = c["whitespace"] + c["exp3"] + c["exp4_cls"] + c["whitespace"];
-		c.prim("exp_add") = "+"_cfg + c["exp3"];
-		c.prim("exp_sub") = "-"_cfg + c["exp3"];
+		c.prim("exp_add") = c.s("+") + c["exp3"];
+		c.prim("exp_sub") = c.s("-") + c["exp3"];
 
 		c.temp("exp6_cls")
 			= c["exp_comp_g"] + c["exp6_cls"]
 			| c["exp_comp_ge"] + c["exp6_cls"]
 			| c["exp_comp_l"] + c["exp6_cls"]
 			| c["exp_comp_le"] + c["exp6_cls"]
-			| ""_cfg;
+			| c.s("");
 		c.prim("exp6") = c["whitespace"] + c["exp4"] + c["exp6_cls"] + c["whitespace"];
-		c.prim("exp_comp_g") = ">"_cfg + c["exp4"];
-		c.prim("exp_comp_ge") = ">="_cfg + c["exp4"];
-		c.prim("exp_comp_l") = "<"_cfg + c["exp4"];
-		c.prim("exp_comp_le") = "<="_cfg + c["exp4"];
+		c.prim("exp_comp_g") = c.s(">") + c["exp4"];
+		c.prim("exp_comp_ge") = c.s(">=") + c["exp4"];
+		c.prim("exp_comp_l") = c.s("<") + c["exp4"];
+		c.prim("exp_comp_le") = c.s("<=") + c["exp4"];
 
 		c.temp("exp7_cls")
 			= c["exp_comp_eq"] + c["exp7_cls"]
 			| c["exp_comp_neq"] + c["exp7_cls"]
-			| ""_cfg;
+			| c.s("");
 		c.prim("exp7") = c["whitespace"] + c["exp6"] + c["exp7_cls"] + c["whitespace"];
-		c.prim("exp_comp_eq") = "=="_cfg + c["exp6"];
-		c.prim("exp_comp_neq") = "!="_cfg + c["exp6"];
+		c.prim("exp_comp_eq") = c.s("==") + c["exp6"];
+		c.prim("exp_comp_neq") = c.s("!=") + c["exp6"];
 
 		c.temp("exp11_cls")
 			= c["exp_log_and"] + c["exp11_cls"]
-			| ""_cfg;
+			| c.s("");
 		c.prim("exp11") = c["whitespace"] + c["exp7"] + c["exp11_cls"] + c["whitespace"];
-		c.prim("exp_log_and") = "&&"_cfg + c["exp7"];
+		c.prim("exp_log_and") = c.s("&&") + c["exp7"];
 
 		c.temp("exp12_cls")
 			= c["exp_log_or"] + c["exp12_cls"]
-			| ""_cfg;
+			| c.s("");
 		c.prim("exp12") = c["whitespace"] + c["exp11"] + c["exp12_cls"] + c["whitespace"];
-		c.prim("exp_log_or") = "||"_cfg + c["exp11"];
+		c.prim("exp_log_or") = c.s("||") + c["exp11"];
 
 		c.prim("exp_filter_frag")
 			= c["exp_id"] + c["exp_call"]
 			| c["exp_id"];
 
 		c.temp("exp_filter_cls")
-			= "|"_cfg + c["exp_filter_frag"] + c["exp_filter_cls"]
-			| ""_cfg;
+			= c.s("|") + c["exp_filter_frag"] + c["exp_filter_cls"]
+			| c.s("");
 		c.prim("exp_filter") = c["whitespace"] +
 			c["exp12"] + c["exp_filter_cls"] +
 			c["whitespace"];
@@ -216,39 +215,39 @@ namespace cg {
 		c.prim("exp") = c["exp_filter"];
 
 		c.prim("statement_b")
-			= "{%-"_cfg
-			| "{%+"_cfg
-			| "{%"_cfg;
+			= c.s("{%-")
+			| c.s("{%+")
+			| c.s("{%");
 		c.prim("statement_e")
-			= "-%}"_cfg
-			| "+%}"_cfg
-			| "%}"_cfg;
+			= c.s("-%}")
+			| c.s("+%}")
+			| c.s("%}");
 
 		c.prim("sfrag_else") =
 			c["padding_b"] + c["statement_b"] +
-			c["whitespace"] + "else"_cfg + c["whitespace"] +
+			c["whitespace"] + c.s("else") + c["whitespace"] +
 			c["statement_e"] + c["padding_nl"];
 
 		c.prim("sfrag_if") =
 			c["padding_b"] + c["statement_b"] +
-			c["whitespace"] + "if"_cfg + c["whitespace"] + c["exp"] + c["whitespace"] +
+			c["whitespace"] + c.s("if") + c["whitespace"] + c["exp"] + c["whitespace"] +
 			c["statement_e"] + c["padding_nl"];
 		c.prim("sfrag_elif") =
 			c["padding_b"] + c["statement_b"] +
-			c["whitespace"] + "elif"_cfg + c["whitespace"] + c["exp"] + c["whitespace"] +
+			c["whitespace"] + c.s("elif") + c["whitespace"] + c["exp"] + c["whitespace"] +
 			c["statement_e"] + c["padding_nl"];
 		c.temp("sfrag_endif") =
 			c["padding_b"] + c["statement_b"] +
-			c["whitespace"] + "endif"_cfg + c["whitespace"] +
+			c["whitespace"] + c.s("endif") + c["whitespace"] +
 			c["statement_e"] + c["padding_nl"];
 		c.prim("sif_start_chain") = c["sfrag_if"] + c["lines"];
 		c.prim("sif_elif_chain") = c["sfrag_elif"] + c["lines"];
 		c.temp("sif_elif_chain_cls")
 			= c["sif_elif_chain"] + c["sif_elif_chain_cls"]
-			| ""_cfg;
+			| c.s("");
 		c.prim("sif_else_chain")
 			= c["sfrag_else"] + c["lines"]
-			| ""_cfg;
+			| c.s("");
 		c.prim("sif") =
 			c["sif_start_chain"] +
 			c["sif_elif_chain_cls"] +
@@ -257,39 +256,39 @@ namespace cg {
 
 		c.prim("sfrag_for") =
 			c["padding_b"] + c["statement_b"] +
-			c["padding"] + "for"_cfg + c["exp_id"] + "in"_cfg + c["exp"] +
+			c["padding"] + c.s("for") + c["exp_id"] + c.s("in") + c["exp"] +
 			c["statement_e"] + c["padding_nl"];
 		c.temp("sfrag_endfor") =
 			c["padding_b"] + c["statement_b"] +
-			c["whitespace"] + "endfor"_cfg +  c["whitespace"] +
+			c["whitespace"] + c.s("endfor") +  c["whitespace"] +
 			c["statement_e"] + c["padding_nl"];
 		c.prim("sfor") = c["sfrag_for"] + c["lines"] + c["sfrag_endfor"];
 
 		c.temp("sfrag_argdef_cls")
-			= ","_cfg + c["sfrag_argdef"] + c["sfrag_argdef_cls"]
-			| ""_cfg;
+			= c.s(",") + c["sfrag_argdef"] + c["sfrag_argdef_cls"]
+			| c.s("");
 		c.prim("sfrag_argdef_list")
 			= c["sfrag_argdef"] + c["sfrag_argdef_cls"]
-			| ""_cfg;
-		c.prim("sfrag_argdef") =
-			c["padding"] + c["identifier"] + c["padding"] +
-			c.opt("="_cfg + c["exp"]);
+			| c.s("");
+		c.prim("sfrag_argdef")
+			= c["padding"] + c["identifier"] + c["padding"] + c.s("=") + c["exp"]
+			| c["padding"] + c["identifier"] + c["padding"];
 
 		c.prim("sfrag_macro") =
 			c["padding_b"] + c["statement_b"] +
-			c["padding"] + "macro"_cfg +
+			c["padding"] + c.s("macro") +
 			c["padding"] + c["identifier"] + c["padding"] +
-			"("_cfg + c["sfrag_argdef_list"] + ")"_cfg + c["padding"] +
+			c.s("(") + c["sfrag_argdef_list"] + c.s(")") + c["padding"] +
 			c["statement_e"] + c["padding_nl"];
 		c.prim("sfrag_endmacro") =
 			c["padding_b"] + c["statement_b"] +
-			c["whitespace"] + "endmacro"_cfg + c["whitespace"] +
+			c["whitespace"] + c.s("endmacro") + c["whitespace"] +
 			c["statement_e"] + c["padding_nl"];
 		c.prim("smacro") = c["sfrag_macro"] + c["lines"] + c["sfrag_endmacro"];
 
 		c.prim("sinclude") =
 			c["padding_b"] + c["statement_b"] +
-			c["padding"] + "include"_cfg +
+			c["padding"] + c.s("include") +
 			c["padding"] + c["exp_str"] + c["padding"] +
 			c["statement_e"] + c["padding_nl"];
 
@@ -320,10 +319,10 @@ namespace cg {
 		try {
 			auto parser = SParser(_ctx);
 
-			auto node = parser.parse(str, "file", filename)->compressed().value();
+			auto node = parser.parse(str, "file", filename)->compressed(_ctx.prim_names());
 
 			std::ofstream file("gen/templgen.gv");
-			node.debug_dot(file);
+			node.print_dot(file);
 			file.close();
 
 			auto l_args = args;
@@ -373,43 +372,47 @@ namespace cg {
 		TemplDict &args,
 		SParser &parser
 	) const {
-		if (node.cfg_name() == "whitespace") {
+		if (node.type() == AstNode::Type::String) {
+			return node.consumed();
+		}
+
+		if (node.cfg_rule() == "whitespace") {
 			return _cg_default(node, args, parser);
-		} else if (node.cfg_name() == "padding") {
+		} else if (node.cfg_rule() == "padding") {
 			return _cg_recursive(node, args, parser);
-		} else if (node.cfg_name() == "identifier") {
+		} else if (node.cfg_rule() == "identifier") {
 			return _cg_identifier(node, args, parser);
-		} else if (node.cfg_name() == "padding_b") {
+		} else if (node.cfg_rule() == "padding_b") {
 			return _cg_ref(node, args, parser);
-		} else if (node.cfg_name() == "padding_e") {
+		} else if (node.cfg_rule() == "padding_e") {
 			return _cg_ref(node, args, parser);
-		} else if (node.cfg_name() == "padding_nl") {
+		} else if (node.cfg_rule() == "padding_nl") {
 			return _cg_ref(node, args, parser);
-		} else if (node.cfg_name() == "raw") {
+		} else if (node.cfg_rule() == "raw") {
 			return _cg_recursive(node, args, parser);
-		} else if (node.cfg_name() == "line") {
+		} else if (node.cfg_rule() == "line") {
 			return _cg_line(node, args, parser);
-		} else if (node.cfg_name() == "lines") {
+		} else if (node.cfg_rule() == "lines") {
 			return _cg_lines(node, args, parser);
-		} else if (node.cfg_name() == "file") {
+		} else if (node.cfg_rule() == "file") {
 			return _cg_ref(node, args, parser);
-		} else if (node.cfg_name() == "comment") {
+		} else if (node.cfg_rule() == "comment") {
 			return _cg_comment(node, args, parser);
-		} else if (node.cfg_name() == "expression") {
+		} else if (node.cfg_rule() == "expression") {
 			return _cg_expression(node, args, parser);
-		} else if (node.cfg_name() == "statement") {
+		} else if (node.cfg_rule() == "statement") {
 			return _cg_ref(node, args, parser);
-		} else if (node.cfg_name() == "sif") {
+		} else if (node.cfg_rule() == "sif") {
 			return _cg_sif(node, args, parser);
-		} else if (node.cfg_name() == "sfor") {
+		} else if (node.cfg_rule() == "sfor") {
 			return _cg_sfor(node, args, parser);
-		} else if (node.cfg_name() == "smacro") {
+		} else if (node.cfg_rule() == "smacro") {
 			_cg_smacro(node, args, parser);
 			return {""};
-		} else if (node.cfg_name() == "sinclude") {
+		} else if (node.cfg_rule() == "sinclude") {
 			return _cg_sinclude(node, args, parser);
 		} else {
-			return KError::codegen("Unimplimented AstNode type: " + node.cfg_name());
+			return KError::codegen("Unimplimented AstNode type: " + node.cfg_rule());
 		}
 	}
 
@@ -420,7 +423,7 @@ namespace cg {
 	) const {
 		CG_ASSERT(
 			node.children().size() == 0,
-			util::f("Children count of ", node.cfg_name(), " must be 0")
+			util::f("Children count of ", node.cfg_rule(), " must be 0")
 		);
 		return node.consumed();
 	}
@@ -430,7 +433,13 @@ namespace cg {
 		TemplDict &args,
 		SParser &parser
 	) const {
-		return node.consumed_all();
+		try {
+			auto r = node.consumed();
+			for (auto &child : node.children()) {
+				r += _codegen(child, args, parser).value();
+			}
+			return r;
+		} catch_kerror;
 	}
 
 	util::Result<std::string, KError> TemplGen::_cg_ref(
@@ -500,7 +509,7 @@ namespace cg {
 			auto result = std::string();
 
 			for (auto &child : node.children()) {
-				auto name = child.cfg_name();
+				auto name = child.cfg_rule();
 				if (name == "padding_b" || name == "padding_e") {
 					continue;
 				} else if (name == "expression_b") {
@@ -539,10 +548,10 @@ namespace cg {
 	) const {
 		try {
 		auto result = std::string();
-		CG_ASSERT(node.cfg_name() == "sif", "INTERNAL func can only parser sif nodes");
+		CG_ASSERT(node.cfg_rule() == "sif", "INTERNAL func can only parser sif nodes");
 
 		for (auto &child : node.children()) {
-			if (child.cfg_name() == "sif_start_chain") {
+			if (child.cfg_rule() == "sif_start_chain") {
 				auto if_node = child.child_with_cfg("sfrag_if").value();
 				auto exp_node = if_node.child_with_cfg("exp").value();
 
@@ -555,7 +564,7 @@ namespace cg {
 					}
 					break;
 				}
-			} else if (child.cfg_name() == "sif_elif_chain") {
+			} else if (child.cfg_rule() == "sif_elif_chain") {
 				auto elif_node = child.child_with_cfg("sfrag_elif").value();
 				auto exp_node = elif_node.child_with_cfg("exp").value();
 
@@ -568,7 +577,7 @@ namespace cg {
 					}
 					break;
 				}
-			} else if (child.cfg_name() == "sif_else_chain") {
+			} else if (child.cfg_rule() == "sif_else_chain") {
 				//else statement could be empty
 				if (auto lines_node = child.child_with_cfg("lines")) {
 					auto scope = args;
@@ -697,10 +706,10 @@ namespace cg {
 			auto exp_str_node = node.child_with_cfg("exp_str");
 			auto filename = _unpack_str(exp_str_node->consumed()).value();
 			auto include_src = util::readEnvFile(filename);
-			auto include_node = parser.parse(include_src, "file", filename)->compressed().value();
+			auto include_node = parser.parse(include_src, "file", filename)->compressed(_ctx.prim_names());
 
 			std::ofstream file("gen/templgen-include.gv");
-			include_node.debug_dot(file);
+			include_node.print_dot(file);
 			file.close();
 
 			return _codegen(include_node, args, parser);
@@ -722,7 +731,7 @@ namespace cg {
 		AstNode const &node,
 		TemplDict const &args
 	) const {
-		auto name = node.cfg_name();
+		auto name = node.cfg_rule();
 		if (name == "exp") {
 			return _eval(node.children()[0], args);
 		} else if (name == "exp_sing") {
@@ -746,7 +755,7 @@ namespace cg {
 		} else if (name == "exp_filter") {
 			return _eval_filter(node, args);
 		} else {
-			return KError::codegen("Unimplimented AstNode type: " + node.cfg_name());
+			return KError::codegen("Unimplimented AstNode type: " + node.cfg_rule());
 		}
 	}
 
@@ -754,9 +763,9 @@ namespace cg {
 		AstNode const &node,
 		TemplDict const &args
 	) const {
-		CG_ASSERT(node.cfg_name() == "exp_sing", "");
+		CG_ASSERT(node.cfg_rule() == "exp_sing", "");
 		for (auto &child : node.children()) {
-			auto name = child.cfg_name();
+			auto name = child.cfg_rule();
 			if (name == "whitespace") {
 				continue;
 			} else if (name == "exp_id") {
@@ -768,7 +777,7 @@ namespace cg {
 			} else if (name == "exp") {
 				return _eval(child, args);
 			} else {
-				return KError::codegen("Unknown node passed to _eval_exp_sing: " + child.cfg_name());
+				return KError::codegen("Unknown node passed to _eval_exp_sing: " + child.cfg_rule());
 			}
 		}
 		return KError::codegen("exp_sing is an empty node");
@@ -790,9 +799,9 @@ namespace cg {
 		TemplDict const &args
 	) const {
 		try {
-			CG_ASSERT(node.cfg_name() == "exp_int", "exp_ing must be passed to _eval_exp_int");
+			CG_ASSERT(node.cfg_rule() == "exp_int", "exp_ing must be passed to _eval_exp_int");
 			auto value = TemplInt(0);
-			for (auto c : node.consumed_all()) {
+			for (auto c : node.consumed()) {
 				value = value * 10 + c - '0';
 			}
 			auto value_obj = TemplObj(value).set_location(node.location());
@@ -822,13 +831,13 @@ namespace cg {
 
 			auto children = util::Adapt(node.children().begin() + 1, node.children().end());
 			for (auto const &child : children) {
-				if (child.cfg_name() == "exp_member") {
+				if (child.cfg_rule() == "exp_member") {
 					l_args["self"] = res.value();
 					res = _eval_exp_member(res.value(), child, l_args);
-				} else if (child.cfg_name() == "exp_call") {
+				} else if (child.cfg_rule() == "exp_call") {
 					res = _eval_exp_call(res.value(), child, l_args);
 				} else {
-					return KError::codegen("Unrecognized cfg node: " + child.cfg_name());
+					return KError::codegen("Unrecognized cfg node: " + child.cfg_rule());
 				}
 			}
 			return res;
@@ -857,7 +866,7 @@ namespace cg {
 				call_args.push_back(args.at("self"));
 			}
 			for (auto const &child : node.children()) {
-				CG_ASSERT(child.cfg_name() == "exp", "Function call list must have exp nodes");
+				CG_ASSERT(child.cfg_rule() == "exp", "Function call list must have exp nodes");
 				call_args.push_back(_eval(child, args).value());
 			}
 			return lhs.func().value()(call_args);
@@ -869,7 +878,7 @@ namespace cg {
 		TemplDict const &args
 	) const {
 		for (auto &child : node.children()) {
-			auto name = child.cfg_name();
+			auto name = child.cfg_rule();
 			auto exp2 = child.child_with_cfg("exp2");
 
 			if (name == "whitespace") {
@@ -898,7 +907,7 @@ namespace cg {
 			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
-				auto name = child.cfg_name();
+				auto name = child.cfg_rule();
 				auto exp2 = child.child_with_cfg("exp2");
 
 				if (name == "whitespace") {
@@ -928,7 +937,7 @@ namespace cg {
 			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
-				auto name = child.cfg_name();
+				auto name = child.cfg_rule();
 				auto exp3 = child.child_with_cfg("exp3");
 
 				if (name == "whitespace") {
@@ -956,7 +965,7 @@ namespace cg {
 			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
-				auto name = child.cfg_name();
+				auto name = child.cfg_rule();
 				auto exp4 = child.child_with_cfg("exp4");
 				if (name == "whitespace") {
 					continue;
@@ -987,7 +996,7 @@ namespace cg {
 			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
-				auto name = child.cfg_name();
+				auto name = child.cfg_rule();
 				auto exp6 = child.child_with_cfg("exp6");
 				if (name == "whitespace") {
 					continue;
@@ -1014,7 +1023,7 @@ namespace cg {
 			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
-				auto name = child.cfg_name();
+				auto name = child.cfg_rule();
 				auto exp7 = child.child_with_cfg("exp7");
 				if (name == "whitespace") {
 					continue;
@@ -1039,7 +1048,7 @@ namespace cg {
 			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
-				auto name = child.cfg_name();
+				auto name = child.cfg_rule();
 				auto exp11 = child.child_with_cfg("exp11");
 
 				if (name == "whitespace") {
@@ -1062,7 +1071,7 @@ namespace cg {
 		TemplDict const &args
 	) const {
 		try {
-			CG_ASSERT(node.cfg_name() == "exp_filter_frag", "Must be an filter frag");
+			CG_ASSERT(node.cfg_rule() == "exp_filter_frag", "Must be an filter frag");
 			auto filter = _eval_exp_id(node.child_with_cfg("exp_id").value(), args);
 			auto l_args = args;
 			l_args["self"] = lhs;
@@ -1085,7 +1094,7 @@ namespace cg {
 			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
-				auto name = child.cfg_name();
+				auto name = child.cfg_rule();
 				if (name == "whitespace") {
 					continue;
 				} else if (name == "exp12") {
@@ -1104,7 +1113,7 @@ namespace cg {
 		bool def
 	) const {
 		auto const &cons = node.consumed();
-		auto const &name = node.cfg_name();
+		auto const &name = node.cfg_rule();
 		if (name == "comment_b" || name == "expression_b") {
 			if (cons.size() == 2) {
 				return def;
