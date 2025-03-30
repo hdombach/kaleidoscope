@@ -80,6 +80,9 @@ namespace util {
 				case '\\':
 					res += "\\\\";
 					break;
+				case '\n':
+					res += "\\n";
+					break;
 				default:
 					res += c;
 			}

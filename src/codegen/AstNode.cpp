@@ -1,10 +1,12 @@
 #include "AstNode.hpp"
 #include "util/Util.hpp"
+#include "util/log.hpp"
 
 namespace cg {
 	AstNode::AstNode():
 		_type(Type::None),
-		_id(0)
+		_id(0),
+		_size(0)
 	{}
 
 	AstNode AstNode::create_rule(
@@ -40,6 +42,7 @@ namespace cg {
 	}
 
 	void AstNode::add_child(AstNode const &node) {
+		log_assert(_type == Type::Rule, "Can't add a child to an AstNode which is not a rule.");
 		_children.push_back(node);
 		_size = 0; /* Cache is invalidated */
 	}
@@ -63,6 +66,18 @@ namespace cg {
 		return result;
 	}
 
+	std::string AstNode::consumed_all() const {
+		auto s = std::string();
+		if (_type == Type::Rule) {
+			for (auto &c : _children) {
+				s += c.consumed_all();
+			}
+		} else {
+			s = consumed();
+		}
+		return s;
+	}
+
 	size_t AstNode::size() const {
 		if (_size == 0) {
 			_size = _calc_size();
@@ -77,7 +92,7 @@ namespace cg {
 	void AstNode::compress(std::set<std::string> const &cfg_names) {
 		auto new_children = std::vector<AstNode>();
 		for (auto &child : _children) {
-			compress(cfg_names);
+			child.compress(cfg_names);
 			if (child.type() == Type::Rule) {
 				auto f = std::find(
 					cfg_names.begin(),
@@ -93,6 +108,8 @@ namespace cg {
 				} else {
 					new_children.push_back(child);
 				}
+			} else {
+				new_children.push_back(child);
 			}
 		}
 		_children = new_children;
@@ -131,8 +148,14 @@ namespace cg {
 		return os;
 	}
 
-	std::ostream &AstNode::print_dot(std::ostream &os) const {
+	std::ostream &AstNode::print_dot(
+		std::ostream &os,
+		std::string const &name
+	) const {
 		os << "digraph graphname {" << std::endl;
+		if (!_cfg_rule.empty()) {
+			os << "label=\"" << name << "\"\n";
+		}
 		_print_dot_attributes(os);
 		_print_dot_paths(os);
 		os << "}" << std::endl;
@@ -149,16 +172,17 @@ namespace cg {
 
 	void AstNode::_print_dot_attributes(std::ostream &os) const {
 		os << "ast_" << id() << " [label=\"";
-		if (_cfg_rule.empty()) {
-			os << "<anon>";
-		} else {
+		if (_type == Type::Rule) {
+			log_assert(!_cfg_rule.empty(), "A rule AstNode must have valid cfg name");
 			os << "<" << _cfg_rule << ">";
-		}
-		if (!consumed().empty()) {
-			os << ": ";
-			os << "\\\"" << util::escape_str(consumed()) << "\\\"";
+		} else if (_type == Type::String) {
+			log_assert(_children.empty(), "A string AstNode must have now children");
+			os << "\\\"" << util::escape_str(_consumed) << "\\\"" << std::endl;
+		} else {
+			os << "none" << std::endl;
 		}
 		os << "\"];" << std::endl;
+
 		for (auto const &child : children()) {
 			child._print_dot_attributes(os);
 		}

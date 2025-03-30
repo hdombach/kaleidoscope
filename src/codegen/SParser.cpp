@@ -80,14 +80,17 @@ namespace cg {
 		CfgRule const &rule
 	) {
 		log_trace() << "Parsing rule: " << rule << std::endl;
-		try {
-			auto node = AstNode::create_rule(++_uid, s.rule, s.str.location());
-			uint32_t i = 0;
-			for (auto &leaf : rule.leaves()) {
-				node.add_child(_parse(s.child(node.size()), leaf).value());
+
+		auto node = AstNode::create_rule(++_uid, s.rule, s.str.location());
+		uint32_t i = 0;
+		for (auto &leaf : rule.leaves()) {
+			if (auto child = _parse(s.child(node.size()), leaf)) {
+				node.add_child(child.value());
+			} else {
+				return _set_failure(child.error());
 			}
-			return node;
-		} catch_kerror;
+		}
+		return node;
 	}
 
 	util::Result<AstNode, KError> SParser::_parse(
@@ -109,9 +112,11 @@ namespace cg {
 
 		auto parsed = leaf.match(s.str.str());
 		if (parsed) {
-			log_trace() << "leaf matched: " << leaf << std::endl;
 			auto begin = s.str.str();
 			auto end = s.str.str() + parsed.value();
+			log_trace()
+				<< "leaf " << leaf
+				<< " matched: \"" << util::escape_str({begin, end}) << "\"" << std::endl;
 			return AstNode::create_str(++_uid, {begin, end}, s.str.location());
 		} else {
 			log_trace() << "leaf " << leaf << " didn't match: " << "\"" << util::get_str_line(s.str.str()) << "\"" << std::endl;

@@ -12,8 +12,8 @@ namespace util {
 	 * @brief A location in either source file or code generated file
 	 */
 	struct FileLocation {
-		std::uint32_t line;
-		std::uint32_t column;
+		std::uint32_t line=0;
+		std::uint32_t column=0;
 		std::string file_name;
 
 		FileLocation() = default;

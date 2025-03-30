@@ -29,14 +29,15 @@ namespace cg {
 					}
 				}
 				return _content.size();
-			case Type::set: {
+			case Type::set:
+				if (str[0] == '\0') return {};
 				if ((std::find(_content.begin(), _content.end(), str[0]) != _content.end()) == _include) {
 					return 1;
 				} else {
 					return {};
 				}
-			}
 			default:
+				log_fatal_error() << "Unknown match in CfgLeaf" << std::endl;
 				return {};
 		}
 	}
@@ -53,7 +54,7 @@ namespace cg {
 				if (!_include) {
 					os << "!";
 				}
-				os << "[" << _content << "]";
+				os << "[" << util::escape_str(_content) << "]";
 				break;
 			case Type::none:
 				os << "<unknown>";

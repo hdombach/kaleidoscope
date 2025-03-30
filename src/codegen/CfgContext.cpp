@@ -26,7 +26,7 @@ namespace cg {
 	}
 	CfgRuleSet &CfgContextTemp::temp(std::string const &name) {
 		if (!_cfg_map.contains(name)) {
-			_cfg_map[name] = CfgRuleSet(name);
+			_cfg_map.emplace(name, name);
 		}
 		return _cfg_map[name];
 	}

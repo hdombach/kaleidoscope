@@ -10,7 +10,10 @@
 namespace cg {
 	/**
 	 * @brief Abstract syntax tree
-	 * The type is specified by the cfg;
+	 *
+	 * Can either correspond to a rule or a string literal.
+	 * A rule will contain children corresponding to the CFG leaf nodes.
+	 * A string literal contains the string that is consumed.
 	 */
 
 	class AstNode {
@@ -60,6 +63,7 @@ namespace cg {
 			std::string const &cfg_rule() const { return _cfg_rule; }
 
 			std::string const &consumed() const { return _consumed; }
+			std::string consumed_all() const;
 
 			/**
 			 * @brief Number of characters by this node and any children node
@@ -87,7 +91,7 @@ namespace cg {
 			AstNode trimmed() const;
 
 			std::ostream &print_pre_order(std::ostream &os) const;
-			std::ostream &print_dot(std::ostream &os) const;
+			std::ostream &print_dot(std::ostream &os, std::string const &name) const;
 
 			std::string str_pre_order() const;
 

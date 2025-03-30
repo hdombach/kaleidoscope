@@ -3,6 +3,12 @@
 #include "TemplObj.hpp"
 
 namespace cg {
+	#define EXPECT_CG(expect_src)\
+		EXPECT_EQ(\
+			gen->codegen(src, args, _test.suite_name + "-" + _test.test_name).value(),\
+			expect_src\
+		);
+
 	TEST(templ_gen, expressions) {
 		auto gen = TemplGen::create();
 		EXPECT(gen);
@@ -15,8 +21,7 @@ namespace cg {
 			{"name", "Hezekiah Dombach"}
 		};
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Hello everyone\n"
 			"My name is Hezekiah Dombach!\n"
 		);
@@ -41,8 +46,7 @@ namespace cg {
 			}
 		};
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Shopping list\n"
 			"- apple\n"
 			"- pears\n"
@@ -64,16 +68,14 @@ namespace cg {
 			{"add_bar", true}
 		};
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"foo\n"
 			"bar\n"
 		);
 
 		args["add_bar"] = false;
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"foo\n"
 		);
 	}
@@ -95,16 +97,14 @@ namespace cg {
 			{"value", true}
 		};
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"reee\n"
 			"yes\n"
 		);
 
 		args["value"] = false;
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"reee\n"
 			"no\n"
 		);
@@ -125,8 +125,7 @@ namespace cg {
 			{"add_bar", true}
 		};
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"foo\n"
 			"bar\n"
 		);
@@ -148,8 +147,7 @@ namespace cg {
 			{"add_bar", true}
 		};
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"foo\n"
 			"bar\n"
 		);
@@ -178,29 +176,25 @@ namespace cg {
 			{"has_maybe", true},
 		};
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Do robots dream of eletric sheep?\n"
 			"Most indefinitely.\n"
 		);
 
 		args["has_yes"] = false;
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Do robots dream of eletric sheep?\n"
 			"Of course not.\n"
 		);
 
 		args["has_no"] = false;
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Do robots dream of eletric sheep?\n"
 			"Maybe its the electric sheep dreaming.\n"
 		);
 
 		args["has_maybe"] = false;
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Do robots dream of eletric sheep?\n"
 			"I need sleep.\n"
 		);
@@ -223,8 +217,7 @@ namespace cg {
 			}
 		};
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Hello I am John Doe and I am 26 years old."
 		);
 	}
@@ -239,8 +232,7 @@ namespace cg {
 			{"get_name", [](TemplList args) { return TemplObj("Jared"); }}
 		};
 
-		EXPECT_EQ(
-			gen->codegen(src, args.dict().value()).value(),
+		EXPECT_CG(
 			"Hello Jared\n"
 		);
 	}
@@ -278,15 +270,13 @@ namespace cg {
 		auto src =
 			"The current second is {{date.time.seconds}}s";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"The current second is 57s"
 		);
 
 		src = "The minute is {{get_date().time.get_self().time.minutes}}m";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"The minute is 13m"
 		);
 	}
@@ -307,8 +297,7 @@ namespace cg {
 
 		auto src = "User id is {{combine_str(name, id)}}";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"User id is Bob59"
 		);
 
@@ -341,15 +330,15 @@ namespace cg {
 		auto gen = TemplGen::create();
 		EXPECT(gen);
 
+		auto args = TemplDict();
+
 		auto src = "The number is {{5}}!";
-		EXPECT_EQ(
-			gen->codegen(src, TemplDict()).value(),
+		EXPECT_CG(
 			"The number is 5!"
 		);
 
 		src = "Another number is {{ 49102 }}!";
-		EXPECT_EQ(
-			gen->codegen(src, TemplDict()).value(),
+		EXPECT_CG(
 			"Another number is 49102!"
 		);
 	}
@@ -365,39 +354,33 @@ namespace cg {
 		}.dict().value();
 
 		auto src = "Hello {{+value}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Hello 59"
 		);
 
 		src = "Hello2 {{ -value }}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Hello2 -59"
 		);
 
 		src = "zero: {{ -zero }}, raw: {{583}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"zero: 0, raw: 583"
 		);
 
 		// I don't fully know what + does.
 		src = "pos_value: {{ +neg_value }}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"pos_value: -84"
 		);
 
 		src = "bool_value: {{ false }}, {{ true }}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"bool_value: <false>, <true>"
 		);
 
 		src = "bool_value2: {{ !false }}, {{ !true }}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"bool_value2: <true>, <false>"
 		);
 	}
@@ -412,44 +395,37 @@ namespace cg {
 		}.dict().value();
 
 		auto src = "4*2 is {{4*2}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"4*2 is 8"
 		);
 
 		src = "-3*9 is {{ - 3 * 9 }}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"-3*9 is -27"
 		);
 
 		src = "5 * -10 is {{ pos_value * neg_value }}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"5 * -10 is -50"
 		);
 
 		src = "5 * 10 is {{ pos_value * -neg_value }}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"5 * 10 is 50"
 		);
 
 		src = "200 / 10 is {{ 200/-neg_value }}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"200 / 10 is 20"
 		);
 
 		src = "7 % 3 is {{7%3}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"7 % 3 is 1"
 		);
 
 		src = "5*10/2 is {{5*-neg_value/2}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"5*10/2 is 25"
 		);
 	}
@@ -464,20 +440,17 @@ namespace cg {
 		}.dict().value();
 
 		auto src = "3+12 is {{3+12}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"3+12 is 15"
 		);
 
 		src = "2-5 is {{2-pos_value}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"2-5 is -3"
 		);
 
 		src = "-12 + 2*10 is {{ -12 + 2*10}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"-12 + 2*10 is 8"
 		);
 	}
@@ -493,76 +466,64 @@ namespace cg {
 
 		/* greater than */
 		auto src = "4 > -8 is {{4 > neg_value}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"4 > -8 is <true>"
 		);
 
 		src = "4 > -8 + 12 is {{4 > neg_value + 12}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"4 > -8 + 12 is <false>"
 		);
 
 		src = "4 > 6 is {{4 > pos_value}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"4 > 6 is <false>"
 		);
 
 		/* Greater than or equal */
 		src = "4 >= -8 is {{4 >= neg_value}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"4 >= -8 is <true>"
 		);
 
 		src = "4 >= -8 + 12 is {{4 >= neg_value + 12}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"4 >= -8 + 12 is <true>"
 		);
 
 		src = "4 >= 6 is {{4 >= pos_value}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"4 >= 6 is <false>"
 		);
 
 		/* less than */
 		src = "4 < -8 is {{4 < neg_value}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"4 < -8 is <false>"
 		);
 
 		src = "4 < -8 + 12 is {{4 < neg_value + 12}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"4 < -8 + 12 is <false>"
 		);
 
 		src = "4 < 6 is {{4 < pos_value}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"4 < 6 is <true>"
 		);
 
 		src = "4 <= -8 is {{4 <= neg_value}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"4 <= -8 is <false>"
 		);
 
 		src = "4 <= -8 + 12 is {{4 <= neg_value + 12}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"4 <= -8 + 12 is <true>"
 		);
 
 		src = "4 <= 6 is {{4 <= pos_value}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"4 <= 6 is <true>"
 		);
 	}
@@ -577,38 +538,32 @@ namespace cg {
 		}.dict().value();
 
 		auto src = "6 == 6 is {{6 == pos_value}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"6 == 6 is <true>"
 		);
 
 		src = "-8 == 6 is {{neg_value == pos_value}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"-8 == 6 is <false>"
 		);
 		
 		src = "6 == 8 - 2 is {{pos_value == -neg_value-2}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"6 == 8 - 2 is <true>"
 		);
 
 		src = "6 == 8 - 2 is {{pos_value == -neg_value-2}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"6 == 8 - 2 is <true>"
 		);
 
 		src = "6 != 4 is {{pos_value != 4}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"6 != 4 is <true>"
 		);
 
 		src = "6 != -2 + 8 is {{pos_value != -2 - neg_value}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"6 != -2 + 8 is <false>"
 		);
 	}
@@ -623,26 +578,22 @@ namespace cg {
 		}.dict().value();
 
 		auto src = "true && true is {{true && true}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"true && true is <true>"
 		);
 
 		src = "true && false is {{true && false}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"true && false is <false>"
 		);
 
 		src = "6 > 0 && -8 + 9 == 1 is {{pos_value > 0 && neg_value+9 == 1}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"6 > 0 && -8 + 9 == 1 is <true>"
 		);
 
 		src = "6 > 0 && -8 + 9 != 1 is {{pos_value > 0 && neg_value+9 != 1}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"6 > 0 && -8 + 9 != 1 is <false>"
 		);
 	}
@@ -657,26 +608,22 @@ namespace cg {
 		}.dict().value();
 
 		auto src = "true || false is {{true || false}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"true || false is <true>"
 		);
 
 		src = "false || false is {{false || false}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"false || false is <false>"
 		);
 
 		src = "6 == 0 || true && -8 + 9 == 1 is {{pos_value == 0 || true && neg_value + 9 == 1}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"6 == 0 || true && -8 + 9 == 1 is <true>"
 		);
 
 		src = "6 == 0 || true && -8 + 9 == 1 is {{pos_value == 0 || false && neg_value + 9 == 1}}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"6 == 0 || true && -8 + 9 == 1 is <false>"
 		);
 	}
@@ -689,17 +636,12 @@ namespace cg {
 			{"first_name", "John"}
 		}.dict().value();
 
-		auto src = "The expression literal is {{ \"{{\" }}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		const char *src;
+
+
+		src = "The expression literal is {{ \"{{\" }}";
+		EXPECT_CG(
 			"The expression literal is {{"
-		);
-
-
-		src = "My name is {{ first_name + \" Doe\" }}";
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
-			"My name is John Doe"
 		);
 	}
 
@@ -719,8 +661,7 @@ namespace cg {
 			{"list", {5, 3, 91, "Totally an int", 2, -29}}
 		}.dict().value();
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"List length: 6\n"
 			"Is list empty: <false>\n"
 			"List elements:\n"
@@ -736,8 +677,7 @@ namespace cg {
 			{"list", {"George", "Sally", "Neo", "Peter"}},
 		}.dict().value();
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"List length: 4\n"
 			"Is list empty: <false>\n"
 			"List elements:\n"
@@ -751,8 +691,7 @@ namespace cg {
 			{"list", TemplList()}
 		}.dict().value();
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"List length: 0\n"
 			"Is list empty: <true>\n"
 			"List elements:\n"
@@ -774,8 +713,7 @@ namespace cg {
 			"upper: {{str.upper()}}\n"
 			"lower: {{str.lower()}}\n";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"string: Hello World\n"
 			"size: 11\n"
 			"empty: <false>\n"
@@ -796,16 +734,14 @@ namespace cg {
 		auto src = 
 			"value is {{(foo+4)*bar}}";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"value is 90"
 		);
 
 		src =
 			"value is {{foo+ ( 4*bar ) }}";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"value is 45"
 		);
 	}
@@ -833,16 +769,14 @@ namespace cg {
 		auto src =
 			"Hello in reverse is {{hello|str_reverse}}";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Hello in reverse is olleh"
 		);
 
 		src =
 			"Hello with prepend is {{hello|str_prepend(\"hi \")}}";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Hello with prepend is hi hello"
 		);
 	}
@@ -889,8 +823,7 @@ namespace cg {
 			"A haiku:\n"
 			"{{quote|indent_str}}";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"A haiku:\n"
 			"\tA single raindrop,\n"
 			"\tMixed with brine and oily smoke,\n"
@@ -902,8 +835,7 @@ namespace cg {
 			"A haiku:\n"
 			"{{quote|indent_str(2)}}";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"A haiku:\n"
 			"\t\tA single raindrop,\n"
 			"\t\tMixed with brine and oily smoke,\n"
@@ -915,8 +847,7 @@ namespace cg {
 			"A haiku:\n"
 			"{{quote|indent_str(\"--\")}}";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"A haiku:\n"
 			"--A single raindrop,\n"
 			"--Mixed with brine and oily smoke,\n"
@@ -928,8 +859,7 @@ namespace cg {
 			"A haiku:\n"
 			"{{indent_str(quote, \"> \")}}";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"A haiku:\n"
 			"> A single raindrop,\n"
 			"> Mixed with brine and oily smoke,\n"
@@ -949,16 +879,14 @@ namespace cg {
 		auto src =
 			"abs of value is {{value|abs}}";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"abs of value is 42"
 		);
 
 		src =
 			"abs of expression is {{-10-2|abs}}";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"abs of expression is 8"
 		);
 	}
@@ -975,8 +903,7 @@ namespace cg {
 		auto src =
 			"My name is {{first_name|capitilize}} {{last_name|capitilize}}";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"My name is Hezekiah Dombach"
 		);
 	}
@@ -993,8 +920,7 @@ namespace cg {
 			"Title format is:\n"
 			"{{title_str|center}}";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Title format is:\n"
 			"                                     title"
 		);
@@ -1003,8 +929,7 @@ namespace cg {
 			"Title format is:\n"
 			"{{title_str|center(12)}}";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Title format is:\n"
 			"   title"
 		);
@@ -1013,8 +938,7 @@ namespace cg {
 			"Title format is:\n"
 			"{{title_str|capitilize|center(12)}}";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Title format is:\n"
 			"   Title"
 		);
@@ -1031,8 +955,7 @@ namespace cg {
 		auto src =
 			"First element of list is {{my_list|first}}";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"First element of list is apple"
 		);
 
@@ -1062,8 +985,7 @@ namespace cg {
 			"    {{quote|indent}}"
 			"</quote>\n";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"<quote>\n"
 			"    The day has sunk\n"
 			"    Into the depths of time untold.\n"
@@ -1078,8 +1000,7 @@ namespace cg {
 			"   {{quote|indent(3)}}"
 			"</quote>\n";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"<quote>\n"
 			"   The day has sunk\n"
 			"   Into the depths of time untold.\n"
@@ -1094,8 +1015,7 @@ namespace cg {
 			"> {{quote|indent(\"> \")}}"
 			"</quote>\n";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"<quote>\n"
 			"> The day has sunk\n"
 			"> Into the depths of time untold.\n"
@@ -1110,8 +1030,7 @@ namespace cg {
 			"> {{quote|indent(\"> \", false)}}"
 			"</quote>\n";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"<quote>\n"
 			"> The day has sunk\n"
 			"> Into the depths of time untold.\n"
@@ -1126,8 +1045,7 @@ namespace cg {
 			"{{quote|indent(\"> \", true)}}"
 			"</quote>\n";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"<quote>\n"
 			"> The day has sunk\n"
 			"> Into the depths of time untold.\n"
@@ -1142,8 +1060,7 @@ namespace cg {
 			"{{quote|indent(\"> \", true, true)}}"
 			"</quote>\n";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"<quote>\n"
 			"> The day has sunk\n"
 			"> Into the depths of time untold.\n"
@@ -1167,8 +1084,7 @@ namespace cg {
 			"{{hello()}}\n"
 			"{{hello()}}\n";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Hello World\n"
 			"Hello World\n"
 		);
@@ -1188,8 +1104,7 @@ namespace cg {
 			"{{hello(\"Alex\", 423)}}"
 			"";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Hello Alex.\n"
 			"Your user id is 423.\n"
 		);
@@ -1229,8 +1144,7 @@ namespace cg {
 			"{{hello(\"Alex\", 142)}}"
 			"";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Hello Alex.\n"
 			"Your user id is 142.\n"
 			"Your role is Unknown.\n"
@@ -1245,8 +1159,7 @@ namespace cg {
 			"{{hello(\"Alex\", 142, \"Admin\")}}"
 			"";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Hello Alex.\n"
 			"Your user id is 142.\n"
 			"Your role is Admin.\n"
@@ -1286,8 +1199,7 @@ namespace cg {
 			"{\% endfor %}\n"
 			"";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Here be the list.\n"
 			"----\n"
 			"element: 152\n"
@@ -1326,8 +1238,7 @@ namespace cg {
 			"{{say_hello()}}\n"
 			"{{wrap(\"reee\")}}\n";
 
-		EXPECT_EQ(
-			gen->codegen(src, args).value(),
+		EXPECT_CG(
 			"Common Header\n"
 			"\n"
 			"\n"
