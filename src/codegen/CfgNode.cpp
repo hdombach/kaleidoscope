@@ -84,10 +84,22 @@ namespace cg {
 	}
 
 	std::ostream& CfgRule::print_debug(std::ostream &os) const {
+		bool is_first = true;
 		for (auto &leaf : _leaves) {
-			os << leaf << " ";
+			if (is_first) {
+				is_first = false;
+			} else {
+				os << " ";
+			}
+			os << leaf;
 		}
 		return os;
+	}
+
+	std::string CfgRule::str() const {
+		auto ss = std::stringstream();
+		print_debug(ss);
+		return ss.str();
 	}
 
 	CfgRuleSet::CfgRuleSet(std::string const &name): _name(name) { }
@@ -118,16 +130,22 @@ namespace cg {
 	}
 
 	std::ostream& CfgRuleSet::print_debug(std::ostream &os) const {
-		bool is_first;
+		bool is_first = true;
 		for (auto &rule : _rules) {
 			if (is_first) {
 				is_first = false;
 			} else {
-				os << "| ";
+				os << " | ";
 			}
 			os << rule;
 		}
 		return os;
+	}
+
+	std::string CfgRuleSet::str() const {
+		auto ss = std::stringstream();
+		print_debug(ss);
+		return ss.str();
 	}
 
 	const char *CfgNode::type_str(Type const &t) {

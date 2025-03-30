@@ -67,6 +67,7 @@ namespace cg {
 			std::vector<CfgLeaf> const &leaves() const { return _leaves; }
 
 			std::ostream& print_debug(std::ostream &os) const;
+			std::string str() const;
 		private:
 			std::vector<CfgLeaf> _leaves;
 	};
@@ -92,6 +93,7 @@ namespace cg {
 			std::vector<CfgRule> const &rules() const { return _rules; }
 
 			std::ostream& print_debug(std::ostream &os) const;
+			std::string str() const;
 		private:
 			std::string _name;
 			std::vector<CfgRule> _rules;
