@@ -4,7 +4,7 @@
 
 namespace cg {
 	TEST(cfg_node, literal) {
-		CfgContextTemp c;
+		CfgContext c;
 
 		c.prim("literal") = c.s("simple_cfg");
 		c.prim("literal2") = c.s("another_simpl_cfg");
@@ -16,7 +16,7 @@ namespace cg {
 	}
 
 	TEST(cfg_node, ref) {
-		auto c = CfgContextTemp();
+		auto c = CfgContext();
 
 		c.prim("first_ref") = c.s("first");
 		c.prim("second_ref") = c.s("second");
@@ -28,7 +28,7 @@ namespace cg {
 	}
 
 	TEST(cfg_node, concat_str) {
-		auto c = CfgContextTemp();
+		auto c = CfgContext();
 
 		c.prim("first") = c.s("f") + c.s("ir") + c.s("st");
 		c.prim("second") = c.s("second");
@@ -41,7 +41,7 @@ namespace cg {
 	}
 
 	TEST(cfg_node, concat) {
-		auto c = CfgContextTemp();
+		auto c = CfgContext();
 
 		c.prim("first_ref") = c.s("first");
 		c.prim("second_ref") = c.s("second");
@@ -61,7 +61,7 @@ namespace cg {
 	}
 
 	TEST(cfg_node, alt) {
-		auto c = CfgContextTemp();
+		auto c = CfgContext();
 
 		c.prim("first_ref") = c.s("first");
 		c.prim("second_ref") = c.s("second");
@@ -81,7 +81,7 @@ namespace cg {
 	}
 
 	TEST(cfg_node, alt_concat) {
-		auto c = CfgContextTemp();
+		auto c = CfgContext();
 
 		c.prim("first_ref") = c.s("first");
 		c.prim("second_ref") = c.s("second");

@@ -13,7 +13,6 @@ namespace cg {
 	 */
 	class SParser {
 		public:
-			using Type = CfgNode::Type;
 			struct Stack {
 				util::StringRef str;
 				std::string rule;
@@ -34,12 +33,12 @@ namespace cg {
 				}
 			};
 		public:
-			SParser(CfgContextTemp const &ctx);
+			SParser(CfgContext const &ctx);
 
 			/**
-			 * @brief Matches a string against a CfgNode specified by name
+			 * @brief Matches a string against a CfgRuleSet specified by name
 			 * @param[in] str String to match against
-			 * @param[in] root_node Name of CfgNode to match against
+			 * @param[in] root_node Name of CfgRuleSet to match against
 			 * @returns Number of characters consumed
 			 */
 			util::Result<size_t, KError> match(
@@ -50,7 +49,7 @@ namespace cg {
 			/**
 			 * @brief Generates abstract syntax tree
 			 * @param[in] str String to generate from
-			 * @param[in] root_node Name of CfgNode to generate with
+			 * @param[in] root_node Name of CfgRuleSet to generate with
 			 * @returns Generated abstract syntax tree
 			 */
 			util::Result<AstNode, KError> parse(
@@ -64,7 +63,7 @@ namespace cg {
 			 * @brief uid for constructing AstNodes
 			 */
 			uint32_t _uid;
-			CfgContextTemp const &_ctx;
+			CfgContext const &_ctx;
 			/**
 			 * @brief Most recent failure (even if it isn't officially error yet)
 			 */

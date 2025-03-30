@@ -30,7 +30,7 @@ namespace cg {
 				std::string const &filename = "codegen"
 			) const;
 		private:
-			CfgContextTemp _ctx;
+			CfgContext _ctx;
 
 		private:
 			using CodegenRes = util::Result<std::string, KError>;

@@ -8,7 +8,7 @@
 
 namespace cg {
 	TEST(ast_node, match_literals) {
-		auto c = CfgContextTemp();
+		auto c = CfgContext();
 		auto parser = SParser(c);
 
 		c.prim("hello") = c.s("Hello");
@@ -20,7 +20,7 @@ namespace cg {
 	}
 
 	TEST(ast_node, match_number) {
-		auto c = CfgContextTemp();
+		auto c = CfgContext();
 		auto parser = SParser(c);
 
 		c.prim("digit") = c.i("0123456789");
@@ -49,7 +49,7 @@ namespace cg {
 	}
 
 	TEST(ast_node, match_math) {
-		auto c = CfgContextTemp();
+		auto c = CfgContext();
 		auto parser = SParser(c);
 
 		c.prim("digit") =

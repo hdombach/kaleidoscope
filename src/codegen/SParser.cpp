@@ -9,7 +9,7 @@
 #include "AstNode.hpp"
 
 namespace cg {
-	SParser::SParser(CfgContextTemp const &ctx):
+	SParser::SParser(CfgContext const &ctx):
 		_uid(0),
 		_ctx(ctx)
 	{}
