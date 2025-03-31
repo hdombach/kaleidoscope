@@ -55,6 +55,7 @@ namespace cg {
 			 */
 			util::Result<uint32_t, void> match(std::string const &str) const;
 
+			std::string const &str_content() const { return _content; }
 			std::string const &var_name() const { return _content; }
 
 			std::ostream& print_debug(std::ostream &os) const;
@@ -77,6 +78,11 @@ namespace cg {
 			CfgRule(CfgRule const &lhs, CfgRule const &rhs);
 
 			std::vector<CfgLeaf> const &leaves() const { return _leaves; }
+
+			/**
+			 * @brief Seperates leaves to not use string constants
+			 */
+			void seperate_leaves();
 
 			std::ostream& print_debug(std::ostream &os) const;
 			std::string str() const;
@@ -102,6 +108,7 @@ namespace cg {
 
 			void set_name(std::string const &name) { _name = name; }
 			std::string const &name() const { return _name; }
+			std::vector<CfgRule> &rules() { return _rules; }
 			std::vector<CfgRule> const &rules() const { return _rules; }
 
 			std::ostream& print_debug(std::ostream &os) const;

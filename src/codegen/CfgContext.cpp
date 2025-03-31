@@ -79,6 +79,12 @@ namespace cg {
 	util::Result<void, KError> CfgContext::prep() {
 		for (auto &[key, set] : _cfg_map) {
 			for (auto &rule : set.rules()) {
+				rule.seperate_leaves();
+			}
+		}
+
+		for (auto &[key, set] : _cfg_map) {
+			for (auto &rule : set.rules()) {
 				for (auto &leaf : rule.leaves()) {
 					if (leaf.type() == CfgLeaf::Type::var) {
 						if (!_cfg_map.contains(leaf.var_name())) {

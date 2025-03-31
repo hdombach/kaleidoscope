@@ -65,7 +65,9 @@ namespace cg {
 			std::set<std::string> const &prim_names() const { return _prim_names; }
 
 			/**
-			 * @brief Does some validation to make sure the context free grammar is correct
+			 * @brief Validate and misc processing
+			 * - Make sure variables are valid
+			 * - Seperate all string leaf nodes
 			 */
 			util::Result<void, KError> prep();
 		private:

@@ -83,6 +83,19 @@ namespace cg {
 		}
 	}
 
+	void CfgRule::seperate_leaves() {
+		auto new_leaves = std::vector<CfgLeaf>();
+		for (auto &leaf : _leaves) {
+			if (leaf.type() == CfgLeaf::Type::str) {
+				for (auto c : leaf.str_content()) {
+					new_leaves.push_back(CfgLeaf::include({c}));
+				}
+			} else {
+				new_leaves.push_back(leaf);
+			}
+		}
+	}
+
 	std::ostream& CfgRule::print_debug(std::ostream &os) const {
 		bool is_first = true;
 		for (auto &leaf : _leaves) {
