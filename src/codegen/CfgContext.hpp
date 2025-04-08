@@ -57,6 +57,8 @@ namespace cg {
 			 */
 			CfgRuleSet const *get(std::string const &name) const;
 
+			std::vector<CfgRuleSet> const &cfg_rule_sets() const;
+
 			void debug_set(CfgRuleSet const &set, std::ostream &os) const;
 			void debug_set(std::string const &set, std::ostream &os) const;
 			std::string set_str(CfgRuleSet const &set) const;
@@ -71,7 +73,8 @@ namespace cg {
 			 */
 			util::Result<void, KError> prep();
 		private:
-			std::map<std::string, CfgRuleSet> _cfg_map;
+			std::vector<CfgRuleSet> _cfg_rule_sets;
+			std::map<std::string, uint32_t> _cfg_map;
 			std::set<std::string> _prim_names;
 	};
 }

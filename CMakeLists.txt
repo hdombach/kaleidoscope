@@ -78,7 +78,7 @@ target_include_directories(kaleidoscope PRIVATE ${INCLUDE_DIRS})
 target_link_libraries(kaleidoscope PUBLIC ${Vulkan_LIBRARIES})
 target_link_libraries(kaleidoscope PUBLIC glfw)
 target_link_libraries(kaleidoscope PUBLIC vulkan-headers::vulkan-headers)
-target_link_libraries(kaleidoscope PUBLIC types ui util vulkan cg)
+target_link_libraries(kaleidoscope PUBLIC types ui util vulkan cg tests)
 
 message("Build type is ${CMAKE_BUILD_TYPE}")
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "debug")

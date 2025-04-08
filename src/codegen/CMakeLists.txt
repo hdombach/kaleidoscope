@@ -5,6 +5,7 @@ set(CG_SRC
 	${CMAKE_CURRENT_SOURCE_DIR}/SParser.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/TemplGen.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/TemplObj.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/AbsoluteSolver.cpp
 )
 
 set(CG_TEST
@@ -15,7 +16,7 @@ set(CG_TEST
 
 add_library(cg OBJECT ${CG_SRC})
 
-target_link_libraries(cg PUBLIC glm::glm util)
+target_link_libraries(cg PUBLIC glm::glm util tests)
 
 add_executable(cfg_tests ${CMAKE_SOURCE_DIR}/src/tests/main.cpp ${CG_TEST})
 

@@ -20,23 +20,29 @@ namespace cg {
 	CfgRuleSet &CfgContext::prim(std::string const &name) {
 		_prim_names.insert(name);
 		if (!_cfg_map.contains(name)) {
-			_cfg_map.emplace(name, name);
+			_cfg_rule_sets.push_back(CfgRuleSet(name));
+			_cfg_map.emplace(name, _cfg_rule_sets.size() - 1);
 		}
-		return _cfg_map[name];
+		return _cfg_rule_sets[_cfg_map[name]];
 	}
 	CfgRuleSet &CfgContext::temp(std::string const &name) {
 		if (!_cfg_map.contains(name)) {
-			_cfg_map.emplace(name, name);
+			_cfg_rule_sets.push_back(CfgRuleSet(name));
+			_cfg_map.emplace(name, _cfg_rule_sets.size() - 1);
 		}
-		return _cfg_map[name];
+		return _cfg_rule_sets[_cfg_map[name]];
 	}
 
 	CfgRuleSet const *CfgContext::get(std::string const &name) const {
 		if (_cfg_map.contains(name)) {
-			return &_cfg_map.at(name);
+			return &_cfg_rule_sets[_cfg_map.at(name)];
 		} else {
 			return nullptr;
 		}
+	}
+
+	std::vector<CfgRuleSet> const &CfgContext::cfg_rule_sets() const {
+		return _cfg_rule_sets;
 	}
 
 	void CfgContext::debug_set(
@@ -77,13 +83,15 @@ namespace cg {
 	}
 
 	util::Result<void, KError> CfgContext::prep() {
-		for (auto &[key, set] : _cfg_map) {
+		for (auto &[key, i] : _cfg_map) {
+			auto &set = _cfg_rule_sets[i];
 			for (auto &rule : set.rules()) {
 				rule.seperate_leaves();
 			}
 		}
 
-		for (auto &[key, set] : _cfg_map) {
+		for (auto &[key, i] : _cfg_map) {
+			auto &set = _cfg_rule_sets[i];
 			for (auto &rule : set.rules()) {
 				for (auto &leaf : rule.leaves()) {
 					if (leaf.type() == CfgLeaf::Type::var) {
