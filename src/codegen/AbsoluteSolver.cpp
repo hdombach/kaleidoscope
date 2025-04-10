@@ -59,7 +59,7 @@ namespace cg {
 		log_debug() << "Creating AbsoluteSolver" << std::endl;
 		auto initial = r._get_var(root);
 		for (auto &pos : initial) {
-			log_debug() << "Starting with rule: " << r._get(pos) << std::endl;
+			log_debug() << "Starting with rule: " << r._get_leaf(pos) << std::endl;
 		}
 
 		log_debug() << "Drilling down" << std::endl;
@@ -69,10 +69,10 @@ namespace cg {
 		r._drill(initial, terminals, nonterminals);
 
 		for (auto &t : nonterminals) {
-			log_debug() << "Got nonterminal: " << r._get(t) << std::endl;
+			log_debug() << "Got nonterminal: " << r._debug(t) << std::endl;
 		}
-		for (auto &term : terminals) {
-			log_debug() << "Got terminal: " << r._get(term) << std::endl;
+		for (auto &t : terminals) {
+			log_debug() << "Got terminal: " << r._debug(t) << std::endl;
 		}
 
 		return r;
@@ -114,8 +114,14 @@ namespace cg {
 		return r;
 	}
 
-	CfgLeaf const &AbsoluteSolver::_get(RulePos const &pos) {
-		return _ctx->cfg_rule_sets()[pos.set].rules()[pos.rule].leaves()[pos.offset];
+	CfgRuleSet const &AbsoluteSolver::_get_set(RulePos const &pos) const {
+		return _ctx->cfg_rule_sets()[pos.set];
+	}
+	CfgRule const &AbsoluteSolver::_get_rule(RulePos const &pos) const {
+		return _get_set(pos).rules()[pos.rule];
+	}
+	CfgLeaf const &AbsoluteSolver::_get_leaf(RulePos const &pos) const {
+		return _get_rule(pos).leaves()[pos.offset];
 	}
 
 	std::set<RulePos> AbsoluteSolver::_get_var(std::string const &str) {
@@ -134,6 +140,26 @@ namespace cg {
 		return {};
 	}
 
+	std::string AbsoluteSolver::_debug(RulePos const &pos) const {
+		auto ss = std::stringstream();
+
+		auto set = _get_set(pos);
+		auto rule = _get_rule(pos);
+
+		ss << set.name() << " -> ";
+		for (int i = 0; i < rule.leaves().size(); i++) {
+			if (pos.offset == i) {
+				ss << ". ";
+			}
+			ss << rule.leaves()[i] << " ";
+		}
+		if (pos.offset == rule.leaves().size()) {
+			ss << " .";
+		}
+
+		return ss.str();
+	}
+
 	void AbsoluteSolver::_drill(
 		std::set<RulePos> const &start,
 		std::set<RulePos> &terminals,
@@ -141,7 +167,7 @@ namespace cg {
 		bool is_root
 	) {
 		for (auto &rule : start) {
-			auto &leaf = _get(rule);
+			auto &leaf = _get_leaf(rule);
 			if (leaf.type() == CfgLeaf::Type::var) {
 				if (!is_root) {
 					nonterminals.insert(rule);

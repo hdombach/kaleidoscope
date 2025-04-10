@@ -57,8 +57,12 @@ namespace cg {
 			 */
 			uint32_t _add_state(StateRule const &state_rule);
 
-			CfgLeaf const &_get(RulePos const &pos);
+			CfgRuleSet const &_get_set(RulePos const &pos) const;
+			CfgRule const &_get_rule(RulePos const &pos) const;
+			CfgLeaf const &_get_leaf(RulePos const &pos) const;
 			std::set<RulePos> _get_var(std::string const &str);
+
+			std::string _debug(RulePos const &pos) const;
 
 			/**
 			 * @brief Finds the deepest rulest at each position
