@@ -3,6 +3,7 @@
 #include "codegen/CfgContext.hpp"
 #include "util/IterAdapter.hpp"
 #include <vector>
+#include <set>
 
 namespace cg {
 	struct RulePos {
@@ -34,9 +35,16 @@ namespace cg {
 				std::string const &root
 			);
 
-		private:
+		public:
 			using State = util::IterAdapter<uint32_t*>;
-			using StateRule = std::vector<RulePos>;
+			using StateRule = std::set<RulePos>;
+
+			struct RuleGroup {
+				CfgLeaf leaf;
+				StateRule rules;
+			};
+
+
 
 		private:
 			CfgContext const *_ctx = nullptr;
@@ -48,8 +56,22 @@ namespace cg {
 			uint32_t _state_size;
 
 		private:
+			/**
+			 * @param[in] Index of the state.
+			 * @returns The state reference
+			 */
 			State _get_state(uint32_t index);
+			/**
+			 * Gets the next state for a given char
+			 * @param[in] state current position in table
+			 * @param[in] c Character to lookup in the state
+			 * @returns Index of the state
+			 */
 			uint32_t _get_state_char(State state, char c);
+			/**
+			 * Gets the next state for a given rule set
+			 */
+			uint32_t _get_state_set(State state, uint32_t s);
 			/**
 			 * @brief Creates a state for a given rule
 			 * @param[in] state_rule
@@ -70,9 +92,19 @@ namespace cg {
 			 */
 			void _drill(
 				std::set<RulePos> const &start,
-				std::set<RulePos> &terminals,
-				std::set<RulePos> &nonterminals,
+				std::set<RulePos> &children,
 				bool is_root=true
 			);
+
+			/**
+			 * @brief Wrapper around base _drill func
+			 */
+			std::set<RulePos> _drill(std::set<RulePos> const &start);
+
+			/**
+			 * @brief A helper function to group a set of rules by leaf.
+			 * @param[in] The list of rules to group
+			 */
+			std::vector<RuleGroup> _group_rules(std::set<RulePos> const &children);
 	};
 }

@@ -68,6 +68,18 @@ namespace cg {
 		return ss.str();
 	}
 
+	bool CfgLeaf::operator==(CfgLeaf const &other) const {
+		return _type == other._type &&
+			_content == other._content &&
+			_include == other._include;
+	}
+
+	bool CfgLeaf::operator!=(CfgLeaf const &other) const {
+		return _type != other._type ||
+			_content != other._content ||
+			_include != other._include;
+	}
+
 	CfgLeaf::CfgLeaf(Type type, std::string const &str, bool include):
 		_type(type),
 		_content(str),

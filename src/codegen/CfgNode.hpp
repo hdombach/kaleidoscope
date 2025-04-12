@@ -60,12 +60,15 @@ namespace cg {
 
 			std::ostream& print_debug(std::ostream &os) const;
 			std::string str() const;
+
+			bool operator==(CfgLeaf const &other) const;
+			bool operator!=(CfgLeaf const &other) const;
 		private:
 			CfgLeaf(Type type, std::string const &str, bool include);
 		private:
 			Type _type;
 			std::string _content;
-			bool _include;
+			bool _include = false;
 	};
 
 	/**

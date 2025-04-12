@@ -1,6 +1,7 @@
 #include "AbsoluteSolver.hpp"
 
 #include <algorithm>
+#include <glm/detail/qualifier.hpp>
 #include <iterator>
 
 #include "util/IterAdapter.hpp"
@@ -64,15 +65,11 @@ namespace cg {
 
 		log_debug() << "Drilling down" << std::endl;
 
-		auto terminals = std::set<RulePos>();
-		auto nonterminals = std::set<RulePos>();
-		r._drill(initial, terminals, nonterminals);
+		auto children = std::set<RulePos>();
+		r._drill(initial, children);
 
-		for (auto &t : nonterminals) {
-			log_debug() << "Got nonterminal: " << r._debug(t) << std::endl;
-		}
-		for (auto &t : terminals) {
-			log_debug() << "Got terminal: " << r._debug(t) << std::endl;
+		for (auto &t : children) {
+			log_debug() << "Got child: " << r._debug(t) << std::endl;
 		}
 
 		return r;
@@ -102,13 +99,22 @@ namespace cg {
 	}
 
 	uint32_t AbsoluteSolver::_add_state(AbsoluteSolver::StateRule const &state_rule) {
-		auto r = _states.size();
+		{
+			auto rule = std::find(_state_rules.begin(), _state_rules.end(), state_rule);
+			if (rule != _state_rules.end()) {
+				return rule - _state_rules.begin();
+			}
+		}
+
+		auto r = _states.size() / _state_size;
 
 		for (auto i = 0; i < _state_size; i++) {
 			_states.push_back(0);
 		}
 
-		for (auto &pos : state_rule) {
+		auto groups = _group_rules(_drill(state_rule));
+		for (auto &group : groups) {
+			//TODO: Add transitions to the state.
 		}
 
 		return r;
@@ -162,28 +168,56 @@ namespace cg {
 
 	void AbsoluteSolver::_drill(
 		std::set<RulePos> const &start,
-		std::set<RulePos> &terminals,
-		std::set<RulePos> &nonterminals,
+		std::set<RulePos> &children,
 		bool is_root
 	) {
 		for (auto &rule : start) {
 			auto &leaf = _get_leaf(rule);
 			if (leaf.type() == CfgLeaf::Type::var) {
 				if (!is_root) {
-					nonterminals.insert(rule);
+					children.insert(rule);
 				}
 				auto all_children = _get_var(leaf.var_name());
 				auto unique_children = std::set<RulePos>();
 				std::set_difference(
 					all_children.begin(), all_children.end(),
-					nonterminals.begin(), nonterminals.end(),
+					children.begin(), children.end(),
 					std::inserter(unique_children, unique_children.begin())
 				);
 
-				_drill(unique_children, terminals, nonterminals, false);
+				_drill(unique_children, children, false);
 			} else {
-				terminals.insert(rule);
+				children.insert(rule);
 			}
 		}
+	}
+
+	std::set<RulePos> AbsoluteSolver::_drill(std::set<RulePos> const &start) {
+		auto r = std::set<RulePos>();
+		_drill(start, r);
+		return r;
+	}
+
+	std::vector<AbsoluteSolver::RuleGroup> AbsoluteSolver::_group_rules(
+		std::set<RulePos> const &children
+	) {
+		auto r = std::vector<AbsoluteSolver::RuleGroup>();
+		for (auto &child : children) {
+			auto &leaf = _get_leaf(child);
+			RuleGroup *matched = nullptr;
+			for (auto &group : r) {
+				if (group.leaf == leaf) {
+					matched = &group;
+				}
+			}
+			if (matched == nullptr) {
+				r.push_back(RuleGroup());
+				matched = &r[r.size() - 1];
+				matched->leaf = leaf;
+			}
+			log_assert(matched, "matched must be initialized.");
+			matched->rules.insert(child);
+		}
+		return r;
 	}
 }
