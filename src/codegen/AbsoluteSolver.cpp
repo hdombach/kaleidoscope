@@ -87,6 +87,35 @@ namespace cg {
 		auto solver = AbsoluteSolver::setup(c, "S");
 	}
 
+	TEST(AbsoluteSolver, simplify_strings) {
+		auto c = CfgContext();
+
+		c.prim("opening") = c.s("< ");
+		c.prim("closing") = c.s(" >");
+		c.prim("message") = c["opening"] + c.s("Hello world") + c["closing"];
+
+		c.prep();
+		log_debug() << "before simplifying:\n" << c << std::endl;
+		c.simplify();
+		log_debug() << "after simplifying:\n" << c << std::endl;
+
+		auto solver = AbsoluteSolver::setup(c, "message");
+	}
+
+	TEST(AbsoluteSolver, simplify_sets) {
+		auto c = CfgContext();
+
+		c.prim("digit-pair") = c.i("0123456789") + c.s(".") + c.i("1234567890");
+		c.prim("str") = c.s("\"") + c.e("\"") + c.s("\"");
+
+		c.prep();
+		log_debug() << "before simplifying:\n" << c << std::endl;
+		c.simplify();
+		log_debug() << "after simplifying:\n" << c << std::endl;
+
+		auto solver = AbsoluteSolver::setup(c, "digit-pair");
+	}
+
 	AbsoluteSolver::State AbsoluteSolver::_get_state(uint32_t index) {
 		return util::Adapt(
 			&_states[index * _state_size],

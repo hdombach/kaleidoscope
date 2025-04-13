@@ -10,14 +10,16 @@ namespace cg {
 	/**
 	 * @brief Represents a leaf node for the context free grammar
 	 *
-	 * There are three possible types
+	 * There are four possible types
 	 * - String literal
 	 * - A set of characters to match against
-	 * - var: a reference to another grammar definition
+	 * - A reference to another grammar definition
+	 * - A single character to match against
 	 *
 	 * A group of characters is techincally not an or opteration which doesn't
-	 * follow the structure of a Context Free grammar. However, it should still
-	 * fine since the parse depends on a character lookahead.
+	 * follow the structure of a Context Free grammar. However, it can be easily
+	 * simplified down just using characters. It is also necessary for things like
+	 * exclude("{")
 	 */
 	class CfgLeaf final {
 		public:
@@ -25,7 +27,8 @@ namespace cg {
 				none,
 				str,
 				set,
-				var
+				var,
+				character,
 			};
 
 			CfgLeaf();
@@ -46,6 +49,10 @@ namespace cg {
 			 * @brief Creates a reference to another rule set
 			 */
 			static CfgLeaf var(std::string const &str);
+			/**
+			 * @brief Creates a leaf node that parses a single character
+			 */
+			static CfgLeaf character(char c);
 
 			Type type() const { return _type; }
 
@@ -57,6 +64,7 @@ namespace cg {
 
 			std::string const &str_content() const { return _content; }
 			std::string const &var_name() const { return _content; }
+			bool inclusive_set() const { return _include; }
 
 			std::ostream& print_debug(std::ostream &os) const;
 			std::string str() const;
@@ -79,6 +87,7 @@ namespace cg {
 			CfgRule() = default;
 			CfgRule(CfgLeaf const &leaf);
 			CfgRule(CfgRule const &lhs, CfgRule const &rhs);
+			CfgRule(std::vector<CfgLeaf> const &leaves);
 
 			std::vector<CfgLeaf> const &leaves() const { return _leaves; }
 
@@ -113,6 +122,12 @@ namespace cg {
 			std::string const &name() const { return _name; }
 			std::vector<CfgRule> &rules() { return _rules; }
 			std::vector<CfgRule> const &rules() const { return _rules; }
+
+			/**
+			 * @brief Expands the rules to enumerate all possible charaters in
+			 * the character set
+			 */
+			void simplify_char_sets();
 
 			std::ostream& print_debug(std::ostream &os) const;
 			std::string str() const;

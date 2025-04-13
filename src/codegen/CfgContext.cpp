@@ -13,6 +13,9 @@ namespace cg {
 	CfgLeaf CfgContext::e(std::string const &str) const {
 		return CfgLeaf::exclude(str);
 	}
+	CfgLeaf CfgContext::c(char c) const {
+		return CfgLeaf::character(c);
+	}
 	CfgLeaf CfgContext::operator[](std::string const &str) const {
 		return CfgLeaf::var(str);
 	}
@@ -49,10 +52,7 @@ namespace cg {
 		CfgRuleSet const &set,
 		std::ostream &os
 	) const {
-		for (auto &rule : set.rules()) {
-			os << set.name() << " -> ";
-		}
-		return;
+		os << set.name() << " -> " << set;
 	}
 
 	void CfgContext::debug_set(
@@ -63,6 +63,13 @@ namespace cg {
 			debug_set(*node, os);
 		} else {
 			os << "<anon node>";
+		}
+	}
+
+	void CfgContext::debug_sets(std::ostream &os) const {
+		for (auto &set : _cfg_rule_sets) {
+			debug_set(set, os);
+			os << std::endl;
 		}
 	}
 
@@ -86,13 +93,6 @@ namespace cg {
 		for (auto &[key, i] : _cfg_map) {
 			auto &set = _cfg_rule_sets[i];
 			for (auto &rule : set.rules()) {
-				rule.seperate_leaves();
-			}
-		}
-
-		for (auto &[key, i] : _cfg_map) {
-			auto &set = _cfg_rule_sets[i];
-			for (auto &rule : set.rules()) {
 				for (auto &leaf : rule.leaves()) {
 					if (leaf.type() == CfgLeaf::Type::var) {
 						if (!_cfg_map.contains(leaf.var_name())) {
@@ -107,5 +107,17 @@ namespace cg {
 			}
 		}
 		return {};
+	}
+
+	void CfgContext::simplify() {
+		for (auto &set : _cfg_rule_sets) {
+			for (auto &rule : set.rules()) {
+				rule.seperate_leaves();
+			}
+		}
+
+		for (auto &set : _cfg_rule_sets) {
+			set.simplify_char_sets();
+		}
 	}
 }

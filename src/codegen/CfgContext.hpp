@@ -32,6 +32,11 @@ namespace cg {
 			CfgLeaf e(std::string const &str) const;
 
 			/**
+			 * @brief Wrapper around CfgLeaf::character
+			 */
+			CfgLeaf c(char c) const;
+
+			/**
 			 * @brief Wrapper around CfgLeaf::var
 			 */
 			CfgLeaf operator [](std::string const &str) const;
@@ -61,6 +66,7 @@ namespace cg {
 
 			void debug_set(CfgRuleSet const &set, std::ostream &os) const;
 			void debug_set(std::string const &set, std::ostream &os) const;
+			void debug_sets(std::ostream &os) const;
 			std::string set_str(CfgRuleSet const &set) const;
 			std::string set_str(std::string const &name) const;
 
@@ -72,9 +78,21 @@ namespace cg {
 			 * - Seperate all string leaf nodes
 			 */
 			util::Result<void, KError> prep();
+
+			/**
+			 * @brief Reduces the Context Free Grammar to only use basic operations
+			 * - Seperate all strings into individual character leaves
+			 * - Create rules enumerating all possibilities in character sets
+			 */
+			void simplify();
 		private:
 			std::vector<CfgRuleSet> _cfg_rule_sets;
 			std::map<std::string, uint32_t> _cfg_map;
 			std::set<std::string> _prim_names;
 	};
+
+	inline std::ostream &operator<<(std::ostream &os, CfgContext const &ctx) {
+		ctx.debug_sets(os);
+		return os;
+	}
 }

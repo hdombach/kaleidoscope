@@ -74,14 +74,32 @@ namespace util {
 		auto res = std::string();
 		for (auto c : str) {
 			switch (c) {
+				case '\a':
+					res += "\\a";
+					break;
+				case '\b':
+					res += "\\b";
+					break;
+				case '\t':
+					res += "\\t";
+					break;
+				case '\n':
+					res += "\\n";
+					break;
+				case '\v':
+					res += "\\v";
+					break;
+				case '\f':
+					res += "\\f";
+					break;
+				case '\r':
+					res += "\\r";
+					break;
 				case '"':
 					res += "\\\"";
 					break;
 				case '\\':
 					res += "\\\\";
-					break;
-				case '\n':
-					res += "\\n";
 					break;
 				default:
 					res += c;
