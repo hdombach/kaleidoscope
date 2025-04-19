@@ -11,14 +11,15 @@
 #include "util/KError.hpp"
 #include "util/result.hpp"
 
+struct Test;
+
 class TestFixture {
 	public:
-		TestFixture(): TestFixture(1) {}
-		TestFixture(size_t variant) {}
+		TestFixture(Test &test): TestFixture(test, 1) {}
+		TestFixture(Test &test, size_t variant) {}
 		static size_t variant_count() { return 1; }
 };
 
-struct Test;
 struct Test {
 	std::function<void(Test &, int enum_index)> fn;
 	std::string suite_name;
@@ -65,7 +66,7 @@ inline struct _TEST_NAME(_class_, fixture, _, test_name) {\
 	};\
 } _TEST_NAME(_inst_, fixture, _, test_name); \
 void _TEST_NAME(_wrapper_, fixture, _, test_name)(Test &_test, int i) {\
-	auto f = fixture(i); \
+	auto f = fixture(_test, i); \
 	_TEST_NAME(_, fixture, _, test_name)(_test, f); \
 }\
 void _TEST_NAME(_, fixture, _, test_name)(Test &_test, fixture &f)

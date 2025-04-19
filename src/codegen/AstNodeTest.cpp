@@ -10,8 +10,8 @@
 namespace cg {
 	class AstNodeTest: TestFixture {
 		public:
-			AstNodeTest(size_t fixture): _cfg(), _parser(_cfg) {
-				_should_simplify = fixture;
+			AstNodeTest(Test &test, size_t variant): TestFixture(test), _cfg(), _parser(_cfg) {
+				_should_simplify = variant;
 			}
 			//Make sure you don't copy this because parser has pointer to cfg.
 			AstNodeTest(AstNodeTest const &other) = delete;

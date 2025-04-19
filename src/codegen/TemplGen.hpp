@@ -29,6 +29,8 @@ namespace cg {
 				TemplDict const &args,
 				std::string const &filename = "codegen"
 			) const;
+
+			CfgContext &cfg() { return _ctx; }
 		private:
 			CfgContext _ctx;
 

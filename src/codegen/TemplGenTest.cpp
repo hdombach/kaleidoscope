@@ -5,14 +5,45 @@
 namespace cg {
 	#define EXPECT_CG(expect_src)\
 		EXPECT_EQ(\
-			gen->codegen(src, args, _test.suite_name + "-" + _test.test_name).value(),\
+			f.gen(src, args).value(),\
 			expect_src\
 		);
 
-	TEST(templ_gen, expressions) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
+	class TemplGenTest: public TestFixture {
+		public:
+			TemplGenTest(Test &test, size_t variant):
+				TestFixture(test),
+				_should_simplify(variant)
+			{
+				_gen = TemplGen::create().value();
+				if (_should_simplify) _gen.cfg().simplify();
+			}
 
+			TemplGenTest(TemplGenTest const &other) = delete;
+
+			static size_t variant_count() { return 2; }
+
+			util::Result<std::string, KError> gen(
+				std::string const &src,
+				TemplDict const &args)
+			{
+				return _gen.codegen(src, args, _test.suite_name + "-" + _test.test_name);
+			}
+
+			util::Result<std::string, KError> gen(
+				std::string const &src,
+				TemplObj const &args)
+			{
+				return _gen.codegen(src, args, _test.suite_name + "-" + _test.test_name);
+			}
+
+		private:
+			Test _test;
+			TemplGen _gen;
+			bool _should_simplify = true;
+	};
+
+	TEST_F(TemplGenTest, expressions) {
 		auto src =
 			"Hello everyone\n"
 			"My name is {{ name }}!\n";
@@ -27,10 +58,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, forloop) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, forloop) {
 		auto src =
 			"Shopping list\n"
 			"{\% for item in shopping_list %}\n"
@@ -53,10 +81,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, if) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, if) {
 		auto src =
 			"foo\n"
 			"{\% if add_bar %}\n"
@@ -80,10 +105,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, if_else) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, if_else) {
 		auto src =
 			"reee\n"
 			"{\% if value %}\n"
@@ -110,10 +132,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, empty_if) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, empty_if) {
 		auto src =
 			"foo\n"
 			"{\% if add_bar %}\n"
@@ -131,10 +150,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, empty_elseif) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, empty_elseif) {
 		auto src =
 			"foo\n"
 			"{\%if add_bar%}\n"
@@ -153,10 +169,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, elif_chain) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, elif_chain) {
 		auto src =
 			"Do robots dream of eletric sheep?\n"
 			"{\% if has_yes %}"
@@ -200,10 +213,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, member_access) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, member_access) {
 		auto src =
 			"Hello I am {{person.first_name}} {{ person . last_name }} and I am {{person\n.age}} years old.";
 
@@ -222,10 +232,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, callable) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, callable) {
 		auto src = "Hello {{get_name()}}\n";
 
 		auto args = TemplObj{
@@ -237,10 +244,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, call_member_chain) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, call_member_chain) {
 		auto get_abs_sec = [](TemplList l) {
 			return l[0].get_attribute("seconds")->integer().value()
 				+ l[0].get_attribute("minutes")->integer().value() * 60
@@ -281,10 +285,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, mk_func) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, mk_func) {
 		auto combined = [](std::string name, int64_t num) -> TemplFuncRes {
 			return {name + std::to_string(num)};
 		};
@@ -303,33 +304,30 @@ namespace cg {
 
 		src = "User id is {{combine_str(name, name)}}";
 		EXPECT_KERROR(
-			gen->codegen(src, args),
+			f.gen(src, args),
 			KError::Type::CODEGEN
 		);
 
 		src = "User id is {{combine_str(id, id)}}";
 		EXPECT_KERROR(
-			gen->codegen(src, args),
+			f.gen(src, args),
 			KError::Type::CODEGEN
 		);
 
 		src = "User id is {{combine_str(name)}}";
 		EXPECT_KERROR(
-			gen->codegen(src, args),
+			f.gen(src, args),
 			KError::Type::CODEGEN
 		);
 
 		src = "User id is {{combine_str(name, id, id)}}";
 		EXPECT_KERROR(
-			gen->codegen(src, args),
+			f.gen(src, args),
 			KError::Type::CODEGEN
 		);
 	}
 
-	TEST(templ_gen, int_constant) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, int_constant) {
 		auto args = TemplDict();
 
 		auto src = "The number is {{5}}!";
@@ -343,10 +341,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, exp2) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, exp2) {
 		auto args = TemplObj{
 			{"value", 59},
 			{"zero", 0},
@@ -385,10 +380,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, exp3) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, exp3) {
 		auto args = TemplObj{
 			{"pos_value", 5},
 			{"neg_value", -10}
@@ -430,10 +422,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, exp4) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, exp4) {
 		auto args = TemplObj{
 			{"pos_value", 5},
 			{"neg_value", -10}
@@ -455,10 +444,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, exp6) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, exp6) {
 		auto args = TemplObj{
 			{"pos_value", 6},
 			{"neg_value", -8}
@@ -528,10 +514,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, exp7) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, exp7) {
 		auto args = TemplObj{
 			{"pos_value", 6},
 			{"neg_value", -8}
@@ -568,10 +551,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, exp11) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, exp11) {
 		auto args = TemplObj{
 			{"pos_value", 6},
 			{"neg_value", -8},
@@ -598,10 +578,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, exp12) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, exp12) {
 		auto args = TemplObj{
 			{"pos_value", 6},
 			{"neg_value", -8},
@@ -628,10 +605,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, str_constant) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, str_constant) {
 		auto args = TemplObj{
 			{"first_name", "John"}
 		}.dict().value();
@@ -645,10 +619,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, list_builtins) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, list_builtins) {
 		auto src =
 			"List length: {{list.length()}}\n"
 			"Is list empty: {{list.empty()}}\n"
@@ -698,10 +669,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, str_builtins) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, str_builtins) {
 		auto args = TemplObj{
 			{"str", "Hello World"},
 		}.dict().value();
@@ -722,10 +690,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, paranthesis) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, paranthesis) {
 		auto args = TemplObj{
 			{"foo", 5},
 			{"bar", 10}
@@ -746,10 +711,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, filter) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, filter) {
 		auto str_reverse = [](std::string str) -> TemplFuncRes {
 			auto res = str;
 			std::reverse(res.begin(), res.end());
@@ -781,10 +743,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, overloaded_functions) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, overloaded_functions) {
 		auto indent_str_str = [](std::string s, std::string indent) -> TemplFuncRes {
 			auto r = indent;
 			for (auto c : s) {
@@ -868,10 +827,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, abs_filter) {
-		auto gen = TemplGen::create();
-		//EXPECT(gen);
-
+	TEST_F(TemplGenTest, abs_filter) {
 		auto args = TemplObj{
 			{"value", -42},
 		}.dict().value();
@@ -891,10 +847,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, capitilize) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, capitilize) {
 		auto args = TemplObj{
 			{"first_name", "hezekiah"},
 			{"last_name", "dombach"},
@@ -908,10 +861,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, center) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, center) {
 		auto args = TemplObj{
 			{"title_str", "title"}
 		}.dict().value();
@@ -944,10 +894,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, first) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, first) {
 		auto args = TemplObj{
 			{"my_list", {"apple", "bannanna", "nuclear rod"}},
 		}.dict().value();
@@ -963,13 +910,10 @@ namespace cg {
 			{"my_list", TemplList()}
 		}.dict().value();
 
-		EXPECT_KERROR(gen->codegen(src, args), KError::CODEGEN);
+		EXPECT_KERROR(f.gen(src, args), KError::CODEGEN);
 	}
 
-	TEST(templ_gen, indent) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, indent) {
 		auto args = TemplObj{
 			{"quote",
 				"The day has sunk\n"
@@ -1071,10 +1015,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, macro) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, macro) {
 		auto args = TemplDict();
 
 		auto src =
@@ -1090,10 +1031,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, macro_w_args) {
-		auto gen = TemplGen::create();
-		EXPECT(gen);
-
+	TEST_F(TemplGenTest, macro_w_args) {
 		auto args = TemplDict();
 
 		auto src =
@@ -1118,7 +1056,7 @@ namespace cg {
 			"";
 
 		EXPECT_KERROR(
-			gen->codegen(src, args),
+			f.gen(src, args),
 			KError::CODEGEN
 		);
 
@@ -1131,7 +1069,7 @@ namespace cg {
 			"";
 
 		EXPECT_KERROR(
-			gen->codegen(src, args),
+			f.gen(src, args),
 			KError::CODEGEN
 		);
 
@@ -1175,14 +1113,12 @@ namespace cg {
 			"";
 
 		EXPECT_KERROR(
-			gen->codegen(src, args),
+			f.gen(src, args),
 			KError::CODEGEN
 		);
 	}
 
-	TEST(templ_gen, for_loop_var) {
-		auto gen = TemplGen::create();
-
+	TEST_F(TemplGenTest, for_loop_var) {
 		auto args = TemplObj{
 			{"list", {152, "apple", -3, "hash map"}}
 		};
@@ -1228,9 +1164,7 @@ namespace cg {
 		);
 	}
 
-	TEST(templ_gen, macro_import) {
-		auto gen = TemplGen::create();
-
+	TEST_F(TemplGenTest, macro_import) {
 		auto args = TemplDict{};
 
 		auto src =

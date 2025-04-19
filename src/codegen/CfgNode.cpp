@@ -202,6 +202,9 @@ namespace cg {
 			}
 		} else {
 			auto table = _default_all;
+			for (auto c : leaf.str_content()) {
+				table[c] = 0;
+			}
 			for (char i = 0; i <= 126; i++) {
 				if (table[i]) {
 					r.push_back(CfgLeaf::character(i));
