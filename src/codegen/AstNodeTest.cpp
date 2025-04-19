@@ -2,26 +2,60 @@
 #include "codegen/CfgContext.hpp"
 #include "tests/Test.hpp"
 #include "SParser.hpp"
+#include "util/log.hpp"
 #include "AstNode.hpp"
 
 #include <fstream>
 
 namespace cg {
-	TEST(ast_node, match_literals) {
-		auto c = CfgContext();
-		auto parser = SParser(c);
+	class AstNodeTest: TestFixture {
+		public:
+			AstNodeTest(size_t fixture): _cfg(), _parser(_cfg) {
+				_should_simplify = fixture;
+			}
+			//Make sure you don't copy this because parser has pointer to cfg.
+			AstNodeTest(AstNodeTest const &other) = delete;
 
+			std::string suite_name() { return "UNKNOWN"; }
+			static size_t variant_count() { return 2; }
+
+			CfgContext &cfg() { return _cfg; }
+			SParser &parser() { return _parser; }
+
+			auto match(std::string const &str, std::string const &root) {
+				if (!_is_prepped) {
+					_cfg.prep();
+					if (_should_simplify) {
+						_cfg.simplify();
+					}
+
+					_is_prepped = true;
+				}
+				return _parser.match(str, root);
+			}
+
+		private:
+			bool _should_simplify;
+			CfgContext _cfg;
+			SParser _parser;
+			bool _is_prepped = false;
+	};
+
+	TEST_F(AstNodeTest, match_literals) {
+		auto &c = f.cfg();
+
+		log_debug() << "size: " << c.cfg_rule_sets().size() << std::endl;
 		c.prim("hello") = c.s("Hello");
+		log_debug() << "size: " << c.cfg_rule_sets().size() << std::endl;
 
 		EXPECT(c.prep());
 
-		EXPECT_EQ(parser.match("Hello", "hello").value(), 5);
-		EXPECT_KERROR(parser.match("hello", "hello"), KError::Type::CODEGEN);
+		EXPECT_EQ(f.match("Hello", "hello").value(), 5);
+		EXPECT_KERROR(f.match("hello", "hello"), KError::Type::CODEGEN);
 	}
 
-	TEST(ast_node, match_number) {
-		auto c = CfgContext();
-		auto parser = SParser(c);
+	TEST_F(AstNodeTest, match_number) {
+		auto &c = f.cfg();
 
 		c.prim("digit") = c.i("0123456789");
 		c.prim("integer")
@@ -31,26 +65,25 @@ namespace cg {
 
 		EXPECT(c.prep());
 
-		EXPECT_EQ(parser.match("1", "digit").value(), 1);
-		EXPECT_KERROR(parser.match("abc5", "digit"), KError::Type::CODEGEN);
+		EXPECT_EQ(f.match("1", "digit").value(), 1);
+		EXPECT_KERROR(f.match("abc5", "digit"), KError::Type::CODEGEN);
 
-		EXPECT_KERROR(parser.match("145a", "integer"), KError::Type::CODEGEN);
-		EXPECT_EQ(parser.match("145", "integer").value(), 3);
-		EXPECT_KERROR(parser.match("abc5", "integer"), KError::Type::CODEGEN);
-		EXPECT_EQ(parser.match("91023", "integer").value(), 5);
+		EXPECT_KERROR(f.match("145a", "integer"), KError::Type::CODEGEN);
+		EXPECT_EQ(f.match("145", "integer").value(), 3);
+		EXPECT_KERROR(f.match("abc5", "integer"), KError::Type::CODEGEN);
+		EXPECT_EQ(f.match("91023", "integer").value(), 5);
 
-		EXPECT_KERROR(parser.match("491f", "decimal"), KError::Type::CODEGEN);
-		EXPECT_KERROR(parser.match("hello", "decimal"), KError::Type::CODEGEN);
-		EXPECT_EQ(parser.match("192.", "decimal").value(), 4);
-		EXPECT_EQ(parser.match(".89141", "decimal").value(), 6);
-		EXPECT_KERROR(parser.match("..123", "decimal"), KError::Type::CODEGEN);
-		EXPECT_EQ(parser.match(".", "decimal").value(), 1);
-		EXPECT_EQ(parser.match("15.9", "decimal").value(), 4);
+		EXPECT_KERROR(f.match("491f", "decimal"), KError::Type::CODEGEN);
+		EXPECT_KERROR(f.match("hello", "decimal"), KError::Type::CODEGEN);
+		EXPECT_EQ(f.match("192.", "decimal").value(), 4);
+		EXPECT_EQ(f.match(".89141", "decimal").value(), 6);
+		EXPECT_KERROR(f.match("..123", "decimal"), KError::Type::CODEGEN);
+		EXPECT_EQ(f.match(".", "decimal").value(), 1);
+		EXPECT_EQ(f.match("15.9", "decimal").value(), 4);
 	}
 
-	TEST(ast_node, match_math) {
-		auto c = CfgContext();
-		auto parser = SParser(c);
+	TEST_F(AstNodeTest, match_math) {
+		auto &c = f.cfg();
 
 		c.prim("digit") =
 			c.s("0") | c.s("1") | c.s("2") | c.s("3") | c.s("4") |
@@ -80,14 +113,14 @@ namespace cg {
 
 		EXPECT(c.prep());
 
-		EXPECT_EQ(parser.match("1", "exp").value(), 1);
-		EXPECT_EQ(parser.match("42.1", "exp").value(), 4);
-		EXPECT_EQ(parser.match("192.12+41", "exp").value(), 9);
-		EXPECT_EQ(parser.match("192.12+41-0.12", "exp").value(), 14);
-		EXPECT_EQ(parser.match("19*1.0", "exp").value(), 6);
-		EXPECT_EQ(parser.match("19/1.0*20", "exp").value(), 9);
-		EXPECT_EQ(parser.match("5+2*12", "exp").value(), 6);
-		EXPECT_EQ(parser.match("5+-2*-+-12", "exp").value(), 10);
+		EXPECT_EQ(f.match("1", "exp").value(), 1);
+		EXPECT_EQ(f.match("42.1", "exp").value(), 4);
+		EXPECT_EQ(f.match("192.12+41", "exp").value(), 9);
+		EXPECT_EQ(f.match("192.12+41-0.12", "exp").value(), 14);
+		EXPECT_EQ(f.match("19*1.0", "exp").value(), 6);
+		EXPECT_EQ(f.match("19/1.0*20", "exp").value(), 9);
+		EXPECT_EQ(f.match("5+2*12", "exp").value(), 6);
+		EXPECT_EQ(f.match("5+-2*-+-12", "exp").value(), 10);
 	}
 
 /*

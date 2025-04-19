@@ -11,13 +11,21 @@
 #include "util/KError.hpp"
 #include "util/result.hpp"
 
+class TestFixture {
+	public:
+		TestFixture(): TestFixture(1) {}
+		TestFixture(size_t variant) {}
+		static size_t variant_count() { return 1; }
+};
+
 struct Test;
 struct Test {
-	std::function<void(Test &)> fn;
+	std::function<void(Test &, int enum_index)> fn;
 	std::string suite_name;
 	std::string test_name;
+	size_t enum_count = 1;
 	uint32_t total_test_count = 0;
-	uint32_t passed_test_count;
+	uint32_t passed_test_count = 0;
 
 	std::string full_name() const {
 		return suite_name + "::" + test_name;
@@ -31,7 +39,7 @@ extern std::map<std::string, TestSuite> suites;
 test##pre##suite_name##seperator##test_name
 
 #define TEST(suite_name, test_name) \
-void _TEST_NAME(_, suite_name, _, test_name)(Test &_test); \
+void _TEST_NAME(_, suite_name, _, test_name)(Test &_test, int); \
 inline struct _TEST_NAME(_class_, suite_name, _, test_name) {\
 	_TEST_NAME(_class_, suite_name, _, test_name)() {\
 		suites[#suite_name][#test_name] = { \
@@ -41,7 +49,27 @@ inline struct _TEST_NAME(_class_, suite_name, _, test_name) {\
 		}; \
 	};\
 } _TEST_NAME(_inst_, suite_name, _, test_name); \
-void _TEST_NAME(_, suite_name, _, test_name)(Test &_test)
+void _TEST_NAME(_, suite_name, _, test_name)(Test &_test, int)
+
+#define TEST_F(fixture, test_name) \
+void _TEST_NAME(_wrapper_, fixture, _, test_name)(Test &_test, int i); \
+void _TEST_NAME(_, fixture, _, test_name)(Test &_test, fixture &); \
+inline struct _TEST_NAME(_class_, fixture, _, test_name) {\
+	_TEST_NAME(_class_, fixture, _, test_name)() {\
+		suites[#fixture][#test_name] = { \
+			_TEST_NAME(_wrapper_, fixture, _, test_name), \
+			#test_name, \
+			#fixture, \
+			fixture::variant_count() \
+		}; \
+	};\
+} _TEST_NAME(_inst_, fixture, _, test_name); \
+void _TEST_NAME(_wrapper_, fixture, _, test_name)(Test &_test, int i) {\
+	auto f = fixture(i); \
+	_TEST_NAME(_, fixture, _, test_name)(_test, f); \
+}\
+void _TEST_NAME(_, fixture, _, test_name)(Test &_test, fixture &f)
+
 
 inline std::ostream &fail_head(
 	Test &test,

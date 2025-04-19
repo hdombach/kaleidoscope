@@ -33,6 +33,7 @@ namespace cg {
 				}
 			};
 		public:
+			SParser() = default;
 			SParser(CfgContext const &ctx);
 
 			/**
@@ -63,7 +64,7 @@ namespace cg {
 			 * @brief uid for constructing AstNodes
 			 */
 			uint32_t _uid;
-			CfgContext const &_ctx;
+			CfgContext const *_ctx = nullptr;
 			/**
 			 * @brief Most recent failure (even if it isn't officially error yet)
 			 */

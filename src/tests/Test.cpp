@@ -30,13 +30,15 @@ int test_main(std::vector<std::string> const &filters) {
 			}
 
 			try {
-				log_trace() << "Starting test: " << test.first << std::endl;
-				test.second.fn(test.second);
-				auto test_total = test.second.total_test_count;
-				auto test_passed = test.second.passed_test_count;
+				for (int i = 0; i < test.second.enum_count; i++) {
+					log_trace() << "Starting test: " << test.first << ":" << i << std::endl;
+					test.second.fn(test.second, i);
+					auto test_total = test.second.total_test_count;
+					auto test_passed = test.second.passed_test_count;
 
-				suite_passed += test_passed;
-				suite_total += test_total;
+					suite_passed += test_passed;
+					suite_total += test_total;
+				}
 			} catch (KError const &e) {
 				suite_total++;
 				auto &os = fail_head(test.second) << std::endl;
