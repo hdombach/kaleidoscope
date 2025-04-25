@@ -48,6 +48,10 @@ namespace cg {
 		return _cfg_rule_sets;
 	}
 
+	uint32_t CfgContext::rule_id(std::string const &name) const {
+		return _cfg_map.at(name);
+	}
+
 	void CfgContext::debug_set(
 		CfgRuleSet const &set,
 		std::ostream &os

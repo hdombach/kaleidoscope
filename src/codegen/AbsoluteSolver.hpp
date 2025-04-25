@@ -56,6 +56,8 @@ namespace cg {
 			uint32_t _state_size;
 
 		private:
+			static const uint32_t REDUCE_MASK = 0x80000000;
+
 			/**
 			 * @param[in] Index of the state.
 			 * @returns The state reference
@@ -67,17 +69,31 @@ namespace cg {
 			 * @param[in] c Character to lookup in the state
 			 * @returns Index of the state
 			 */
-			uint32_t _get_state_char(State state, char c);
+			uint32_t &_state_char(State state, char c);
 			/**
 			 * Gets the next state for a given rule set
+			 * @returns index in cfg rule set
 			 */
-			uint32_t _get_state_set(State state, uint32_t s);
+			uint32_t &_state_ruleset(State state, uint32_t s);
 			/**
 			 * @brief Creates a state for a given rule
 			 * @param[in] state_rule
 			 * @returns Index in _states of created state
 			 */
 			uint32_t _add_state(StateRule const &state_rule);
+
+			/**
+			 * Check if at least 
+			 * Checks if a pos is at the end of a rule
+			 */
+			bool _has_end_of_rule(StateRule const &state) const;
+
+			/**
+			 * Gets next position for every position inside the state rule
+			 * @param[in] state The state to step
+			 * @returns The stepped state
+			 */
+			StateRule _step_state_rule(StateRule const &state);
 
 			CfgRuleSet const &_get_set(RulePos const &pos) const;
 			CfgRule const &_get_rule(RulePos const &pos) const;

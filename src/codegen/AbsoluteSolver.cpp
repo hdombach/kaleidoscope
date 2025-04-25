@@ -57,20 +57,10 @@ namespace cg {
 		r._ctx = &context;
 		r._state_size = 128 + context.cfg_rule_sets().size();
 
-		log_debug() << "Creating AbsoluteSolver" << std::endl;
 		auto initial = r._get_var(root);
-		for (auto &pos : initial) {
-			log_debug() << "Starting with rule: " << r._get_leaf(pos) << std::endl;
-		}
-
-		log_debug() << "Drilling down" << std::endl;
 
 		auto children = std::set<RulePos>();
 		r._drill(initial, children);
-
-		for (auto &t : children) {
-			log_debug() << "Got child: " << r._debug(t) << std::endl;
-		}
 
 		return r;
 	}
@@ -109,9 +99,7 @@ namespace cg {
 		c.prim("str") = c.s("\"") + c.e("\"") + c.s("\"");
 
 		c.prep();
-		log_debug() << "before simplifying:\n" << c << std::endl;
 		c.simplify();
-		log_debug() << "after simplifying:\n" << c << std::endl;
 
 		auto solver = AbsoluteSolver::setup(c, "digit-pair");
 	}
@@ -123,11 +111,15 @@ namespace cg {
 		);
 	}
 
-	uint32_t AbsoluteSolver::_get_state_char(State state, char c) {
+	uint32_t &AbsoluteSolver::_state_char(State state, char c) {
 		return state.begin()[c];
 	}
 
-	uint32_t AbsoluteSolver::_add_state(AbsoluteSolver::StateRule const &state_rule) {
+	uint32_t &AbsoluteSolver::_state_ruleset(State state, uint32_t s) {
+		return state.begin()[128 + s];
+	}
+
+	uint32_t AbsoluteSolver::_add_state(StateRule const &state_rule) {
 		{
 			auto rule = std::find(_state_rules.begin(), _state_rules.end(), state_rule);
 			if (rule != _state_rules.end()) {
@@ -141,22 +133,81 @@ namespace cg {
 			_states.push_back(0);
 		}
 
-		auto groups = _group_rules(_drill(state_rule));
-		for (auto &group : groups) {
-			//TODO: Add transitions to the state.
+		auto state = _get_state(r);
+
+		auto unsorted_rules = _drill(state_rule);
+		//Do not check a character. Instead reduce.
+		//Right now, can only reduce if it is the only rule in a group
+		if (_has_end_of_rule(unsorted_rules)) {
+			if (unsorted_rules.size() != 1) {
+				log_error() << "Can't generate without a lookahead" << std::endl;;
+			}
+			for (auto &s : state) {
+				s = unsorted_rules.begin()->set | REDUCE_MASK;
+			}
+			return r;
+		}
+
+		//group by leaf type. We already handeled positions at the end a rule so we
+		//don't need to handle that
+		auto groups = _group_rules(unsorted_rules);
+		for (auto &[leaf, rules] : groups) {
+			log_assert(
+				leaf.type() == CfgLeaf::Type::character || leaf.type() == CfgLeaf::Type::var,
+				"CfgContext must be simplified before using AbsoluteSolver"
+			);
+
+			auto next = _step_state_rule(rules);
+			auto next_i = _add_state(next);
+
+			if (leaf.type() == CfgLeaf::Type::character) {
+				_state_char(state, leaf.str_content()[0]) = next_i;
+			} else {
+				_state_ruleset(state, _ctx->rule_id(leaf.var_name())) = next_i;
+			}
 		}
 
 		return r;
 	}
 
+	bool AbsoluteSolver::_has_end_of_rule(StateRule const &state) const {
+		for (auto &pos : state) {
+			if (pos.offset >= _get_rule(pos).leaves().size()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	AbsoluteSolver::StateRule AbsoluteSolver::_step_state_rule(StateRule const &state) {
+		auto r = StateRule();
+		for (auto rule : r) {
+			rule.offset++;
+			r.insert(rule);
+		}
+		return r;
+	}
+
 	CfgRuleSet const &AbsoluteSolver::_get_set(RulePos const &pos) const {
-		return _ctx->cfg_rule_sets()[pos.set];
+		auto &sets = _ctx->cfg_rule_sets();
+
+		log_assert(sets.size() > pos.set, "Invalid set position inside RulePos");
+
+		return sets[pos.set];
 	}
 	CfgRule const &AbsoluteSolver::_get_rule(RulePos const &pos) const {
-		return _get_set(pos).rules()[pos.rule];
+		auto &rules = _get_set(pos).rules();
+
+		log_assert(rules.size() > pos.rule, "Invalid rule position inside RulePos");
+
+		return rules[pos.rule];
 	}
 	CfgLeaf const &AbsoluteSolver::_get_leaf(RulePos const &pos) const {
-		return _get_rule(pos).leaves()[pos.offset];
+		auto &leaves = _get_rule(pos).leaves();
+
+		log_assert(leaves.size() > pos.offset, "Invalid leaf position inside RulePos");
+
+		return leaves[pos.offset];
 	}
 
 	std::set<RulePos> AbsoluteSolver::_get_var(std::string const &str) {

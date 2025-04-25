@@ -63,6 +63,7 @@ namespace cg {
 			CfgRuleSet const *get(std::string const &name) const;
 
 			std::vector<CfgRuleSet> const &cfg_rule_sets() const;
+			uint32_t rule_id(std::string const &name) const;
 
 			void debug_set(CfgRuleSet const &set, std::ostream &os) const;
 			void debug_set(std::string const &set, std::ostream &os) const;
