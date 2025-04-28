@@ -3,6 +3,7 @@ set(UTIL_SRC
 	${CMAKE_CURRENT_SOURCE_DIR}/file.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/log.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/math.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/PrintTools.cpp
 )
 
 add_library(util OBJECT ${UTIL_SRC})

@@ -5,6 +5,7 @@
 #include <iterator>
 
 #include "util/IterAdapter.hpp"
+#include "util/PrintTools.hpp"
 #include "util/log.hpp"
 #include "tests/Test.hpp"
 
@@ -75,6 +76,7 @@ namespace cg {
 		c.prim("B") = c.s("1");
 
 		auto solver = AbsoluteSolver::setup(c, "S");
+		solver->print_table(log_debug() << "\n", {'*', '+', '0', '1'});
 	}
 
 	TEST(AbsoluteSolver, simplify_strings) {
@@ -102,6 +104,30 @@ namespace cg {
 		c.simplify();
 
 		auto solver = AbsoluteSolver::setup(c, "digit-pair");
+	}
+
+	void AbsoluteSolver::print_table(
+		std::ostream &os,
+		std::set<char> const &chars
+	) {
+		auto table = std::vector<std::vector<std::string>>();
+		table.push_back({"state", "current rules"});
+		table.push_back({"state value", "current rule 1\ncurrent rule 2"});
+		util::print_table(os, table);
+
+		return;
+		os << "state:current rules";
+		for (auto c : chars) {
+			os << ":\"" << c << "\"";
+		}
+		for (auto &rule : _ctx->cfg_rule_sets()) {
+			os << ":" << rule.name();
+		}
+		os << "\n";
+
+		for (int i = 0; i < _state_rules.size(); i++) {
+
+		}
 	}
 
 	AbsoluteSolver::State AbsoluteSolver::_get_state(uint32_t index) {

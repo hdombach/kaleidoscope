@@ -2,6 +2,7 @@
 
 #include "codegen/CfgContext.hpp"
 #include "util/IterAdapter.hpp"
+#include <ostream>
 #include <vector>
 #include <set>
 
@@ -34,6 +35,8 @@ namespace cg {
 				CfgContext const &context,
 				std::string const &root
 			);
+
+			void print_table(std::ostream &os, std::set<char> const &chars);
 
 		public:
 			using State = util::IterAdapter<uint32_t*>;

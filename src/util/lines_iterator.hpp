@@ -34,9 +34,18 @@ namespace util {
 
 			lines_iterator operator++(int) {
 				auto r = *this;
-				(*this)++;
+				++(*this);
 				return r;
 			}
+
+			value_type operator[](uint32_t i) {
+				auto r = *this;
+				while (i > 0) {
+					r++;
+					i--;
+				}
+				return *r;
+			};
 
 			bool operator==(lines_iterator const &other) const {
 				return _begin == other._begin;
