@@ -66,8 +66,6 @@ namespace util {
 			x = 0;
 			for (auto &cell : row) {
 				auto size = str_rect(table[y][x]);
-				log_debug() << "size is " << size.w << "x" << size.h << std::endl;
-
 				if (size.w > widths[x]) {
 					widths[x] = size.w;
 				}

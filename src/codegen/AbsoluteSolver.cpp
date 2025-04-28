@@ -62,6 +62,7 @@ namespace cg {
 
 		auto children = std::set<RulePos>();
 		r._drill(initial, children);
+		r._add_state(r._get_var(root));
 
 		return r;
 	}
@@ -74,6 +75,7 @@ namespace cg {
 		c.prim("E") = c["B"];
 		c.prim("B") = c.s("0");
 		c.prim("B") = c.s("1");
+		c.simplify();
 
 		auto solver = AbsoluteSolver::setup(c, "S");
 		solver->print_table(log_debug() << "\n", {'*', '+', '0', '1'});
@@ -110,30 +112,45 @@ namespace cg {
 		std::ostream &os,
 		std::set<char> const &chars
 	) {
+		util::print_list(os, _states);
 		auto table = std::vector<std::vector<std::string>>();
-		table.push_back({"state", "current rules"});
-		table.push_back({"state value", "current rule 1\ncurrent rule 2"});
-		util::print_table(os, table);
-
-		return;
-		os << "state:current rules";
+		auto label_row = std::vector<std::string>();
+		label_row.push_back("state");
+		label_row.push_back("current rules");
 		for (auto c : chars) {
-			os << ":\"" << c << "\"";
+			label_row.push_back(util::f("\"", c, "\""));
 		}
 		for (auto &rule : _ctx->cfg_rule_sets()) {
-			os << ":" << rule.name();
+			label_row.push_back(rule.name());
 		}
-		os << "\n";
+		table.push_back(label_row);
 
-		for (int i = 0; i < _state_rules.size(); i++) {
-
+		for (int rule_i = 0; rule_i < _state_rules.size(); rule_i++) {
+			auto row = std::vector<std::string>();
+			row.push_back("state");
+			row.push_back("current rules");
+			auto state  = _get_state(rule_i);
+			uint32_t state_i = 0;
+			for (auto s : state) {
+				if (state_i < 128) {
+					if (chars.contains(state_i)) {
+						row.push_back(std::to_string(s));
+					}
+				} else {
+					row.push_back(std::to_string(s));
+				}
+				state_i++;
+			}
+			table.push_back(row);
 		}
+
+		util::print_table(os, table);
 	}
 
 	AbsoluteSolver::State AbsoluteSolver::_get_state(uint32_t index) {
 		return util::Adapt(
 			&_states[index * _state_size],
-			&_states[index * (_state_size + 1)]
+			&_states[(index + 1) * _state_size]
 		);
 	}
 
@@ -153,7 +170,10 @@ namespace cg {
 			}
 		}
 
-		auto r = _states.size() / _state_size;
+		log_debug() << "Adding new state rule" << std::endl;
+		_state_rules.push_back(state_rule);
+
+		const auto r = _states.size() / _state_size;
 
 		for (auto i = 0; i < _state_size; i++) {
 			_states.push_back(0);
@@ -185,6 +205,7 @@ namespace cg {
 
 			auto next = _step_state_rule(rules);
 			auto next_i = _add_state(next);
+			state = _get_state(r); // pointers are potentially incorrectly now
 
 			if (leaf.type() == CfgLeaf::Type::character) {
 				_state_char(state, leaf.str_content()[0]) = next_i;
