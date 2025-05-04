@@ -112,7 +112,7 @@ namespace cg {
 		std::ostream &os,
 		std::set<char> const &chars
 	) {
-		util::print_list(os, _states);
+		os << util::plist(_states) << std::endl;
 		auto table = std::vector<std::vector<std::string>>();
 		auto label_row = std::vector<std::string>();
 		label_row.push_back("state");
@@ -144,7 +144,7 @@ namespace cg {
 			table.push_back(row);
 		}
 
-		util::print_table(os, table);
+		os << util::ptable(table);
 	}
 
 	AbsoluteSolver::State AbsoluteSolver::_get_state(uint32_t index) {

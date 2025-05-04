@@ -54,18 +54,15 @@ namespace util {
 	}
 
 
-	void print_table(
-		std::ostream &os,
-		const std::vector<std::vector<std::string>> &table
-	) {
-		auto widths = std::vector<size_t>(table[0].size(), 0);
-		auto heights = std::vector<size_t>(table.size(), 0);
+	std::ostream &ptable::print(std::ostream &os) const {
+		auto widths = std::vector<size_t>(_table[0].size(), 0);
+		auto heights = std::vector<size_t>(_table.size(), 0);
 
 		uint32_t y = 0, x = 0;
-		for (auto &row : table) {
+		for (auto &row : _table) {
 			x = 0;
 			for (auto &cell : row) {
-				auto size = str_rect(table[y][x]);
+				auto size = str_rect(_table[y][x]);
 				if (size.w > widths[x]) {
 					widths[x] = size.w;
 				}
@@ -89,7 +86,7 @@ namespace util {
 			for (int y2 = 0; y2 < heights[y]; y2++) {
 				auto row = std::vector<std::string_view>();
 				for (auto x = 0; x < widths.size(); x++) {
-					auto s = util::lines_iterator::begin(table[y][x])[y2];
+					auto s = util::lines_iterator::begin(_table[y][x])[y2];
 					row.push_back(s);
 				}
 				_print_row_content(os, widths, {"│"}, row);
@@ -97,6 +94,7 @@ namespace util {
 		}
 		_print_row(os, widths, {"└", "┴", "┘", "─"});
 
+		return os;
 	}
 
 	RectSize str_rect(const std::string &str) {

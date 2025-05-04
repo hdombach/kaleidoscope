@@ -5,6 +5,7 @@
 #include "util/IterAdapter.hpp"
 #include "util/file.hpp"
 #include "util/log.hpp"
+#include "util/PrintTools.hpp"
 #include "util/lines_iterator.hpp"
 
 #include <algorithm>
