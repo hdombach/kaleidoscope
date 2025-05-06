@@ -90,6 +90,7 @@ namespace cg {
 			 * Checks if a pos is at the end of a rule
 			 */
 			bool _has_end_of_rule(StateRule const &state) const;
+			bool _is_end_pos(RulePos const &pos) const;
 
 			/**
 			 * Gets next position for every position inside the state rule
@@ -102,6 +103,8 @@ namespace cg {
 			CfgRule const &_get_rule(RulePos const &pos) const;
 			CfgLeaf const &_get_leaf(RulePos const &pos) const;
 			std::set<RulePos> _get_var(std::string const &str);
+			std::string _rule_str(RulePos const &pos) const;
+			std::string _state_str(StateRule const &state) const;
 
 			std::string _debug(RulePos const &pos) const;
 

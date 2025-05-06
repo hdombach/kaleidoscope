@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <glm/detail/qualifier.hpp>
 #include <iterator>
+#include <string>
 
 #include "util/IterAdapter.hpp"
 #include "util/PrintTools.hpp"
@@ -94,6 +95,7 @@ namespace cg {
 		log_debug() << "after simplifying:\n" << c << std::endl;
 
 		auto solver = AbsoluteSolver::setup(c, "message");
+		solver->print_table(log_debug() << "\n", {' ', '<', '>', 'H', 'e', 'l', 'o', 'r', 'd'});
 	}
 
 	TEST(AbsoluteSolver, simplify_sets) {
@@ -112,7 +114,6 @@ namespace cg {
 		std::ostream &os,
 		std::set<char> const &chars
 	) {
-		os << util::plist(_states) << std::endl;
 		auto table = std::vector<std::vector<std::string>>();
 		auto label_row = std::vector<std::string>();
 		label_row.push_back("state");
@@ -127,17 +128,23 @@ namespace cg {
 
 		for (int rule_i = 0; rule_i < _state_rules.size(); rule_i++) {
 			auto row = std::vector<std::string>();
-			row.push_back("state");
-			row.push_back("current rules");
+			row.push_back(std::to_string(rule_i));
+			row.push_back(_state_str(_state_rules[rule_i]));
 			auto state  = _get_state(rule_i);
 			uint32_t state_i = 0;
 			for (auto s : state) {
+				auto state_str = std::string();
+				if (s & REDUCE_MASK) {
+					state_str += "r";
+				}
+				state_str += std::to_string(s & ~REDUCE_MASK);
+
 				if (state_i < 128) {
 					if (chars.contains(state_i)) {
-						row.push_back(std::to_string(s));
+						row.push_back(state_str);
 					}
 				} else {
-					row.push_back(std::to_string(s));
+					row.push_back(state_str);
 				}
 				state_i++;
 			}
@@ -170,7 +177,6 @@ namespace cg {
 			}
 		}
 
-		log_debug() << "Adding new state rule" << std::endl;
 		_state_rules.push_back(state_rule);
 
 		const auto r = _states.size() / _state_size;
@@ -181,7 +187,10 @@ namespace cg {
 
 		auto state = _get_state(r);
 
+		log_debug() << "drilling: " << _state_str(state_rule) << std::endl;
 		auto unsorted_rules = _drill(state_rule);
+		log_debug() << "drilled: " << _state_str(unsorted_rules) << std::endl;
+
 		//Do not check a character. Instead reduce.
 		//Right now, can only reduce if it is the only rule in a group
 		if (_has_end_of_rule(unsorted_rules)) {
@@ -203,7 +212,12 @@ namespace cg {
 				"CfgContext must be simplified before using AbsoluteSolver"
 			);
 
+			log_debug() << "Stepping step:" << std::endl << _state_str(rules);
+
 			auto next = _step_state_rule(rules);
+
+			log_debug() << "Stepped step with leaf:" << leaf << std::endl << _state_str(next);
+
 			auto next_i = _add_state(next);
 			state = _get_state(r); // pointers are potentially incorrectly now
 
@@ -219,16 +233,20 @@ namespace cg {
 
 	bool AbsoluteSolver::_has_end_of_rule(StateRule const &state) const {
 		for (auto &pos : state) {
-			if (pos.offset >= _get_rule(pos).leaves().size()) {
+			if (_is_end_pos(pos)) {
 				return true;
 			}
 		}
 		return false;
 	}
 
+	bool AbsoluteSolver::_is_end_pos(RulePos const &pos) const {
+		return pos.offset >= _get_rule(pos).leaves().size();
+	}
+
 	AbsoluteSolver::StateRule AbsoluteSolver::_step_state_rule(StateRule const &state) {
 		auto r = StateRule();
-		for (auto rule : r) {
+		for (auto rule : state) {
 			rule.offset++;
 			r.insert(rule);
 		}
@@ -273,6 +291,31 @@ namespace cg {
 		return {};
 	}
 
+	std::string AbsoluteSolver::_rule_str(RulePos const &pos) const {
+		auto r = std::string();
+		auto &rule = _get_rule(pos);
+		int i = 0;
+		for (auto &leaf : rule.leaves()) {
+			if (i == pos.offset) {
+				r += "|";
+			}
+			r += leaf.str();
+			i++;
+		}
+		if (pos.offset >= rule.leaves().size()) {
+			r += "|";
+		}
+		return r;
+	}
+
+	std::string AbsoluteSolver::_state_str(StateRule const &state) const {
+		auto r = std::string();
+		for (auto &rule : state) {
+			r += _rule_str(rule) + "\n";
+		}
+		return r;
+	}
+
 	std::string AbsoluteSolver::_debug(RulePos const &pos) const {
 		auto ss = std::stringstream();
 
@@ -299,6 +342,10 @@ namespace cg {
 		bool is_root
 	) {
 		for (auto &rule : start) {
+			if (_is_end_pos(rule)) {
+				children.insert(rule);
+				continue;
+			}
 			auto &leaf = _get_leaf(rule);
 			if (leaf.type() == CfgLeaf::Type::var) {
 				if (!is_root) {
@@ -321,7 +368,7 @@ namespace cg {
 
 	std::set<RulePos> AbsoluteSolver::_drill(std::set<RulePos> const &start) {
 		auto r = std::set<RulePos>();
-		_drill(start, r);
+		_drill(start, r, false);
 		return r;
 	}
 
