@@ -1,10 +1,13 @@
 #pragma once
 
-#include "codegen/CfgContext.hpp"
-#include "util/IterAdapter.hpp"
 #include <ostream>
 #include <vector>
 #include <set>
+
+#include "codegen/CfgContext.hpp"
+#include "util/IterAdapter.hpp"
+#include "util/result.hpp"
+#include "AstNode.hpp"
 
 namespace cg {
 	struct RulePos {
@@ -38,6 +41,17 @@ namespace cg {
 
 			void print_table(std::ostream &os, std::set<char> const &chars);
 
+			util::Result<size_t, KError> match(
+				std::string const &str,
+				std::string const &root_node
+			);
+
+			util::Result<AstNode, KError> parse(
+				std::string const &str,
+				std::string const &root_node,
+				std::string const &filename = "codegen"
+			);
+
 		public:
 			using State = util::IterAdapter<uint32_t*>;
 			using StateRule = std::set<RulePos>;
@@ -46,7 +60,6 @@ namespace cg {
 				CfgLeaf leaf;
 				StateRule rules;
 			};
-
 
 
 		private:

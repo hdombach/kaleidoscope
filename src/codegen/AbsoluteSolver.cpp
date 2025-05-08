@@ -4,8 +4,12 @@
 #include <glm/detail/qualifier.hpp>
 #include <iterator>
 #include <string>
+#include <tuple>
+#include <variant>
+#include <vector>
 
 #include "util/IterAdapter.hpp"
+#include "util/KError.hpp"
 #include "util/PrintTools.hpp"
 #include "util/log.hpp"
 
@@ -109,6 +113,37 @@ namespace cg {
 		}
 
 		os << util::ptable(table);
+	}
+
+	util::Result<AstNode, KError> AbsoluteSolver::parse(
+		std::string const &str,
+		std::string const &root_name,
+		std::string const &filename
+	) {
+		try {
+			log_assert(!_states.empty(), "Must load CFG into AbsoluteSolver");
+
+			// uint32_t is the current state
+			using Element = std::variant<CfgLeaf, AstNode, uint32_t>;
+			auto stack = std::vector<Element>();
+			auto c = str.begin();
+			while (c != str.end()) {
+				auto &last = stack[stack.size() - 1];
+				log_assert(
+					std::holds_alternative<uint32_t>(last),
+					"Top of the stack must be a state"
+				);
+				auto cur_state = _get_state(std::get<uint32_t>(last));
+				auto cell = _state_char(cur_state, *c);
+				if (cell & REDUCE_MASK) {
+
+				}
+			}
+
+			log_assert(stack.size() == 1, "stack must contain 1 element");
+			log_assert(std::holds_alternative<AstNode>(stack[0]), "Element in stack must be an AstNode");
+			return std::get<AstNode>(stack[0]);
+		} catch_kerror;
 	}
 
 	AbsoluteSolver::State AbsoluteSolver::_get_state(uint32_t index) {
