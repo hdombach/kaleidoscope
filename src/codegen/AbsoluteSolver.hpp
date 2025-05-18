@@ -8,18 +8,9 @@
 #include "util/IterAdapter.hpp"
 #include "util/result.hpp"
 #include "AstNode.hpp"
+#include "AbsoluteTable.hpp"
 
 namespace cg {
-	struct RulePos {
-		uint32_t set;
-		uint32_t rule;
-		uint32_t offset;
-
-		bool operator<(RulePos const &rhs) const;
-		bool operator==(RulePos const &rhs) const;
-		bool operator>(RulePos const &rhs) const;
-	};
-
 	/**
 	 * @brief A (hopefully) fast parser for the context free grammar.
 	 * It uses an LR(1) parser I think.
@@ -64,33 +55,10 @@ namespace cg {
 
 		private:
 			CfgContext const *_ctx = nullptr;
-			std::vector<StateRule> _state_rules;
-			std::vector<uint32_t> _states;
-			/**
-			 * @brief How many uints are used for a single state
-			 */
-			uint32_t _state_size;
+			AbsoluteTable _table;
 
 		private:
-			static const uint32_t REDUCE_MASK = 0x80000000;
 
-			/**
-			 * @param[in] Index of the state.
-			 * @returns The state reference
-			 */
-			State _get_state(uint32_t index);
-			/**
-			 * Gets the next state for a given char
-			 * @param[in] state current position in table
-			 * @param[in] c Character to lookup in the state
-			 * @returns Index of the state
-			 */
-			uint32_t &_state_char(State state, char c);
-			/**
-			 * Gets the next state for a given rule set
-			 * @returns index in cfg rule set
-			 */
-			uint32_t &_state_ruleset(State state, uint32_t s);
 			/**
 			 * @brief Creates a state for a given rule
 			 * @param[in] state_rule
@@ -118,8 +86,6 @@ namespace cg {
 			std::set<RulePos> _get_var(std::string const &str);
 			std::string _rule_str(RulePos const &pos) const;
 			std::string _state_str(StateRule const &state) const;
-
-			std::string _debug(RulePos const &pos) const;
 
 			/**
 			 * @brief Finds the deepest rulest at each position

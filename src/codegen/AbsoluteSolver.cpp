@@ -4,63 +4,20 @@
 #include <glm/detail/qualifier.hpp>
 #include <iterator>
 #include <string>
-#include <tuple>
 #include <variant>
 #include <vector>
 
-#include "util/IterAdapter.hpp"
 #include "util/KError.hpp"
-#include "util/PrintTools.hpp"
 #include "util/log.hpp"
 
 namespace cg {
-	bool RulePos::operator<(RulePos const &rhs) const {
-		if (set < rhs.set) {
-			return true;
-		} else if (set > rhs.set) {
-			return false;
-		}
-		if (rule < rhs.rule) {
-			return true;
-		} else if (rule > rhs.rule) {
-			return false;
-		}
-		if (offset < rhs.offset) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	bool RulePos::operator==(RulePos const &rhs) const {
-		return set == rhs.set && rule == rhs.rule && offset == rhs.offset;
-	}
-
-	bool RulePos::operator>(RulePos const &rhs) const {
-		if (set > rhs.set) {
-			return true;
-		} else if (set < rhs.set) {
-			return false;
-		}
-		if (rule > rhs.rule) {
-			return true;
-		} else if (rule < rhs.rule) {
-			return false;
-		}
-		if (offset > rhs.offset) {
-			return true;
-		} else {
-			return false;
-		}
-	}
-
 	util::Result<AbsoluteSolver, KError> AbsoluteSolver::setup(
 		const CfgContext &context,
 		const std::string &root
 	) {
 		auto r = AbsoluteSolver();
 		r._ctx = &context;
-		r._state_size = 128 + context.cfg_rule_sets().size();
+		r._table = AbsoluteTable(context);
 
 		auto initial = r._get_var(root);
 
@@ -75,44 +32,7 @@ namespace cg {
 		std::ostream &os,
 		std::set<char> const &chars
 	) {
-		auto table = std::vector<std::vector<std::string>>();
-		auto label_row = std::vector<std::string>();
-		label_row.push_back("state");
-		label_row.push_back("current rules");
-		for (auto c : chars) {
-			label_row.push_back(util::f("\"", c, "\""));
-		}
-		for (auto &rule : _ctx->cfg_rule_sets()) {
-			label_row.push_back(rule.name());
-		}
-		table.push_back(label_row);
-
-		for (int rule_i = 0; rule_i < _state_rules.size(); rule_i++) {
-			auto row = std::vector<std::string>();
-			row.push_back(std::to_string(rule_i));
-			row.push_back(_state_str(_state_rules[rule_i]));
-			auto state  = _get_state(rule_i);
-			uint32_t state_i = 0;
-			for (auto s : state) {
-				auto state_str = std::string();
-				if (s & REDUCE_MASK) {
-					state_str += "r";
-				}
-				state_str += std::to_string(s & ~REDUCE_MASK);
-
-				if (state_i < 128) {
-					if (chars.contains(state_i)) {
-						row.push_back(state_str);
-					}
-				} else {
-					row.push_back(state_str);
-				}
-				state_i++;
-			}
-			table.push_back(row);
-		}
-
-		os << util::ptable(table);
+		return _table.print(os, chars);
 	}
 
 	util::Result<AstNode, KError> AbsoluteSolver::parse(
@@ -121,8 +41,6 @@ namespace cg {
 		std::string const &filename
 	) {
 		try {
-			log_assert(!_states.empty(), "Must load CFG into AbsoluteSolver");
-
 			// uint32_t is the current state
 			using Element = std::variant<CfgLeaf, AstNode, uint32_t>;
 			auto stack = std::vector<Element>();
@@ -133,11 +51,13 @@ namespace cg {
 					std::holds_alternative<uint32_t>(last),
 					"Top of the stack must be a state"
 				);
+				/*
 				auto cur_state = _get_state(std::get<uint32_t>(last));
 				auto cell = _state_char(cur_state, *c);
 				if (cell & REDUCE_MASK) {
 
 				}
+				*/
 			}
 
 			log_assert(stack.size() == 1, "stack must contain 1 element");
@@ -146,42 +66,14 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	AbsoluteSolver::State AbsoluteSolver::_get_state(uint32_t index) {
-		return util::Adapt(
-			&_states[index * _state_size],
-			&_states[(index + 1) * _state_size]
-		);
-	}
-
-	uint32_t &AbsoluteSolver::_state_char(State state, char c) {
-		return state.begin()[c];
-	}
-
-	uint32_t &AbsoluteSolver::_state_ruleset(State state, uint32_t s) {
-		return state.begin()[128 + s];
-	}
-
 	uint32_t AbsoluteSolver::_add_state(StateRule const &state_rule) {
-		{
-			auto rule = std::find(_state_rules.begin(), _state_rules.end(), state_rule);
-			if (rule != _state_rules.end()) {
-				return rule - _state_rules.begin();
-			}
-		}
+		log_debug() << "Adding state: " << _table.state_str(state_rule) << std::endl;
+		if (_table.contains_row(state_rule)) return _table.row_id(state_rule);
 
-		_state_rules.push_back(state_rule);
+		auto new_state = _table.row(state_rule);
+		auto new_state_id = _table.row_id(state_rule);
 
-		const auto r = _states.size() / _state_size;
-
-		for (auto i = 0; i < _state_size; i++) {
-			_states.push_back(0);
-		}
-
-		auto state = _get_state(r);
-
-		log_debug() << "drilling: " << _state_str(state_rule) << std::endl;
 		auto unsorted_rules = _drill(state_rule);
-		log_debug() << "drilled: " << _state_str(unsorted_rules) << std::endl;
 
 		//Do not check a character. Instead reduce.
 		//Right now, can only reduce if it is the only rule in a group
@@ -189,10 +81,10 @@ namespace cg {
 			if (unsorted_rules.size() != 1) {
 				log_error() << "Can't generate without a lookahead" << std::endl;;
 			}
-			for (auto &s : state) {
-				s = unsorted_rules.begin()->set | REDUCE_MASK;
+			for (auto &s : new_state) {
+				s = unsorted_rules.begin()->set | AbsoluteTable::REDUCE_MASK;
 			}
-			return r;
+			return new_state_id;
 		}
 
 		//group by leaf type. We already handeled positions at the end a rule so we
@@ -211,16 +103,15 @@ namespace cg {
 			log_debug() << "Stepped step with leaf:" << leaf << std::endl << _state_str(next);
 
 			auto next_i = _add_state(next);
-			state = _get_state(r); // pointers are potentially incorrectly now
 
 			if (leaf.type() == CfgLeaf::Type::character) {
-				_state_char(state, leaf.str_content()[0]) = next_i;
+				_table.lookup_char(state_rule, leaf.str()[0]) = next_i;
 			} else {
-				_state_ruleset(state, _ctx->rule_id(leaf.var_name())) = next_i;
+				_table.lookup_ruleset(state_rule, _ctx->rule_id(leaf.var_name())) = next_i;
 			}
 		}
 
-		return r;
+		return new_state_id;
 	}
 
 	bool AbsoluteSolver::_has_end_of_rule(StateRule const &state) const {
@@ -306,26 +197,6 @@ namespace cg {
 			r += _rule_str(rule) + "\n";
 		}
 		return r;
-	}
-
-	std::string AbsoluteSolver::_debug(RulePos const &pos) const {
-		auto ss = std::stringstream();
-
-		auto set = _get_set(pos);
-		auto rule = _get_rule(pos);
-
-		ss << set.name() << " -> ";
-		for (int i = 0; i < rule.leaves().size(); i++) {
-			if (pos.offset == i) {
-				ss << ". ";
-			}
-			ss << rule.leaves()[i] << " ";
-		}
-		if (pos.offset == rule.leaves().size()) {
-			ss << " .";
-		}
-
-		return ss.str();
 	}
 
 	void AbsoluteSolver::_drill(
