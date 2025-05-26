@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ostream>
+#include <variant>
 #include <vector>
 #include <set>
 
@@ -52,12 +53,46 @@ namespace cg {
 				StateRule rules;
 			};
 
+			class StackElement {
+				public:
+					StackElement();
+					StackElement(uint32_t state_id, CfgLeaf const &leaf);
+					StackElement(uint32_t state_id, AstNode const &node);
+
+					uint32_t state_id() const;
+					CfgLeaf const &leaf() const;
+					CfgLeaf &leaf();
+					bool is_leaf() const;
+					AstNode const &node() const;
+					AstNode &node();
+					bool is_node() const;
+					std::ostream &debug(std::ostream &os) const;
+
+				private:
+					/**
+					 * @brief The current state_id when this element is added to the stack.
+					 */
+					uint32_t _state_id;
+					std::variant<CfgLeaf, AstNode> _value;
+			};
+
 
 		private:
 			CfgContext const *_ctx = nullptr;
 			AbsoluteTable _table;
 
 		private:
+			/**
+			 * @brief Reduces the top of the stack using the provided rule_id
+			 * @param[in, out] stack The stack to reduce
+			 * @param[in] cur_state_id
+			 * @returns The new cur_state_id. Can be the same as cur_state_id
+			 */
+			uint32_t _reduce(
+				std::vector<StackElement> &stack,
+				uint32_t rule_id,
+				uint32_t cur_state_id
+			);
 
 			/**
 			 * @brief Creates a state for a given rule
@@ -80,8 +115,19 @@ namespace cg {
 			 */
 			StateRule _step_state_rule(StateRule const &state);
 
+			/**
+			 * @brief Get a rule for a corresponding unique_id
+			 * The id 0 is reserved for null
+			 */
+			uint32_t _get_rule_id(RulePos const &pos);
 			CfgRuleSet const &_get_set(RulePos const &pos) const;
 			CfgRule const &_get_rule(RulePos const &pos) const;
+			uint32_t _get_rule_set_id(uint32_t rule_id) const;
+			/**
+			 * @brief Get a unique_id for a corresponding rule
+			 * The id 0 is reserved for null
+			 */
+			CfgRule const &_get_rule(uint32_t id);
 			CfgLeaf const &_get_leaf(RulePos const &pos) const;
 			std::set<RulePos> _get_var(std::string const &str);
 			std::string _rule_str(RulePos const &pos) const;
@@ -108,4 +154,6 @@ namespace cg {
 			 */
 			std::vector<RuleGroup> _group_rules(std::set<RulePos> const &children);
 	};
+
+	std::ostream &operator<<(std::ostream &os, AbsoluteSolver::StackElement const &e);
 }

@@ -64,8 +64,17 @@ namespace cg {
 			 * @brief Looks up a cell for a corresponding row and character
 			 * @param[in] row
 			 * @param[in] c
+			 * @returns id of the new state
 			 */
 			StateId &lookup_char(StateRule const &row, char c);
+
+			/**
+			 * @brief Looks up a cell for a corresponding row and character
+			 * @param[in] state_id
+			 * @param[in] c
+			 * @returns id of the new state
+			 */
+			StateId &lookup_char(uint32_t state_id, char c);
 
 			/**
 			 * @brief Gets the next state for a given set
@@ -74,11 +83,26 @@ namespace cg {
 			StateId &lookup_ruleset(StateRule const &row, uint32_t ruleset);
 
 			/**
+			 * @brief Looks up a cell for a corresponding row and ruleset id
+			 * @param[in] state_id
+			 * @param[in] c
+			 * @returns id of the new state
+			 */
+			StateId &lookup_ruleset(uint32_t state_id, uint32_t ruleset);
+
+			/**
 			 * @brief Gets the string representatin of a group of states
 			 * @param[in] state
 			 * @returns String representatin
 			 */
 			std::string state_str(StateRule const &state) const;
+
+			/**
+			 * @brief Gets the string representation of an action
+			 * @param[in] uint32_t action 
+			 * @returns String representation
+			 */
+			std::string action_str(uint32_t action) const;
 
 
 		private:

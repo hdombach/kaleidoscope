@@ -71,11 +71,7 @@ namespace cg {
 			auto state  = row(_state_rules[i]);
 			uint32_t state_i = 0;
 			for (auto s : state) {
-				auto state_str = std::string();
-				if (s & REDUCE_MASK) {
-					state_str += "r";
-				}
-				state_str += std::to_string(s & ~REDUCE_MASK);
+				auto state_str = action_str(s);
 
 				if (state_i < 128) {
 					if (chars.contains(state_i)) {
@@ -137,11 +133,25 @@ namespace cg {
 		return row(r).begin()[c];
 	}
 
+	AbsoluteTable::StateId &AbsoluteTable::lookup_char(
+		uint32_t state_id,
+		char c
+	) {
+		return row(state_id).begin()[c];
+	}
+
 	AbsoluteTable::StateId &AbsoluteTable::lookup_ruleset(
 		StateRule const &r,
 		uint32_t ruleset
 	) {
 		return row(r).begin()[ruleset + 128];
+	}
+
+	AbsoluteTable::StateId &AbsoluteTable::lookup_ruleset(
+		uint32_t state_id,
+		uint32_t ruleset
+	) {
+		return row(state_id).begin()[ruleset + 128];
 	}
 
 	std::string AbsoluteTable::state_str(StateRule const &state) const {
@@ -150,6 +160,15 @@ namespace cg {
 			r += _rule_str(rule) + "\n";
 		}
 		return r;
+	}
+
+	std::string AbsoluteTable::action_str(uint32_t action) const {
+		auto s = std::string();
+		if (action & REDUCE_MASK) {
+			s += "r";
+		}
+		s += std::to_string(action & ~REDUCE_MASK);
+		return s;
 	}
 
 	std::string AbsoluteTable::_rule_str(RulePos const &pos) const {

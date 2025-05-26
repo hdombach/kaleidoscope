@@ -143,6 +143,14 @@ namespace cg {
 		return ss.str();
 	}
 
+	bool CfgRule::operator==(CfgRule const &other)const{
+		return _leaves == other._leaves;
+	}
+
+	bool CfgRule::operator!=(CfgRule const &other)const{
+		return _leaves != other._leaves;
+	}
+
 	CfgRuleSet::CfgRuleSet(std::string const &name): _name(name) { }
 
 	CfgRuleSet& CfgRuleSet::operator=(CfgRuleSet const &set) {

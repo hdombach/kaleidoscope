@@ -9,6 +9,7 @@
 
 #include "util/KError.hpp"
 #include "util/log.hpp"
+#include "util/PrintTools.hpp"
 
 namespace cg {
 	util::Result<AbsoluteSolver, KError> AbsoluteSolver::setup(
@@ -42,28 +43,128 @@ namespace cg {
 	) {
 		try {
 			// uint32_t is the current state
-			using Element = std::variant<CfgLeaf, AstNode, uint32_t>;
-			auto stack = std::vector<Element>();
+			auto stack = std::vector<StackElement>();
+			uint32_t cur_state_id=0;
 			auto c = str.begin();
+			auto prev_rule_set = std::optional<uint32_t>();
 			while (c != str.end()) {
-				auto &last = stack[stack.size() - 1];
-				log_assert(
-					std::holds_alternative<uint32_t>(last),
-					"Top of the stack must be a state"
-				);
-				/*
-				auto cur_state = _get_state(std::get<uint32_t>(last));
-				auto cell = _state_char(cur_state, *c);
-				if (cell & REDUCE_MASK) {
-
+				uint32_t action;
+				if (prev_rule_set) {
+					action = _table.lookup_ruleset(cur_state_id, *prev_rule_set);
+					prev_rule_set = std::nullopt;
+				} else {
+					action = _table.lookup_char(cur_state_id, *c);
 				}
-				*/
-			}
 
-			log_assert(stack.size() == 1, "stack must contain 1 element");
-			log_assert(std::holds_alternative<AstNode>(stack[0]), "Element in stack must be an AstNode");
-			return std::get<AstNode>(stack[0]);
+				log_debug() << "action: " << _table.action_str(action) << std::endl;
+
+				if (action & AbsoluteTable::REDUCE_MASK) {
+					uint32_t production_rule_id = action & ~AbsoluteTable::REDUCE_MASK;
+					cur_state_id = _reduce(stack, production_rule_id, cur_state_id);
+					prev_rule_set = _get_rule_set_id(production_rule_id);
+				} else {
+					stack.push_back(StackElement(cur_state_id, CfgLeaf::character(*c)));
+					log_debug() << "shifted character: " << *c << std::endl;
+					cur_state_id = action;
+					c++;
+				}
+				log_debug() << "state is " << cur_state_id << std::endl;
+			}
+			log_assert(stack.size() == 1, "Stack must contain 1 element");
+			log_assert(stack.back().is_node(), "Stack must contain a node");
+			return stack.back().node();
 		} catch_kerror;
+	}
+
+	AbsoluteSolver::StackElement::StackElement():
+	_state_id(0),
+	_value(CfgLeaf())
+	{}
+
+	AbsoluteSolver::StackElement::StackElement(
+		uint32_t state_id,
+		CfgLeaf const &leaf
+	) {
+		_state_id = state_id;
+		_value = leaf;
+	}
+
+	AbsoluteSolver::StackElement::StackElement(
+		uint32_t state_id,
+		AstNode const &node
+	) {
+		_state_id = state_id;
+		_value = node;
+	}
+
+	uint32_t AbsoluteSolver::StackElement::state_id() const {
+		return _state_id;
+	}
+
+	CfgLeaf const &AbsoluteSolver::StackElement::leaf() const {
+		return std::get<CfgLeaf>(_value);
+	}
+
+	CfgLeaf &AbsoluteSolver::StackElement::leaf() {
+		return std::get<CfgLeaf>(_value);
+	}
+
+	bool AbsoluteSolver::StackElement::is_leaf() const {
+		return std::holds_alternative<CfgLeaf>(_value);
+	}
+
+	AstNode const &AbsoluteSolver::StackElement::node() const {
+		return std::get<AstNode>(_value);
+	}
+
+	AstNode &AbsoluteSolver::StackElement::node(){
+		return std::get<AstNode>(_value);
+	}
+
+	bool AbsoluteSolver::StackElement::is_node() const {
+		return std::holds_alternative<AstNode>(_value);
+	}
+
+	std::ostream &AbsoluteSolver::StackElement::debug(std::ostream &os) const {
+		os << "(" << _state_id << ") ";
+		if (is_node()){
+			os << node();
+		} else {
+			os << leaf();
+		}
+		return os;
+	}
+
+	uint32_t AbsoluteSolver::_reduce(
+		std::vector<StackElement> &stack,
+		uint32_t rule_id,
+		uint32_t cur_state_id
+	){
+		auto &debug = log_debug();
+		debug << "Reducing stack: " << util::plist(stack) << " -> ";
+
+		auto &rule = _get_rule(rule_id);
+		auto popped = std::vector<StackElement>();
+		for (uint32_t i = 0; i < rule.leaves().size(); i++) {
+			popped.push_back(stack.back());
+			stack.pop_back();
+		}
+		uint32_t TODO = 0;
+		auto TODO2 = util::FileLocation();
+		auto node = AstNode::create_rule(TODO, rule.str(), TODO2);
+
+		for (int i = popped.size()-1; i >= 0; i--){
+			auto &p = popped[i];
+			if (p.is_node()) {
+				node.add_child(p.node());
+			} else {
+				log_assert(p.leaf().type() == CfgLeaf::Type::character, "CfgLeaf must be a character");
+				node.add_child(AstNode::create_str(TODO, p.leaf().str(), TODO2));
+			}
+		}
+		stack.push_back(StackElement(cur_state_id, node));
+		debug << util::plist(stack) << std::endl;
+		return popped.back().state_id();
 	}
 
 	uint32_t AbsoluteSolver::_add_state(StateRule const &state_rule) {
@@ -82,7 +183,7 @@ namespace cg {
 				log_error() << "Can't generate without a lookahead" << std::endl;;
 			}
 			for (auto &s : new_state) {
-				s = unsorted_rules.begin()->set | AbsoluteTable::REDUCE_MASK;
+				s = _get_rule_id(*unsorted_rules.begin()) | AbsoluteTable::REDUCE_MASK;
 			}
 			return new_state_id;
 		}
@@ -105,7 +206,7 @@ namespace cg {
 			auto next_i = _add_state(next);
 
 			if (leaf.type() == CfgLeaf::Type::character) {
-				_table.lookup_char(state_rule, leaf.str()[0]) = next_i;
+				_table.lookup_char(state_rule, leaf.str_content()[0]) = next_i;
 			} else {
 				_table.lookup_ruleset(state_rule, _ctx->rule_id(leaf.var_name())) = next_i;
 			}
@@ -143,6 +244,35 @@ namespace cg {
 
 		return sets[pos.set];
 	}
+
+	AbsoluteSolver::RuleId AbsoluteSolver::_get_rule_id(RulePos const &pos) {
+		RuleId r = 1;
+		auto &target = _get_rule(pos);
+		for (auto &set : _ctx->cfg_rule_sets()) {
+			for (auto &rule : set.rules()) {
+				if (rule == target) return r;
+				r++;
+			}
+		}
+
+		log_fatal_error() << "No matching rule position in the contex" << std::endl;
+		return r;
+	}
+
+	CfgRule const &AbsoluteSolver::_get_rule(uint32_t id) {
+		log_assert(id != 0, "Can't get rule for id 0");
+		uint32_t r = 1;
+		for (auto &set : _ctx->cfg_rule_sets()) {
+			for (auto &rule : set.rules()) {
+				if (r == id) return rule;
+				r++;
+			}
+		}
+
+		log_fatal_error() << "No matching RuleId in contex" << std::endl;
+		return _ctx->cfg_rule_sets()[0].rules()[0];
+	}
+
 	CfgRule const &AbsoluteSolver::_get_rule(RulePos const &pos) const {
 		auto &rules = _get_set(pos).rules();
 
@@ -150,6 +280,22 @@ namespace cg {
 
 		return rules[pos.rule];
 	}
+
+	uint32_t AbsoluteSolver::_get_rule_set_id(uint32_t rule_id) const {
+		log_assert(rule_id != 0, "Can't get rule for id 0");
+		RuleId r = 1;
+		uint32_t set_id = 0;
+		for (auto &set : _ctx->cfg_rule_sets()) {
+			for (auto &rule : set.rules()) {
+				if (r == rule_id) return set_id;
+				r++;
+			}
+			set_id++;
+		}
+		log_fatal_error() << "No matching RuleId in context" << std::endl;
+		return 0;
+	}
+
 	CfgLeaf const &AbsoluteSolver::_get_leaf(RulePos const &pos) const {
 		auto &leaves = _get_rule(pos).leaves();
 
@@ -256,5 +402,9 @@ namespace cg {
 			matched->rules.insert(child);
 		}
 		return r;
+	}
+
+	std::ostream &operator<<(std::ostream &os, AbsoluteSolver::StackElement const &e) {
+		return e.debug(os);
 	}
 }

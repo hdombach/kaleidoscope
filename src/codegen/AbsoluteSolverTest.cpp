@@ -15,6 +15,7 @@ namespace cg {
 
 		auto solver = AbsoluteSolver::setup(c, "S");
 		solver->print_table(log_debug() << "\n", {'*', '+', '0', '1'});
+		solver->parse("1+1", "S");
 	}
 
 	TEST(AbsoluteSolver, simplify_strings) {

@@ -98,6 +98,8 @@ namespace cg {
 
 			std::ostream& print_debug(std::ostream &os) const;
 			std::string str() const;
+			bool operator==(CfgRule const &other) const;
+			bool operator!=(CfgRule const &other) const;
 		private:
 			std::vector<CfgLeaf> _leaves;
 	};
