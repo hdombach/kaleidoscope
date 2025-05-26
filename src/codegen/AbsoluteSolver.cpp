@@ -245,8 +245,8 @@ namespace cg {
 		return sets[pos.set];
 	}
 
-	AbsoluteSolver::RuleId AbsoluteSolver::_get_rule_id(RulePos const &pos) {
-		RuleId r = 1;
+	uint32_t AbsoluteSolver::_get_rule_id(RulePos const &pos) {
+		uint32_t r = 1;
 		auto &target = _get_rule(pos);
 		for (auto &set : _ctx->cfg_rule_sets()) {
 			for (auto &rule : set.rules()) {
@@ -269,7 +269,7 @@ namespace cg {
 			}
 		}
 
-		log_fatal_error() << "No matching RuleId in contex" << std::endl;
+		log_fatal_error() << "No matching rule id in contex" << std::endl;
 		return _ctx->cfg_rule_sets()[0].rules()[0];
 	}
 
@@ -283,7 +283,7 @@ namespace cg {
 
 	uint32_t AbsoluteSolver::_get_rule_set_id(uint32_t rule_id) const {
 		log_assert(rule_id != 0, "Can't get rule for id 0");
-		RuleId r = 1;
+		uint32_t r = 1;
 		uint32_t set_id = 0;
 		for (auto &set : _ctx->cfg_rule_sets()) {
 			for (auto &rule : set.rules()) {
@@ -292,7 +292,7 @@ namespace cg {
 			}
 			set_id++;
 		}
-		log_fatal_error() << "No matching RuleId in context" << std::endl;
+		log_fatal_error() << "No matching rule id in context" << std::endl;
 		return 0;
 	}
 

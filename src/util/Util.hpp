@@ -101,6 +101,9 @@ namespace util {
 				case '\\':
 					res += "\\\\";
 					break;
+				case 127:
+					res += "0x7f";
+					break;
 				default:
 					res += c;
 			}

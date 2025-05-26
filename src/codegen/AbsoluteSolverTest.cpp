@@ -5,7 +5,7 @@
 namespace cg {
 	TEST(AbsoluteSolver, debug_print) {
 		auto c = CfgContext();
-		c.prim("S") = c["E"];
+		c.prim("S") = c["E"] + c.s("\x7f");
 		c.prim("E") = c["E"] + c.s("*") + c["B"];
 		c.prim("E") = c["E"] + c.s("+") + c["B"];
 		c.prim("E") = c["B"];
