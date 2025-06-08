@@ -1,6 +1,7 @@
 #include "AstNode.hpp"
 #include "util/Util.hpp"
 #include "util/log.hpp"
+#include "util/PrintTools.hpp"
 
 namespace cg {
 	AstNode::AstNode():
@@ -138,6 +139,18 @@ namespace cg {
 		auto r = *this;
 		r.trim();
 		return r;
+	}
+
+	std::ostream &AstNode::print_debug(std::ostream &os) const {
+		if (_children.empty()) {
+			os << '"' << consumed() << '"';
+		} else {
+			os << "{";
+			os << '"' << consumed() << '"' << ": ";
+			os << util::plist(_children);
+			os << "}";
+		}
+		return os;
 	}
 
 	std::ostream &AstNode::print_pre_order(std::ostream &os) const {

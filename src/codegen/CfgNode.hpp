@@ -109,6 +109,10 @@ namespace cg {
 	 */
 	class CfgRuleSet final {
 		public:
+			using RuleContainer = std::vector<CfgRule>;
+			using iterator = RuleContainer::iterator;
+			using const_iterator = RuleContainer::const_iterator;
+
 			CfgRuleSet() = default;
 
 			CfgRuleSet(std::string const &name);
@@ -124,6 +128,11 @@ namespace cg {
 			std::string const &name() const { return _name; }
 			std::vector<CfgRule> &rules() { return _rules; }
 			std::vector<CfgRule> const &rules() const { return _rules; }
+
+			iterator begin();
+			const_iterator begin() const;
+			iterator end();
+			const_iterator end() const;
 
 			/**
 			 * @brief Expands the rules to enumerate all possible charaters in

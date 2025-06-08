@@ -70,7 +70,7 @@ namespace cg {
 
 				private:
 					/**
-					 * @brief The current state_id when this element is added to the stack.
+					 * @brief The current state_id in the table when this element is added to the stack.
 					 */
 					uint32_t _state_id;
 					std::variant<CfgLeaf, AstNode> _value;

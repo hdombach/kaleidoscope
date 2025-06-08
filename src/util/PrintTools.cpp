@@ -1,7 +1,6 @@
 #include "PrintTools.hpp"
 #include "RectSize.hpp"
 #include "util/lines_iterator.hpp"
-#include "util/log.hpp"
 
 #include <iomanip>
 #include <ostream>

@@ -90,6 +90,7 @@ namespace cg {
 			 */
 			AstNode trimmed() const;
 
+			std::ostream &print_debug(std::ostream &os) const;
 			std::ostream &print_pre_order(std::ostream &os) const;
 			std::ostream &print_dot(std::ostream &os, std::string const &name) const;
 
@@ -113,4 +114,8 @@ namespace cg {
 			void _print_dot_attributes(std::ostream &os) const;
 			void _print_dot_paths(std::ostream &os) const;
 	};
+
+	inline std::ostream &operator<<(std::ostream &os, AstNode const &node) {
+		return node.print_debug(os);
+	}
 }

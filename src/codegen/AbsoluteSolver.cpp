@@ -12,6 +12,7 @@
 #include "util/PrintTools.hpp"
 
 namespace cg {
+	int node_id = 0;
 	util::Result<AbsoluteSolver, KError> AbsoluteSolver::setup(
 		const CfgContext &context,
 		const std::string &root
@@ -45,28 +46,36 @@ namespace cg {
 			// uint32_t is the current state
 			auto stack = std::vector<StackElement>();
 			uint32_t cur_state_id=0;
-			auto c = str.begin();
+			auto c = str.data();
 			auto prev_rule_set = std::optional<uint32_t>();
-			while (c != str.end()) {
+			while (1) {
 				uint32_t action;
 				if (prev_rule_set) {
 					action = _table.lookup_ruleset(cur_state_id, *prev_rule_set);
-					prev_rule_set = std::nullopt;
 				} else {
-					action = _table.lookup_char(cur_state_id, *c);
+					auto another_c = *c;
+					if (another_c == 0) {
+						another_c = '\x7f';
+					}
+					action = _table.lookup_char(cur_state_id, another_c);
 				}
 
 				log_debug() << "action: " << _table.action_str(action) << std::endl;
 
 				if (action & AbsoluteTable::REDUCE_MASK) {
 					uint32_t production_rule_id = action & ~AbsoluteTable::REDUCE_MASK;
-					cur_state_id = _reduce(stack, production_rule_id, cur_state_id);
+					cur_state_id = _reduce(stack, production_rule_id, stack[stack.size() - 1].state_id());
 					prev_rule_set = _get_rule_set_id(production_rule_id);
-				} else {
-					stack.push_back(StackElement(cur_state_id, CfgLeaf::character(*c)));
+				} else if (prev_rule_set == std::nullopt) {
+					if (*c == '\0') break;
+					//TODO: update source_location
+					stack.push_back(StackElement(cur_state_id, AstNode::create_str(node_id++, {*c}, std::source_location())));
 					log_debug() << "shifted character: " << *c << std::endl;
 					cur_state_id = action;
 					c++;
+				} else {
+					cur_state_id = action;
+					prev_rule_set = std::nullopt;
 				}
 				log_debug() << "state is " << cur_state_id << std::endl;
 			}
@@ -149,9 +158,8 @@ namespace cg {
 			popped.push_back(stack.back());
 			stack.pop_back();
 		}
-		uint32_t TODO = 0;
 		auto TODO2 = util::FileLocation();
-		auto node = AstNode::create_rule(TODO, rule.str(), TODO2);
+		auto node = AstNode::create_rule(node_id++, rule.str(), TODO2);
 
 		for (int i = popped.size()-1; i >= 0; i--){
 			auto &p = popped[i];
@@ -159,7 +167,7 @@ namespace cg {
 				node.add_child(p.node());
 			} else {
 				log_assert(p.leaf().type() == CfgLeaf::Type::character, "CfgLeaf must be a character");
-				node.add_child(AstNode::create_str(TODO, p.leaf().str(), TODO2));
+				node.add_child(AstNode::create_str(node_id++, p.leaf().str(), TODO2));
 			}
 		}
 		stack.push_back(StackElement(cur_state_id, node));

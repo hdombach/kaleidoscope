@@ -178,6 +178,22 @@ namespace cg {
 		}
 	}
 
+	CfgRuleSet::iterator CfgRuleSet::begin() {
+		return _rules.begin();
+	}
+
+	CfgRuleSet::const_iterator CfgRuleSet::begin() const {
+		return _rules.begin();
+	}
+
+	CfgRuleSet::iterator CfgRuleSet::end() {
+		return _rules.end();
+	}
+
+	CfgRuleSet::const_iterator CfgRuleSet::end() const {
+		return _rules.end();
+	}
+
 	static const std::vector<bool> _default_all{
 		0,0,0,0,0,0,0,1,
 		1,1,1,1,1,1,0,0,

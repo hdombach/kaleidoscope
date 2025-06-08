@@ -1,6 +1,8 @@
 
 #include "AbsoluteSolver.hpp"
 #include "tests/Test.hpp"
+#include "util/log.hpp"
+#include <fstream>
 
 namespace cg {
 	TEST(AbsoluteSolver, debug_print) {
@@ -13,9 +15,13 @@ namespace cg {
 		c.prim("B") = c.s("1");
 		c.simplify();
 
+		std::ofstream file("gen/ast-test.gv");
+
 		auto solver = AbsoluteSolver::setup(c, "S");
 		solver->print_table(log_debug() << "\n", {'*', '+', '0', '1'});
-		solver->parse("1+1", "S");
+		auto node = solver->parse("1+1\x7f", "S");
+		node->print_dot(file, "ast-test");
+		log_debug() << node.value() << std::endl;
 	}
 
 	TEST(AbsoluteSolver, simplify_strings) {
