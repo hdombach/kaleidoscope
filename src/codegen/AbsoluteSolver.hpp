@@ -87,11 +87,13 @@ namespace cg {
 			 * @param[in, out] stack The stack to reduce
 			 * @param[in] cur_state_id
 			 * @returns The new cur_state_id. Can be the same as cur_state_id
+			 * @returns Keeps track of node_id
 			 */
 			uint32_t _reduce(
 				std::vector<StackElement> &stack,
 				uint32_t rule_id,
-				uint32_t cur_state_id
+				uint32_t cur_state_id,
+				uint32_t &node_id
 			);
 
 			/**

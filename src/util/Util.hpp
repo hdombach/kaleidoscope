@@ -74,6 +74,9 @@ namespace util {
 		auto res = std::string();
 		for (auto c : str) {
 			switch (c) {
+				case '\x03':
+					res += "^C";
+					break;
 				case '\a':
 					res += "\\a";
 					break;

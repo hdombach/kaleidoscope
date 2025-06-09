@@ -1,6 +1,7 @@
 #include "AbsoluteTable.hpp"
 #include "util/PrintTools.hpp"
 #include "util/IterAdapter.hpp"
+#include "util/Util.hpp"
 #include "util/log.hpp"
 
 namespace cg {
@@ -56,7 +57,7 @@ namespace cg {
 		label_row.push_back("state");
 		label_row.push_back("current rules");
 		for (auto c : chars) {
-			label_row.push_back(util::f("\"", c, "\""));
+			label_row.push_back(util::f("\"", util::escape_str({c}), "\""));
 		}
 		for (auto &rule : _ctx->cfg_rule_sets()) {
 			label_row.push_back(rule.name());
@@ -164,6 +165,9 @@ namespace cg {
 
 	std::string AbsoluteTable::action_str(uint32_t action) const {
 		auto s = std::string();
+		if (action == ACCEPT_ACTION) {
+			return "accept";
+		}
 		if (action & REDUCE_MASK) {
 			s += "r";
 		}

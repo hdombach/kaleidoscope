@@ -26,6 +26,7 @@ namespace cg {
 			using StateRule = std::set<RulePos>;
 			using StateId = uint32_t;
 
+			static const uint32_t ACCEPT_ACTION = 0x88888888;
 			static const uint32_t REDUCE_MASK = 0x80000000;
 
 			AbsoluteTable() = default;

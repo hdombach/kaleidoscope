@@ -16,6 +16,9 @@ namespace cg {
 	CfgLeaf CfgContext::c(char c) const {
 		return CfgLeaf::character(c);
 	}
+	CfgLeaf CfgContext::eof() const {
+		return CfgLeaf::character('\x03');
+	}
 	CfgLeaf CfgContext::operator[](std::string const &str) const {
 		return CfgLeaf::var(str);
 	}

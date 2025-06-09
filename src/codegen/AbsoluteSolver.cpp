@@ -12,7 +12,6 @@
 #include "util/PrintTools.hpp"
 
 namespace cg {
-	int node_id = 0;
 	util::Result<AbsoluteSolver, KError> AbsoluteSolver::setup(
 		const CfgContext &context,
 		const std::string &root
@@ -43,6 +42,7 @@ namespace cg {
 		std::string const &filename
 	) {
 		try {
+			uint32_t node_id = 0;
 			// uint32_t is the current state
 			auto stack = std::vector<StackElement>();
 			uint32_t cur_state_id=0;
@@ -55,21 +55,34 @@ namespace cg {
 				} else {
 					auto another_c = *c;
 					if (another_c == 0) {
-						another_c = '\x7f';
+						another_c = '\x03';
 					}
 					action = _table.lookup_char(cur_state_id, another_c);
 				}
 
 				log_debug() << "action: " << _table.action_str(action) << std::endl;
 
-				if (action & AbsoluteTable::REDUCE_MASK) {
+				if (action == AbsoluteTable::ACCEPT_ACTION) {
+					log_debug() << "Accepting" << std::endl;
+					break;
+				} else if (action & AbsoluteTable::REDUCE_MASK) {
 					uint32_t production_rule_id = action & ~AbsoluteTable::REDUCE_MASK;
-					cur_state_id = _reduce(stack, production_rule_id, stack[stack.size() - 1].state_id());
+					cur_state_id = _reduce(
+						stack,
+						production_rule_id,
+						stack[stack.size() - 1].state_id(),
+						node_id
+					);
 					prev_rule_set = _get_rule_set_id(production_rule_id);
 				} else if (prev_rule_set == std::nullopt) {
-					if (*c == '\0') break;
+					if (!*c) {
+						return KError::codegen("Reached EOF unexpectedly");
+					}
 					//TODO: update source_location
-					stack.push_back(StackElement(cur_state_id, AstNode::create_str(node_id++, {*c}, std::source_location())));
+					stack.push_back(StackElement(
+						cur_state_id,
+						AstNode::create_str(node_id++, {*c}, std::source_location())
+					));
 					log_debug() << "shifted character: " << *c << std::endl;
 					cur_state_id = action;
 					c++;
@@ -79,15 +92,19 @@ namespace cg {
 				}
 				log_debug() << "state is " << cur_state_id << std::endl;
 			}
-			log_assert(stack.size() == 1, "Stack must contain 1 element");
-			log_assert(stack.back().is_node(), "Stack must contain a node");
+			if (stack.size() != 1) {
+				return KError::codegen("Stack must contain 1 element");
+			}
+			if (!stack.back().is_node()) {
+				return KError::codegen("Stack must contain a node");
+			}
 			return stack.back().node();
 		} catch_kerror;
 	}
 
 	AbsoluteSolver::StackElement::StackElement():
-	_state_id(0),
-	_value(CfgLeaf())
+		_state_id(0),
+		_value(CfgLeaf())
 	{}
 
 	AbsoluteSolver::StackElement::StackElement(
@@ -147,7 +164,8 @@ namespace cg {
 	uint32_t AbsoluteSolver::_reduce(
 		std::vector<StackElement> &stack,
 		uint32_t rule_id,
-		uint32_t cur_state_id
+		uint32_t cur_state_id,
+		uint32_t &node_id
 	){
 		auto &debug = log_debug();
 		debug << "Reducing stack: " << util::plist(stack) << " -> ";
@@ -211,12 +229,14 @@ namespace cg {
 
 			log_debug() << "Stepped step with leaf:" << leaf << std::endl << _state_str(next);
 
-			auto next_i = _add_state(next);
-
 			if (leaf.type() == CfgLeaf::Type::character) {
-				_table.lookup_char(state_rule, leaf.str_content()[0]) = next_i;
+				if (leaf.str_content()[0] == '\x03') {
+					_table.lookup_char(state_rule, leaf.str_content()[0]) = AbsoluteTable::ACCEPT_ACTION;
+				} else {
+					_table.lookup_char(state_rule, leaf.str_content()[0]) = _add_state(next);
+				}
 			} else {
-				_table.lookup_ruleset(state_rule, _ctx->rule_id(leaf.var_name())) = next_i;
+				_table.lookup_ruleset(state_rule, _ctx->rule_id(leaf.var_name())) = _add_state(next);
 			}
 		}
 

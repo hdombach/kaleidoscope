@@ -37,6 +37,11 @@ namespace cg {
 			CfgLeaf c(char c) const;
 
 			/**
+			 * @brief Creates an end of character
+			 */
+			CfgLeaf eof() const;
+
+			/**
 			 * @brief Wrapper around CfgLeaf::var
 			 */
 			CfgLeaf operator [](std::string const &str) const;

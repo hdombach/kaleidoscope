@@ -7,7 +7,7 @@
 namespace cg {
 	TEST(AbsoluteSolver, debug_print) {
 		auto c = CfgContext();
-		c.prim("S") = c["E"] + c.s("\x7f");
+		c.prim("S") = c["E"] + c.eof();
 		c.prim("E") = c["E"] + c.s("*") + c["B"];
 		c.prim("E") = c["E"] + c.s("+") + c["B"];
 		c.prim("E") = c["B"];
@@ -18,8 +18,8 @@ namespace cg {
 		std::ofstream file("gen/ast-test.gv");
 
 		auto solver = AbsoluteSolver::setup(c, "S");
-		solver->print_table(log_debug() << "\n", {'*', '+', '0', '1'});
-		auto node = solver->parse("1+1\x7f", "S");
+		solver->print_table(log_debug() << "\n", {'*', '+', '0', '1', '\x03'});
+		auto node = solver->parse("1+1", "S");
 		node->print_dot(file, "ast-test");
 		log_debug() << node.value() << std::endl;
 	}
