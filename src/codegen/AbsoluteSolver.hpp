@@ -104,6 +104,11 @@ namespace cg {
 			uint32_t _add_state(StateRule const &state_rule);
 
 			/**
+			 * @brief Gets the end character
+			 * Will throw an error if there is more than one
+			 */
+			util::Result<RulePos, void> _get_end_rule(StateRule const &state) const;
+			/**
 			 * Check if at least 
 			 * Checks if a pos is at the end of a rule
 			 */

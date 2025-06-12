@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <glm/detail/qualifier.hpp>
 #include <iterator>
+#include <sstream>
 #include <string>
 #include <variant>
 #include <vector>
@@ -10,6 +11,7 @@
 #include "util/KError.hpp"
 #include "util/log.hpp"
 #include "util/PrintTools.hpp"
+#include "util/StringRef.hpp"
 
 namespace cg {
 	util::Result<AbsoluteSolver, KError> AbsoluteSolver::setup(
@@ -34,6 +36,17 @@ namespace cg {
 		std::set<char> const &chars
 	) {
 		return _table.print(os, chars);
+	}
+
+	util::Result<size_t, KError> AbsoluteSolver::match(
+		std::string const &str,
+		std::string const &root_node
+	) {
+		try {
+			log_assert(_ctx, "AbsoluteSolver is not initialized");
+			auto ref = util::StringRef(str.c_str(), "codegen");
+			return parse(str, root_node)->size();
+		} catch_kerror;
 	}
 
 	util::Result<AstNode, KError> AbsoluteSolver::parse(
@@ -167,10 +180,12 @@ namespace cg {
 		uint32_t cur_state_id,
 		uint32_t &node_id
 	){
-		auto &debug = log_debug();
-		debug << "Reducing stack: " << util::plist(stack) << " -> ";
+		auto ss = std::stringstream();
+		ss << "Reducing stack: " << util::plist(stack) << " -> ";
 
 		auto &rule = _get_rule(rule_id);
+		log_debug() << "Reducing rule " << rule << std::endl;
+		log_assert(rule.leaves().size() <= stack.size(), "Stack must contain enough elements for the rule");
 		auto popped = std::vector<StackElement>();
 		for (uint32_t i = 0; i < rule.leaves().size(); i++) {
 			popped.push_back(stack.back());
@@ -184,12 +199,15 @@ namespace cg {
 			if (p.is_node()) {
 				node.add_child(p.node());
 			} else {
+				log_debug() << "popped size is: " << popped.size() << std::endl;
 				log_assert(p.leaf().type() == CfgLeaf::Type::character, "CfgLeaf must be a character");
 				node.add_child(AstNode::create_str(node_id++, p.leaf().str(), TODO2));
 			}
 		}
 		stack.push_back(StackElement(cur_state_id, node));
-		debug << util::plist(stack) << std::endl;
+		ss << util::plist(stack) << std::endl;
+		log_debug() << ss.str();
+		log_debug() << "popped size is " << popped.size() << std::endl;
 		return popped.back().state_id();
 	}
 
@@ -204,14 +222,10 @@ namespace cg {
 
 		//Do not check a character. Instead reduce.
 		//Right now, can only reduce if it is the only rule in a group
-		if (_has_end_of_rule(unsorted_rules)) {
-			if (unsorted_rules.size() != 1) {
-				log_error() << "Can't generate without a lookahead" << std::endl;;
-			}
+		if (auto end_rule = _get_end_rule(unsorted_rules)) {
 			for (auto &s : new_state) {
-				s = _get_rule_id(*unsorted_rules.begin()) | AbsoluteTable::REDUCE_MASK;
+				s = _get_rule_id(end_rule.value()) | AbsoluteTable::REDUCE_MASK;
 			}
-			return new_state_id;
 		}
 
 		//group by leaf type. We already handeled positions at the end a rule so we
@@ -241,6 +255,21 @@ namespace cg {
 		}
 
 		return new_state_id;
+	}
+
+	util::Result<RulePos, void> AbsoluteSolver::_get_end_rule(
+		StateRule const &state
+	) const {
+		auto r = util::Result<RulePos, void>();
+		for (auto &pos : state) {
+			if (_is_end_pos(pos)) {
+				if (r) {
+					log_error() << "There is more than one end rule" << std::endl;
+				}
+				r = pos;
+			}
+		}
+		return r;
 	}
 
 	bool AbsoluteSolver::_has_end_of_rule(StateRule const &state) const {
@@ -413,7 +442,10 @@ namespace cg {
 		std::set<RulePos> const &children
 	) {
 		auto r = std::vector<AbsoluteSolver::RuleGroup>();
+		if (children.empty()) return r;
 		for (auto &child : children) {
+			log_debug() << child.set << ", " << child.rule << ", " << child.offset << std::endl;
+			if (_is_end_pos(child)) continue;
 			auto &leaf = _get_leaf(child);
 			RuleGroup *matched = nullptr;
 			for (auto &group : r) {

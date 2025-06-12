@@ -45,13 +45,14 @@ namespace cg {
 		auto &c = f.cfg();
 
 		log_debug() << "size: " << c.cfg_rule_sets().size() << std::endl;
-		c.prim("hello") = c.s("Hello");
+		c.prim("hello") = c.s("Hello") + c.eof();
 		log_debug() << "size: " << c.cfg_rule_sets().size() << std::endl;
 
 		EXPECT(c.prep());
 
 		EXPECT_EQ(f.match("Hello", "hello").value(), 5);
 		EXPECT_KERROR(f.match("hello", "hello"), KError::Type::CODEGEN);
+		EXPECT_KERROR(f.match("Helloo", "hello"), KError::Type::CODEGEN);
 	}
 
 	TEST_F(AstNodeTest, match_number) {

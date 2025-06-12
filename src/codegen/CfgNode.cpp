@@ -41,7 +41,9 @@ namespace cg {
 				}
 			case Type::character:
 				log_assert(_content.size() == 1, "Character must be of size 0");
-				if (!str.empty() && str[0] == _content[0]) {
+				if (_content == "\x03") {
+					return {0};
+				} else if (!str.empty() && str[0] == _content[0]) {
 					return {1};
 				} else {
 					return {};

@@ -51,4 +51,23 @@ namespace cg {
 
 		auto solver = AbsoluteSolver::setup(c, "digit-pair");
 	}
+
+	TEST(AbsoluteSolver, lists) {
+		auto c = CfgContext();
+
+		c.prim("root") = c["chars"] + c.eof();
+		c.prim("chars")
+			= c.s("a") + c["chars"]
+			| c.s("");
+
+		c.prep();
+		c.simplify();
+
+		auto solver = AbsoluteSolver::setup(c, "root");
+
+		solver->print_table(log_debug() << "\n", {'a', '\x03'});
+
+		EXPECT_EQ(1, solver->match("a", "root").value());
+		EXPECT_EQ(0, solver->match("", "root").value());
+	}
 }
