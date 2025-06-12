@@ -1,6 +1,7 @@
 #include "TemplGen.hpp"
 #include "codegen/AbsoluteSolver.hpp"
 #include "codegen/AbsoluteSolver.hpp"
+#include "codegen/SParser.hpp"
 #include "codegen/TemplObj.hpp"
 #include "util/KError.hpp"
 #include "util/IterAdapter.hpp"
@@ -76,7 +77,7 @@ namespace cg {
 			= c["line"] + c["lines"]
 			| c.s("");
 
-		c.prim("file") = c["lines"] + c.eof();
+		c.root("file") = c["lines"] + c.eof();
 
 		c.prim("comment_b")
 			= c.s("{#-")
@@ -323,10 +324,10 @@ namespace cg {
 			std::ofstream file("gen/templgen.gv");
 			auto label = util::f("Graph for file: ", filename);
 
-			//auto parser = AbsoluteSolver(_ctx);
-			auto parser = AbsoluteSolver::setup(_ctx, "file").value();
+			auto parser = SParser(_ctx);
+			//auto parser = AbsoluteSolver::setup(_ctx, "file").value();
 
-			auto node = parser.parse(str, "file", filename).value();
+			auto node = parser.parse(str, filename).value();
 			node.compress(_ctx.prim_names());
 			node.print_dot(file, label);
 
@@ -377,7 +378,7 @@ namespace cg {
 	util::Result<std::string, KError> TemplGen::_codegen(
 		AstNode const &node,
 		TemplDict &args,
-		AbsoluteSolver &parser
+		Parser &parser
 	) const {
 		if (node.type() == AstNode::Type::String) {
 			return node.consumed();
@@ -426,7 +427,7 @@ namespace cg {
 	util::Result<std::string, KError> TemplGen::_cg_default(
 		AstNode const &node,
 		TemplDict &args,
-		AbsoluteSolver &parser
+		Parser &parser
 	) const {
 		CG_ASSERT(
 			node.children().size() == 0,
@@ -438,7 +439,7 @@ namespace cg {
 	TemplGen::CodegenRes TemplGen::_cg_recursive(
 		AstNode const &node,
 		TemplDict &args,
-		AbsoluteSolver &parser
+		Parser &parser
 	) const {
 		try {
 			auto r = node.consumed();
@@ -452,7 +453,7 @@ namespace cg {
 	util::Result<std::string, KError> TemplGen::_cg_ref(
 		AstNode const &node,
 		TemplDict &args,
-		AbsoluteSolver &parser,
+		Parser &parser,
 		size_t count
 	) const {
 		CG_ASSERT(node.children().size() == count, "Children count of codegen_ref must be 1");
@@ -462,7 +463,7 @@ namespace cg {
 	util::Result<std::string, KError> TemplGen::_cg_identifier(
 		AstNode const &node,
 		TemplDict &args,
-		AbsoluteSolver &parser
+		Parser &parser
 	) const {
 		return KError::codegen("Identifier does not have a codegen implimentation");
 	}
@@ -470,7 +471,7 @@ namespace cg {
 	util::Result<std::string, KError> TemplGen::_cg_line(
 		AstNode const &node,
 		TemplDict &args,
-		AbsoluteSolver &parser
+		Parser &parser
 	) const {
 		auto result = std::string();
 		for (auto &child : node.children()) {
@@ -486,7 +487,7 @@ namespace cg {
 	util::Result<std::string, KError> TemplGen::_cg_lines(
 		AstNode const &node,
 		TemplDict &args,
-		AbsoluteSolver &parser
+		Parser &parser
 	) const {
 		auto result = std::string();
 		for (auto &child : node.children()) {
@@ -502,7 +503,7 @@ namespace cg {
 	util::Result<std::string, KError> TemplGen::_cg_comment(
 		AstNode const &node,
 		TemplDict &args,
-		AbsoluteSolver &parser
+		Parser &parser
 	) const {
 		return {""};
 	}
@@ -510,7 +511,7 @@ namespace cg {
 	util::Result<std::string, KError> TemplGen::_cg_expression(
 		AstNode const &node,
 		TemplDict &args,
-		AbsoluteSolver &parser
+		Parser &parser
 	) const {
 		try {
 			auto result = std::string();
@@ -543,7 +544,7 @@ namespace cg {
 	util::Result<std::string, KError> TemplGen::_cg_statement(
 		AstNode const &node,
 		TemplDict &args,
-		AbsoluteSolver &parser
+		Parser &parser
 	) const {
 		return KError::codegen("statment not implimented");
 	}
@@ -551,7 +552,7 @@ namespace cg {
 	util::Result<std::string, KError> TemplGen::_cg_sif(
 		AstNode const &node,
 		TemplDict &args,
-		AbsoluteSolver &parser
+		Parser &parser
 	) const {
 		try {
 		auto result = std::string();
@@ -603,7 +604,7 @@ namespace cg {
 	util::Result<std::string, KError> TemplGen::_cg_sfor(
 		AstNode const &node,
 		TemplDict &args,
-		AbsoluteSolver &parser
+		Parser &parser
 	) const {
 		try {
 			auto result = std::string();
@@ -641,7 +642,7 @@ namespace cg {
 	util::Result<void, KError> TemplGen::_cg_smacro(
 		AstNode const &node,
 		TemplDict &args,
-		AbsoluteSolver &parser
+		Parser &parser
 	) const {
 		try {
 			auto arg_def = node.child_with_cfg("sfrag_macro").value();
@@ -708,13 +709,13 @@ namespace cg {
 	TemplGen::CodegenRes TemplGen::_cg_sinclude(
 		AstNode const &node,
 		TemplDict &args,
-		AbsoluteSolver &parser
+		Parser &parser
 	) const {
 		try {
 			auto exp_str_node = node.child_with_cfg("exp_str");
 			auto filename = _unpack_str(exp_str_node->consumed_all()).value();
 			auto include_src = util::readEnvFile(filename);
-			auto include_node = parser.parse(include_src, "file", filename)->compressed(_ctx.prim_names());
+			auto include_node = parser.parse(include_src, filename)->compressed(_ctx.prim_names());
 
 			std::ofstream file("gen/templgen-include.gv");
 			include_node.print_dot(file, "templgen-include");

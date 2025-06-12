@@ -38,20 +38,8 @@ namespace cg {
 		return _table.print(os, chars);
 	}
 
-	util::Result<size_t, KError> AbsoluteSolver::match(
-		std::string const &str,
-		std::string const &root_node
-	) {
-		try {
-			log_assert(_ctx, "AbsoluteSolver is not initialized");
-			auto ref = util::StringRef(str.c_str(), "codegen");
-			return parse(str, root_node)->size();
-		} catch_kerror;
-	}
-
 	util::Result<AstNode, KError> AbsoluteSolver::parse(
 		std::string const &str,
-		std::string const &root_name,
 		std::string const &filename
 	) {
 		try {

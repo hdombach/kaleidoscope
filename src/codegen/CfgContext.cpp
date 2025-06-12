@@ -38,6 +38,18 @@ namespace cg {
 		}
 		return _cfg_rule_sets[_cfg_map[name]];
 	}
+	CfgRuleSet &CfgContext::root(std::string const &name) {
+		if (_root_name.empty()) {
+			log_assert(!_cfg_map.contains(name), "Cannot create root if rule already exists");
+			_root_name = name;
+			_cfg_rule_sets.push_back(CfgRuleSet(_root_name));
+			_cfg_map.emplace(name, _cfg_rule_sets.size() - 1);
+		} else {
+			log_error() << "Cannot create root " << name
+				<< " since root " << name << " already exists" << std::endl;
+		}
+		return _cfg_rule_sets[_cfg_map[_root_name]];
+	}
 
 	CfgRuleSet const *CfgContext::get(std::string const &name) const {
 		if (_cfg_map.contains(name)) {
@@ -45,6 +57,10 @@ namespace cg {
 		} else {
 			return nullptr;
 		}
+	}
+
+	CfgRuleSet const *CfgContext::get_root() const {
+		return get(_root_name);
 	}
 
 	std::vector<CfgRuleSet> const &CfgContext::cfg_rule_sets() const {
@@ -96,7 +112,12 @@ namespace cg {
 		return ss.str();
 	}
 
-	util::Result<void, KError> CfgContext::prep() {
+	util::Result<void, KError> CfgContext::prep() { 
+		log_debug() << "name is \"" << _root_name << "\"" << _root_name.empty() << std::endl;
+		if (_root_name.empty()) {
+			log_debug() << "root name is empty" << std::endl;
+			return KError::codegen("CfgContext must contain a root");
+		}
 		for (auto &[key, i] : _cfg_map) {
 			auto &set = _cfg_rule_sets[i];
 			for (auto &rule : set.rules()) {

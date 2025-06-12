@@ -60,12 +60,18 @@ namespace cg {
 			 * in the created syntax tree.
 			 */
 			CfgRuleSet &temp(std::string const &name);
+			/**
+			 * @brief Defines the root rule for a grammar
+			 */
+			CfgRuleSet &root(std::string const &name);
 
 			/**
 			 * @brief Gets a node by name
 			 * @returns Node or null if not found
 			 */
 			CfgRuleSet const *get(std::string const &name) const;
+
+			CfgRuleSet const *get_root() const;
 
 			std::vector<CfgRuleSet> const &cfg_rule_sets() const;
 			uint32_t rule_id(std::string const &name) const;
@@ -95,6 +101,7 @@ namespace cg {
 			std::vector<CfgRuleSet> _cfg_rule_sets;
 			std::map<std::string, uint32_t> _cfg_map;
 			std::set<std::string> _prim_names;
+			std::string _root_name;
 	};
 
 	inline std::ostream &operator<<(std::ostream &os, CfgContext const &ctx) {

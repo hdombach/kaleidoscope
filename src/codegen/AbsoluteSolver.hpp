@@ -10,6 +10,7 @@
 #include "util/result.hpp"
 #include "AstNode.hpp"
 #include "AbsoluteTable.hpp"
+#include "Parser.hpp"
 
 namespace cg {
 	/**
@@ -24,8 +25,10 @@ namespace cg {
 	 * This means the context free grammar needs to be modified to not use string
 	 * constants. (Only use character sets).
 	 */
-	class AbsoluteSolver {
+	class AbsoluteSolver: public Parser {
 		public:
+			~AbsoluteSolver() {}
+
 			static util::Result<AbsoluteSolver, KError> setup(
 				CfgContext const &context,
 				std::string const &root
@@ -33,16 +36,10 @@ namespace cg {
 
 			void print_table(std::ostream &os, std::set<char> const &chars);
 
-			util::Result<size_t, KError> match(
-				std::string const &str,
-				std::string const &root_node
-			);
-
 			util::Result<AstNode, KError> parse(
 				std::string const &str,
-				std::string const &root_node,
 				std::string const &filename = "codegen"
-			);
+			) override;
 
 		public:
 			using State = util::IterAdapter<uint32_t*>;

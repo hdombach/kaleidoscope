@@ -45,7 +45,7 @@ namespace cg {
 		auto &c = f.cfg();
 
 		log_debug() << "size: " << c.cfg_rule_sets().size() << std::endl;
-		c.prim("hello") = c.s("Hello") + c.eof();
+		c.root("hello") = c.s("Hello") + c.eof();
 		log_debug() << "size: " << c.cfg_rule_sets().size() << std::endl;
 
 		EXPECT(c.prep());
@@ -62,17 +62,9 @@ namespace cg {
 		c.prim("integer")
 			= c["digit"] + c["integer"]
 			| c.s("");
-		c.prim("decimal") = c["integer"] + c.s(".") + c["integer"];
+		c.root("decimal") = c["integer"] + c.s(".") + c["integer"];
 
 		EXPECT(c.prep());
-
-		EXPECT_EQ(f.match("1", "digit").value(), 1);
-		EXPECT_KERROR(f.match("abc5", "digit"), KError::Type::CODEGEN);
-
-		EXPECT_KERROR(f.match("145a", "integer"), KError::Type::CODEGEN);
-		EXPECT_EQ(f.match("145", "integer").value(), 3);
-		EXPECT_KERROR(f.match("abc5", "integer"), KError::Type::CODEGEN);
-		EXPECT_EQ(f.match("91023", "integer").value(), 5);
 
 		EXPECT_KERROR(f.match("491f", "decimal"), KError::Type::CODEGEN);
 		EXPECT_KERROR(f.match("hello", "decimal"), KError::Type::CODEGEN);
@@ -110,7 +102,7 @@ namespace cg {
 			= c["exp_mult_div"] + c.s("+") + c["exp_add_sub"]
 			| c["exp_mult_div"] + c.s("-") + c["exp_add_sub"]
 			| c["exp_mult_div"];
-		c.prim("exp") = c["exp_add_sub"];
+		c.root("exp") = c["exp_add_sub"];
 
 		EXPECT(c.prep());
 

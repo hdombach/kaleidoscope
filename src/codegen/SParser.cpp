@@ -14,20 +14,8 @@ namespace cg {
 		_ctx(&ctx)
 	{}
 
-	util::Result<size_t, KError> SParser::match(
-		std::string const &str,
-		std::string const &root_node
-	) {
-		try {
-			log_assert(_ctx, "SParser is not initialized");
-			auto ref = util::StringRef(str.c_str(), "codegen");
-			return parse(str, root_node)->size();
-		} catch_kerror;
-	}
-
 	util::Result<AstNode, KError> SParser::parse(
 		std::string const &str,
-		std::string const &root_node,
 		std::string const &filename
 	) {
 		try {
@@ -38,7 +26,7 @@ namespace cg {
 			_last_failure = KError();
 			auto ref = util::StringRef(str.c_str(), filename.c_str());
 			//TODO: error handling for root
-			auto node = _parse(Stack(ref, "", nullptr), *_ctx->get(root_node)).value();
+			auto node = _parse(Stack(ref, "", nullptr), *_ctx->get_root()).value();
 			if (node.size() < str.size()) {
 				if (_last_failure.type() == KError::Type::UNKNOWN) {
 					return KError::codegen("Not all characters were consumed");

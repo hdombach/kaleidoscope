@@ -6,12 +6,13 @@
 #include "util/result.hpp"
 #include "CfgContext.hpp"
 #include "AstNode.hpp"
+#include "Parser.hpp"
 
 namespace cg {
 	/*
 	 * @brief A Simple ast Parser
 	 */
-	class SParser {
+	class SParser: public Parser {
 		public:
 			struct Stack {
 				util::StringRef str;
@@ -35,17 +36,7 @@ namespace cg {
 		public:
 			SParser() = default;
 			SParser(CfgContext const &ctx);
-
-			/**
-			 * @brief Matches a string against a CfgRuleSet specified by name
-			 * @param[in] str String to match against
-			 * @param[in] root_node Name of CfgRuleSet to match against
-			 * @returns Number of characters consumed
-			 */
-			util::Result<size_t, KError> match(
-				std::string const &str,
-				std::string const &root_node
-			);
+			~SParser() {}
 
 			/**
 			 * @brief Generates abstract syntax tree
@@ -55,9 +46,8 @@ namespace cg {
 			 */
 			util::Result<AstNode, KError> parse(
 				std::string const &str,
-				std::string const &root_node,
 				std::string const &filename = "codegen"
-			);
+			) override;
 
 		private:
 			/**
