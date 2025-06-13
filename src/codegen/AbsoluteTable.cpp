@@ -151,6 +151,22 @@ namespace cg::abs {
 		return false;
 	}
 
+	util::Result<RulePos, void> TableState::find_end() const {
+		auto result = util::Result<RulePos, void>();
+
+		for (auto &rule : _rules) {
+			if (rule.is_end()) {
+				if (result.has_value()) {
+					return {};
+				} else {
+					result = rule;
+				}
+			}
+		}
+
+		return result;
+	}
+
 	TableState TableState::step() {
 		auto r = TableState();
 		for (auto rule : _rules) {
@@ -236,13 +252,8 @@ namespace cg::abs {
 		);
 	}
 
-
 	bool AbsoluteTable::contains_row(TableState const &table_state) {
-		return std::find(
-			_table_states.begin(),
-			_table_states.end(),
-			table_state
-		) != _table_states.end();
+		return util::contains(_table_states, table_state);
 	}
 
 	AbsoluteTable::StateId &AbsoluteTable::lookup_char(
@@ -271,14 +282,6 @@ namespace cg::abs {
 		uint32_t ruleset
 	) {
 		return row(state_id).begin()[ruleset + 128];
-	}
-
-	std::string AbsoluteTable::state_str(TableState const &state) const {
-		auto r = std::string();
-		for (auto &rule : state) {
-			r += rule.str() + "\n";
-		}
-		return r;
 	}
 
 	std::string AbsoluteTable::action_str(uint32_t action) const {

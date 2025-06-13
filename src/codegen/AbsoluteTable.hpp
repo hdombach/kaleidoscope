@@ -93,20 +93,41 @@ namespace cg::abs {
 			 * @brief Adds a new rule
 			 */
 			void add_rule(RulePos const &pos);
-			
+		
+			/**
+			 * @brief Does the TableState contain a RulePos
+			 */
 			bool contains(RulePos const &pos) const;
 
+			/**
+			 * @brief Is the TableState empty
+			 */
 			bool empty() const;
 
+			/**
+			 * @brief A string representation of a TableState
+			 */
 			std::string str() const;
 
+			/**
+			 * @brief Does the TableState contain a position at the end of a rule
+			 */
 			bool contains_end() const;
 
+			/**
+			 * @brief Finds a rule containing the end position
+			 * Will throw an error if the number of end rules does not equal 1
+			 */
+			util::Result<RulePos, void> find_end() const;
+
+			/**
+			 * @brief Creates a new TableState with every RulePos incrimented by one
+			 */
 			TableState step();
 
 			bool operator==(TableState const &other) const;
 		private:
-			std::set<RulePos> _rules;
+			Container _rules;
 	};
 
 	/**
@@ -181,13 +202,6 @@ namespace cg::abs {
 			 * @returns id of the new state
 			 */
 			StateId &lookup_ruleset(uint32_t state_id, uint32_t ruleset);
-
-			/**
-			 * @brief Gets the string representation of a group of states
-			 * @param[in] state
-			 * @returns String representation
-			 */
-			std::string state_str(TableState const &state) const;
 
 			/**
 			 * @brief Gets the string representation of an action

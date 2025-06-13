@@ -100,12 +100,6 @@ namespace cg::abs {
 			uint32_t _add_state(TableState const &table_state);
 
 			/**
-			 * @brief Gets the end character
-			 * Will throw an error if there is more than one
-			 */
-			util::Result<RulePos, void> _get_end_rule(TableState const &state) const;
-
-			/**
 			 * @brief Get a rule for a corresponding unique_id
 			 * The id 0 is reserved for null
 			 */

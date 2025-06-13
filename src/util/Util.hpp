@@ -10,7 +10,7 @@
 
 namespace util {
 	template<typename Contains, typename Element>
-	bool contains(Contains &container, Element &element) {
+	bool contains(Contains const &container, Element const &element) {
 		return std::find(container.begin(), container.end(), element) != container.end();
 	}
 

@@ -198,7 +198,7 @@ namespace cg::abs {
 	}
 
 	uint32_t AbsoluteSolver::_add_state(TableState const &state_rule) {
-		log_debug() << "Adding state: " << _table.state_str(state_rule) << std::endl;
+		log_debug() << "Adding state: " << state_rule.str() << std::endl;
 		if (_table.contains_row(state_rule)) return _table.row_id(state_rule);
 
 		auto new_state = _table.row(state_rule);
@@ -208,7 +208,7 @@ namespace cg::abs {
 
 		//Do not check a character. Instead reduce.
 		//Right now, can only reduce if it is the only rule in a group
-		if (auto end_rule = _get_end_rule(unsorted_rules)) {
+		if (auto end_rule = unsorted_rules.find_end()) {
 			for (auto &s : new_state) {
 				s = _get_rule_id(end_rule.value()) | AbsoluteTable::REDUCE_MASK;
 			}
@@ -241,21 +241,6 @@ namespace cg::abs {
 		}
 
 		return new_state_id;
-	}
-
-	util::Result<RulePos, void> AbsoluteSolver::_get_end_rule(
-		TableState const &state
-	) const {
-		auto r = util::Result<RulePos, void>();
-		for (auto &pos : state) {
-			if (pos.is_end()) {
-				if (r) {
-					log_error() << "There is more than one end rule" << std::endl;
-				}
-				r = pos;
-			}
-		}
-		return r;
 	}
 
 	uint32_t AbsoluteSolver::_get_rule_id(RulePos const &pos) {
