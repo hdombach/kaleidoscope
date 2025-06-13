@@ -1,8 +1,6 @@
 #include "AbsoluteSolver.hpp"
 
-#include <algorithm>
 #include <glm/detail/qualifier.hpp>
-#include <iterator>
 #include <sstream>
 #include <string>
 #include <variant>
@@ -23,7 +21,8 @@ namespace cg::abs {
 
 		auto initial = r._get_var(root);
 
-		auto children = std::set<RulePos>();
+		auto new_state = TableState();
+		auto children = TableState();
 		r._drill(initial, children);
 		r._add_state(r._get_var(root));
 
@@ -198,7 +197,7 @@ namespace cg::abs {
 		return popped.back().state_id();
 	}
 
-	uint32_t AbsoluteSolver::_add_state(StateRule const &state_rule) {
+	uint32_t AbsoluteSolver::_add_state(TableState const &state_rule) {
 		log_debug() << "Adding state: " << _table.state_str(state_rule) << std::endl;
 		if (_table.contains_row(state_rule)) return _table.row_id(state_rule);
 
@@ -226,7 +225,7 @@ namespace cg::abs {
 
 			log_debug() << "Stepping step:" << std::endl << _state_str(rules);
 
-			auto next = _step_state_rule(rules);
+			auto next = rules.step();
 
 			log_debug() << "Stepped step with leaf:" << leaf << std::endl << _state_str(next);
 
@@ -245,7 +244,7 @@ namespace cg::abs {
 	}
 
 	util::Result<RulePos, void> AbsoluteSolver::_get_end_rule(
-		StateRule const &state
+		TableState const &state
 	) const {
 		auto r = util::Result<RulePos, void>();
 		for (auto &pos : state) {
@@ -255,23 +254,6 @@ namespace cg::abs {
 				}
 				r = pos;
 			}
-		}
-		return r;
-	}
-
-	bool AbsoluteSolver::_has_end_of_rule(StateRule const &state) const {
-		for (auto &pos : state) {
-			if (pos.is_end()) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	AbsoluteSolver::StateRule AbsoluteSolver::_step_state_rule(StateRule const &state) {
-		auto r = StateRule();
-		for (auto rule : state) {
-			r.insert(rule.next_leaf());
 		}
 		return r;
 	}
@@ -319,13 +301,13 @@ namespace cg::abs {
 		return 0;
 	}
 
-	std::set<RulePos> AbsoluteSolver::_get_var(std::string const &str) {
-		auto r = std::set<RulePos>();
+	TableState AbsoluteSolver::_get_var(std::string const &str) {
+		auto r = TableState();
 		for (uint32_t i = 0; i < _ctx->cfg_rule_sets().size(); i++) {
 			auto &set = _ctx->cfg_rule_sets()[i];
 			if (set.name() == str) {
 				for (uint32_t j = 0; j < set.rules().size(); j++) {
-					r.insert(RulePos(i, j, 0, *_ctx));
+					r.add_rule(RulePos(i, j, 0, *_ctx));
 				}
 				return r;
 			}
@@ -335,7 +317,7 @@ namespace cg::abs {
 		return {};
 	}
 
-	std::string AbsoluteSolver::_state_str(StateRule const &state) const {
+	std::string AbsoluteSolver::_state_str(TableState const &state) const {
 		auto r = std::string();
 		for (auto &rule : state) {
 			r += rule.str() + "\n";
@@ -344,43 +326,43 @@ namespace cg::abs {
 	}
 
 	void AbsoluteSolver::_drill(
-		std::set<RulePos> const &start,
-		std::set<RulePos> &children,
+		TableState const &start,
+		TableState &children,
 		bool is_root
 	) {
 		for (auto &rule : start) {
 			if (rule.is_end()) {
-				children.insert(rule);
+				children.add_rule(rule);
 				continue;
 			}
 			auto &leaf = rule.leaf();
 			if (leaf.type() == CfgLeaf::Type::var) {
 				if (!is_root) {
-					children.insert(rule);
+					children.add_rule(rule);
 				}
 				auto all_children = _get_var(leaf.var_name());
-				auto unique_children = std::set<RulePos>();
-				std::set_difference(
-					all_children.begin(), all_children.end(),
-					children.begin(), children.end(),
-					std::inserter(unique_children, unique_children.begin())
-				);
+				auto unique_children = TableState();
+				for (auto &pos : all_children) {
+					if (!children.contains(pos)) {
+						unique_children.add_rule(pos);
+					}
+				}
 
 				_drill(unique_children, children, false);
 			} else {
-				children.insert(rule);
+				children.add_rule(rule);
 			}
 		}
 	}
 
-	std::set<RulePos> AbsoluteSolver::_drill(std::set<RulePos> const &start) {
-		auto r = std::set<RulePos>();
+	TableState AbsoluteSolver::_drill(TableState const &start) {
+		auto r = TableState();
 		_drill(start, r, false);
 		return r;
 	}
 
 	std::vector<AbsoluteSolver::RuleGroup> AbsoluteSolver::_group_rules(
-		std::set<RulePos> const &children
+		TableState const &children
 	) {
 		auto r = std::vector<AbsoluteSolver::RuleGroup>();
 		if (children.empty()) return r;
@@ -399,7 +381,7 @@ namespace cg::abs {
 				matched->leaf = leaf;
 			}
 			log_assert(matched, "matched must be initialized.");
-			matched->rules.insert(child);
+			matched->rules.add_rule(child);
 		}
 		return r;
 	}

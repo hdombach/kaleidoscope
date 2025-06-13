@@ -43,11 +43,10 @@ namespace cg::abs {
 
 		public:
 			using State = util::IterAdapter<uint32_t*>;
-			using StateRule = std::set<RulePos>;
 
 			struct RuleGroup {
 				CfgLeaf leaf;
-				StateRule rules;
+				TableState rules;
 			};
 
 			class StackElement {
@@ -98,25 +97,13 @@ namespace cg::abs {
 			 * @param[in] state_rule
 			 * @returns Index in _states of created state
 			 */
-			uint32_t _add_state(StateRule const &state_rule);
+			uint32_t _add_state(TableState const &table_state);
 
 			/**
 			 * @brief Gets the end character
 			 * Will throw an error if there is more than one
 			 */
-			util::Result<RulePos, void> _get_end_rule(StateRule const &state) const;
-			/**
-			 * Check if at least 
-			 * Checks if a pos is at the end of a rule
-			 */
-			bool _has_end_of_rule(StateRule const &state) const;
-
-			/**
-			 * Gets next position for every position inside the state rule
-			 * @param[in] state The state to step
-			 * @returns The stepped state
-			 */
-			StateRule _step_state_rule(StateRule const &state);
+			util::Result<RulePos, void> _get_end_rule(TableState const &state) const;
 
 			/**
 			 * @brief Get a rule for a corresponding unique_id
@@ -129,29 +116,29 @@ namespace cg::abs {
 			 * The id 0 is reserved for null
 			 */
 			CfgRule const &_get_rule(uint32_t id);
-			std::set<RulePos> _get_var(std::string const &str);
-			std::string _state_str(StateRule const &state) const;
+			TableState _get_var(std::string const &str);
+			std::string _state_str(TableState const &state) const;
 
 			/**
 			 * @brief Finds the deepest rulest at each position
 			 * Keeps track of the inbetween positions while drilling down
 			 */
 			void _drill(
-				std::set<RulePos> const &start,
-				std::set<RulePos> &children,
+				TableState const &start,
+				TableState &children,
 				bool is_root=true
 			);
 
 			/**
 			 * @brief Wrapper around base _drill func
 			 */
-			std::set<RulePos> _drill(std::set<RulePos> const &start);
+			TableState _drill(TableState const &start);
 
 			/**
 			 * @brief A helper function to group a set of rules by leaf.
 			 * @param[in] The list of rules to group
 			 */
-			std::vector<RuleGroup> _group_rules(std::set<RulePos> const &children);
+			std::vector<RuleGroup> _group_rules(TableState const &children);
 	};
 
 	std::ostream &operator<<(std::ostream &os, AbsoluteSolver::StackElement const &e);
