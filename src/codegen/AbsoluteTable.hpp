@@ -6,15 +6,36 @@
 #include "util/result.hpp"
 #include "CfgContext.hpp"
 
-namespace cg {
-	struct RulePos {
-		uint32_t set;
-		uint32_t rule;
-		uint32_t offset;
+namespace cg::abs {
+	class RulePos {
+		public:
+			RulePos() = default;
+			RulePos(
+				uint32_t set,
+				uint32_t rule,
+				uint32_t offset,
+				CfgContext const &context
+			);
 
-		bool operator<(RulePos const &rhs) const;
-		bool operator==(RulePos const &rhs) const;
-		bool operator>(RulePos const &rhs) const;
+			CfgRuleSet const &set() const;
+			CfgRule const &rule() const;
+			CfgLeaf const &leaf() const;
+
+			RulePos next_leaf();
+
+			std::string str() const;
+
+			bool is_end() const;
+
+			bool operator<(RulePos const &rhs) const;
+			bool operator==(RulePos const &rhs) const;
+			bool operator>(RulePos const &rhs) const;
+
+		private:
+			uint32_t _set=0;
+			uint32_t _rule=0;
+			uint32_t _offset=0;
+			CfgContext const *_ctx=nullptr;
 	};
 
 	/**
@@ -111,15 +132,5 @@ namespace cg {
 			uint32_t _state_size;
 			std::vector<uint32_t> _states;
 			std::vector<StateRule> _state_rules;
-
-		private:
-			/**
-			 * @brief Gets the string representation of a rule position
-			 */
-			std::string _rule_str(RulePos const &pos) const;
-
-			CfgRuleSet const &_get_set(RulePos const &pos) const;
-			CfgRule const &_get_rule(RulePos const &pos) const;
-			CfgLeaf const &_get_leaf(RulePos const &pos) const;
 	};
 }

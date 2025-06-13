@@ -11,9 +11,8 @@
 #include "util/KError.hpp"
 #include "util/log.hpp"
 #include "util/PrintTools.hpp"
-#include "util/StringRef.hpp"
 
-namespace cg {
+namespace cg::abs {
 	util::Result<AbsoluteSolver, KError> AbsoluteSolver::setup(
 		const CfgContext &context,
 		const std::string &root
@@ -250,7 +249,7 @@ namespace cg {
 	) const {
 		auto r = util::Result<RulePos, void>();
 		for (auto &pos : state) {
-			if (_is_end_pos(pos)) {
+			if (pos.is_end()) {
 				if (r) {
 					log_error() << "There is more than one end rule" << std::endl;
 				}
@@ -262,37 +261,24 @@ namespace cg {
 
 	bool AbsoluteSolver::_has_end_of_rule(StateRule const &state) const {
 		for (auto &pos : state) {
-			if (_is_end_pos(pos)) {
+			if (pos.is_end()) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	bool AbsoluteSolver::_is_end_pos(RulePos const &pos) const {
-		return pos.offset >= _get_rule(pos).leaves().size();
-	}
-
 	AbsoluteSolver::StateRule AbsoluteSolver::_step_state_rule(StateRule const &state) {
 		auto r = StateRule();
 		for (auto rule : state) {
-			rule.offset++;
-			r.insert(rule);
+			r.insert(rule.next_leaf());
 		}
 		return r;
 	}
 
-	CfgRuleSet const &AbsoluteSolver::_get_set(RulePos const &pos) const {
-		auto &sets = _ctx->cfg_rule_sets();
-
-		log_assert(sets.size() > pos.set, "Invalid set position inside RulePos");
-
-		return sets[pos.set];
-	}
-
 	uint32_t AbsoluteSolver::_get_rule_id(RulePos const &pos) {
 		uint32_t r = 1;
-		auto &target = _get_rule(pos);
+		auto &target = pos.rule();
 		for (auto &set : _ctx->cfg_rule_sets()) {
 			for (auto &rule : set.rules()) {
 				if (rule == target) return r;
@@ -318,14 +304,6 @@ namespace cg {
 		return _ctx->cfg_rule_sets()[0].rules()[0];
 	}
 
-	CfgRule const &AbsoluteSolver::_get_rule(RulePos const &pos) const {
-		auto &rules = _get_set(pos).rules();
-
-		log_assert(rules.size() > pos.rule, "Invalid rule position inside RulePos");
-
-		return rules[pos.rule];
-	}
-
 	uint32_t AbsoluteSolver::_get_rule_set_id(uint32_t rule_id) const {
 		log_assert(rule_id != 0, "Can't get rule for id 0");
 		uint32_t r = 1;
@@ -341,21 +319,13 @@ namespace cg {
 		return 0;
 	}
 
-	CfgLeaf const &AbsoluteSolver::_get_leaf(RulePos const &pos) const {
-		auto &leaves = _get_rule(pos).leaves();
-
-		log_assert(leaves.size() > pos.offset, "Invalid leaf position inside RulePos");
-
-		return leaves[pos.offset];
-	}
-
 	std::set<RulePos> AbsoluteSolver::_get_var(std::string const &str) {
 		auto r = std::set<RulePos>();
 		for (uint32_t i = 0; i < _ctx->cfg_rule_sets().size(); i++) {
 			auto &set = _ctx->cfg_rule_sets()[i];
 			if (set.name() == str) {
 				for (uint32_t j = 0; j < set.rules().size(); j++) {
-					r.insert({i, j, 0});
+					r.insert(RulePos(i, j, 0, *_ctx));
 				}
 				return r;
 			}
@@ -365,27 +335,10 @@ namespace cg {
 		return {};
 	}
 
-	std::string AbsoluteSolver::_rule_str(RulePos const &pos) const {
-		auto r = std::string();
-		auto &rule = _get_rule(pos);
-		int i = 0;
-		for (auto &leaf : rule.leaves()) {
-			if (i == pos.offset) {
-				r += "|";
-			}
-			r += leaf.str();
-			i++;
-		}
-		if (pos.offset >= rule.leaves().size()) {
-			r += "|";
-		}
-		return r;
-	}
-
 	std::string AbsoluteSolver::_state_str(StateRule const &state) const {
 		auto r = std::string();
 		for (auto &rule : state) {
-			r += _rule_str(rule) + "\n";
+			r += rule.str() + "\n";
 		}
 		return r;
 	}
@@ -396,11 +349,11 @@ namespace cg {
 		bool is_root
 	) {
 		for (auto &rule : start) {
-			if (_is_end_pos(rule)) {
+			if (rule.is_end()) {
 				children.insert(rule);
 				continue;
 			}
-			auto &leaf = _get_leaf(rule);
+			auto &leaf = rule.leaf();
 			if (leaf.type() == CfgLeaf::Type::var) {
 				if (!is_root) {
 					children.insert(rule);
@@ -432,9 +385,8 @@ namespace cg {
 		auto r = std::vector<AbsoluteSolver::RuleGroup>();
 		if (children.empty()) return r;
 		for (auto &child : children) {
-			log_debug() << child.set << ", " << child.rule << ", " << child.offset << std::endl;
-			if (_is_end_pos(child)) continue;
-			auto &leaf = _get_leaf(child);
+			if (child.is_end()) continue;
+			auto &leaf = child.leaf();
 			RuleGroup *matched = nullptr;
 			for (auto &group : r) {
 				if (group.leaf == leaf) {

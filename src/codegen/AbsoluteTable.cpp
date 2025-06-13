@@ -4,19 +4,81 @@
 #include "util/Util.hpp"
 #include "util/log.hpp"
 
-namespace cg {
+namespace cg::abs {
+	RulePos::RulePos(
+		uint32_t set,
+		uint32_t rule,
+		uint32_t offset,
+		CfgContext const &context
+	):
+		_set(set),
+		_rule(rule),
+		_offset(offset),
+		_ctx(&context)
+	{}
+
+	CfgRuleSet const &RulePos::set() const {
+		log_assert(_ctx, "CfgContext must be provided");
+		auto &sets = _ctx->cfg_rule_sets();
+
+		log_assert(sets.size() > _set, "Invalid set position inside RulePos");
+
+		return sets[_set];
+	}
+
+	CfgRule const &RulePos::rule() const {
+		auto &rules = set().rules();
+		log_assert(rules.size() > _rule, "Invalid rule position inside RulePos");
+		return rules[_rule];
+	}
+
+	CfgLeaf const &RulePos::leaf() const {
+		auto &leaves = rule().leaves();
+
+		log_assert(leaves.size() > _offset, "Invalid leaf position inside RulePos");
+
+		return leaves[_offset];
+	}
+
+	RulePos RulePos::next_leaf() {
+		auto r = *this;
+		r._offset++;
+		return r;
+	}
+
+	std::string RulePos::str() const {
+		auto str = std::string();
+		auto &r = rule();
+		int i = 0;
+		for (auto &leaf : r.leaves()) {
+			if (i == _offset) {
+				str += "|";
+			}
+			str += leaf.str();
+			i++;
+		}
+		if (_offset >= r.leaves().size()) {
+			str += "|";
+		}
+		return str;
+	}
+
+	bool RulePos::is_end() const {
+		return _offset >= rule().leaves().size();
+	}
+
 	bool RulePos::operator<(RulePos const &rhs) const {
-		if (set < rhs.set) {
+		if (_set < rhs._set) {
 			return true;
-		} else if (set > rhs.set) {
+		} else if (_set > rhs._set) {
 			return false;
 		}
-		if (rule < rhs.rule) {
+		if (_rule < rhs._rule) {
 			return true;
-		} else if (rule > rhs.rule) {
+		} else if (_rule > rhs._rule) {
 			return false;
 		}
-		if (offset < rhs.offset) {
+		if (_offset < rhs._offset) {
 			return true;
 		} else {
 			return false;
@@ -24,21 +86,21 @@ namespace cg {
 	}
 
 	bool RulePos::operator==(RulePos const &rhs) const {
-		return set == rhs.set && rule == rhs.rule && offset == rhs.offset;
+		return _set == rhs._set && _rule == rhs._rule && _offset == rhs._offset;
 	}
 
 	bool RulePos::operator>(RulePos const &rhs) const {
-		if (set > rhs.set) {
+		if (_set > rhs._set) {
 			return true;
-		} else if (set < rhs.set) {
+		} else if (_set < rhs._set) {
 			return false;
 		}
-		if (rule > rhs.rule) {
+		if (_rule > rhs._rule) {
 			return true;
-		} else if (rule < rhs.rule) {
+		} else if (_rule < rhs._rule) {
 			return false;
 		}
-		if (offset > rhs.offset) {
+		if (_offset > rhs._offset) {
 			return true;
 		} else {
 			return false;
@@ -158,7 +220,7 @@ namespace cg {
 	std::string AbsoluteTable::state_str(StateRule const &state) const {
 		auto r = std::string();
 		for (auto &rule : state) {
-			r += _rule_str(rule) + "\n";
+			r += rule.str() + "\n";
 		}
 		return r;
 	}
@@ -173,47 +235,5 @@ namespace cg {
 		}
 		s += std::to_string(action & ~REDUCE_MASK);
 		return s;
-	}
-
-	std::string AbsoluteTable::_rule_str(RulePos const &pos) const {
-		auto r = std::string();
-		auto &rule = _get_rule(pos);
-		int i = 0;
-		for (auto &leaf : rule.leaves()) {
-			if (i == pos.offset) {
-				r += "|";
-			}
-			r += leaf.str();
-			i++;
-		}
-		if (pos.offset >= rule.leaves().size()) {
-			r += "|";
-		}
-		return r;
-	}
-
-	CfgRuleSet const &AbsoluteTable::_get_set(RulePos const &pos) const {
-		log_assert(_ctx, "CfgContext must be provided");
-		auto &sets = _ctx->cfg_rule_sets();
-
-		log_assert(sets.size() > pos.set, "Invalid set position inside RulePos");
-
-		return sets[pos.set];
-	}
-
-	CfgRule const &AbsoluteTable::_get_rule(RulePos const &pos) const {
-		auto &rules = _get_set(pos).rules();
-
-		log_assert(rules.size() > pos.rule, "Invalid rule position inside RulePos");
-
-		return rules[pos.rule];
-	}
-
-	CfgLeaf const &AbsoluteTable::_get_leaf(RulePos const &pos) const {
-		auto &leaves = _get_rule(pos).leaves();
-
-		log_assert(leaves.size() > pos.offset, "Invalid leaf position inside RulePos");
-
-		return leaves[pos.offset];
 	}
 }

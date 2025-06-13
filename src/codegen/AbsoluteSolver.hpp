@@ -12,7 +12,7 @@
 #include "AbsoluteTable.hpp"
 #include "Parser.hpp"
 
-namespace cg {
+namespace cg::abs {
 	/**
 	 * @brief A (hopefully) fast parser for the context free grammar.
 	 * It uses an LR(1) parser I think.
@@ -110,7 +110,6 @@ namespace cg {
 			 * Checks if a pos is at the end of a rule
 			 */
 			bool _has_end_of_rule(StateRule const &state) const;
-			bool _is_end_pos(RulePos const &pos) const;
 
 			/**
 			 * Gets next position for every position inside the state rule
@@ -124,17 +123,13 @@ namespace cg {
 			 * The id 0 is reserved for null
 			 */
 			uint32_t _get_rule_id(RulePos const &pos);
-			CfgRuleSet const &_get_set(RulePos const &pos) const;
-			CfgRule const &_get_rule(RulePos const &pos) const;
 			uint32_t _get_rule_set_id(uint32_t rule_id) const;
 			/**
 			 * @brief Get a unique_id for a corresponding rule
 			 * The id 0 is reserved for null
 			 */
 			CfgRule const &_get_rule(uint32_t id);
-			CfgLeaf const &_get_leaf(RulePos const &pos) const;
 			std::set<RulePos> _get_var(std::string const &str);
-			std::string _rule_str(RulePos const &pos) const;
 			std::string _state_str(StateRule const &state) const;
 
 			/**
@@ -160,4 +155,8 @@ namespace cg {
 	};
 
 	std::ostream &operator<<(std::ostream &os, AbsoluteSolver::StackElement const &e);
+}
+
+namespace cg {
+	using AbsoluteSolver = abs::AbsoluteSolver;
 }
