@@ -70,6 +70,10 @@ namespace cg::abs {
 			CfgContext const *_ctx=nullptr;
 	};
 
+	inline std::ostream &operator<<(std::ostream &os, RulePos const &pos) {
+		return os << pos.str() << std::endl;
+	}
+
 	/**
 	 * @brief The state of a table row consisting of a group of rules positions
 	 */
@@ -129,6 +133,13 @@ namespace cg::abs {
 		private:
 			Container _rules;
 	};
+
+	inline std::ostream &operator<<(
+		std::ostream &os,
+		TableState const &table_state
+	) {
+		return os << table_state.str() << std::endl;
+	}
 
 	/**
 	 * @brief Table for quickly parsing a file

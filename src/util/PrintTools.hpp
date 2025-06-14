@@ -6,6 +6,7 @@
 #include <iomanip>
 
 #include "RectSize.hpp"
+#include "Util.hpp"
 
 namespace util {
 	/**
@@ -41,7 +42,9 @@ namespace util {
 				std::vector<T> const &_l;
 		};
 	template<typename T>
-		inline std::ostream &operator<<(std::ostream &os, plist<T> const &l) { return l.print(os); }
+		inline std::ostream &operator<<(std::ostream &os, plist<T> const &l) {
+			return l.print(os);
+		}
 
 	/**
 	 * @brief Prints a vector as a numberd list
@@ -55,12 +58,17 @@ namespace util {
 					uint32_t length = std::ceil(std::log10(_l.size()));
 					for (int i = 0; i < _l.size(); i++) {
 						os << std::setfill(' ') << std::setw(length) << i << ") ";
-						os << _l[i] << std::endl;
+						os << util::trim(_l[i]) << std::endl;
 					}
+					return os;
 				}
 
 			private:
 				std::vector<T> const &_l;
 		};
 
+	template<typename T>
+		inline std::ostream &operator<<(std::ostream &os, plist_enumerated<T> const &l) {
+			return l.print(os);
+		}
 }

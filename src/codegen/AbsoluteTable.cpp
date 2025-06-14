@@ -43,6 +43,7 @@ namespace cg::abs {
 	RulePos RulePos::next_leaf() const {
 		auto r = *this;
 		r._offset++;
+		log_assert(r._offset <= rule().leaves().size(), "Can't step beyond the end of the rule");
 		return r;
 	}
 
@@ -219,6 +220,8 @@ namespace cg::abs {
 			}
 			table.push_back(row_str);
 		}
+
+		os << util::plist_enumerated(_table_states);
 
 		os << util::ptable(table);
 	}

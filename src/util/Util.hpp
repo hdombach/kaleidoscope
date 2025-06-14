@@ -1,6 +1,8 @@
 #pragma once
 
 #include <algorithm>
+#include <cctype>
+#include <sstream>
 #include <string>
 #include <memory>
 #include <array>
@@ -122,6 +124,26 @@ namespace util {
 		}
 		return res;
 	}
+
+	inline std::string trim(std::string const &str) {
+		if (str.empty()) return str;
+		auto begin = str.data();
+		auto end = str.data()+str.size()-1;
+		while (end >= str.data() && std::isspace(*end)) {
+			end--;
+		}
+		while (*begin && std::isspace(*end)) {
+			begin++;
+		}
+		return {begin, end+1};
+	}
+
+	template<typename T>
+		inline std::string trim(T const &t) {
+			auto ss = std::stringstream();
+			ss << t;
+			return trim(ss.str());
+		}
 
 	/**
 	 * @brief Tests whether a ptr exists
