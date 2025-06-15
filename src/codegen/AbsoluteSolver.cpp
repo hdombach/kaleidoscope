@@ -5,26 +5,26 @@
 #include <string>
 #include <variant>
 #include <vector>
+#include <memory>
 
 #include "util/KError.hpp"
 #include "util/log.hpp"
 #include "util/PrintTools.hpp"
 
 namespace cg::abs {
-	util::Result<AbsoluteSolver, KError> AbsoluteSolver::setup(
-		const CfgContext &context,
-		const std::string &root
+	util::Result<AbsoluteSolver::Ptr, KError> AbsoluteSolver::create(
+		CfgContext::Ptr &&context
 	) {
-		auto r = AbsoluteSolver();
-		r._ctx = &context;
-		r._table = AbsoluteTable(context);
+		auto r = std::make_unique<AbsoluteSolver>();
+		r->_ctx = std::move(context);
+		r->_table = AbsoluteTable(*r->_ctx);
 
-		auto initial = r._get_var(root);
+		auto initial = r->_get_var(r->_ctx->get_root()->name());
 
 		auto new_state = TableState();
 		auto children = TableState();
-		r._drill(initial, children);
-		r._add_state(r._get_var(root));
+		r->_drill(initial, children);
+		r->_add_state(r->_get_var(r->_ctx->get_root()->name()));
 
 		return r;
 	}
@@ -99,6 +99,14 @@ namespace cg::abs {
 			}
 			return stack.back().node();
 		} catch_kerror;
+	}
+
+	CfgContext const &AbsoluteSolver::cfg() const {
+		return *_ctx;
+	}
+
+	CfgContext &AbsoluteSolver::cfg() {
+		return *_ctx;
 	}
 
 	AbsoluteSolver::StackElement::StackElement():

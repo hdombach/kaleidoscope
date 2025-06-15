@@ -10,7 +10,8 @@
 namespace cg {
 	class AstNodeTest: TestFixture {
 		public:
-			AstNodeTest(Test &test, size_t variant): TestFixture(test), _cfg(), _parser(_cfg) {
+			AstNodeTest(Test &test, size_t variant): TestFixture(test) {
+				_parser = SParser::create(CfgContext::create());
 				_should_simplify = variant;
 			}
 			//Make sure you don't copy this because parser has pointer to cfg.
@@ -19,25 +20,24 @@ namespace cg {
 			std::string suite_name() { return "UNKNOWN"; }
 			static size_t variant_count() { return 2; }
 
-			CfgContext &cfg() { return _cfg; }
-			SParser &parser() { return _parser; }
+			CfgContext &cfg() { return _parser->cfg(); }
+			Parser &parser() { return *_parser; }
 
 			auto match(std::string const &str, std::string const &root) {
 				if (!_is_prepped) {
-					_cfg.prep();
+					_parser->cfg().prep();
 					if (_should_simplify) {
-						_cfg.simplify();
+						_parser->cfg().simplify();
 					}
 
 					_is_prepped = true;
 				}
-				return _parser.match(str, root);
+				return _parser->match(str, root);
 			}
 
 		private:
 			bool _should_simplify;
-			CfgContext _cfg;
-			SParser _parser;
+			Parser::Ptr _parser;
 			bool _is_prepped = false;
 	};
 

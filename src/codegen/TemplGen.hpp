@@ -17,7 +17,14 @@ namespace cg {
 	 */
 	class TemplGen {
 		public:
+			TemplGen() = default;
 			static util::Result<TemplGen, KError> create();
+
+			TemplGen(TemplGen const &other) = delete;
+			TemplGen(TemplGen &&other);
+
+			TemplGen &operator=(TemplGen const &other) = delete;
+			TemplGen &operator=(TemplGen &&other);
 
 			util::Result<std::string, KError> codegen(
 				std::string const &str,
@@ -31,9 +38,10 @@ namespace cg {
 				std::string const &filename = "codegen"
 			) const;
 
-			CfgContext &cfg() { return _ctx; }
+			CfgContext const &cfg() const { return _parser->cfg(); }
+			CfgContext &cfg() { return _parser->cfg(); }
 		private:
-			CfgContext _ctx;
+			Parser::Ptr _parser;
 
 		private:
 			using CodegenRes = util::Result<std::string, KError>;

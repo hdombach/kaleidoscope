@@ -1,4 +1,5 @@
 #include "TemplGen.hpp"
+#include "codegen/CfgContext.hpp"
 #include "codegen/SParser.hpp"
 #include "codegen/TemplObj.hpp"
 #include "util/KError.hpp"
@@ -15,7 +16,8 @@
 namespace cg {
 	util::Result<TemplGen, KError> TemplGen::create() {
 		auto result = TemplGen();
-		auto &c = result._ctx;
+		result._parser = SParser::create(CfgContext::create());
+		auto &c = result._parser->cfg();
 		
 		c.prim("whitespace")
 			= c.s(" ") + c["whitespace"]
@@ -301,6 +303,15 @@ namespace cg {
 		return result;
 	}
 
+	TemplGen::TemplGen(TemplGen &&other) {
+		_parser = std::move(other._parser);
+	}
+
+	TemplGen &TemplGen::operator=(TemplGen &&other) {
+		_parser = std::move(other._parser);
+		return *this;
+	}
+
 	util::Result<std::string, KError> TemplGen::codegen(
 		std::string const &str,
 		TemplObj const &args,
@@ -322,18 +333,17 @@ namespace cg {
 			std::ofstream file("gen/templgen.gv");
 			auto label = util::f("Graph for file: ", filename);
 
-			auto parser = SParser(_ctx);
 			//auto parser = AbsoluteSolver::setup(_ctx, "file").value();
 
-			auto node = parser.parse(str, filename).value();
-			node.compress(_ctx.prim_names());
+			auto node = _parser->parse(str, filename).value();
+			node.compress(_parser->cfg().prim_names());
 			node.print_dot(file, label);
 
 			file.close();
 
 			auto l_args = args;
 			TRY(_add_builtin_identifiers(l_args));
-			return _codegen(node, l_args, parser);
+			return _codegen(node, l_args, *_parser);
 		} catch_kerror;
 	}
 
@@ -713,7 +723,7 @@ namespace cg {
 			auto exp_str_node = node.child_with_cfg("exp_str");
 			auto filename = _unpack_str(exp_str_node->consumed_all()).value();
 			auto include_src = util::readEnvFile(filename);
-			auto include_node = parser.parse(include_src, filename)->compressed(_ctx.prim_names());
+			auto include_node = parser.parse(include_src, filename)->compressed(_parser->cfg().prim_names());
 
 			std::ofstream file("gen/templgen-include.gv");
 			include_node.print_dot(file, "templgen-include");

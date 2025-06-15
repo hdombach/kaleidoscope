@@ -15,7 +15,7 @@ namespace cg {
 				TestFixture(test),
 				_should_simplify(variant)
 			{
-				_gen = TemplGen::create().value();
+				_gen = std::move(TemplGen::create().value());
 				if (_should_simplify) _gen.cfg().simplify();
 			}
 

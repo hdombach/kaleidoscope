@@ -27,11 +27,13 @@ namespace cg::abs {
 	 */
 	class AbsoluteSolver: public Parser {
 		public:
+			using Ptr = std::unique_ptr<AbsoluteSolver>;
+
+			AbsoluteSolver() = default;
 			~AbsoluteSolver() {}
 
-			static util::Result<AbsoluteSolver, KError> setup(
-				CfgContext const &context,
-				std::string const &root
+			static util::Result<AbsoluteSolver::Ptr, KError> create(
+				CfgContext::Ptr &&ctx
 			);
 
 			void print_table(std::ostream &os, std::set<char> const &chars);
@@ -40,6 +42,9 @@ namespace cg::abs {
 				std::string const &str,
 				std::string const &filename = "codegen"
 			) override;
+
+			CfgContext const &cfg() const override;
+			CfgContext &cfg() override;
 
 		public:
 			using State = util::IterAdapter<uint32_t*>;
@@ -74,7 +79,7 @@ namespace cg::abs {
 
 
 		private:
-			CfgContext const *_ctx = nullptr;
+			CfgContext::Ptr _ctx;
 			AbsoluteTable _table;
 
 		private:

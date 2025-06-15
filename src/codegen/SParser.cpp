@@ -9,17 +9,30 @@
 #include "AstNode.hpp"
 
 namespace cg {
-	SParser::SParser(CfgContext const &ctx):
-		_uid(0),
-		_ctx(&ctx)
-	{}
+	SParser::Ptr SParser::create(std::unique_ptr<CfgContext> &&ctx) {
+		auto parser = std::make_unique<SParser>();;
+		parser->_uid = 0;
+		parser->_ctx = std::move(ctx);
+		return parser;
+	}
+
+	SParser::SParser(SParser &&other) {
+		_uid = other._uid;
+		_ctx = std::move(other._ctx);
+	}
+
+	SParser &SParser::operator=(SParser &&other) {
+		_uid = other._uid;
+		_ctx = std::move(other._ctx);
+		return *this;
+	}
 
 	util::Result<AstNode, KError> SParser::parse(
 		std::string const &str,
 		std::string const &filename
 	) {
 		try {
-			log_assert(_ctx, "SParser is not initialized");
+			log_assert(static_cast<bool>(_ctx), "SParser is not initialized");
 			// _last_failure is a value specific to this function but it is easier to
 			// pass it around everywhere as a property.
 			// Should be fine since can't call multiple parses at same time.
@@ -37,6 +50,14 @@ namespace cg {
 				return node;
 			}
 		} catch_kerror;
+	}
+
+	CfgContext const &SParser::cfg() const {
+		return *_ctx;
+	}
+
+	CfgContext &SParser::cfg() {
+		return *_ctx;
 	}
 
 	KError SParser::_set_failure(KError const &failure) {

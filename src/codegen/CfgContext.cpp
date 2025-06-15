@@ -4,6 +4,9 @@
 #include <sstream>
 
 namespace cg {
+	CfgContext::Ptr CfgContext::create() {
+		return std::make_unique<CfgContext>();
+	}
 	CfgLeaf CfgContext::s(std::string const &str) const {
 		return CfgLeaf::str(str);
 	}

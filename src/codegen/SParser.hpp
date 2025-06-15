@@ -35,7 +35,13 @@ namespace cg {
 			};
 		public:
 			SParser() = default;
-			SParser(CfgContext const &ctx);
+			static SParser::Ptr create(std::unique_ptr<CfgContext> &&ctx);
+
+			SParser(SParser const &other) = delete;
+			SParser(SParser &&other);
+			SParser &operator=(SParser const &other) = delete;
+			SParser &operator=(SParser &&other);
+
 			~SParser() {}
 
 			/**
@@ -49,12 +55,15 @@ namespace cg {
 				std::string const &filename = "codegen"
 			) override;
 
+			CfgContext const &cfg() const override;
+			CfgContext &cfg() override;
+
 		private:
 			/**
 			 * @brief uid for constructing AstNodes
 			 */
 			uint32_t _uid;
-			CfgContext const *_ctx = nullptr;
+			CfgContext::Ptr _ctx;
 			/**
 			 * @brief Most recent failure (even if it isn't officially error yet)
 			 */

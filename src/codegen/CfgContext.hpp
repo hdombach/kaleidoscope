@@ -3,6 +3,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <memory>
 
 #include "util/result.hpp"
 #include "util/KError.hpp"
@@ -14,7 +15,11 @@ namespace cg {
 	 */
 	class CfgContext {
 		public:
+			using Ptr = std::unique_ptr<CfgContext>;
+
 			CfgContext() = default;
+
+			static Ptr create();
 
 			/**
 			 * @brief Wrapper around CfgLeaf::str

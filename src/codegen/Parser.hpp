@@ -3,10 +3,13 @@
 #include "util/StringRef.hpp"
 #include "util/result.hpp"
 #include "AstNode.hpp"
+#include "CfgContext.hpp"
 
 namespace cg {
 	class Parser {
 		public:
+			using Ptr = std::unique_ptr<Parser>;
+
 			virtual ~Parser() {}
 
 			inline virtual util::Result<size_t, KError> match(
@@ -22,5 +25,8 @@ namespace cg {
 				std::string const &str,
 				std::string const &filename = "codegen"
 			) = 0;
+
+			virtual CfgContext const &cfg() const = 0;
+			virtual CfgContext &cfg() = 0;
 	};
 }
