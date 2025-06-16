@@ -81,6 +81,7 @@ namespace cg::abs {
 		private:
 			CfgContext::Ptr _ctx;
 			AbsoluteTable _table;
+			std::vector<CfgRule> _rules;
 
 		private:
 			/**

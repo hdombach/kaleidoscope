@@ -26,10 +26,18 @@ namespace cg::abs {
 		return sets[_set];
 	}
 
+	uint32_t RulePos::set_index() const {
+		return _set;
+	}
+
 	CfgRule const &RulePos::rule() const {
 		auto &rules = set().rules();
 		log_assert(rules.size() > _rule, "Invalid rule position inside RulePos");
 		return rules[_rule];
+	}
+
+	uint32_t RulePos::rule_index() const {
+		return _rule;
 	}
 
 	CfgLeaf const &RulePos::leaf() const {
@@ -38,6 +46,10 @@ namespace cg::abs {
 		log_assert(leaves.size() > _offset, "Invalid leaf position inside RulePos");
 
 		return leaves[_offset];
+	}
+
+	uint32_t RulePos::leaf_index() const {
+		return _offset;
 	}
 
 	RulePos RulePos::next_leaf() const {
@@ -220,8 +232,6 @@ namespace cg::abs {
 			}
 			table.push_back(row_str);
 		}
-
-		os << util::plist_enumerated(_table_states);
 
 		os << util::ptable(table);
 	}

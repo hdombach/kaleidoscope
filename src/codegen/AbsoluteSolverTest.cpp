@@ -74,7 +74,7 @@ namespace cg {
 
 		solver->print_table(log_debug() << "\n", {'a', '\x03'});
 
-		//EXPECT_EQ(1, solver->match("a", "root").value());
-		//EXPECT_EQ(0, solver->match("", "root").value());
+		EXPECT_EQ(1, solver->match("a", "root").value());
+		EXPECT_EQ(2, solver->match("aa", "root").value());
 	}
 }

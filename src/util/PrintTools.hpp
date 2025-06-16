@@ -52,12 +52,15 @@ namespace util {
 	template<typename T>
 		class plist_enumerated {
 			public:
-				plist_enumerated(std::vector<T> const &list): _l(list) {};
+				plist_enumerated(std::vector<T> const &list, bool one_indexed = false):
+					_l(list),
+					_one_indexed(one_indexed)
+				{};
 
 				std::ostream &print(std::ostream &os) const {
 					uint32_t length = std::ceil(std::log10(_l.size()));
 					for (int i = 0; i < _l.size(); i++) {
-						os << std::setfill(' ') << std::setw(length) << i << ") ";
+						os << std::setfill(' ') << std::setw(length) << i + _one_indexed << ") ";
 						os << util::trim(_l[i]) << std::endl;
 					}
 					return os;
@@ -65,6 +68,7 @@ namespace util {
 
 			private:
 				std::vector<T> const &_l;
+				bool _one_indexed;
 		};
 
 	template<typename T>

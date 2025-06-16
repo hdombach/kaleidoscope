@@ -35,13 +35,25 @@ namespace cg::abs {
 			 */
 			CfgRuleSet const &set() const;
 			/**
+			 * @brief Gets the raw index for the set
+			 */
+			uint32_t set_index() const;
+			/**
 			 * @brief Gets the corresponding rule in the provided CfgContext
 			 */
 			CfgRule const &rule() const;
 			/**
+			 * @brief Gets the raw index for the rule
+			 */
+			uint32_t rule_index() const;
+			/**
 			 * @brief Gets the corresponding leaf in the provided CfgContext
 			 */
 			CfgLeaf const &leaf() const;
+			/**
+			 * @brief Gets the raw index for the leaf
+			 */
+			uint32_t leaf_index() const;
 
 			/**
 			 * @brief Gets the next leaf for the corresponding rule.
