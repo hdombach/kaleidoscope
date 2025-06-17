@@ -104,8 +104,7 @@ namespace cg {
 		c.prim("raw")
 			= c.i("a ") + c["raw_opt"];
 
-		c.prim("comment") =
-			c["padding_b"] + c.s("{");
+		c.prim("comment") = c.s("{");
 
 		c.prim("padding")
 			= c.s(" ") + c["padding"]

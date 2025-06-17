@@ -1,5 +1,6 @@
 #include "CfgContext.hpp"
 #include "util/log.hpp"
+#include "util/PrintTools.hpp"
 
 #include <sstream>
 
@@ -150,5 +151,87 @@ namespace cg {
 		for (auto &set : _cfg_rule_sets) {
 			set.simplify_char_sets();
 		}
+
+		log_debug() << "Before removing empty sets" << std::endl;
+		log_debug() << *this;
+		_remove_empty();
+		log_debug() << "After removing empty sets" << std::endl;
+		log_debug() << *this;
+	}
+
+	std::set<std::string> get_empty_sets(CfgContext &ctx) {
+		auto sets = std::set<std::string>();
+
+		//for (auto &set : ctx.cfg_rule_sets()) {
+		//	for (auto &rule : set.rules()) {
+		//		if (rule.leaves().empty()) sets.insert(set.name());
+		//	}
+		//}
+
+		bool propigating = true;
+		while (propigating) {
+			propigating = false;
+			for (auto &set : ctx.cfg_rule_sets()) {
+				for (auto &rule : set.rules()) {
+					bool is_empty = true;
+					for (auto &leaf : rule.leaves()) {
+						if (leaf.type() == CfgLeaf::Type::var) {
+							if (!sets.contains(leaf.var_name())) {
+								is_empty = false;
+							}
+						} else {
+							is_empty = false;
+						}
+					}
+					if (is_empty) {
+						if (!sets.contains(set.name())) {
+							sets.insert(set.name());
+							propigating = true;
+						}
+					}
+				}
+			}
+		}
+
+		return sets;
+	}
+
+	void _enumerate_empty(
+		std::set<std::string> const &empty_sets,
+		CfgRule const &rule,
+		uint32_t leaf_index,
+		std::vector<CfgLeaf> &stack,
+		std::vector<CfgRule> &result
+	) {
+		if (leaf_index == rule.leaves().size()) {
+			if (stack.size() > 0) {
+				result.push_back({stack});
+			}
+		} else {
+			auto &leaf = rule.leaves()[leaf_index];
+			stack.push_back(leaf);
+			_enumerate_empty(empty_sets, rule, leaf_index+1, stack, result);
+			stack.pop_back();
+			if (leaf.type() == CfgLeaf::Type::var && empty_sets.contains(leaf.var_name())) {
+				_enumerate_empty(empty_sets, rule, leaf_index+1, stack, result);
+			}
+		}
+	}
+
+	void CfgContext::_remove_empty() {
+		auto empty_sets = get_empty_sets(*this);
+		auto new_sets = std::vector<CfgRuleSet>();
+		for (auto &set : _cfg_rule_sets) {
+			auto new_rules = std::vector<CfgRule>();
+			for (auto &rule : set.rules()) {
+				if (rule.leaves().empty()) continue;
+				auto stack = std::vector<CfgLeaf>();
+				_enumerate_empty(empty_sets, rule, 0, stack, new_rules);
+			}
+			if (new_rules.size() > 0) {
+				new_sets.push_back(CfgRuleSet(set.name(), std::move(new_rules)));
+			}
+		}
+		_cfg_rule_sets = std::move(new_sets);
 	}
 }

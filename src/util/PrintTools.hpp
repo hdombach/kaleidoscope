@@ -24,22 +24,27 @@ namespace util {
 
 	RectSize str_rect(std::string const &str);
 
-	template<typename T>
+	template<typename Container>
 		class plist {
 			public:
-				plist(std::vector<T> const &list): _l(list) {}
+				plist(Container const &container): _c(container) {}
 
 				std::ostream &print(std::ostream &os) const {
 					os << "[";
-					for (uint32_t i = 0; i < _l.size(); i++) {
-						if (i) os << ", ";
-						os << _l[i];
+					bool is_first = true;
+					for (auto &element : _c) {
+						if (is_first) {
+							is_first = false;
+						} else {
+							os << ", ";
+						}
+						os << element;
 					}
 					os << "]";
 					return os;
 				}
 			private:
-				std::vector<T> const &_l;
+				Container const &_c;
 		};
 	template<typename T>
 		inline std::ostream &operator<<(std::ostream &os, plist<T> const &l) {

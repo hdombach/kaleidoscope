@@ -107,6 +107,8 @@ namespace cg {
 			std::map<std::string, uint32_t> _cfg_map;
 			std::set<std::string> _prim_names;
 			std::string _root_name;
+
+			void _remove_empty();
 	};
 
 	inline std::ostream &operator<<(std::ostream &os, CfgContext const &ctx) {

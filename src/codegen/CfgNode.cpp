@@ -155,6 +155,11 @@ namespace cg {
 
 	CfgRuleSet::CfgRuleSet(std::string const &name): _name(name) { }
 
+	CfgRuleSet::CfgRuleSet(std::string const &name, std::vector<CfgRule> &&rules):
+		_name(name),
+		_rules(rules)
+	{}
+
 	CfgRuleSet& CfgRuleSet::operator=(CfgRuleSet const &set) {
 		add_rules(set);
 		return *this;

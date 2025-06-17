@@ -116,6 +116,7 @@ namespace cg {
 			CfgRuleSet() = default;
 
 			CfgRuleSet(std::string const &name);
+			CfgRuleSet(std::string const &name, std::vector<CfgRule> &&rules);
 
 			CfgRuleSet& operator=(CfgRuleSet const &set);
 			CfgRuleSet& operator=(CfgRule const &rule);
@@ -128,6 +129,8 @@ namespace cg {
 			std::string const &name() const { return _name; }
 			std::vector<CfgRule> &rules() { return _rules; }
 			std::vector<CfgRule> const &rules() const { return _rules; }
+
+			void set_rules(std::vector<CfgRule> &&rules);
 
 			iterator begin();
 			const_iterator begin() const;
