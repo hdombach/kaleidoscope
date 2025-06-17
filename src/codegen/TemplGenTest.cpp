@@ -43,6 +43,17 @@ namespace cg {
 			bool _should_simplify = true;
 	};
 
+	TEST_F(TemplGenTest, nothing) {
+		auto src =
+			"nothing\n";
+
+		auto args = TemplDict{};
+
+		EXPECT_CG(
+			"nothing\n"
+		);
+	}
+
 	TEST_F(TemplGenTest, expressions) {
 		auto src =
 			"Hello everyone\n"

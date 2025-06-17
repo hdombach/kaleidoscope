@@ -215,6 +215,26 @@ namespace cg {
 		1,1,1,1,1,1,1,0,
 	};
 
+	static const std::vector<bool> _default_alnum{
+		0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,
+		0,0,0,0,0,0,0,0,
+		1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,1,
+		1,1,1,1,1,1,1,0,
+	};
+
+
 	std::vector<CfgLeaf> _enumerate_leaf(CfgLeaf const &leaf) {
 		if (leaf.type() != CfgLeaf::Type::set) {
 			return {leaf};
@@ -227,7 +247,7 @@ namespace cg {
 				r.push_back(CfgLeaf::character(c));
 			}
 		} else {
-			auto table = _default_all;
+			auto table = _default_alnum;
 			for (auto c : leaf.str_content()) {
 				table[c] = 0;
 			}

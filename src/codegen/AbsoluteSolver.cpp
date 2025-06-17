@@ -12,6 +12,42 @@
 #include "util/PrintTools.hpp"
 
 namespace cg::abs {
+	StackElement::StackElement() = default;
+
+	StackElement::StackElement(AstNode const &node):
+		_value(node)
+	{}
+
+	StackElement::StackElement(uint32_t table_state):
+		_value(table_state)
+	{}
+
+	bool StackElement::is_table_state() const {
+		return std::holds_alternative<uint32_t>(_value);
+	}
+
+	uint32_t StackElement::table_state() const {
+		return std::get<uint32_t>(_value);
+	}
+
+	bool StackElement::is_node() const {
+		return std::holds_alternative<AstNode>(_value);
+	}
+
+	AstNode const &StackElement::node() const {
+		return std::get<AstNode>(_value);
+	}
+
+	std::ostream &StackElement::debug(std::ostream &os) const {
+		if (is_table_state()) {
+			return os << table_state();
+		} else if (is_node()) {
+			return os << node();
+		} else {
+			return os << "UNKNOWN";
+		}
+	}
+
 	util::Result<AbsoluteSolver::Ptr, KError> AbsoluteSolver::create(
 		CfgContext::Ptr &&context
 	) {
@@ -59,24 +95,18 @@ namespace cg::abs {
 			uint32_t node_id = 0;
 			// uint32_t is the current state
 			auto stack = std::vector<StackElement>();
-			uint32_t cur_state_id=0;
+			stack.push_back(StackElement(0));
 			auto c = str.data();
-			auto prev_rule_set = std::optional<uint32_t>();
 			while (1) {
-				uint32_t action;
-				if (prev_rule_set) {
-					action = _table.lookup_ruleset(cur_state_id, *prev_rule_set);
-					log_trace() << "looking up state = " << cur_state_id
-						<< ", prev rule set = " << _ctx->cfg_rule_sets()[*prev_rule_set].name() << std::endl;
-				} else {
-					auto another_c = *c;
-					if (another_c == 0) {
-						another_c = '\x03';
-					}
-					log_trace() << "looking up state = " << cur_state_id
-						<< ", str = \"" << util::escape_str({another_c}) << "\"" << std::endl;
-					action = _table.lookup_char(cur_state_id, another_c);
+				log_assert(stack.back().is_table_state(), "Stack must end with a state");
+				uint32_t cur_state_id = stack.back().table_state();
+				char cur_c = *c;
+				if (cur_c == 0) {
+					cur_c = '\x03';
 				}
+				log_trace() << "state is " << cur_state_id << std::endl;
+				log_trace() << "Looking up \"" << util::escape_str({cur_c}) << "\"" << std::endl;
+				uint32_t action = _table.lookup_char(cur_state_id, cur_c);
 				log_trace() << "action: " << _table.action_str(action) << std::endl;
 
 				if (action == AbsoluteTable::ACCEPT_ACTION) {
@@ -84,37 +114,31 @@ namespace cg::abs {
 					break;
 				} else if (action & AbsoluteTable::REDUCE_MASK) {
 					uint32_t production_rule_id = action & ~AbsoluteTable::REDUCE_MASK;
-					cur_state_id = _reduce(
+					_reduce(
 						stack,
 						production_rule_id,
-						cur_state_id,
 						node_id
 					);
-					prev_rule_set = _get_rule_set_id(production_rule_id);
-				} else if (prev_rule_set == std::nullopt) {
+				} else {
 					if (!*c) {
 						return KError::codegen("Reached EOF unexpectedly");
 					}
 					//TODO: update source_location
 					stack.push_back(StackElement(
-						cur_state_id,
 						AstNode::create_str(node_id++, {*c}, std::source_location())
 					));
 					log_trace() << "shifted character: " << *c << std::endl;
-					cur_state_id = action;
+					stack.push_back(StackElement(action)); // push back the next state
 					c++;
-				} else {
-					cur_state_id = action;
-					prev_rule_set = std::nullopt;
 				}
 			}
-			if (stack.size() != 1) {
-				return KError::codegen("Stack must contain 1 element");
+			if (stack.size() != 3) {
+				return KError::codegen("Stack must contain 3 elements");
 			}
-			if (!stack.back().is_node()) {
-				return KError::codegen("Stack must contain a node");
+			if (!stack[1].is_node()) {
+				return KError::codegen("The second element must be a node");
 			}
-			return stack.back().node();
+			return stack[1].node();
 		} catch_kerror;
 	}
 
@@ -126,69 +150,9 @@ namespace cg::abs {
 		return *_ctx;
 	}
 
-	AbsoluteSolver::StackElement::StackElement():
-		_state_id(0),
-		_value(CfgLeaf())
-	{}
-
-	AbsoluteSolver::StackElement::StackElement(
-		uint32_t state_id,
-		CfgLeaf const &leaf
-	) {
-		_state_id = state_id;
-		_value = leaf;
-	}
-
-	AbsoluteSolver::StackElement::StackElement(
-		uint32_t state_id,
-		AstNode const &node
-	) {
-		_state_id = state_id;
-		_value = node;
-	}
-
-	uint32_t AbsoluteSolver::StackElement::state_id() const {
-		return _state_id;
-	}
-
-	CfgLeaf const &AbsoluteSolver::StackElement::leaf() const {
-		return std::get<CfgLeaf>(_value);
-	}
-
-	CfgLeaf &AbsoluteSolver::StackElement::leaf() {
-		return std::get<CfgLeaf>(_value);
-	}
-
-	bool AbsoluteSolver::StackElement::is_leaf() const {
-		return std::holds_alternative<CfgLeaf>(_value);
-	}
-
-	AstNode const &AbsoluteSolver::StackElement::node() const {
-		return std::get<AstNode>(_value);
-	}
-
-	AstNode &AbsoluteSolver::StackElement::node(){
-		return std::get<AstNode>(_value);
-	}
-
-	bool AbsoluteSolver::StackElement::is_node() const {
-		return std::holds_alternative<AstNode>(_value);
-	}
-
-	std::ostream &AbsoluteSolver::StackElement::debug(std::ostream &os) const {
-		os << "(" << _state_id << ") ";
-		if (is_node()){
-			os << node();
-		} else {
-			os << leaf();
-		}
-		return os;
-	}
-
-	uint32_t AbsoluteSolver::_reduce(
+	void AbsoluteSolver::_reduce(
 		std::vector<StackElement> &stack,
 		uint32_t rule_id,
-		uint32_t cur_state_id,
 		uint32_t &node_id
 	){
 		auto ss = std::stringstream();
@@ -196,35 +160,34 @@ namespace cg::abs {
 
 		auto &rule = _get_rule(rule_id);
 		log_trace() << "Reducing rule " << rule_id << std::endl;
-		log_assert(rule.leaves().size() <= stack.size(), "Stack must contain enough elements for the rule");
+		log_assert(rule.leaves().size() <= stack.size() * 2 + 1, "Stack must contain enough elements for the rule");
 		auto popped = std::vector<StackElement>();
 		for (uint32_t i = 0; i < rule.leaves().size(); i++) {
+			log_assert(stack.back().is_table_state(), "Back of the stack must be a table state");
+			stack.pop_back();
+			log_assert(stack.back().is_node(), "Back of the satck must be a node");
 			popped.push_back(stack.back());
 			stack.pop_back();
 		}
 		auto TODO2 = util::FileLocation();
-		auto node = AstNode::create_rule(node_id++, rule.str(), TODO2);
+		auto new_node = AstNode::create_rule(node_id++, rule.str(), TODO2);
 
 		for (int i = popped.size()-1; i >= 0; i--){
-			auto &p = popped[i];
-			if (p.is_node()) {
-				node.add_child(p.node());
-			} else {
-				log_assert(p.leaf().type() == CfgLeaf::Type::character, "CfgLeaf must be a character");
-				node.add_child(AstNode::create_str(node_id++, p.leaf().str(), TODO2));
-			}
+			new_node.add_child(popped[i].node());
 		}
-		stack.push_back(StackElement(cur_state_id, node));
+
+		auto cur_state_id = stack.back().table_state();
+		auto cur_rule_set = _get_rule_set_id(rule_id);
+		auto next_state_id = _table.lookup_ruleset(cur_state_id, cur_rule_set);
+
+		log_trace() << "state is " << cur_state_id << std::endl;
+		log_trace() << "Looking up <" << _ctx->cfg_rule_sets()[cur_rule_set].name() << ">" << std::endl;
+
+		stack.push_back(StackElement(new_node));
+		stack.push_back(StackElement(next_state_id));
 
 		ss << util::plist(stack) << std::endl;
 		log_trace() << ss.str();
-		log_debug() << "popped size is " << popped.size() << std::endl;
-
-		if (popped.empty()) {
-			return cur_state_id;
-		} else {
-			return popped.back().state_id();
-		}
 	}
 
 	uint32_t AbsoluteSolver::_add_state(TableState const &state_rule) {
@@ -390,9 +353,5 @@ namespace cg::abs {
 			matched->rules.add_rule(child);
 		}
 		return r;
-	}
-
-	std::ostream &operator<<(std::ostream &os, AbsoluteSolver::StackElement const &e) {
-		return e.debug(os);
 	}
 }

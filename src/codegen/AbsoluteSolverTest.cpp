@@ -23,7 +23,7 @@ namespace cg {
 		std::ofstream file("gen/ast-test.gv");
 
 		solver->print_table(log_debug() << "\n", {'*', '+', '0', '1', '\x03'});
-		auto node = solver->parse("1+1", "S");
+		auto node = solver->parse("1*1", "S");
 		node->print_dot(file, "ast-test");
 		log_debug() << node.value() << std::endl;
 	}
@@ -76,5 +76,49 @@ namespace cg {
 
 		EXPECT_EQ(1, solver->match("a", "root").value());
 		EXPECT_EQ(2, solver->match("aa", "root").value());
+	}
+
+	TEST(AbsoluteSolver, lines) {
+		auto ctx = CfgContext::create();
+		auto &c = *ctx;
+
+		//all characters:
+		//'{', 'a', '\n', ' '
+
+		c.root("file") = c["lines"] + c.eof();
+		c.prim("lines")
+			= c["line"] + c["lines"]
+			| c.s("");
+		c.prim("line")
+			= c["line_single"] + c["line"]
+			| c.s("\n");
+
+		c.prim("line_single")
+			= c["raw"]
+			| c["comment"];
+
+
+		c.temp("raw_opt")
+			= c["raw"]
+			| c.s("");
+		c.prim("raw")
+			= c.i("a ") + c["raw_opt"];
+
+		c.prim("comment") =
+			c["padding_b"] + c.s("{");
+
+		c.prim("padding")
+			= c.s(" ") + c["padding"]
+			| c.s("");
+		c.prim("padding_b") = c["padding"];
+
+		c.simplify();
+		EXPECT(c.prep());
+
+		auto solver = std::move(AbsoluteSolver::create(std::move(ctx)).value());
+
+		solver->print_table(log_debug() << "\n", {'a', '{', '}', ' ', '\n', '\x03'});
+		EXPECT_EQ(2, solver->match("a\n", "file").value());
+
 	}
 }

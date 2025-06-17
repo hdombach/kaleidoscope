@@ -14,6 +14,29 @@
 
 namespace cg::abs {
 	/**
+	 * Can either be a node being consructed or a state in the AbsoluteTable
+	 */
+	class StackElement {
+		public:
+			StackElement();
+			StackElement(AstNode const &node);
+			StackElement(uint32_t table_state);
+
+			bool is_table_state() const;
+			uint32_t table_state() const;
+			bool is_node() const;
+			AstNode const &node() const;
+
+			std::ostream &debug(std::ostream &os) const;
+
+		private:
+			std::variant<AstNode, uint32_t> _value;
+	};
+
+	inline std::ostream &operator<<(std::ostream &os, StackElement const &element) {
+		return element.debug(os);
+	}
+	/**
 	 * @brief A (hopefully) fast parser for the context free grammar.
 	 * It uses an LR(1) parser I think.
 	 *
@@ -54,30 +77,6 @@ namespace cg::abs {
 				TableState rules;
 			};
 
-			class StackElement {
-				public:
-					StackElement();
-					StackElement(uint32_t state_id, CfgLeaf const &leaf);
-					StackElement(uint32_t state_id, AstNode const &node);
-
-					uint32_t state_id() const;
-					CfgLeaf const &leaf() const;
-					CfgLeaf &leaf();
-					bool is_leaf() const;
-					AstNode const &node() const;
-					AstNode &node();
-					bool is_node() const;
-					std::ostream &debug(std::ostream &os) const;
-
-				private:
-					/**
-					 * @brief The current state_id in the table when this element is added to the stack.
-					 */
-					uint32_t _state_id;
-					std::variant<CfgLeaf, AstNode> _value;
-			};
-
-
 		private:
 			CfgContext::Ptr _ctx;
 			AbsoluteTable _table;
@@ -91,10 +90,9 @@ namespace cg::abs {
 			 * @returns The new cur_state_id. Can be the same as cur_state_id
 			 * @returns Keeps track of node_id
 			 */
-			uint32_t _reduce(
+			void _reduce(
 				std::vector<StackElement> &stack,
 				uint32_t rule_id,
-				uint32_t cur_state_id,
 				uint32_t &node_id
 			);
 
@@ -140,8 +138,6 @@ namespace cg::abs {
 			 */
 			std::vector<RuleGroup> _group_rules(TableState const &children);
 	};
-
-	std::ostream &operator<<(std::ostream &os, AbsoluteSolver::StackElement const &e);
 }
 
 namespace cg {

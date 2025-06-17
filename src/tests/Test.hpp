@@ -59,8 +59,8 @@ inline struct _TEST_NAME(_class_, fixture, _, test_name) {\
 	_TEST_NAME(_class_, fixture, _, test_name)() {\
 		suites[#fixture][#test_name] = { \
 			_TEST_NAME(_wrapper_, fixture, _, test_name), \
-			#test_name, \
 			#fixture, \
+			#test_name, \
 			fixture::variant_count() \
 		}; \
 	};\

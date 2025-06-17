@@ -15,10 +15,16 @@
 
 namespace cg {
 	util::Result<TemplGen, KError> TemplGen::create() {
-		auto result = TemplGen();
-		result._parser = SParser::create(CfgContext::create());
-		auto &c = result._parser->cfg();
-		
+		if (!_parser) TRY(_setup_parser());
+		return TemplGen();
+	}
+
+	Parser::Ptr TemplGen::_parser;
+
+	util::Result<void, KError> TemplGen::_setup_parser() {
+		auto context = CfgContext::create();
+		auto &c = *context;
+			
 		c.prim("whitespace")
 			= c.s(" ") + c["whitespace"]
 			| c.s("\t") + c["whitespace"]
@@ -297,10 +303,16 @@ namespace cg {
 
 		c.prim("statement") = c["sfor"] | c["sif"] | c["smacro"] | c["sinclude"];
 
-		TRY(c.prep());
 		c.simplify();
+		TRY(c.prep());
 
-		return result;
+		auto parser = std::move(AbsoluteSolver::create(std::move(context)).value());
+		std::ofstream file("gen/nothing-table.txt");
+		parser->print_table(file, {'n', 'o', 't', 'h', 'i', 'g', '\n'});
+
+		_parser = std::move(parser);
+
+		return {};
 	}
 
 	TemplGen::TemplGen(TemplGen &&other) {

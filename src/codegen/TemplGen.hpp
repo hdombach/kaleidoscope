@@ -41,7 +41,8 @@ namespace cg {
 			CfgContext const &cfg() const { return _parser->cfg(); }
 			CfgContext &cfg() { return _parser->cfg(); }
 		private:
-			Parser::Ptr _parser;
+			static util::Result<void, KError> _setup_parser();
+			static Parser::Ptr _parser;
 
 		private:
 			using CodegenRes = util::Result<std::string, KError>;
