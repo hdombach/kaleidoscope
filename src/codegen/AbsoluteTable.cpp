@@ -164,19 +164,13 @@ namespace cg::abs {
 		return false;
 	}
 
-	util::Result<RulePos, void> TableState::find_end() const {
-		auto result = util::Result<RulePos, void>();
-
+	std::vector<RulePos> TableState::find_ends() const {
+		auto result = std::vector<RulePos>();
 		for (auto &rule : _rules) {
 			if (rule.is_end()) {
-				if (result.has_value()) {
-					return {};
-				} else {
-					result = rule;
-				}
+				result.push_back(rule);
 			}
 		}
-
 		return result;
 	}
 

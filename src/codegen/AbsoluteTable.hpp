@@ -130,11 +130,7 @@ namespace cg::abs {
 			 */
 			bool contains_end() const;
 
-			/**
-			 * @brief Finds a rule containing the end position
-			 * Will throw an error if the number of end rules does not equal 1
-			 */
-			util::Result<RulePos, void> find_end() const;
+			std::vector<RulePos> find_ends() const;
 
 			/**
 			 * @brief Creates a new TableState with every RulePos incrimented by one

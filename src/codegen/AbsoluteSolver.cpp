@@ -201,11 +201,14 @@ namespace cg::abs {
 
 		//Do not check a character. Instead reduce.
 		//Right now, can only reduce if it is the only rule in a group
-		if (auto end_rule = unsorted_rules.find_end()) {
-			log_debug() << "Adding reduction for " << end_rule->str() << std::endl;
+		auto end_rules = unsorted_rules.find_ends();
+		if (end_rules.size() == 1) {
+			log_debug() << "Adding reduction for " << end_rules.front().str() << std::endl;
 			for (auto &s : new_state) {
-				s = _get_rule_id(end_rule.value()) | AbsoluteTable::REDUCE_MASK;
+				s = _get_rule_id(end_rules.front()) | AbsoluteTable::REDUCE_MASK;
 			}
+		} else if (end_rules.size() > 1) {
+			log_fatal_error() << "Multiple end rules for state: " << state_rule << std::endl;
 		}
 
 		//group by leaf type. We already handeled positions at the end a rule so we

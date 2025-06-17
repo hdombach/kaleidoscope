@@ -306,11 +306,15 @@ namespace cg {
 		c.simplify();
 		TRY(c.prep());
 
-		auto parser = std::move(AbsoluteSolver::create(std::move(context)).value());
-		std::ofstream file("gen/nothing-table.txt");
-		parser->print_table(file, {'n', 'o', 't', 'h', 'i', 'g', '\n'});
-
-		_parser = std::move(parser);
+		if (false) {
+			std::ofstream file("gen/nothing-table.txt");
+			auto parser = std::move(AbsoluteSolver::create(std::move(context)).value());
+			parser->print_table(file, {'n', 'o', 't', 'h', 'i', 'g', '\n'});
+			_parser = std::move(parser);
+		} else {
+			auto parser = SParser::create(std::move(context));
+			_parser = std::move(parser);
+		}
 
 		return {};
 	}
