@@ -143,8 +143,8 @@ namespace cg {
 			 */
 			void simplify_char_sets();
 
-			std::ostream& print_debug(std::ostream &os) const;
-			std::string str() const;
+			std::ostream& print_debug(std::ostream &os, bool multiline=false) const;
+			std::string str(bool multiline=false) const;
 		private:
 			std::string _name;
 			std::vector<CfgRule> _rules;

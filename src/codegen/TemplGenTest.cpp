@@ -840,21 +840,21 @@ namespace cg {
 
 	TEST_F(TemplGenTest, abs_filter) {
 		auto args = TemplObj{
-			{"value", -42},
+			{"v", -42},
 		}.dict().value();
 
 		auto src =
-			"abs of value is {{value|abs}}";
+			"abs of value is {{v|abs}}\n";
 
 		EXPECT_CG(
-			"abs of value is 42"
+			"abs of value is 42\n"
 		);
 
 		src =
-			"abs of expression is {{-10-2|abs}}";
+			"abs of expression is {{-10-2|abs}}\n";
 
 		EXPECT_CG(
-			"abs of expression is 8"
+			"abs of expression is 8\n"
 		);
 	}
 

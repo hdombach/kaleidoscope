@@ -75,45 +75,10 @@ namespace cg {
 		return _cfg_map.at(name);
 	}
 
-	void CfgContext::debug_set(
-		CfgRuleSet const &set,
-		std::ostream &os
-	) const {
-		os << set.name() << " -> " << set;
-	}
-
-	void CfgContext::debug_set(
-		std::string const &set,
-		std::ostream &os
-	) const {
-		if (auto node = get(set)) {
-			debug_set(*node, os);
-		} else {
-			os << "<anon node>";
-		}
-	}
-
-	void CfgContext::debug_sets(std::ostream &os) const {
+	void CfgContext::debug_print(std::ostream &os) const {
 		for (auto &set : _cfg_rule_sets) {
-			debug_set(set, os);
-			os << std::endl;
+			os << set.str(true) << std::endl;
 		}
-	}
-
-	std::string CfgContext::set_str(CfgRuleSet const &set) const {
-		auto ss = std::stringstream();
-
-		debug_set(set, ss);
-
-		return ss.str();
-	}
-
-	std::string CfgContext::set_str(std::string const &name) const {
-		auto ss = std::stringstream();
-
-		debug_set(name, ss);
-
-		return ss.str();
 	}
 
 	util::Result<void, KError> CfgContext::prep() { 

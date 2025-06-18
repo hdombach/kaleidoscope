@@ -77,12 +77,13 @@ namespace cg {
 		Stack const &s,
 		CfgRuleSet const &set
 	) {
-		log_trace() << "Parsing rule set: " << set.name() << std::endl;
+		log_trace() << "Parsing rule set: " << set << std::endl;
 		for (auto &rule : set.rules()) {
 			if (auto node = _parse(s.child(0, set.name()), rule)) {
 				return node;
 			}
 		}
+		log_trace() << "Rule set " << set.name() << " failed." << std::endl;
 		return _last_failure;
 	}
 

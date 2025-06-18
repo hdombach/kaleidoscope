@@ -290,12 +290,16 @@ namespace cg {
 		_rules = std::move(new_rules);
 	}
 
-	std::ostream& CfgRuleSet::print_debug(std::ostream &os) const {
+	std::ostream& CfgRuleSet::print_debug(std::ostream &os, bool multiline) const {
 		bool is_first = true;
+		os << name() << " -> ";
 		for (auto &rule : _rules) {
 			if (is_first) {
 				is_first = false;
 			} else {
+				if (multiline) {
+					os << "\n  ";
+				}
 				os << " | ";
 			}
 			os << rule;
@@ -303,9 +307,9 @@ namespace cg {
 		return os;
 	}
 
-	std::string CfgRuleSet::str() const {
+	std::string CfgRuleSet::str(bool multiline) const {
 		auto ss = std::stringstream();
-		print_debug(ss);
+		print_debug(ss, multiline);
 		return ss.str();
 	}
 }

@@ -81,11 +81,7 @@ namespace cg {
 			std::vector<CfgRuleSet> const &cfg_rule_sets() const;
 			uint32_t rule_id(std::string const &name) const;
 
-			void debug_set(CfgRuleSet const &set, std::ostream &os) const;
-			void debug_set(std::string const &set, std::ostream &os) const;
-			void debug_sets(std::ostream &os) const;
-			std::string set_str(CfgRuleSet const &set) const;
-			std::string set_str(std::string const &name) const;
+			void debug_print(std::ostream &os) const;
 
 			std::set<std::string> const &prim_names() const { return _prim_names; }
 
@@ -112,7 +108,7 @@ namespace cg {
 	};
 
 	inline std::ostream &operator<<(std::ostream &os, CfgContext const &ctx) {
-		ctx.debug_sets(os);
+		ctx.debug_print(os);
 		return os;
 	}
 }

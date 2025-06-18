@@ -133,6 +133,7 @@ namespace cg::abs {
 				}
 			}
 			if (stack.size() != 3) {
+				log_debug() << "stack is " << util::plist(stack) << std::endl;
 				return KError::codegen("Stack must contain 3 elements");
 			}
 			if (!stack[1].is_node()) {

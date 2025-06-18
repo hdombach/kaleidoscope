@@ -143,10 +143,10 @@ namespace cg {
 
 	std::ostream &AstNode::print_debug(std::ostream &os) const {
 		if (_children.empty()) {
-			os << '"' << consumed() << '"';
+			os << '"' << util::escape_str(consumed()) << '"';
 		} else {
 			os << "{";
-			os << '"' << consumed() << '"' << ": ";
+			os << '"' << util::escape_str(consumed()) << '"' << ": ";
 			os << util::plist(_children);
 			os << "}";
 		}
