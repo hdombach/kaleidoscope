@@ -31,12 +31,6 @@ namespace cg {
 			| c.s("\n") + c["whitespace"]
 			| c.s("");
 
-		c.prim("whitespace")
-			= c.s(" ") + c["whitespace"]
-			| c.s("\t") + c["whitespace"]
-			| c.s("\n") + c["whitespace"]
-			| c.s("");
-
 		c.prim("padding")
 			= c.s(" ") + c["padding"]
 			| c.s("\t") + c["padding"]
@@ -59,8 +53,7 @@ namespace cg {
 		c.prim("padding_b") = c["padding"];
 		c.prim("padding_e") = c["padding"];
 		c.prim("padding_nl")
-			= c["padding"] + c.s("\n")
-			| c["padding"];
+			= c["padding"] + c.s("\n");
 
 		c.temp("raw_opt")
 			= c["raw"]
@@ -76,7 +69,6 @@ namespace cg {
 			| c["raw"];
 		c.prim("line")
 			= c["line_single"] + c["line"]
-			| c["line_single"]
 			| c.s("\n");
 
 		c.prim("lines")
@@ -98,9 +90,7 @@ namespace cg {
 			| c.s("#") + c.e("}") + c["comment_cls"]
 			| c.s("");
 		c.prim("comment") =
-			c["padding_b"] +
-			c["comment_b"] + c["comment_cls"] + c["comment_e"] +
-			c["padding_e"];
+			c["comment_b"] + c["comment_cls"] + c["comment_e"];
 
 		c.prim("expression_b")
 			= c.s("{{-")
@@ -111,17 +101,17 @@ namespace cg {
 			| c.s("+}}")
 			| c.s("}}");
 		c.prim("expression") =
-			c["padding_b"] + c["expression_b"] +
+			c["expression_b"] +
 			c["exp"] +
-			c["expression_e"] + c["padding_e"];
+			c["expression_e"];
 
 		c.prim("exp_sing")
-			= c["whitespace"] + c["exp_id"] + c["whitespace"]
-			| c["whitespace"] + c["exp_int"] + c["whitespace"]
-			| c["whitespace"] + c["exp_str"] + c["whitespace"]
-			| c["whitespace"] + c["exp_paran"] + c["whitespace"];
+			= c["exp_id"] + c["whitespace"]
+			| c["exp_int"] + c["whitespace"]
+			| c["exp_str"] + c["whitespace"]
+			| c["exp_paran"] + c["whitespace"];
 
-		c.prim("exp_id") = c["whitespace"] + c["identifier"] + c["whitespace"];
+		c.prim("exp_id") = c["identifier"];
 		c.prim("exp_int")
 			= c["digit"] + c["exp_int"]
 			| c["digit"];
@@ -140,7 +130,7 @@ namespace cg {
 			| c["exp_call"] + c["exp1_cls"]
 			| c.s("");
 		c.prim("exp1") = c["exp_sing"] + c["exp1_cls"];
-		c.prim("exp_member") = c.s(".") + c["exp_id"];
+		c.prim("exp_member") = c.s(".") + c["whitespace"] + c["exp_id"];
 		c.temp("exp_call_args_cls")
 			= c.s(",") + c["exp"] + c["exp_call_args_cls"]
 			| c.s("");
@@ -150,10 +140,10 @@ namespace cg {
 		c.prim("exp_call") = c.s("(") + c["exp_call_args"] + c.s(")");
 
 		c.prim("exp2")
-			= c["whitespace"] + c["exp_plus"] + c["whitespace"]
-			| c["whitespace"] + c["exp_min"] + c["whitespace"]
-			| c["whitespace"] + c["exp_log_not"] + c["whitespace"]
-			| c["whitespace"] + c["exp1"] + c["whitespace"];
+			= c["exp_plus"] + c["whitespace"]
+			| c["exp_min"] + c["whitespace"]
+			| c["exp_log_not"] + c["whitespace"]
+			| c["exp1"] + c["whitespace"];
 
 		c.prim("exp_plus") = c.s("+") + c["exp2"];
 		c.prim("exp_min") = c.s("-") + c["exp2"];
@@ -164,7 +154,7 @@ namespace cg {
 			| c["exp_div"] + c["exp3_cls"]
 			| c["exp_mod"] + c["exp3_cls"]
 			| c.s("");
-		c.prim("exp3") = c["whitespace"] + c["exp2"] + c["exp3_cls"] + c["whitespace"];
+		c.prim("exp3") = c["exp2"] + c["exp3_cls"] + c["whitespace"];
 		c.prim("exp_mult") = c.s("*") + c["exp2"];
 		c.prim("exp_div")  = c.s("/") + c["exp2"];
 		c.prim("exp_mod")  = c.s("%") + c["exp2"];
@@ -174,7 +164,7 @@ namespace cg {
 			= c["exp_add"] + c["exp4_cls"]
 			| c["exp_sub"] + c["exp4_cls"]
 			| c.s("");
-		c.prim("exp4") = c["whitespace"] + c["exp3"] + c["exp4_cls"] + c["whitespace"];
+		c.prim("exp4") = c["exp3"] + c["exp4_cls"] + c["whitespace"];
 		c.prim("exp_add") = c.s("+") + c["exp3"];
 		c.prim("exp_sub") = c.s("-") + c["exp3"];
 
@@ -184,7 +174,7 @@ namespace cg {
 			| c["exp_comp_l"] + c["exp6_cls"]
 			| c["exp_comp_le"] + c["exp6_cls"]
 			| c.s("");
-		c.prim("exp6") = c["whitespace"] + c["exp4"] + c["exp6_cls"] + c["whitespace"];
+		c.prim("exp6") = c["exp4"] + c["exp6_cls"] + c["whitespace"];
 		c.prim("exp_comp_g") = c.s(">") + c["exp4"];
 		c.prim("exp_comp_ge") = c.s(">=") + c["exp4"];
 		c.prim("exp_comp_l") = c.s("<") + c["exp4"];
@@ -194,20 +184,20 @@ namespace cg {
 			= c["exp_comp_eq"] + c["exp7_cls"]
 			| c["exp_comp_neq"] + c["exp7_cls"]
 			| c.s("");
-		c.prim("exp7") = c["whitespace"] + c["exp6"] + c["exp7_cls"] + c["whitespace"];
+		c.prim("exp7") = c["exp6"] + c["exp7_cls"] + c["whitespace"];
 		c.prim("exp_comp_eq") = c.s("==") + c["exp6"];
 		c.prim("exp_comp_neq") = c.s("!=") + c["exp6"];
 
 		c.temp("exp11_cls")
 			= c["exp_log_and"] + c["exp11_cls"]
 			| c.s("");
-		c.prim("exp11") = c["whitespace"] + c["exp7"] + c["exp11_cls"] + c["whitespace"];
+		c.prim("exp11") = c["exp7"] + c["exp11_cls"] + c["whitespace"];
 		c.prim("exp_log_and") = c.s("&&") + c["exp7"];
 
 		c.temp("exp12_cls")
 			= c["exp_log_or"] + c["exp12_cls"]
 			| c.s("");
-		c.prim("exp12") = c["whitespace"] + c["exp11"] + c["exp12_cls"] + c["whitespace"];
+		c.prim("exp12") = c["exp11"] + c["exp12_cls"] + c["whitespace"];
 		c.prim("exp_log_or") = c.s("||") + c["exp11"];
 
 		c.prim("exp_filter_frag")
@@ -217,7 +207,7 @@ namespace cg {
 		c.temp("exp_filter_cls")
 			= c.s("|") + c["exp_filter_frag"] + c["exp_filter_cls"]
 			| c.s("");
-		c.prim("exp_filter") = c["whitespace"] +
+		c.prim("exp_filter") =
 			c["exp12"] + c["exp_filter_cls"] +
 			c["whitespace"];
 
@@ -233,21 +223,21 @@ namespace cg {
 			| c.s("%}");
 
 		c.prim("sfrag_else") =
-			c["padding_b"] + c["statement_b"] +
-			c["whitespace"] + c.s("else") + c["whitespace"] +
+			c["statement_b"] +
+			c["padding"] + c.s("else") + c["padding"] +
 			c["statement_e"] + c["padding_nl"];
 
 		c.prim("sfrag_if") =
-			c["padding_b"] + c["statement_b"] +
-			c["whitespace"] + c.s("if") + c["whitespace"] + c["exp"] + c["whitespace"] +
+			c["statement_b"] +
+			c["padding"] + c.s("if") + c["padding"] + c["exp"] + c["padding"] +
 			c["statement_e"] + c["padding_nl"];
 		c.prim("sfrag_elif") =
-			c["padding_b"] + c["statement_b"] +
-			c["whitespace"] + c.s("elif") + c["whitespace"] + c["exp"] + c["whitespace"] +
+			c["statement_b"] +
+			c["padding"] + c.s("elif") + c["padding"] + c["exp"] + c["padding"] +
 			c["statement_e"] + c["padding_nl"];
 		c.temp("sfrag_endif") =
-			c["padding_b"] + c["statement_b"] +
-			c["whitespace"] + c.s("endif") + c["whitespace"] +
+			c["statement_b"] +
+			c["padding"] + c.s("endif") + c["padding"] +
 			c["statement_e"] + c["padding_nl"];
 		c.prim("sif_start_chain") = c["sfrag_if"] + c["lines"];
 		c.prim("sif_elif_chain") = c["sfrag_elif"] + c["lines"];
@@ -264,54 +254,55 @@ namespace cg {
 			c["sfrag_endif"];
 
 		c.prim("sfrag_for") =
-			c["padding_b"] + c["statement_b"] +
+			c["statement_b"] +
 			c["padding"] + c.s("for") + c["exp_id"] + c.s("in") + c["exp"] +
 			c["statement_e"] + c["padding_nl"];
 		c.temp("sfrag_endfor") =
-			c["padding_b"] + c["statement_b"] +
-			c["whitespace"] + c.s("endfor") +  c["whitespace"] +
+			c["statement_b"] +
+			c["padding"] + c.s("endfor") +  c["padding"] +
 			c["statement_e"] + c["padding_nl"];
 		c.prim("sfor") = c["sfrag_for"] + c["lines"] + c["sfrag_endfor"];
 
 		c.temp("sfrag_argdef_cls")
-			= c.s(",") + c["sfrag_argdef"] + c["sfrag_argdef_cls"]
+			= c.s(",") + c["padding"] + c["sfrag_argdef"] + c["sfrag_argdef_cls"]
 			| c.s("");
 		c.prim("sfrag_argdef_list")
 			= c["sfrag_argdef"] + c["sfrag_argdef_cls"]
 			| c.s("");
 		c.prim("sfrag_argdef")
-			= c["padding"] + c["identifier"] + c["padding"] + c.s("=") + c["exp"]
-			| c["padding"] + c["identifier"] + c["padding"];
+			= c["identifier"] + c["padding"] + c.s("=") + c["exp"]
+			| c["identifier"] + c["padding"];
 
 		c.prim("sfrag_macro") =
-			c["padding_b"] + c["statement_b"] +
+			c["statement_b"] +
 			c["padding"] + c.s("macro") +
 			c["padding"] + c["identifier"] + c["padding"] +
-			c.s("(") + c["sfrag_argdef_list"] + c.s(")") + c["padding"] +
+			c.s("(") + c["padding"] + c["sfrag_argdef_list"] + c.s(")") + c["padding"] +
 			c["statement_e"] + c["padding_nl"];
 		c.prim("sfrag_endmacro") =
-			c["padding_b"] + c["statement_b"] +
-			c["whitespace"] + c.s("endmacro") + c["whitespace"] +
+			c["statement_b"] +
+			c["padding"] + c.s("endmacro") + c["padding"] +
 			c["statement_e"] + c["padding_nl"];
 		c.prim("smacro") = c["sfrag_macro"] + c["lines"] + c["sfrag_endmacro"];
 
 		c.prim("sinclude") =
-			c["padding_b"] + c["statement_b"] +
+			c["statement_b"] +
 			c["padding"] + c.s("include") +
 			c["padding"] + c["exp_str"] + c["padding"] +
 			c["statement_e"] + c["padding_nl"];
 
 		c.prim("statement") = c["sfor"] | c["sif"] | c["smacro"] | c["sinclude"];
 
-		c.simplify();
-		TRY(c.prep());
 
 		if (false) {
+			c.simplify();
+			TRY(c.prep());
 			std::ofstream file("gen/nothing-table.txt");
 			auto parser = std::move(AbsoluteSolver::create(std::move(context)).value());
 			parser->print_table(file, {'n', 'o', 't', 'h', 'i', 'g', '\n'});
 			_parser = std::move(parser);
 		} else {
+			TRY(c.prep());
 			auto parser = SParser::create(std::move(context));
 			_parser = std::move(parser);
 		}
