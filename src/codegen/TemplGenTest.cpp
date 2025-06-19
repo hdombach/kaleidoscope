@@ -16,12 +16,11 @@ namespace cg {
 				_should_simplify(variant)
 			{
 				_gen = std::move(TemplGen::create().value());
-				if (_should_simplify) _gen.cfg().simplify();
 			}
 
 			TemplGenTest(TemplGenTest const &other) = delete;
 
-			static size_t variant_count() { return 2; }
+			static size_t variant_count() { return 1; }
 
 			util::Result<std::string, KError> gen(
 				std::string const &src,

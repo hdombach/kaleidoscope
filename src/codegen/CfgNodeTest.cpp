@@ -11,8 +11,8 @@ namespace cg {
 
 		c.prep();
 
-		EXPECT_EQ(c.get("literal")->str(), "\"simple_cfg\"");
-		EXPECT_EQ(c.get("literal2")->str(), "\"another_simpl_cfg\"");
+		EXPECT_EQ(c.get("literal")->str(), "literal -> \"simple_cfg\"");
+		EXPECT_EQ(c.get("literal2")->str(), "literal2 -> \"another_simpl_cfg\"");
 	}
 
 	TEST(cfg_node, ref) {
@@ -24,7 +24,7 @@ namespace cg {
 
 		c.prep();
 
-		EXPECT_EQ(c.get("combined")->str(), "<first_ref> <second_ref>");
+		EXPECT_EQ(c.get("combined")->str(), "combined -> <first_ref> <second_ref>");
 	}
 
 	TEST(cfg_node, concat_str) {
@@ -35,9 +35,9 @@ namespace cg {
 		c.prim("first_sec") = c["first"] + c["second"];
 		c.prim("first_third") = c["first"] + c["third"];
 
-		EXPECT_EQ(c.get("first")->str(), "\"f\" \"ir\" \"st\"");
-		EXPECT_EQ(c.get("second")->str(), "\"second\"");
-		EXPECT_EQ(c.get("first_sec")->str(), "<first> <second>");
+		EXPECT_EQ(c.get("first")->str(), "first -> \"f\" \"ir\" \"st\"");
+		EXPECT_EQ(c.get("second")->str(), "second -> \"second\"");
+		EXPECT_EQ(c.get("first_sec")->str(), "first_sec -> <first> <second>");
 	}
 
 	TEST(cfg_node, concat) {
@@ -55,9 +55,9 @@ namespace cg {
 
 		c.prep();
 
-		EXPECT_EQ(c.get("first_sec")->str(), "<first_ref> <second_ref>");
-		EXPECT_EQ(c.get("first_sec_third")->str(), "<first_ref> <second_ref> <third_ref>");
-		EXPECT_EQ(c.get("first_sec_third2")->str(), "<first_ref> \"_\" <second_ref> \"_\" <third_ref>");
+		EXPECT_EQ(c.get("first_sec")->str(), "first_sec -> <first_ref> <second_ref>");
+		EXPECT_EQ(c.get("first_sec_third")->str(), "first_sec_third -> <first_ref> <second_ref> <third_ref>");
+		EXPECT_EQ(c.get("first_sec_third2")->str(), "first_sec_third2 -> <first_ref> \"_\" <second_ref> \"_\" <third_ref>");
 	}
 
 	TEST(cfg_node, alt) {
@@ -74,10 +74,10 @@ namespace cg {
 
 		c.prep();
 
-		EXPECT_EQ(c.get("first_sec")->str(), "<first_ref> | <second_ref>");
-		EXPECT_EQ(c.get("first_sec2")->str(), "<first_ref> | \"second\"");
-		EXPECT_EQ(c.get("first_sec_third")->str(), "<first_ref> | <second_ref> | <third_ref>");
-		EXPECT_EQ(c.get("first_sec_third2")->str(),  "<first_ref> | \"second_ref\" | <third_ref>");
+		EXPECT_EQ(c.get("first_sec")->str(), "first_sec -> <first_ref> | <second_ref>");
+		EXPECT_EQ(c.get("first_sec2")->str(), "first_sec2 -> <first_ref> | \"second\"");
+		EXPECT_EQ(c.get("first_sec_third")->str(), "first_sec_third -> <first_ref> | <second_ref> | <third_ref>");
+		EXPECT_EQ(c.get("first_sec_third2")->str(),  "first_sec_third2 -> <first_ref> | \"second_ref\" | <third_ref>");
 	}
 
 	TEST(cfg_node, alt_concat) {
@@ -103,8 +103,8 @@ namespace cg {
 
 		c.prep();
 
-		EXPECT_EQ(c.get("test1")->str(), "<first_ref> \"ree\" | <first_ref> <second_ref>");
-		EXPECT_EQ(c.get("test2")->str(), "\"yeah boi\" | <first_ref> \"first\" <second_ref> | \"last\"");
-		EXPECT_EQ(c.get("test3")->str(), "<first_ref> | <second_ref> | \"first\" \"second\"");
+		EXPECT_EQ(c.get("test1")->str(), "test1 -> <first_ref> \"ree\" | <first_ref> <second_ref>");
+		EXPECT_EQ(c.get("test2")->str(), "test2 -> \"yeah boi\" | <first_ref> \"first\" <second_ref> | \"last\"");
+		EXPECT_EQ(c.get("test3")->str(), "test3 -> <first_ref> | <second_ref> | \"first\" \"second\"");
 	}
 }

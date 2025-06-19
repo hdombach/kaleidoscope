@@ -303,7 +303,6 @@ namespace cg {
 			_parser = std::move(parser);
 		} else {
 			TRY(c.prep());
-			c.simplify();
 
 			auto parser = SParser::create(std::move(context));
 			_parser = std::move(parser);
