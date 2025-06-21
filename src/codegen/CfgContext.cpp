@@ -82,7 +82,6 @@ namespace cg {
 	}
 
 	util::Result<void, KError> CfgContext::prep() { 
-		log_debug() << "name is \"" << _root_name << "\"" << _root_name.empty() << std::endl;
 		if (_root_name.empty()) {
 			log_debug() << "root name is empty" << std::endl;
 			return KError::codegen("CfgContext must contain a root");
