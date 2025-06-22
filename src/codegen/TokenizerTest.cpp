@@ -140,6 +140,9 @@ namespace cg {
 			static TestToken assignment() {
 				return TestToken(Type::Assignment, "=");
 			}
+			static TestToken eof() {
+				return TestToken(Type::Eof, "");
+			}
 
 			Token::Type type() const { return _type; }
 			std::string const &content() const { return _content; }
@@ -177,7 +180,8 @@ namespace cg {
 			TestToken::unmatched("Wheel"),
 			TestToken::padding(),
 			TestToken::unmatched("chair"),
-			TestToken::newline()
+			TestToken::newline(),
+			TestToken::eof(),
 		};
 		auto tokens = simplify_tokens(tokenize(src));
 		EXPECT_TOKEN(tokens, res);
@@ -201,6 +205,7 @@ namespace cg {
 			TestToken::padding(),
 			TestToken::unmatched("time."),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 
@@ -223,6 +228,7 @@ namespace cg {
 			TestToken::padding(),
 			TestToken::exp_e(),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -245,6 +251,7 @@ namespace cg {
 			TestToken::exp_e(),
 			TestToken::unmatched("."),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 
@@ -255,6 +262,7 @@ namespace cg {
 			TestToken::exp_b(),
 			TestToken::int_const("023"),
 			TestToken::exp_e(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -275,6 +283,7 @@ namespace cg {
 			TestToken::paran_open(),
 			TestToken::paran_close(),
 			TestToken::exp_e(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -299,6 +308,7 @@ namespace cg {
 			TestToken::exp_e(),
 			TestToken::newline(),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -323,6 +333,7 @@ namespace cg {
 			TestToken::padding("  \t  "),
 			TestToken::int_const("2"),
 			TestToken::exp_e(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -344,6 +355,7 @@ namespace cg {
 			TestToken::mult(),
 			TestToken::identifier("prime"),
 			TestToken::exp_e(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -369,6 +381,7 @@ namespace cg {
 			TestToken::padding(),
 			TestToken::exp_e(),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -390,6 +403,7 @@ namespace cg {
 			TestToken::int_const("10"),
 			TestToken::exp_e(),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -411,6 +425,7 @@ namespace cg {
 			TestToken::exp_e(),
 			TestToken::unmatched("."),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -440,6 +455,7 @@ namespace cg {
 			TestToken::identifier("value3"),
 			TestToken::exp_e(),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 	}
 
@@ -459,6 +475,7 @@ namespace cg {
 			TestToken::exp_e(),
 			TestToken::unmatched("!"),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -479,6 +496,7 @@ namespace cg {
 			TestToken::exp_e(),
 			TestToken::unmatched("!"),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -497,6 +515,7 @@ namespace cg {
 			TestToken::exp_e(),
 			TestToken::unmatched("!"),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -515,6 +534,7 @@ namespace cg {
 			TestToken::exp_e(),
 			TestToken::unmatched("!"),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -536,6 +556,7 @@ namespace cg {
 			TestToken::paran_close(),
 			TestToken::exp_e(),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -557,6 +578,7 @@ namespace cg {
 			TestToken::paran_close(),
 			TestToken::exp_e(),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -577,6 +599,7 @@ namespace cg {
 			TestToken::identifier("is_admin"),
 			TestToken::exp_e(),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -602,6 +625,7 @@ namespace cg {
 			TestToken::paran_close(),
 			TestToken::exp_e(),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -626,6 +650,7 @@ namespace cg {
 			TestToken::identifier("test3"),
 			TestToken::exp_e(),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -657,6 +682,7 @@ namespace cg {
 			TestToken::paran_close(),
 			TestToken::exp_e(),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -689,6 +715,7 @@ namespace cg {
 			TestToken::padding(),
 			TestToken::stmt_e("+%}"),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -745,6 +772,7 @@ namespace cg {
 			TestToken::padding(),
 			TestToken::stmt_e(),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -785,6 +813,7 @@ namespace cg {
 			TestToken::endfor_s(),
 			TestToken::stmt_e(),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -822,6 +851,7 @@ namespace cg {
 			TestToken::padding(),
 			TestToken::stmt_e(),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}
@@ -836,6 +866,7 @@ namespace cg {
 			TestToken::str_const("test.cpp"),
 			TestToken::stmt_e(),
 			TestToken::newline(),
+			TestToken::eof(),
 		};
 		EXPECT_TOKEN(tokens, expected);
 	}

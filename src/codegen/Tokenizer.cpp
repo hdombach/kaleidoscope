@@ -61,6 +61,7 @@ namespace cg {
 			"LogicalOr",
 			"Bar",
 			"Assignment",
+			"EOF",
 		};
 		return names[type];
 	}
@@ -130,7 +131,32 @@ namespace cg {
 		std::regex("\\|\\|"), // LOr
 		std::regex("\\|"), // Bar
 		std::regex("="), // Assignment
+		std::regex(""),
 	};
+
+	std::vector<Token::Type> operator+(
+		Token::Type const &lhs,
+		Token::Type const &rhs
+	) {
+		return {lhs, rhs};
+	}
+
+	std::vector<Token::Type> operator+(
+		std::vector<Token::Type> const &lhs,
+		Token::Type const &rhs
+	) {
+		auto r = lhs;
+		r.push_back(rhs);
+		return r;
+	}
+
+	std::vector<Token::Type> operator+(
+		std::vector<Token::Type> &&lhs,
+		Token::Type const &rhs
+	) {
+		lhs.push_back(rhs);
+		return std::move(lhs);
+	}
 
 	std::vector<Token> tokenize(const char *str) {
 		auto c = util::StringRef(str, "UNKNOWN");
@@ -154,6 +180,7 @@ namespace cg {
 				c += 1;
 			}
 		}
+		result.push_back(Token(Token::Type::Eof, c));
 		return result;
 	}
 
@@ -173,7 +200,11 @@ namespace cg {
 					in_statement = false;
 				}
 			} else {
-				if (t.type() == Token::Pad || t.type() == Token::Newline) {
+				if (
+					t.type() == Token::Pad
+					|| t.type() == Token::Newline
+					|| t.type() == Token::Eof
+				) {
 					if (cur_token.exists())
 						result.push_back(cur_token);
 					cur_token = Token();

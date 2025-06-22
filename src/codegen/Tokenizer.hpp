@@ -50,6 +50,7 @@ namespace cg {
 				LOr,
 				Bar,
 				Assignment,
+				Eof,
 			};
 
 			Token() = default;
@@ -83,6 +84,21 @@ namespace cg {
 		result.concat(rhs);
 		return result;
 	}
+
+	std::vector<Token::Type> operator+(
+		Token::Type const &lhs,
+		Token::Type const &rhs
+	);
+
+	std::vector<Token::Type> operator+(
+		std::vector<Token::Type> const &lhs,
+		Token::Type const &rhs
+	);
+
+	std::vector<Token::Type> operator+(
+		std::vector<Token::Type> &&lhs,
+		Token::Type const &rhs
+	);
 
 	std::vector<Token> tokenize(const char *str);
 
