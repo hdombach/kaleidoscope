@@ -53,7 +53,7 @@ namespace cg {
 			};
 
 			Token() = default;
-			Token(Type type, size_t size, util::StringRef const &ref);
+			Token(Type type, util::StringRef const &ref);
 
 			Type type() const;
 			std::string content() const;
@@ -68,7 +68,6 @@ namespace cg {
 		private:
 			Type _type=Type::Unmatched;
 			util::StringRef _str=util::StringRef();
-			size_t _size=0;
 	};
 
 	inline std::ostream &operator<<(std::ostream &os, Token const &t) {

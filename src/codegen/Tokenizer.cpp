@@ -7,14 +7,13 @@
 #include "util/log.hpp"
 
 namespace cg {
-	Token::Token(Type type, size_t size, util::StringRef const &ref):
+	Token::Token(Type type, util::StringRef const &ref):
 		_type(type),
-		_size(size),
 		_str(ref)
 	{}
 
 	Token::Type Token::type() const { return _type; }
-	std::string Token::content() const { return std::string{_str.str(), _str.str() + _size}; }
+	std::string Token::content() const { return _str.str(); }
 	std::string Token::str() const {
 		return util::f("(", type_str(_type), " \"", util::escape_str(content()), "\")");
 	}
@@ -72,12 +71,11 @@ namespace cg {
 			_type = Type::Unmatched;
 			return;
 		}
-		log_assert(_str.str() + _size == t._str.str(), "Cannot concat tokens that are not adjacent");
-		_size += t._size;
+		_str += t._str;
 	}
 
 	bool Token::exists() const {
-		return _size > 0;
+		return !_str.empty();
 	}
 
 	Token::operator bool() const {
@@ -144,15 +142,15 @@ namespace cg {
 				auto match = std::cmatch();
 				auto flags = std::regex_constants::match_continuous
 					| std::regex_constants::match_not_null;
-				if (std::regex_search(c.str(), match, rule, flags)) {
-					result.push_back(Token(type, match.length(), c));
+				if (std::regex_search(c.str().c_str(), match, rule, flags)) {
+					result.push_back(Token(type, c.substr(0, match.length())));
 					c += match.length();
 					break;
 				}
 				type = Token::Type((type + 1) % _token_table.size());
 			}
 			if (type == Token::Type::Unmatched) {
-				result.push_back(Token(type, 1, c));
+				result.push_back(Token(type, c.substr(0, 1)));
 				c += 1;
 			}
 		}

@@ -124,12 +124,11 @@ namespace cg {
 
 		auto parsed = leaf.match(s.str.str());
 		if (parsed) {
-			auto begin = s.str.str();
-			auto end = s.str.str() + parsed.value();
+			auto str = s.str.substr(0, parsed.value());
 			log_trace()
 				<< "leaf " << leaf
-				<< " matched: \"" << util::escape_str({begin, end}) << "\"" << std::endl;
-			return AstNode::create_str(++_uid, {begin, end}, s.str.location());
+				<< " matched: \"" << util::escape_str(str.str()) << "\"" << std::endl;
+			return AstNode::create_str(++_uid, str.str(), s.str.location());
 		} else {
 			log_trace() << "leaf " << leaf << " didn't match: " << "\"" << util::get_str_line(s.str.str()) << "\"" << std::endl;
 			auto msg = util::f(
