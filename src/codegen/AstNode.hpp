@@ -6,6 +6,7 @@
 #include "util/FileLocation.hpp"
 #include "util/KError.hpp"
 #include "util/result.hpp"
+#include "util/StringRef.hpp"
 
 namespace cg {
 	/**
@@ -21,7 +22,7 @@ namespace cg {
 			enum class Type {
 				None,
 				Rule,
-				String
+				Leaf
 			};
 		public:
 			AstNode();
@@ -30,16 +31,14 @@ namespace cg {
 			 */
 			static AstNode create_rule(
 				uint32_t id,
-				std::string const &cfg_name,
-				util::FileLocation const &file_location
+				std::string const &cfg_name
 			);
 			/**
 			 * @brief Create an astnode containg a string literal
 			 */
 			static AstNode create_str(
 				uint32_t id,
-				std::string const &str,
-				util::FileLocation const &file_location
+				util::StringRef const &str
 			);
 
 			Type type() const { return _type; }
@@ -62,11 +61,11 @@ namespace cg {
 			 */
 			std::string const &cfg_rule() const { return _cfg_rule; }
 
-			std::string const &consumed() const { return _consumed; }
+			std::string consumed() const;
 			std::string consumed_all() const;
 
 			/**
-			 * @brief Number of characters by this node and any children node
+			 * @brief The number of tokens in this node and all children nodes
 			 */
 			size_t size() const;
 
@@ -82,11 +81,11 @@ namespace cg {
 			) const;
 
 			/**
-			 * @brief Trims nodes that do not have children or consumed characters
+			 * @brief Trims nodes that do not have children or consumed tokens
 			 */
 			void trim();
 			/**
-			 * @brief Trims node that do not have children or consumed characters
+			 * @brief Trims node that do not have children or consumed tokens
 			 */
 			AstNode trimmed() const;
 
@@ -100,8 +99,7 @@ namespace cg {
 			Type _type;
 			uint32_t _id;
 			std::string _cfg_rule;
-			std::string _consumed;
-			util::FileLocation _location;
+			util::StringRef _consumed;
 			std::vector<AstNode> _children;
 
 			/**

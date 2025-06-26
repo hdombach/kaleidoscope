@@ -5,66 +5,47 @@
 #include <vector>
 
 #include "util/result.hpp"
+#include "Tokenizer.hpp"
 
 namespace cg {
 	/**
 	 * @brief Represents a leaf node for the context free grammar
 	 *
-	 * There are four possible types
-	 * - String literal
-	 * - A set of characters to match against
+	 * There are three possible types
+	 * - Matches nothing
 	 * - A reference to another grammar definition
-	 * - A single character to match against
+	 * - A single token type to match against
 	 *
-	 * A group of characters is techincally not an or opteration which doesn't
-	 * follow the structure of a Context Free grammar. However, it can be easily
-	 * simplified down just using characters. It is also necessary for things like
-	 * exclude("{")
 	 */
 	class CfgLeaf final {
 		public:
 			enum class Type {
-				none,
-				str,
-				set,
+				empty,
 				var,
-				character,
+				token,
 			};
 
+			using TType = Token::Type;
+			
+			/**
+			 * @brief Creates a leaf node that doesn't match anything
+			 */
 			CfgLeaf();
 
 			/**
-			 * @brief Creates a string constant leaf node
+			 * @brief Creates a leaf node that matches a single token
 			 */
-			static CfgLeaf str(std::string const &str);
-			/**
-			 * @brief Creates a character set matching against any character in str
-			 */
-			static CfgLeaf include(std::string const &str);
-			/**
-			 * @brief Creates a character set that excludes all characters in str
-			 */
-			static CfgLeaf exclude(std::string const &str);
+			CfgLeaf(TType type);
+
 			/**
 			 * @brief Creates a reference to another rule set
 			 */
 			static CfgLeaf var(std::string const &str);
-			/**
-			 * @brief Creates a leaf node that parses a single character
-			 */
-			static CfgLeaf character(char c);
 
 			Type type() const { return _type; }
 
-			/**
-			 * @brief Matches against a string
-			 * @returns number of characters consumed or 0 if there is mismatch
-			 */
-			util::Result<uint32_t, void> match(std::string const &str) const;
-
-			std::string const &str_content() const { return _content; }
-			std::string const &var_name() const { return _content; }
-			bool inclusive_set() const { return _include; }
+			Token::Type token_type() const { return _token_type; }
+			std::string const &var_name() const { return _var_name; }
 
 			std::ostream& print_debug(std::ostream &os) const;
 			std::string str() const;
@@ -72,11 +53,9 @@ namespace cg {
 			bool operator==(CfgLeaf const &other) const;
 			bool operator!=(CfgLeaf const &other) const;
 		private:
-			CfgLeaf(Type type, std::string const &str, bool include);
-		private:
 			Type _type;
-			std::string _content;
-			bool _include = false;
+			TType _token_type;
+			std::string _var_name;
 	};
 
 	/**
@@ -88,13 +67,9 @@ namespace cg {
 			CfgRule(CfgLeaf const &leaf);
 			CfgRule(CfgRule const &lhs, CfgRule const &rhs);
 			CfgRule(std::vector<CfgLeaf> const &leaves);
+			CfgRule(std::vector<Token::Type> const &tokens);
 
 			std::vector<CfgLeaf> const &leaves() const { return _leaves; }
-
-			/**
-			 * @brief Seperates leaves to not use string constants
-			 */
-			void seperate_leaves();
 
 			std::ostream& print_debug(std::ostream &os) const;
 			std::string str() const;
@@ -137,12 +112,6 @@ namespace cg {
 			iterator end();
 			const_iterator end() const;
 
-			/**
-			 * @brief Expands the rules to enumerate all possible charaters in
-			 * the character set
-			 */
-			void simplify_char_sets();
-
 			std::ostream& print_debug(std::ostream &os, bool multiline=false) const;
 			std::string str(bool multiline=false) const;
 		private:
@@ -157,9 +126,20 @@ namespace cg {
 	}
 
 	/******** CfgRule *********/
+	inline CfgRule operator + (Token::Type const &lhs, Token::Type const &rhs) {
+		return CfgRule(CfgLeaf(lhs), CfgLeaf(rhs));
+	}
+
+	inline CfgRule operator + (CfgLeaf const &lhs, Token::Type const &rhs) {
+		return CfgRule(lhs, CfgLeaf(rhs));
+	}
 
 	inline CfgRule operator + (CfgLeaf const &lhs, CfgLeaf const &rhs) {
 		return CfgRule(lhs, rhs);
+	}
+
+	inline CfgRule operator + (CfgRule const &lhs, Token::Type const &rhs) {
+		return CfgRule(lhs, CfgLeaf(rhs));
 	}
 
 	inline CfgRule operator + (CfgRule const &lhs, CfgLeaf const &rhs) {
@@ -172,11 +152,72 @@ namespace cg {
 
 	/*******8 Rule set ********/
 
+	inline CfgRuleSet operator | (Token::Type const &lhs, Token::Type const &rhs) {
+		auto set = CfgRuleSet();
+		set.add_rule(CfgLeaf(lhs));
+		set.add_rule(CfgLeaf(rhs));
+		return set;
+	}
+
+	inline CfgRuleSet operator | (Token::Type const &lhs, CfgLeaf const &rhs) {
+		auto set = CfgRuleSet();
+		set.add_rule(CfgLeaf(lhs));
+		set.add_rule(rhs);
+		return set;
+	}
+
+	inline CfgRuleSet operator | (Token::Type const &lhs, CfgRule const &rhs) {
+		auto set = CfgRuleSet();
+		set.add_rule(CfgLeaf(lhs));
+		set.add_rule(rhs);
+		return set;
+	}
+
+	inline CfgRuleSet operator | (CfgLeaf const &lhs, Token::Type const &rhs) {
+		auto set = CfgRuleSet();
+		set.add_rule(lhs);
+		set.add_rule(CfgLeaf(rhs));
+		return set;
+	}
+
+	inline CfgRuleSet operator | (CfgLeaf const &lhs, CfgLeaf const &rhs) {
+		auto set = CfgRuleSet();
+		set.add_rule(lhs);
+		set.add_rule(rhs);
+		return set;
+	}
+
+	inline CfgRuleSet operator | (CfgLeaf const &lhs, CfgRule const &rhs) {
+		auto set = CfgRuleSet();
+		set.add_rule(lhs);
+		set.add_rule(rhs);
+		return set;
+	}
+
+	inline CfgRuleSet operator | (CfgRule const &lhs, CfgLeaf const &rhs) {
+		auto set = CfgRuleSet();
+		set.add_rule(lhs);
+		set.add_rule(rhs);
+		return set;
+	}
+
 	inline CfgRuleSet operator | (CfgRule const &lhs, CfgRule const &rhs) {
 		auto set = CfgRuleSet();
 		set.add_rule(lhs);
 		set.add_rule(rhs);
 		return set;
+	}
+
+	inline CfgRuleSet operator | (CfgRuleSet const &lhs, Token::Type const &rhs) {
+		auto r = lhs;
+		r.add_rule(CfgLeaf(rhs));
+		return r;
+	}
+
+	inline CfgRuleSet operator | (CfgRuleSet const &lhs, CfgLeaf const &rhs) {
+		auto r = lhs;
+		r.add_rule(rhs);
+		return r;
 	}
 
 	inline CfgRuleSet operator | (CfgRuleSet const &lhs, CfgRule const &rhs) {

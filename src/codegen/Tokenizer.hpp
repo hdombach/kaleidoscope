@@ -59,6 +59,7 @@ namespace cg {
 			Type type() const;
 			std::string content() const;
 			std::string str() const;
+			util::StringRef str_ref() const;
 			static const char *type_str(Type type);
 			void concat(Token const &t);
 
@@ -85,22 +86,7 @@ namespace cg {
 		return result;
 	}
 
-	std::vector<Token::Type> operator+(
-		Token::Type const &lhs,
-		Token::Type const &rhs
-	);
-
-	std::vector<Token::Type> operator+(
-		std::vector<Token::Type> const &lhs,
-		Token::Type const &rhs
-	);
-
-	std::vector<Token::Type> operator+(
-		std::vector<Token::Type> &&lhs,
-		Token::Type const &rhs
-	);
-
-	std::vector<Token> tokenize(const char *str);
+	std::vector<Token> tokenize(util::StringRef str);
 
 	/**
 	 * Combines every token not in a statement into an unmatched token

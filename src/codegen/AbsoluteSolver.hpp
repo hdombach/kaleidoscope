@@ -63,7 +63,11 @@ namespace cg::abs {
 
 			util::Result<AstNode, KError> parse(
 				std::string const &str,
-				std::string const &filename = "codegen"
+				std::string const &filenames
+			);
+
+			util::Result<AstNode, KError> parse(
+				std::vector<Token> const &tokens
 			) override;
 
 			CfgContext const &cfg() const override;

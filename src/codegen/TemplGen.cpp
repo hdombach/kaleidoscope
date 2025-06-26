@@ -24,7 +24,14 @@ namespace cg {
 	util::Result<void, KError> TemplGen::_setup_parser() {
 		auto context = CfgContext::create();
 		auto &c = *context;
-			
+		using T = Token::Type;
+
+		/*
+
+		c.prim("whitespace")
+			= T::Pad + c["whitespace"]
+			| T::Newline + c["whhitespace"]
+			| c.empty();
 		c.prim("whitespace")
 			= c.s(" ") + c["whitespace"]
 			| c.s("\t") + c["whitespace"]
@@ -292,7 +299,7 @@ namespace cg {
 			c["statement_e"] + c["padding_nl"];
 
 		c.prim("statement") = c["sfor"] | c["sif"] | c["smacro"] | c["sinclude"];
-
+		*/
 
 		if (false) {
 			c.simplify();
@@ -343,7 +350,7 @@ namespace cg {
 
 			//auto parser = AbsoluteSolver::setup(_ctx, "file").value();
 
-			auto node = _parser->parse(str, filename).value();
+			auto node = _parser->parse({str.c_str(), filename.c_str()}).value();
 			node.compress(_parser->cfg().prim_names());
 			node.print_dot(file, label);
 
@@ -396,7 +403,7 @@ namespace cg {
 		TemplDict &args,
 		Parser &parser
 	) const {
-		if (node.type() == AstNode::Type::String) {
+		if (node.type() == AstNode::Type::Leaf) {
 			return node.consumed();
 		}
 
@@ -676,7 +683,8 @@ namespace cg {
 
 			auto macro_args = std::vector<std::tuple<std::string, TemplObj>>();
 			for (auto &macro_arg_node : macro_arg_list.children()) {
-				if (macro_arg_node.type() == AstNode::Type::String) continue;
+				//TODO
+				//if (macro_arg_node.type() == AstNode::Type::Token) continue;
 				auto macro_arg_name = macro_arg_node.child_with_cfg("identifier")->consumed_all();
 				auto macro_arg_value = TemplObj();
 				if (auto exp_node = macro_arg_node.child_with_cfg("exp")) {
@@ -731,7 +739,7 @@ namespace cg {
 			auto exp_str_node = node.child_with_cfg("exp_str");
 			auto filename = _unpack_str(exp_str_node->consumed_all()).value();
 			auto include_src = util::readEnvFile(filename);
-			auto include_node = parser.parse(include_src, filename)->compressed(_parser->cfg().prim_names());
+			auto include_node = parser.parse({include_src.c_str(), filename.c_str()})->compressed(_parser->cfg().prim_names());
 
 			std::ofstream file("gen/templgen-include.gv");
 			include_node.print_dot(file, "templgen-include");
@@ -791,7 +799,8 @@ namespace cg {
 		CG_ASSERT(node.cfg_rule() == "exp_sing", "_eval_exp_sing must be used to parse exp_sing nodes");
 		CG_ASSERT(node.type() == AstNode::Type::Rule, "_eval_exp_sing must be of type Rule");
 		for (auto &child : node.children()) {
-			if (child.type() == AstNode::Type::String) continue;
+			//TODO
+			//if (child.type() == AstNode::Type::Token) continue;
 			auto name = child.cfg_rule();
 			if (name == "whitespace") {
 				continue;
@@ -858,7 +867,8 @@ namespace cg {
 
 			auto children = util::Adapt(node.children().begin() + 1, node.children().end());
 			for (auto const &child : children) {
-				if (child.type() == AstNode::Type::String) continue;
+				//TODO
+				//if (child.type() == AstNode::Type::Token) continue;
 				if (child.cfg_rule() == "exp_member") {
 					l_args["self"] = res.value();
 					res = _eval_exp_member(res.value(), child, l_args);
@@ -894,7 +904,8 @@ namespace cg {
 				call_args.push_back(args.at("self"));
 			}
 			for (auto const &child : node.children()) {
-				if (child.type() == AstNode::Type::String) continue;
+				//TODO
+				//if (child.type() == AstNode::Type::Token) continue;
 				CG_ASSERT(child.cfg_rule() == "exp", "Function call list must have exp nodes");
 				call_args.push_back(_eval(child, args).value());
 			}
@@ -936,7 +947,8 @@ namespace cg {
 			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
-				if (child.type() == AstNode::Type::String) continue;
+				//TODO
+				//if (child.type() == AstNode::Type::Token) continue;
 				auto name = child.cfg_rule();
 				auto exp2 = child.child_with_cfg("exp2");
 
@@ -967,7 +979,8 @@ namespace cg {
 			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
-				if (child.type() == AstNode::Type::String) continue;
+				//TODO
+				//if (child.type() == AstNode::Type::Token) continue;
 				auto name = child.cfg_rule();
 				auto exp3 = child.child_with_cfg("exp3");
 
@@ -996,7 +1009,8 @@ namespace cg {
 			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
-				if (child.type() == AstNode::Type::String) continue;
+				//TODO
+				//if (child.type() == AstNode::Type::Token) continue;
 				auto name = child.cfg_rule();
 				auto exp4 = child.child_with_cfg("exp4");
 				if (name == "whitespace") {
@@ -1028,7 +1042,8 @@ namespace cg {
 			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
-				if (child.type() == AstNode::Type::String) continue;
+				//TODO
+				//if (child.type() == AstNode::Type::Token) continue;
 				auto name = child.cfg_rule();
 				auto exp6 = child.child_with_cfg("exp6");
 				if (name == "whitespace") {
@@ -1056,7 +1071,8 @@ namespace cg {
 			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
-				if (child.type() == AstNode::Type::String) continue;
+				//TODO
+				//if (child.type() == AstNode::Type::Token) continue;
 				auto name = child.cfg_rule();
 				auto exp7 = child.child_with_cfg("exp7");
 				if (name == "whitespace") {
@@ -1082,7 +1098,8 @@ namespace cg {
 			auto res = _eval(exp, args);
 
 			for (auto &child : node.children()) {
-				if (child.type() == AstNode::Type::String) continue;
+				//TODO
+				//if (child.type() == AstNode::Type::Token) continue;
 				auto name = child.cfg_rule();
 				auto exp11 = child.child_with_cfg("exp11");
 

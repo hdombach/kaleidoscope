@@ -17,6 +17,9 @@ namespace cg {
 	std::string Token::str() const {
 		return util::f("(", type_str(_type), " \"", util::escape_str(content()), "\")");
 	}
+	util::StringRef Token::str_ref() const {
+		return _str;
+	}
 	const char *Token::type_str(Type type) {
 		const char *names[] = {
 			"Unmatched",
@@ -134,32 +137,7 @@ namespace cg {
 		std::regex(""),
 	};
 
-	std::vector<Token::Type> operator+(
-		Token::Type const &lhs,
-		Token::Type const &rhs
-	) {
-		return {lhs, rhs};
-	}
-
-	std::vector<Token::Type> operator+(
-		std::vector<Token::Type> const &lhs,
-		Token::Type const &rhs
-	) {
-		auto r = lhs;
-		r.push_back(rhs);
-		return r;
-	}
-
-	std::vector<Token::Type> operator+(
-		std::vector<Token::Type> &&lhs,
-		Token::Type const &rhs
-	) {
-		lhs.push_back(rhs);
-		return std::move(lhs);
-	}
-
-	std::vector<Token> tokenize(const char *str) {
-		auto c = util::StringRef(str, "UNKNOWN");
+	std::vector<Token> tokenize(util::StringRef c) {
 		auto result = std::vector<Token>();
 		while (*c) {
 			auto type = Token::Type::Unmatched;

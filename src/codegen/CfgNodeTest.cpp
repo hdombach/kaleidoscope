@@ -5,106 +5,62 @@
 namespace cg {
 	TEST(cfg_node, literal) {
 		CfgContext c;
+		using T = CfgLeaf::TType;
 
-		c.prim("literal") = c.s("simple_cfg");
-		c.prim("literal2") = c.s("another_simpl_cfg");
-
-		c.prep();
-
-		EXPECT_EQ(c.get("literal")->str(), "literal -> \"simple_cfg\"");
-		EXPECT_EQ(c.get("literal2")->str(), "literal2 -> \"another_simpl_cfg\"");
-	}
-
-	TEST(cfg_node, ref) {
-		auto c = CfgContext();
-
-		c.prim("first_ref") = c.s("first");
-		c.prim("second_ref") = c.s("second");
-		c.prim("combined") = c["first_ref"] + c["second_ref"];
+		c.root("literal") = T::StrConst;
+		c.prim("literal2") = T::IntConst;
 
 		c.prep();
 
-		EXPECT_EQ(c.get("combined")->str(), "combined -> <first_ref> <second_ref>");
-	}
-
-	TEST(cfg_node, concat_str) {
-		auto c = CfgContext();
-
-		c.prim("first") = c.s("f") + c.s("ir") + c.s("st");
-		c.prim("second") = c.s("second");
-		c.prim("first_sec") = c["first"] + c["second"];
-		c.prim("first_third") = c["first"] + c["third"];
-
-		EXPECT_EQ(c.get("first")->str(), "first -> \"f\" \"ir\" \"st\"");
-		EXPECT_EQ(c.get("second")->str(), "second -> \"second\"");
-		EXPECT_EQ(c.get("first_sec")->str(), "first_sec -> <first> <second>");
+		EXPECT_EQ(c.get("literal")->str(), "literal -> StrConstant");
+		EXPECT_EQ(c.get("literal2")->str(), "literal2 -> IntConstant");
 	}
 
 	TEST(cfg_node, concat) {
 		auto c = CfgContext();
+		using T = CfgLeaf::TType;
 
-		c.prim("first_ref") = c.s("first");
-		c.prim("second_ref") = c.s("second");
-		c.prim("third_ref") = c.s("third");
+		c.root("if_ref") = T::If;
+		c.prim("condition") = T::ParanOpen + T::StrConst + T::ParanClose;
 
-		c.prim("first_sec") = c["first_ref"] + c["second_ref"];
-		c.prim("first_sec_third") = c["first_ref"] + c["second_ref"] + c["third_ref"];
-		c.prim("first_sec_third2") = c["first_ref"]
-			+ c.s("_") + c["second_ref"] + c.s("_")
-			+ c["third_ref"];
+		c.prim("if_else") = c["if_ref"] + c["condition"] + T::Else;
+
+		c.prim("test") = T::CommentB + T::CommentE + c["condition"];
+		c.prim("test2") = c["test"] + T::ExpB + T::ExpE;
 
 		c.prep();
 
-		EXPECT_EQ(c.get("first_sec")->str(), "first_sec -> <first_ref> <second_ref>");
-		EXPECT_EQ(c.get("first_sec_third")->str(), "first_sec_third -> <first_ref> <second_ref> <third_ref>");
-		EXPECT_EQ(c.get("first_sec_third2")->str(), "first_sec_third2 -> <first_ref> \"_\" <second_ref> \"_\" <third_ref>");
+		EXPECT_EQ(c.get("if_ref")->str(), "if_ref -> If");
+		EXPECT_EQ(c.get("condition")->str(), "condition -> ParanOpen StrConstant ParanClose");
+		EXPECT_EQ(c.get("if_else")->str(), "if_else -> <if_ref> <condition> Else");
+		EXPECT_EQ(c.get("test")->str(), "test -> CommentB CommentE <condition>");
+		EXPECT_EQ(c.get("test2")->str(), "test2 -> <test> ExpB ExpE");
 	}
 
 	TEST(cfg_node, alt) {
 		auto c = CfgContext();
+		using T = CfgLeaf::TType;
 
-		c.prim("first_ref") = c.s("first");
-		c.prim("second_ref") = c.s("second");
-		c.prim("third_ref") = c.s("third");
+		c.root("tok_ref") = T::ParanOpen | c["tok_ref"];
+		c.prim("ref_tok") = c["ref_tok"] | T::ParanClose;
+		c.prim("tok_tok") = T::IntConst | T::Ident;
+		c.prim("ref_ref") = c["ref_ref"] | c["tok_ref"];
 
-		c.prim("first_sec") = c["first_ref"] | c["second_ref"];
-		c.prim("first_sec2") = c["first_ref"] | c.s("second");
-		c.prim("first_sec_third") = c["first_ref"] | c["second_ref"] | c["third_ref"];
-		c.prim("first_sec_third2") = c["first_ref"] | c.s("second_ref") | c["third_ref"];
+		c.prim("concat_tok") = T::ParanOpen + T::ParanClose | T::IntConst;
+		c.prim("concat_ref") = T::ParanOpen + T::ParanClose | c["concat_ref"];
 
-		c.prep();
-
-		EXPECT_EQ(c.get("first_sec")->str(), "first_sec -> <first_ref> | <second_ref>");
-		EXPECT_EQ(c.get("first_sec2")->str(), "first_sec2 -> <first_ref> | \"second\"");
-		EXPECT_EQ(c.get("first_sec_third")->str(), "first_sec_third -> <first_ref> | <second_ref> | <third_ref>");
-		EXPECT_EQ(c.get("first_sec_third2")->str(),  "first_sec_third2 -> <first_ref> | \"second_ref\" | <third_ref>");
-	}
-
-	TEST(cfg_node, alt_concat) {
-		auto c = CfgContext();
-
-		c.prim("first_ref") = c.s("first");
-		c.prim("second_ref") = c.s("second");
-		c.prim("third_ref") = c.s("third");
-
-		c.prim("test1")
-			= c["first_ref"] + c.s("ree")
-			| c["first_ref"] + c["second_ref"];
-
-		c.prim("test2")
-			= c.s("yeah boi")
-			| c["first_ref"] + c.s("first") + c["second_ref"]
-			| c.s("last");
-
-		c.prim("test3")
-			= c["first_ref"]
-			| c["second_ref"]
-			| c.s("first") + c.s("second");
+		c.prim("tok_concat") = T::IntConst | T::ParanOpen + T::ParanClose;
+		c.prim("ref_concat") = c["ref_concat"] | T::ParanOpen + T::ParanClose;
 
 		c.prep();
 
-		EXPECT_EQ(c.get("test1")->str(), "test1 -> <first_ref> \"ree\" | <first_ref> <second_ref>");
-		EXPECT_EQ(c.get("test2")->str(), "test2 -> \"yeah boi\" | <first_ref> \"first\" <second_ref> | \"last\"");
-		EXPECT_EQ(c.get("test3")->str(), "test3 -> <first_ref> | <second_ref> | \"first\" \"second\"");
+		EXPECT_EQ(c.get("tok_ref")->str(), "tok_ref -> ParanOpen | <tok_ref>");
+		EXPECT_EQ(c.get("ref_tok")->str(), "ref_tok -> <ref_tok> | ParanClose");
+		EXPECT_EQ(c.get("tok_tok")->str(), "tok_tok -> IntConstant | Identifier");
+		EXPECT_EQ(c.get("ref_ref")->str(), "ref_ref -> <ref_ref> | <tok_ref>");
+		EXPECT_EQ(c.get("concat_tok")->str(), "concat_tok -> ParanOpen ParanClose | IntConstant");
+		EXPECT_EQ(c.get("concat_ref")->str(), "concat_ref -> ParanOpen ParanClose | <concat_ref>");
+		EXPECT_EQ(c.get("tok_concat")->str(), "tok_concat -> IntConstant | ParanOpen ParanClose");
+		EXPECT_EQ(c.get("ref_concat")->str(), "ref_concat -> <ref_concat> | ParanOpen ParanClose");
 	}
 }

@@ -51,8 +51,7 @@ namespace cg {
 			 * @returns Generated abstract syntax tree
 			 */
 			util::Result<AstNode, KError> parse(
-				std::string const &str,
-				std::string const &filename = "codegen"
+				std::vector<Token> const &tokens
 			) override;
 
 			CfgContext const &cfg() const override;
@@ -78,8 +77,21 @@ namespace cg {
 			/***********************************
 			 * Parser helper functions
 			 * *********************************/
-			util::Result<AstNode, KError> _parse(Stack const &stack, CfgRuleSet const &set);
-			util::Result<AstNode, KError> _parse(Stack const &stack, CfgRule const &rule);
-			util::Result<AstNode, KError> _parse(Stack const &stack, CfgLeaf const &leaf);
+			util::Result<AstNode, KError> _parse(
+				std::vector<Token> const &tokens,
+				uint32_t i,
+				CfgRuleSet const &set
+			);
+			util::Result<AstNode, KError> _parse(
+				std::vector<Token> const &tokens,
+				uint32_t i,
+				CfgRule const &rule,
+				std::string const &set_name
+			);
+			util::Result<AstNode, KError> _parse(
+				std::vector<Token> const &tokens,
+				uint32_t i,
+				CfgLeaf const &leaf
+			);
 	};
 }

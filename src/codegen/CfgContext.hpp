@@ -8,6 +8,7 @@
 #include "util/result.hpp"
 #include "util/KError.hpp"
 #include "codegen/CfgNode.hpp"
+#include "Tokenizer.hpp"
 
 namespace cg {
 	/**
@@ -22,29 +23,14 @@ namespace cg {
 			static Ptr create();
 
 			/**
-			 * @brief Wrapper around CfgLeaf::str
+			 * @brief Wrapper around CfgLeaf::token
 			 */
-			CfgLeaf s(std::string const &str) const;
+			CfgLeaf t(Token::Type t) const;
 
 			/**
-			 * @brief Wrapper around CfgLeaf::include
+			 * @brief Wrapper around CfgLeaf::empty
 			 */
-			CfgLeaf i(std::string const &str) const;
-
-			/**
-			 * @brief Wrapper around CfgLeaf::exclude
-			 */
-			CfgLeaf e(std::string const &str) const;
-
-			/**
-			 * @brief Wrapper around CfgLeaf::character
-			 */
-			CfgLeaf c(char c) const;
-
-			/**
-			 * @brief Creates an end of character
-			 */
-			CfgLeaf eof() const;
+			CfgLeaf empty() const;
 
 			/**
 			 * @brief Wrapper around CfgLeaf::var
@@ -94,6 +80,7 @@ namespace cg {
 
 			/**
 			 * @brief Reduces the Context Free Grammar to only use basic operations
+			 * - removes optional fields
 			 * - Seperate all strings into individual character leaves
 			 * - Create rules enumerating all possibilities in character sets
 			 */

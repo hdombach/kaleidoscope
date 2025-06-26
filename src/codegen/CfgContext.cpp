@@ -1,27 +1,16 @@
 #include "CfgContext.hpp"
 #include "util/log.hpp"
-#include "util/PrintTools.hpp"
 
-#include <sstream>
 
 namespace cg {
 	CfgContext::Ptr CfgContext::create() {
 		return std::make_unique<CfgContext>();
 	}
-	CfgLeaf CfgContext::s(std::string const &str) const {
-		return CfgLeaf::str(str);
+	CfgLeaf CfgContext::t(Token::Type t) const {
+		return CfgLeaf(t);
 	}
-	CfgLeaf CfgContext::i(std::string const &str) const {
-		return CfgLeaf::include(str);
-	}
-	CfgLeaf CfgContext::e(std::string const &str) const {
-		return CfgLeaf::exclude(str);
-	}
-	CfgLeaf CfgContext::c(char c) const {
-		return CfgLeaf::character(c);
-	}
-	CfgLeaf CfgContext::eof() const {
-		return CfgLeaf::character('\x03');
+	CfgLeaf CfgContext::empty() const {
+		return CfgLeaf();
 	}
 	CfgLeaf CfgContext::operator[](std::string const &str) const {
 		return CfgLeaf::var(str);
@@ -106,16 +95,6 @@ namespace cg {
 	}
 
 	void CfgContext::simplify() {
-		for (auto &set : _cfg_rule_sets) {
-			for (auto &rule : set.rules()) {
-				rule.seperate_leaves();
-			}
-		}
-
-		for (auto &set : _cfg_rule_sets) {
-			set.simplify_char_sets();
-		}
-
 		log_debug() << "Before removing empty sets" << std::endl;
 		log_debug() << *this;
 		_remove_empty();

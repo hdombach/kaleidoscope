@@ -12,28 +12,24 @@ namespace cg {
 
 	AstNode AstNode::create_rule(
 		uint32_t id,
-		std::string const &cfg_name,
-		util::FileLocation const &file_location
+		std::string const &cfg_name
 	) {
 		AstNode r;
 		r._type = Type::Rule;
 		r._id = id;
 		r._cfg_rule = cfg_name;
-		r._location = file_location;
 		r._size = 0;
 		return r;
 	}
 
 	AstNode AstNode::create_str(
 		uint32_t id,
-		std::string const &str,
-		util::FileLocation const &file_location
+		util::StringRef const &str
 	) {
 		AstNode r;
-		r._type = Type::String;
+		r._type = Type::Leaf;
 		r._id = id;
 		r._consumed = str;
-		r._location = file_location;
 		r._size = 0;
 		return r;
 	}
@@ -67,6 +63,10 @@ namespace cg {
 		return result;
 	}
 
+	std::string AstNode::consumed() const {
+		return _consumed.str();
+	}
+
 	std::string AstNode::consumed_all() const {
 		auto s = std::string();
 		if (_type == Type::Rule) {
@@ -87,7 +87,12 @@ namespace cg {
 	}
 
 	util::FileLocation AstNode::location() const {
-		return _location;
+		if (_type == Type::Leaf) {
+			return _consumed.location();
+		} else {
+			log_assert(_children.size() > 0, "Rule AstNode must have children");
+			return _children.front().location();
+		}
 	}
 
 	void AstNode::compress(std::set<std::string> const &cfg_names) {
@@ -188,9 +193,9 @@ namespace cg {
 		if (_type == Type::Rule) {
 			log_assert(!_cfg_rule.empty(), "A rule AstNode must have valid cfg name");
 			os << "<" << _cfg_rule << ">";
-		} else if (_type == Type::String) {
+		} else if (_type == Type::Leaf) {
 			log_assert(_children.empty(), "A string AstNode must have now children");
-			os << "\\\"" << util::escape_str(_consumed) << "\\\"" << std::endl;
+			os << "\\\"" << util::escape_str(_consumed.str()) << "\\\"" << std::endl;
 		} else {
 			os << "none" << std::endl;
 		}

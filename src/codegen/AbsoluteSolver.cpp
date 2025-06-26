@@ -125,7 +125,7 @@ namespace cg::abs {
 					}
 					//TODO: update source_location
 					stack.push_back(StackElement(
-						AstNode::create_str(node_id++, {*c}, std::source_location())
+						AstNode::create_str(node_id++, {c, filename.c_str()})
 					));
 					log_trace() << "shifted character: " << *c << std::endl;
 					stack.push_back(StackElement(action)); // push back the next state
@@ -141,6 +141,12 @@ namespace cg::abs {
 			}
 			return stack[1].node();
 		} catch_kerror;
+	}
+
+	util::Result<AstNode, KError> AbsoluteSolver::parse(
+		std::vector<Token> const &tokens
+	) {
+		return KError::internal("unimplimented");
 	}
 
 	CfgContext const &AbsoluteSolver::cfg() const {
@@ -170,8 +176,7 @@ namespace cg::abs {
 			popped.push_back(stack.back());
 			stack.pop_back();
 		}
-		auto TODO2 = util::FileLocation();
-		auto new_node = AstNode::create_rule(node_id++, rule.str(), TODO2);
+		auto new_node = AstNode::create_rule(node_id++, rule.str());
 
 		for (int i = popped.size()-1; i >= 0; i--){
 			new_node.add_child(popped[i].node());
@@ -216,6 +221,7 @@ namespace cg::abs {
 		//don't need to handle that
 		auto groups = _group_rules(unsorted_rules);
 		for (auto &[leaf, rules] : groups) {
+			/*
 			log_assert(
 				leaf.type() == CfgLeaf::Type::character || leaf.type() == CfgLeaf::Type::var,
 				"CfgContext must be simplified before using AbsoluteSolver"
@@ -232,6 +238,7 @@ namespace cg::abs {
 			} else {
 				_table.lookup_ruleset(state_rule, _ctx->rule_id(leaf.var_name())) = _add_state(next);
 			}
+			*/
 		}
 
 		return new_state_id;
