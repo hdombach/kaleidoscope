@@ -5,6 +5,7 @@
 #include "util/format.hpp"
 #include "util/Util.hpp"
 #include "util/log.hpp"
+#include "util/PrintTools.hpp"
 
 namespace cg {
 	Token::Token(Type type, util::StringRef const &ref):
@@ -171,8 +172,7 @@ namespace cg {
 			if (in_statement) {
 				result.push_back(t);
 				if (
-					t.type() == Token::CommentE
-					|| t.type() == Token::ExpE
+					t.type() == Token::ExpE
 					|| t.type() == Token::StmtE
 				) {
 					in_statement = false;
@@ -182,14 +182,15 @@ namespace cg {
 					t.type() == Token::Pad
 					|| t.type() == Token::Newline
 					|| t.type() == Token::Eof
+					|| t.type() == Token::CommentB
+					|| t.type() == Token::CommentE
 				) {
 					if (cur_token.exists())
 						result.push_back(cur_token);
 					cur_token = Token();
 					result.push_back(t);
 				} else if (
-					t.type() == Token::CommentB
-					|| t.type() == Token::ExpB
+					t.type() == Token::ExpB
 					|| t.type() == Token::StmtB
 				) {
 					in_statement = true;

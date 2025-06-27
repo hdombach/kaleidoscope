@@ -19,9 +19,18 @@ namespace cg {
 				std::vector<Token> const &tokens
 			) {
 				try {
-					return parse(tokens)->size();
+					return parse(tokens)->consumed_all().size();
 				} catch_kerror;
 			}
+			inline virtual util::Result<size_t, KError> match(
+				util::StringRef str
+			) {
+				try {
+					return match(simplify_tokens(tokenize(str)));
+				} catch_kerror;
+			}
+
+
 			virtual util::Result<AstNode, KError> parse(
 				std::vector<Token> const &tokens
 			) = 0;

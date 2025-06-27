@@ -6,8 +6,7 @@
 namespace cg {
 	AstNode::AstNode():
 		_type(Type::None),
-		_id(0),
-		_size(0)
+		_id(0)
 	{}
 
 	AstNode AstNode::create_rule(
@@ -18,7 +17,6 @@ namespace cg {
 		r._type = Type::Rule;
 		r._id = id;
 		r._cfg_rule = cfg_name;
-		r._size = 0;
 		return r;
 	}
 
@@ -30,7 +28,6 @@ namespace cg {
 		r._type = Type::Leaf;
 		r._id = id;
 		r._consumed = str;
-		r._size = 0;
 		return r;
 	}
 
@@ -41,7 +38,6 @@ namespace cg {
 	void AstNode::add_child(AstNode const &node) {
 		log_assert(_type == Type::Rule, "Can't add a child to an AstNode which is not a rule.");
 		_children.push_back(node);
-		_size = 0; /* Cache is invalidated */
 	}
 
 	util::Result<AstNode, KError> AstNode::child_with_cfg(std::string const &name) const {
@@ -79,11 +75,13 @@ namespace cg {
 		return s;
 	}
 
-	size_t AstNode::size() const {
-		if (_size == 0) {
-			_size = _calc_size();
+	size_t AstNode::leaf_count() const {
+		if (_type == Type::Leaf) return 1;
+		size_t result = 0;
+		for (auto &child : _children) {
+			result += child.leaf_count();
 		}
-		return _size;
+		return result;
 	}
 
 	util::FileLocation AstNode::location() const {
@@ -178,14 +176,6 @@ namespace cg {
 		_print_dot_paths(os);
 		os << "}" << std::endl;
 		return os;
-	}
-
-	size_t AstNode::_calc_size() const {
-		auto s = _consumed.size();
-		for (auto &c : _children) {
-			s += c.size();
-		}
-		return s;
 	}
 
 	void AstNode::_print_dot_attributes(std::ostream &os) const {

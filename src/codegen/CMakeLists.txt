@@ -12,7 +12,7 @@ set(CG_SRC
 
 set(CG_TEST
 	${CMAKE_CURRENT_SOURCE_DIR}/CfgNodeTest.cpp
-	#${CMAKE_CURRENT_SOURCE_DIR}/AstNodeTest.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/AstNodeTest.cpp
 	#${CMAKE_CURRENT_SOURCE_DIR}/TemplGenTest.cpp
 	#${CMAKE_CURRENT_SOURCE_DIR}/AbsoluteSolverTest.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/TokenizerTest.cpp

@@ -65,9 +65,9 @@ namespace cg {
 			std::string consumed_all() const;
 
 			/**
-			 * @brief The number of tokens in this node and all children nodes
+			 * @brief The number of leaf nodes
 			 */
-			size_t size() const;
+			size_t leaf_count() const;
 
 			util::FileLocation location() const;
 
@@ -102,13 +102,7 @@ namespace cg {
 			util::StringRef _consumed;
 			std::vector<AstNode> _children;
 
-			/**
-			 * @brief The cached size
-			 */
-			mutable size_t _size;
-
 		private:
-			size_t _calc_size() const;
 			void _print_dot_attributes(std::ostream &os) const;
 			void _print_dot_paths(std::ostream &os) const;
 	};

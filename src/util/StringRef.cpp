@@ -39,7 +39,7 @@ namespace util {
 	}
 
 	bool StringRef::empty() const {
-		return _str == nullptr;
+		return _str == nullptr || *_str == '\0';
 	}
 
 	void StringRef::inc(uint32_t count) {

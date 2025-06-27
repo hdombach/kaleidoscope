@@ -190,7 +190,7 @@ namespace cg {
 	TEST(tokenizer, comment) {
 		auto src =
 			"ahhh\n"
-			"first {# temp #} time.\n";
+			"first {# temp. #} time.\n";
 		auto tokens = simplify_tokens(tokenize(src));
 		auto expected = std::vector{
 			TestToken::unmatched("ahhh"),
@@ -199,7 +199,7 @@ namespace cg {
 			TestToken::padding(),
 			TestToken::comment_b(),
 			TestToken::padding(),
-			TestToken::identifier("temp"),
+			TestToken::unmatched("temp."),
 			TestToken::padding(),
 			TestToken::comment_e(),
 			TestToken::padding(),

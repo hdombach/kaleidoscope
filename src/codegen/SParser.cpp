@@ -38,7 +38,7 @@ namespace cg {
 			_last_failure = KError();
 			//TODO: error handling for root
 			auto node = _parse(tokens, 0, *_ctx->get_root()).value();
-			if (node.size() < tokens.size()) {
+			if (node.leaf_count() < tokens.size()) {
 				if (_last_failure.type() == KError::Type::UNKNOWN) {
 					return KError::codegen("Not all characters were consumed");
 				} else {
@@ -97,7 +97,7 @@ namespace cg {
 		auto node = AstNode::create_rule(++_uid, set_name);
 		for (auto &leaf : rule.leaves()) {
 			if (auto child = _parse(tokens, i, leaf)) {
-				i += child->size();
+				i += child->leaf_count();
 				node.add_child(child.value());
 			} else {
 				return _set_failure(child.error());
@@ -122,20 +122,24 @@ namespace cg {
 				return _set_failure(KError::codegen(msg));
 			}
 			return _parse(tokens, i, *set);
+		} else if (leaf.type() == CfgLeaf::Type::empty) {
+			return AstNode();
 		}
 
-		if (leaf.token_type() == tokens[i].type()) {
+		auto &token = tokens[i];
+
+		if (leaf.token_type() == token.type()) {
 			log_trace()
 				<< "leaf " << leaf
-				<< " matched: \"" << tokens[i] << "\"" << std::endl;
-			return AstNode::create_str(++_uid, tokens[i].str_ref());
+				<< " matched: \"" << token << "\"" << std::endl;
+			return AstNode::create_str(++_uid, token.str_ref());
 		} else {
-			log_trace() << "leaf " << leaf << " didn't match: " << "\"" << tokens[i] << "\"" << std::endl;
+			log_trace() << "leaf " << leaf << " didn't match: " << "\"" << token << "\"" << std::endl;
 			auto msg = util::f(
 				"Expected ",
 				leaf.str(),
 				" but got ",
-				tokens[i]
+				token
 			);
 			return _set_failure(KError::codegen(msg));
 		}
