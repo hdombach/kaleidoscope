@@ -14,26 +14,6 @@ namespace cg {
 	 */
 	class SParser: public Parser {
 		public:
-			struct Stack {
-				util::StringRef str;
-				std::string rule;
-				Stack const *parent = nullptr;
-
-
-				Stack() = default;
-				Stack(util::StringRef const &s, std::string const &r, Stack const *p):
-					str(s), rule(r), parent(p)
-				{}
-
-				Stack child(size_t offset) const {
-					return {str+offset, rule, this};
-				}
-
-				Stack child(size_t offset, std::string const &new_rule) const {
-					return {str+offset, new_rule, this};
-				}
-			};
-		public:
 			SParser() = default;
 			static SParser::Ptr create(std::unique_ptr<CfgContext> &&ctx);
 
