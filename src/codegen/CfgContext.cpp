@@ -87,6 +87,13 @@ namespace cg {
 								" does not exist."
 							));
 						}
+					} else if (leaf.type() == CfgLeaf::Type::empty) {
+						if (rule.leaves().size() != 1) {
+							return KError::codegen(util::f(
+								"The empty leaf must be in it's own rule:\n",
+								set.str(true)
+							));
+						}
 					}
 				}
 			}
@@ -118,6 +125,10 @@ namespace cg {
 				for (auto &rule : set.rules()) {
 					bool is_empty = true;
 					for (auto &leaf : rule.leaves()) {
+						if (leaf.type() == CfgLeaf::Type::empty) {
+							log_assert(rule.leaves().size() == 1, "Empty must be in it's own rule");
+							break;
+						}
 						if (leaf.type() == CfgLeaf::Type::var) {
 							if (!sets.contains(leaf.var_name())) {
 								is_empty = false;
@@ -167,7 +178,8 @@ namespace cg {
 		for (auto &set : _cfg_rule_sets) {
 			auto new_rules = std::vector<CfgRule>();
 			for (auto &rule : set.rules()) {
-				if (rule.leaves().empty()) continue;
+				log_assert(rule.leaves().size() > 0, "Should be impossible to have empty rule");
+				if (rule.leaves().front().type() == CfgLeaf::Type::empty) continue;
 				auto stack = std::vector<CfgLeaf>();
 				_enumerate_empty(empty_sets, rule, 0, stack, new_rules);
 			}
