@@ -10,16 +10,15 @@
 namespace cg {
 	Token::Token(Type type, util::StringRef const &ref):
 		_type(type),
-		_str(ref)
+		_str(ref.str()),
+		_loc(ref.location())
 	{}
 
 	Token::Type Token::type() const { return _type; }
-	std::string Token::content() const { return _str.str(); }
-	std::string Token::str() const {
+	std::string Token::content() const { return _str; }
+	util::FileLocation Token::loc() const { return _loc; }
+	std::string Token::debug_str() const {
 		return util::f("(", type_str(_type), " \"", util::escape_str(content()), "\")");
-	}
-	util::StringRef Token::str_ref() const {
-		return _str;
 	}
 	const char *Token::type_str(Type type) {
 		const char *names[] = {

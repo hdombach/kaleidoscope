@@ -194,7 +194,7 @@ namespace cg {
 			T::StmtB +
 			c["whitespace"] + T::For +
 			c["whitespace"] + T::Ident + c["whitespace"] +
-			T::In + c["exp"] +
+			T::In + c["whitespace"] + c["exp"] +
 			T::StmtE;
 		c.temp("sfrag_endfor") =
 			T::StmtB +
@@ -335,7 +335,7 @@ namespace cg {
 		Parser &parser
 	) const {
 		if (node.type() == AstNode::Type::Leaf) {
-			return node.tok().str_ref().str();
+			return node.tok().content();
 		} else if (node.type() == AstNode::Type::None) {
 			return {""};
 		}
@@ -383,7 +383,7 @@ namespace cg {
 			node.children().size() == 0,
 			util::f("Children count of ", node.cfg_rule(), " must be 0")
 		);
-		return node.tok().str_ref().str();
+		return node.tok().content();
 	}
 
 	TemplGen::CodegenRes TemplGen::_cg_recursive(
@@ -392,7 +392,7 @@ namespace cg {
 		Parser &parser
 	) const {
 		try {
-			auto r = node.tok().str_ref().str();
+			auto r = node.tok().content();
 			for (auto &child : node.children()) {
 				r += _codegen(child, args, parser).value();
 			}
@@ -557,7 +557,7 @@ namespace cg {
 			auto sfrag_for = node.child_with_cfg("sfrag_for").value();
 			auto iter_name = sfrag_for
 				.child_with_tok(Token::Type::Ident)
-				->tok().str_ref().str();
+				->tok().content();
 			auto iter = sfrag_for.child_with_cfg("exp").value();
 			auto lines = node.child_with_cfg("lines").value();
 
@@ -589,7 +589,7 @@ namespace cg {
 	) const {
 		try {
 			auto arg_def = node.child_with_cfg("sfrag_macro").value();
-			auto macro_name = arg_def.child_with_tok(Token::Type::Ident)->tok().str_ref().str();
+			auto macro_name = arg_def.child_with_tok(Token::Type::Ident)->tok().content();
 			auto macro_arg_list = arg_def.child_with_cfg("sfrag_argdef_list").value();
 			auto content = node.child_with_cfg("lines").value();
 
@@ -603,7 +603,7 @@ namespace cg {
 
 			auto macro_args = std::vector<std::tuple<std::string, TemplObj>>();
 			for (auto &macro_arg_node : macro_arg_list.children_with_cfg("sfrag_argdef")) {
-				auto macro_arg_name = macro_arg_node.child_with_tok(Token::Type::Ident)->tok().str_ref().str();
+				auto macro_arg_name = macro_arg_node.child_with_tok(Token::Type::Ident)->tok().content();
 				auto macro_arg_value = TemplObj();
 				if (auto exp_node = macro_arg_node.child_with_cfg("exp")) {
 					macro_arg_value = _eval(exp_node, args).value();
@@ -654,7 +654,7 @@ namespace cg {
 		Parser &parser
 	) const {
 		try {
-			auto filename = _unpack_str(node.child_with_tok(Token::Type::StrConst)->tok().str_ref().str()).value();
+			auto filename = _unpack_str(node.child_with_tok(Token::Type::StrConst)->tok().content()).value();
 			auto include_src = util::readEnvFile(filename);
 			auto include_node = parser.parse({include_src.c_str(), filename.c_str()})->compressed(_parser->cfg().prim_names());
 
@@ -744,7 +744,7 @@ namespace cg {
 		TemplDict const &args
 	) const {
 		try {
-			auto name = node.tok().str_ref().str();
+			auto name = node.tok().content();
 			if (args.count(name) == 0) {
 				log_debug() << "unknown identifier " << node << std::endl;
 				return KError::codegen("Unknown identifier \"" + name + "\"", node.location());
@@ -810,7 +810,7 @@ namespace cg {
 		TemplDict const &args
 	) const {
 		try {
-			auto name = node.child_with_tok(Token::Type::Ident)->tok().str_ref().str();
+			auto name = node.child_with_tok(Token::Type::Ident)->tok().content();
 			return lhs.get_attribute(name);
 		} catch_kerror;
 	}

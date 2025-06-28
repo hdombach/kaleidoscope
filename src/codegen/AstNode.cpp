@@ -79,7 +79,7 @@ namespace cg {
 				s += c.consumed_all();
 			}
 		} else {
-			s = tok().str_ref().str();
+			s = tok().content();
 		}
 		return s;
 	}
@@ -95,7 +95,7 @@ namespace cg {
 
 	util::FileLocation AstNode::location() const {
 		if (_type == Type::Leaf) {
-			return _token.str_ref().location();
+			return _token.loc();
 		} else {
 			log_assert(_children.size() > 0, "Rule AstNode must have children");
 			return _children.front().location();
@@ -155,10 +155,10 @@ namespace cg {
 
 	std::ostream &AstNode::print_debug(std::ostream &os) const {
 		if (_children.empty()) {
-			os << '"' << util::escape_str(tok().str_ref().str()) << '"';
+			os << '"' << util::escape_str(tok().content()) << '"';
 		} else {
 			os << "{";
-			os << '"' << util::escape_str(tok().str_ref().str()) << '"' << ": ";
+			os << '"' << util::escape_str(tok().content()) << '"' << ": ";
 			os << util::plist(_children);
 			os << "}";
 		}
@@ -200,7 +200,7 @@ namespace cg {
 			os << "<" << _cfg_rule << ">";
 		} else if (_type == Type::Leaf) {
 			log_assert(_children.empty(), "A string AstNode must have now children");
-			os << "\\\"" << util::escape_str(_token.str_ref().str()) << "\\\"" << std::endl;
+			os << "\\\"" << util::escape_str(_token.content()) << "\\\"" << std::endl;
 		} else {
 			os << "none" << std::endl;
 		}
