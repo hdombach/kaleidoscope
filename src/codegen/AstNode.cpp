@@ -20,14 +20,14 @@ namespace cg {
 		return r;
 	}
 
-	AstNode AstNode::create_str(
+	AstNode AstNode::create_tok(
 		uint32_t id,
-		util::StringRef const &str
+		Token const &token
 	) {
 		AstNode r;
 		r._type = Type::Leaf;
 		r._id = id;
-		r._consumed = str;
+		r._token = token;
 		return r;
 	}
 
@@ -46,7 +46,7 @@ namespace cg {
 				return child;
 			}
 		}
-		return KError::codegen(util::f("CfgNode does not contain child with name ", name));
+		return KError::codegen(util::f("AstNode ", str(), " does not contain child with name ", name));
 	}
 
 	std::vector<AstNode> AstNode::children_with_cfg(std::string const &name) const {
@@ -59,8 +59,17 @@ namespace cg {
 		return result;
 	}
 
-	std::string AstNode::consumed() const {
-		return _consumed.str();
+	util::Result<AstNode, KError> AstNode::child_with_tok(Token::Type type) const {
+		for (auto &child : _children) {
+			if (child.tok().type() == type) {
+				return child;
+			}
+		}
+		return KError::codegen(util::f("AstNode ", str(), " does not contain child with type ", type));
+	}
+
+	Token const &AstNode::tok() const {
+		return _token;
 	}
 
 	std::string AstNode::consumed_all() const {
@@ -70,7 +79,7 @@ namespace cg {
 				s += c.consumed_all();
 			}
 		} else {
-			s = consumed();
+			s = tok().str_ref().str();
 		}
 		return s;
 	}
@@ -86,7 +95,7 @@ namespace cg {
 
 	util::FileLocation AstNode::location() const {
 		if (_type == Type::Leaf) {
-			return _consumed.location();
+			return _token.str_ref().location();
 		} else {
 			log_assert(_children.size() > 0, "Rule AstNode must have children");
 			return _children.front().location();
@@ -112,7 +121,7 @@ namespace cg {
 				} else {
 					new_children.push_back(child);
 				}
-			} else {
+			} else if (child.type() == Type::Leaf) {
 				new_children.push_back(child);
 			}
 		}
@@ -130,7 +139,7 @@ namespace cg {
 
 		for (auto &child : _children) {
 			child.trim();
-			if (child.consumed().size() > 0 || child.children().size() > 0) {
+			if (child.tok().exists() ||child.children().size() > 0) {
 				new_children.push_back(child);
 			}
 		}
@@ -146,10 +155,10 @@ namespace cg {
 
 	std::ostream &AstNode::print_debug(std::ostream &os) const {
 		if (_children.empty()) {
-			os << '"' << util::escape_str(consumed()) << '"';
+			os << '"' << util::escape_str(tok().str_ref().str()) << '"';
 		} else {
 			os << "{";
-			os << '"' << util::escape_str(consumed()) << '"' << ": ";
+			os << '"' << util::escape_str(tok().str_ref().str()) << '"' << ": ";
 			os << util::plist(_children);
 			os << "}";
 		}
@@ -178,6 +187,12 @@ namespace cg {
 		return os;
 	}
 
+	std::string AstNode::str() const {
+		auto ss = std::stringstream();
+		print_debug(ss);
+		return ss.str();
+	}
+
 	void AstNode::_print_dot_attributes(std::ostream &os) const {
 		os << "ast_" << id() << " [label=\"";
 		if (_type == Type::Rule) {
@@ -185,7 +200,7 @@ namespace cg {
 			os << "<" << _cfg_rule << ">";
 		} else if (_type == Type::Leaf) {
 			log_assert(_children.empty(), "A string AstNode must have now children");
-			os << "\\\"" << util::escape_str(_consumed.str()) << "\\\"" << std::endl;
+			os << "\\\"" << util::escape_str(_token.str_ref().str()) << "\\\"" << std::endl;
 		} else {
 			os << "none" << std::endl;
 		}

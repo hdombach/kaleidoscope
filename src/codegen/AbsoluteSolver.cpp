@@ -124,9 +124,9 @@ namespace cg::abs {
 						return KError::codegen("Reached EOF unexpectedly");
 					}
 					//TODO: update source_location
-					stack.push_back(StackElement(
-						AstNode::create_str(node_id++, {c, filename.c_str()})
-					));
+					//stack.push_back(StackElement(
+					//	AstNode::create_tok(node_id++, {c, filename.c_str()})
+					//));
 					log_trace() << "shifted character: " << *c << std::endl;
 					stack.push_back(StackElement(action)); // push back the next state
 					c++;

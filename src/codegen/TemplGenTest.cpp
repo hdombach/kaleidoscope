@@ -104,14 +104,14 @@ namespace cg {
 		};
 
 		EXPECT_CG(
-			"foo\n"
-			"bar\n"
+			"foo\n\n"
+			"bar\n\n"
 		);
 
 		args["add_bar"] = false;
 
 		EXPECT_CG(
-			"foo\n"
+			"foo\n\n"
 		);
 	}
 
@@ -130,15 +130,15 @@ namespace cg {
 		};
 
 		EXPECT_CG(
-			"reee\n"
-			"yes\n"
+			"reee\n\n"
+			"yes\n\n"
 		);
 
 		args["value"] = false;
 
 		EXPECT_CG(
-			"reee\n"
-			"no\n"
+			"reee\n\n"
+			"no\n\n"
 		);
 	}
 
@@ -156,6 +156,8 @@ namespace cg {
 
 		EXPECT_CG(
 			"foo\n"
+			"\n"
+			"\n"
 			"bar\n"
 		);
 	}
@@ -175,22 +177,48 @@ namespace cg {
 
 		EXPECT_CG(
 			"foo\n"
+			"\n"
+			"\n"
 			"bar\n"
 		);
 	}
 
+	TEST_F(TemplGenTest, empty_elif_chain) {
+		auto src =
+			"foo\n"
+			"{\% if add_bar %}\n"
+			"{\% elif add_bar2 %}\n"
+			"{\% else %}\n"
+			"{\% endif %}\n"
+			"bar\n"
+			"";
+
+		auto args = TemplDict{
+			{"add_bar", true},
+			{"add_bar2", true},
+		};
+
+		EXPECT_CG(
+			"foo\n"
+			"\n"
+			"\n"
+			"bar\n"
+		);
+
+	}
+
 	TEST_F(TemplGenTest, elif_chain) {
 		auto src =
-			"Do robots dream of eletric sheep?\n"
-			"{\% if has_yes %}"
+			"Do robots dream of electric sheep?\n"
+			"{\% if has_yes %}\n"
 			"Most indefinitely.\n"
-			"{\% elif has_no %}"
+			"{\% elif has_no %}\n"
 			"Of course not.\n"
-			"{\% elif has_maybe %}"
+			"{\% elif has_maybe %}\n"
 			"Maybe its the electric sheep dreaming.\n"
-			"{\% else %}"
+			"{\% else %}\n"
 			"I need sleep.\n"
-			"{\% endif %}"
+			"{\% endif %}\n"
 			"";
 
 		auto args = TemplDict{
@@ -200,32 +228,40 @@ namespace cg {
 		};
 
 		EXPECT_CG(
-			"Do robots dream of eletric sheep?\n"
+			"Do robots dream of electric sheep?\n"
+			"\n"
 			"Most indefinitely.\n"
+			"\n"
 		);
 
 		args["has_yes"] = false;
 		EXPECT_CG(
-			"Do robots dream of eletric sheep?\n"
+			"Do robots dream of electric sheep?\n"
+			"\n"
 			"Of course not.\n"
+			"\n"
 		);
 
 		args["has_no"] = false;
 		EXPECT_CG(
-			"Do robots dream of eletric sheep?\n"
+			"Do robots dream of electric sheep?\n"
+			"\n"
 			"Maybe its the electric sheep dreaming.\n"
+			"\n"
 		);
 
 		args["has_maybe"] = false;
 		EXPECT_CG(
-			"Do robots dream of eletric sheep?\n"
+			"Do robots dream of electric sheep?\n"
+			"\n"
 			"I need sleep.\n"
+			"\n"
 		);
 	}
 
 	TEST_F(TemplGenTest, member_access) {
 		auto src =
-			"Hello I am {{person.first_name}} {{ person . last_name }} and I am {{person\n.age}} years old.";
+			"Hello I am {{person.first_name}} {{ person . last_name }} and I am {{person\n.age}} years old.\n";
 
 		auto args = TemplDict{
 			{
@@ -238,7 +274,7 @@ namespace cg {
 		};
 
 		EXPECT_CG(
-			"Hello I am John Doe and I am 26 years old."
+			"Hello I am John Doe and I am 26 years old.\n"
 		);
 	}
 
@@ -282,16 +318,16 @@ namespace cg {
 		}.dict().value();
 
 		auto src =
-			"The current second is {{date.time.seconds}}s";
+			"The current second is {{date.time.seconds}}s\n";
 
 		EXPECT_CG(
-			"The current second is 57s"
+			"The current second is 57s\n"
 		);
 
-		src = "The minute is {{get_date().time.get_self().time.minutes}}m";
+		src = "The minute is {{get_date().time.get_self().time.minutes}}m\n";
 
 		EXPECT_CG(
-			"The minute is 13m"
+			"The minute is 13m\n"
 		);
 	}
 
@@ -306,31 +342,31 @@ namespace cg {
 			{"combine_str", mk_templfunc(combined)}
 		}.dict().value();
 
-		auto src = "User id is {{combine_str(name, id)}}";
+		auto src = "User id is {{combine_str(name, id)}}\n";
 
 		EXPECT_CG(
-			"User id is Bob59"
+			"User id is Bob59\n"
 		);
 
-		src = "User id is {{combine_str(name, name)}}";
+		src = "User id is {{combine_str(name, name)}}\n";
 		EXPECT_KERROR(
 			f.gen(src, args),
 			KError::Type::CODEGEN
 		);
 
-		src = "User id is {{combine_str(id, id)}}";
+		src = "User id is {{combine_str(id, id)}}\n";
 		EXPECT_KERROR(
 			f.gen(src, args),
 			KError::Type::CODEGEN
 		);
 
-		src = "User id is {{combine_str(name)}}";
+		src = "User id is {{combine_str(name)}}\n";
 		EXPECT_KERROR(
 			f.gen(src, args),
 			KError::Type::CODEGEN
 		);
 
-		src = "User id is {{combine_str(name, id, id)}}";
+		src = "User id is {{combine_str(name, id, id)}}\n";
 		EXPECT_KERROR(
 			f.gen(src, args),
 			KError::Type::CODEGEN
@@ -340,14 +376,14 @@ namespace cg {
 	TEST_F(TemplGenTest, int_constant) {
 		auto args = TemplDict();
 
-		auto src = "The number is {{5}}!";
+		auto src = "The number is {{5}}!\n";
 		EXPECT_CG(
-			"The number is 5!"
+			"The number is 5!\n"
 		);
 
-		src = "Another number is {{ 49102 }}!";
+		src = "Another number is {{ 49102 }}!\n";
 		EXPECT_CG(
-			"Another number is 49102!"
+			"Another number is 49102!\n"
 		);
 	}
 
@@ -358,35 +394,35 @@ namespace cg {
 			{"neg_value", -84},
 		}.dict().value();
 
-		auto src = "Hello {{+value}}";
+		auto src = "Hello {{+value}}\n";
 		EXPECT_CG(
-			"Hello 59"
+			"Hello 59\n"
 		);
 
-		src = "Hello2 {{ -value }}";
+		src = "Hello2 {{ -value }}\n";
 		EXPECT_CG(
-			"Hello2 -59"
+			"Hello2 -59\n"
 		);
 
-		src = "zero: {{ -zero }}, raw: {{583}}";
+		src = "zero: {{ -zero }}, raw: {{583}}\n";
 		EXPECT_CG(
-			"zero: 0, raw: 583"
+			"zero: 0, raw: 583\n"
 		);
 
 		// I don't fully know what + does.
-		src = "pos_value: {{ +neg_value }}";
+		src = "pos_value: {{ +neg_value }}\n";
 		EXPECT_CG(
-			"pos_value: -84"
+			"pos_value: -84\n"
 		);
 
-		src = "bool_value: {{ false }}, {{ true }}";
+		src = "bool_value: {{ false }}, {{ true }}\n";
 		EXPECT_CG(
-			"bool_value: <false>, <true>"
+			"bool_value: <false>, <true>\n"
 		);
 
-		src = "bool_value2: {{ !false }}, {{ !true }}";
+		src = "bool_value2: {{ !false }}, {{ !true }}\n";
 		EXPECT_CG(
-			"bool_value2: <true>, <false>"
+			"bool_value2: <true>, <false>\n"
 		);
 	}
 
@@ -396,39 +432,39 @@ namespace cg {
 			{"neg_value", -10}
 		}.dict().value();
 
-		auto src = "4*2 is {{4*2}}";
+		auto src = "4*2 is {{4*2}}\n";
 		EXPECT_CG(
-			"4*2 is 8"
+			"4*2 is 8\n"
 		);
 
-		src = "-3*9 is {{ - 3 * 9 }}";
+		src = "-3*9 is {{ - 3 * 9 }}\n";
 		EXPECT_CG(
-			"-3*9 is -27"
+			"-3*9 is -27\n"
 		);
 
-		src = "5 * -10 is {{ pos_value * neg_value }}";
+		src = "5 * -10 is {{ pos_value * neg_value }}\n";
 		EXPECT_CG(
-			"5 * -10 is -50"
+			"5 * -10 is -50\n"
 		);
 
-		src = "5 * 10 is {{ pos_value * -neg_value }}";
+		src = "5 * 10 is {{ pos_value * -neg_value }}\n";
 		EXPECT_CG(
-			"5 * 10 is 50"
+			"5 * 10 is 50\n"
 		);
 
-		src = "200 / 10 is {{ 200/-neg_value }}";
+		src = "200 / 10 is {{ 200/-neg_value }}\n";
 		EXPECT_CG(
-			"200 / 10 is 20"
+			"200 / 10 is 20\n"
 		);
 
-		src = "7 % 3 is {{7%3}}";
+		src = "7 % 3 is {{7%3}}\n";
 		EXPECT_CG(
-			"7 % 3 is 1"
+			"7 % 3 is 1\n"
 		);
 
-		src = "5*10/2 is {{5*-neg_value/2}}";
+		src = "5*10/2 is {{5*-neg_value/2}}\n";
 		EXPECT_CG(
-			"5*10/2 is 25"
+			"5*10/2 is 25\n"
 		);
 	}
 
@@ -438,19 +474,19 @@ namespace cg {
 			{"neg_value", -10}
 		}.dict().value();
 
-		auto src = "3+12 is {{3+12}}";
+		auto src = "3+12 is {{3+12}}\n";
 		EXPECT_CG(
-			"3+12 is 15"
+			"3+12 is 15\n"
 		);
 
-		src = "2-5 is {{2-pos_value}}";
+		src = "2-5 is {{2-pos_value}}\n";
 		EXPECT_CG(
-			"2-5 is -3"
+			"2-5 is -3\n"
 		);
 
-		src = "-12 + 2*10 is {{ -12 + 2*10}}";
+		src = "-12 + 2*10 is {{ -12 + 2*10}}\n";
 		EXPECT_CG(
-			"-12 + 2*10 is 8"
+			"-12 + 2*10 is 8\n"
 		);
 	}
 
@@ -461,66 +497,66 @@ namespace cg {
 		}.dict().value();
 
 		/* greater than */
-		auto src = "4 > -8 is {{4 > neg_value}}";
+		auto src = "4 > -8 is {{4 > neg_value}}\n";
 		EXPECT_CG(
-			"4 > -8 is <true>"
+			"4 > -8 is <true>\n"
 		);
 
-		src = "4 > -8 + 12 is {{4 > neg_value + 12}}";
+		src = "4 > -8 + 12 is {{4 > neg_value + 12}}\n";
 		EXPECT_CG(
-			"4 > -8 + 12 is <false>"
+			"4 > -8 + 12 is <false>\n"
 		);
 
-		src = "4 > 6 is {{4 > pos_value}}";
+		src = "4 > 6 is {{4 > pos_value}}\n";
 		EXPECT_CG(
-			"4 > 6 is <false>"
+			"4 > 6 is <false>\n"
 		);
 
 		/* Greater than or equal */
-		src = "4 >= -8 is {{4 >= neg_value}}";
+		src = "4 >= -8 is {{4 >= neg_value}}\n";
 		EXPECT_CG(
-			"4 >= -8 is <true>"
+			"4 >= -8 is <true>\n"
 		);
 
-		src = "4 >= -8 + 12 is {{4 >= neg_value + 12}}";
+		src = "4 >= -8 + 12 is {{4 >= neg_value + 12}}\n";
 		EXPECT_CG(
-			"4 >= -8 + 12 is <true>"
+			"4 >= -8 + 12 is <true>\n"
 		);
 
-		src = "4 >= 6 is {{4 >= pos_value}}";
+		src = "4 >= 6 is {{4 >= pos_value}}\n";
 		EXPECT_CG(
-			"4 >= 6 is <false>"
+			"4 >= 6 is <false>\n"
 		);
 
 		/* less than */
-		src = "4 < -8 is {{4 < neg_value}}";
+		src = "4 < -8 is {{4 < neg_value}}\n";
 		EXPECT_CG(
-			"4 < -8 is <false>"
+			"4 < -8 is <false>\n"
 		);
 
-		src = "4 < -8 + 12 is {{4 < neg_value + 12}}";
+		src = "4 < -8 + 12 is {{4 < neg_value + 12}}\n";
 		EXPECT_CG(
-			"4 < -8 + 12 is <false>"
+			"4 < -8 + 12 is <false>\n"
 		);
 
-		src = "4 < 6 is {{4 < pos_value}}";
+		src = "4 < 6 is {{4 < pos_value}}\n";
 		EXPECT_CG(
-			"4 < 6 is <true>"
+			"4 < 6 is <true>\n"
 		);
 
-		src = "4 <= -8 is {{4 <= neg_value}}";
+		src = "4 <= -8 is {{4 <= neg_value}}\n";
 		EXPECT_CG(
-			"4 <= -8 is <false>"
+			"4 <= -8 is <false>\n"
 		);
 
-		src = "4 <= -8 + 12 is {{4 <= neg_value + 12}}";
+		src = "4 <= -8 + 12 is {{4 <= neg_value + 12}}\n";
 		EXPECT_CG(
-			"4 <= -8 + 12 is <true>"
+			"4 <= -8 + 12 is <true>\n"
 		);
 
-		src = "4 <= 6 is {{4 <= pos_value}}";
+		src = "4 <= 6 is {{4 <= pos_value}}\n";
 		EXPECT_CG(
-			"4 <= 6 is <true>"
+			"4 <= 6 is <true>\n"
 		);
 	}
 
@@ -530,34 +566,34 @@ namespace cg {
 			{"neg_value", -8}
 		}.dict().value();
 
-		auto src = "6 == 6 is {{6 == pos_value}}";
+		auto src = "6 == 6 is {{6 == pos_value}}\n";
 		EXPECT_CG(
-			"6 == 6 is <true>"
+			"6 == 6 is <true>\n"
 		);
 
-		src = "-8 == 6 is {{neg_value == pos_value}}";
+		src = "-8 == 6 is {{neg_value == pos_value}}\n";
 		EXPECT_CG(
-			"-8 == 6 is <false>"
+			"-8 == 6 is <false>\n"
 		);
 		
-		src = "6 == 8 - 2 is {{pos_value == -neg_value-2}}";
+		src = "6 == 8 - 2 is {{pos_value == -neg_value-2}}\n";
 		EXPECT_CG(
-			"6 == 8 - 2 is <true>"
+			"6 == 8 - 2 is <true>\n"
 		);
 
-		src = "6 == 8 - 2 is {{pos_value == -neg_value-2}}";
+		src = "6 == 8 - 2 is {{pos_value == -neg_value-2}}\n";
 		EXPECT_CG(
-			"6 == 8 - 2 is <true>"
+			"6 == 8 - 2 is <true>\n"
 		);
 
-		src = "6 != 4 is {{pos_value != 4}}";
+		src = "6 != 4 is {{pos_value != 4}}\n";
 		EXPECT_CG(
-			"6 != 4 is <true>"
+			"6 != 4 is <true>\n"
 		);
 
-		src = "6 != -2 + 8 is {{pos_value != -2 - neg_value}}";
+		src = "6 != -2 + 8 is {{pos_value != -2 - neg_value}}\n";
 		EXPECT_CG(
-			"6 != -2 + 8 is <false>"
+			"6 != -2 + 8 is <false>\n"
 		);
 	}
 
@@ -567,24 +603,24 @@ namespace cg {
 			{"neg_value", -8},
 		}.dict().value();
 
-		auto src = "true && true is {{true && true}}";
+		auto src = "true && true is {{true && true}}\n";
 		EXPECT_CG(
-			"true && true is <true>"
+			"true && true is <true>\n"
 		);
 
-		src = "true && false is {{true && false}}";
+		src = "true && false is {{true && false}}\n";
 		EXPECT_CG(
-			"true && false is <false>"
+			"true && false is <false>\n"
 		);
 
-		src = "6 > 0 && -8 + 9 == 1 is {{pos_value > 0 && neg_value+9 == 1}}";
+		src = "6 > 0 && -8 + 9 == 1 is {{pos_value > 0 && neg_value+9 == 1}}\n";
 		EXPECT_CG(
-			"6 > 0 && -8 + 9 == 1 is <true>"
+			"6 > 0 && -8 + 9 == 1 is <true>\n"
 		);
 
-		src = "6 > 0 && -8 + 9 != 1 is {{pos_value > 0 && neg_value+9 != 1}}";
+		src = "6 > 0 && -8 + 9 != 1 is {{pos_value > 0 && neg_value+9 != 1}}\n";
 		EXPECT_CG(
-			"6 > 0 && -8 + 9 != 1 is <false>"
+			"6 > 0 && -8 + 9 != 1 is <false>\n"
 		);
 	}
 
@@ -594,24 +630,24 @@ namespace cg {
 			{"neg_value", -8},
 		}.dict().value();
 
-		auto src = "true || false is {{true || false}}";
+		auto src = "true || false is {{true || false}}\n";
 		EXPECT_CG(
-			"true || false is <true>"
+			"true || false is <true>\n"
 		);
 
-		src = "false || false is {{false || false}}";
+		src = "false || false is {{false || false}}\n";
 		EXPECT_CG(
-			"false || false is <false>"
+			"false || false is <false>\n"
 		);
 
-		src = "6 == 0 || true && -8 + 9 == 1 is {{pos_value == 0 || true && neg_value + 9 == 1}}";
+		src = "6 == 0 || true && -8 + 9 == 1 is {{pos_value == 0 || true && neg_value + 9 == 1}}\n";
 		EXPECT_CG(
-			"6 == 0 || true && -8 + 9 == 1 is <true>"
+			"6 == 0 || true && -8 + 9 == 1 is <true>\n"
 		);
 
-		src = "6 == 0 || true && -8 + 9 == 1 is {{pos_value == 0 || false && neg_value + 9 == 1}}";
+		src = "6 == 0 || true && -8 + 9 == 1 is {{pos_value == 0 || false && neg_value + 9 == 1}}\n";
 		EXPECT_CG(
-			"6 == 0 || true && -8 + 9 == 1 is <false>"
+			"6 == 0 || true && -8 + 9 == 1 is <false>\n"
 		);
 	}
 
@@ -623,9 +659,9 @@ namespace cg {
 		const char *src;
 
 
-		src = "The expression literal is {{ \"{{\" }}";
+		src = "The expression literal is {{ \"{{\" }}\n";
 		EXPECT_CG(
-			"The expression literal is {{"
+			"The expression literal is {{\n"
 		);
 	}
 
@@ -707,17 +743,17 @@ namespace cg {
 		}.dict().value();
 
 		auto src = 
-			"value is {{(foo+4)*bar}}";
+			"value is {{(foo+4)*bar}}\n";
 
 		EXPECT_CG(
-			"value is 90"
+			"value is 90\n"
 		);
 
 		src =
-			"value is {{foo+ ( 4*bar ) }}";
+			"value is {{foo+ ( 4*bar ) }}\n";
 
 		EXPECT_CG(
-			"value is 45"
+			"value is 45\n"
 		);
 	}
 
@@ -739,17 +775,17 @@ namespace cg {
 		}.dict().value();
 
 		auto src =
-			"Hello in reverse is {{hello|str_reverse}}";
+			"Hello in reverse is {{hello|str_reverse}}\n";
 
 		EXPECT_CG(
-			"Hello in reverse is olleh"
+			"Hello in reverse is olleh\n"
 		);
 
 		src =
-			"Hello with prepend is {{hello|str_prepend(\"hi \")}}";
+			"Hello with prepend is {{hello|str_prepend(\"hi \")}}\n";
 
 		EXPECT_CG(
-			"Hello with prepend is hi hello"
+			"Hello with prepend is hi hello\n"
 		);
 	}
 
@@ -790,50 +826,50 @@ namespace cg {
 
 		auto src =
 			"A haiku:\n"
-			"{{quote|indent_str}}";
+			"{{quote|indent_str}}\n";
 
 		EXPECT_CG(
 			"A haiku:\n"
 			"\tA single raindrop,\n"
 			"\tMixed with brine and oily smoke,\n"
 			"\tGlistens in the web.\n"
-			"\t"
+			"\t\n"
 		);
 
 		src =
 			"A haiku:\n"
-			"{{quote|indent_str(2)}}";
+			"{{quote|indent_str(2)}}\n";
 
 		EXPECT_CG(
 			"A haiku:\n"
 			"\t\tA single raindrop,\n"
 			"\t\tMixed with brine and oily smoke,\n"
 			"\t\tGlistens in the web.\n"
-			"\t\t"
+			"\t\t\n"
 		);
 
 		src =
 			"A haiku:\n"
-			"{{quote|indent_str(\"--\")}}";
+			"{{quote|indent_str(\"--\")}}\n";
 
 		EXPECT_CG(
 			"A haiku:\n"
 			"--A single raindrop,\n"
 			"--Mixed with brine and oily smoke,\n"
 			"--Glistens in the web.\n"
-			"--"
+			"--\n"
 		);
 
 		src =
 			"A haiku:\n"
-			"{{indent_str(quote, \"> \")}}";
+			"{{indent_str(quote, \"> \")}}\n";
 
 		EXPECT_CG(
 			"A haiku:\n"
 			"> A single raindrop,\n"
 			"> Mixed with brine and oily smoke,\n"
 			"> Glistens in the web.\n"
-			"> "
+			"> \n"
 		);
 	}
 
@@ -864,10 +900,10 @@ namespace cg {
 		}.dict().value();
 
 		auto src =
-			"My name is {{first_name|capitilize}} {{last_name|capitilize}}";
+			"My name is {{first_name|capitilize}} {{last_name|capitilize}}\n";
 
 		EXPECT_CG(
-			"My name is Hezekiah Dombach"
+			"My name is Hezekiah Dombach\n"
 		);
 	}
 
@@ -878,29 +914,29 @@ namespace cg {
 
 		auto src =
 			"Title format is:\n"
-			"{{title_str|center}}";
+			"{{title_str|center}}\n";
 
 		EXPECT_CG(
 			"Title format is:\n"
-			"                                     title"
+			"                                     title\n"
 		);
 
 		src =
 			"Title format is:\n"
-			"{{title_str|center(12)}}";
+			"{{title_str|center(12)}}\n";
 
 		EXPECT_CG(
 			"Title format is:\n"
-			"   title"
+			"   title\n"
 		);
 
 		src =
 			"Title format is:\n"
-			"{{title_str|capitilize|center(12)}}";
+			"{{title_str|capitilize|center(12)}}\n";
 
 		EXPECT_CG(
 			"Title format is:\n"
-			"   Title"
+			"   Title\n"
 		);
 	}
 
@@ -910,10 +946,10 @@ namespace cg {
 		}.dict().value();
 
 		auto src =
-			"First element of list is {{my_list|first}}";
+			"First element of list is {{my_list|first}}\n";
 
 		EXPECT_CG(
-			"First element of list is apple"
+			"First element of list is apple\n"
 		);
 
 		args = TemplObj{
@@ -936,7 +972,7 @@ namespace cg {
 
 		auto src =
 			"<quote>\n"
-			"    {{quote|indent}}"
+			"    {{quote|indent}}\n"
 			"</quote>\n";
 
 		EXPECT_CG(
@@ -946,12 +982,13 @@ namespace cg {
 			" \n"
 			"    The dawn has shattered\n"
 			"    Leaving fragments strewn about.\n"
+			"\n"
 			"</quote>\n"
 		);
 
 		src =
 			"<quote>\n"
-			"   {{quote|indent(3)}}"
+			"   {{quote|indent(3)}}\n"
 			"</quote>\n";
 
 		EXPECT_CG(
@@ -961,12 +998,29 @@ namespace cg {
 			" \n"
 			"   The dawn has shattered\n"
 			"   Leaving fragments strewn about.\n"
+			"\n"
 			"</quote>\n"
 		);
 
 		src =
 			"<quote>\n"
-			"> {{quote|indent(\"> \")}}"
+			"> {{quote|indent(\"> \")}}\n"
+			"</quote>\n";
+
+		EXPECT_CG(
+			"<quote>\n"
+			"> The day has sunk\n"
+			"> Into the depths of time untold.\n"
+			" \n"
+			"> The dawn has shattered\n"
+			"> Leaving fragments strewn about.\n"
+			"\n"
+			"</quote>\n"
+		);
+
+		src =
+			"<quote>\n"
+			"> {{quote|indent(\"> \", false)}}\n"
 			"</quote>\n";
 
 		EXPECT_CG(
@@ -981,7 +1035,7 @@ namespace cg {
 
 		src =
 			"<quote>\n"
-			"> {{quote|indent(\"> \", false)}}"
+			"{{quote|indent(\"> \", true)}}\n"
 			"</quote>\n";
 
 		EXPECT_CG(
@@ -996,22 +1050,7 @@ namespace cg {
 
 		src =
 			"<quote>\n"
-			"{{quote|indent(\"> \", true)}}"
-			"</quote>\n";
-
-		EXPECT_CG(
-			"<quote>\n"
-			"> The day has sunk\n"
-			"> Into the depths of time untold.\n"
-			" \n"
-			"> The dawn has shattered\n"
-			"> Leaving fragments strewn about.\n"
-			"</quote>\n"
-		);
-
-		src =
-			"<quote>\n"
-			"{{quote|indent(\"> \", true, true)}}"
+			"{{quote|indent(\"> \", true, true)}}\n"
 			"</quote>\n";
 
 		EXPECT_CG(
@@ -1049,12 +1088,13 @@ namespace cg {
 			"Hello {{name}}.\n"
 			"Your user id is {{id}}.\n"
 			"{\% endmacro %}\n"
-			"{{hello(\"Alex\", 423)}}"
+			"{{hello(\"Alex\", 423)}}\n"
 			"";
 
 		EXPECT_CG(
+			"\n\n"
 			"Hello Alex.\n"
-			"Your user id is 423.\n"
+			"Your user id is 423.\n\n"
 		);
 
 		src =
@@ -1062,7 +1102,7 @@ namespace cg {
 			"Hello {{name}}.\n"
 			"Your user id is {{id}}.\n"
 			"{\% endmacro %}\n"
-			"{{hello(\"Alex\")}}"
+			"{{hello(\"Alex\")}}\n"
 			"";
 
 		EXPECT_KERROR(
@@ -1075,7 +1115,7 @@ namespace cg {
 			"Hello {{name}}.\n"
 			"Your user id is {{id}}.\n"
 			"{\% endmacro %}\n"
-			"{{hello(\"Alex\", 142, \"Extra\")}}"
+			"{{hello(\"Alex\", 142, \"Extra\")}}\n"
 			"";
 
 		EXPECT_KERROR(
@@ -1089,13 +1129,14 @@ namespace cg {
 			"Your user id is {{id}}.\n"
 			"Your role is {{role}}.\n"
 			"{\% endmacro %}\n"
-			"{{hello(\"Alex\", 142)}}"
+			"{{hello(\"Alex\", 142)}}\n"
 			"";
 
 		EXPECT_CG(
+			"\n\n"
 			"Hello Alex.\n"
 			"Your user id is 142.\n"
-			"Your role is Unknown.\n"
+			"Your role is Unknown.\n\n"
 		);
 
 		src =
@@ -1104,13 +1145,14 @@ namespace cg {
 			"Your user id is {{id}}.\n"
 			"Your role is {{role}}.\n"
 			"{\% endmacro %}\n"
-			"{{hello(\"Alex\", 142, \"Admin\")}}"
+			"{{hello(\"Alex\", 142, \"Admin\")}}\n"
 			"";
 
 		EXPECT_CG(
+			"\n\n"
 			"Hello Alex.\n"
 			"Your user id is 142.\n"
-			"Your role is Admin.\n"
+			"Your role is Admin.\n\n"
 		);
 
 		src =
@@ -1119,7 +1161,7 @@ namespace cg {
 			"Your user id is {{id}}.\n"
 			"Your role is {{role}}.\n"
 			"{\% endmacro %}\n"
-			"{{hello(\"Alex\")}}"
+			"{{hello(\"Alex\")}}\n"
 			"";
 
 		EXPECT_KERROR(
@@ -1178,7 +1220,7 @@ namespace cg {
 		auto args = TemplDict{};
 
 		auto src =
-			"{\% include \"assets/tests/common_include.cg\" %}"
+			"{\% include \"assets/tests/common_include.cg\" %}\n"
 			"{{say_hello()}}\n"
 			"{{wrap(\"reee\")}}\n";
 

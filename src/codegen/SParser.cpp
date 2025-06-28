@@ -4,9 +4,11 @@
 #include "util/StringRef.hpp"
 #include "util/Util.hpp"
 #include "util/log.hpp"
+#include "util/log.hpp"
 #include "util/result.hpp"
 #include "CfgContext.hpp"
 #include "AstNode.hpp"
+#include "util/PrintTools.hpp"
 
 namespace cg {
 	SParser::Ptr SParser::create(std::unique_ptr<CfgContext> &&ctx) {
@@ -30,6 +32,7 @@ namespace cg {
 	util::Result<AstNode, KError> SParser::parse(
 		std::vector<Token> const &tokens
 	) {
+		//log_debug() << "mark1 " << util::plist(tokens) << std::endl;
 		try {
 			log_assert(static_cast<bool>(_ctx), "SParser is not initialized");
 			// _last_failure is a value specific to this function but it is easier to
@@ -132,7 +135,7 @@ namespace cg {
 			log_trace()
 				<< "leaf " << leaf
 				<< " matched: \"" << token << "\"" << std::endl;
-			return AstNode::create_str(++_uid, token.str_ref());
+			return AstNode::create_tok(++_uid, token);
 		} else {
 			log_trace() << "leaf " << leaf << " didn't match: " << "\"" << token << "\"" << std::endl;
 			auto msg = util::f(
