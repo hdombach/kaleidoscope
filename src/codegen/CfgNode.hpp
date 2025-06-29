@@ -71,12 +71,17 @@ namespace cg {
 
 			std::vector<CfgLeaf> const &leaves() const { return _leaves; }
 
+			uint32_t set_id() const;
+			void set_set_id(uint32_t id);
+
+
 			std::ostream& print_debug(std::ostream &os) const;
 			std::string str() const;
 			bool operator==(CfgRule const &other) const;
 			bool operator!=(CfgRule const &other) const;
 		private:
 			std::vector<CfgLeaf> _leaves;
+			uint32_t _set_id;
 	};
 
 	/**

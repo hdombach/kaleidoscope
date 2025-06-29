@@ -232,12 +232,12 @@ namespace cg {
 
 		c.prim("statement") = c["sfor"] | c["sif"] | c["smacro"] | c["sinclude"];
 
-		if (false) {
-			c.simplify();
+		if (true) {
 			TRY(c.prep());
+			c.simplify();
 			std::ofstream file("gen/nothing-table.txt");
 			auto parser = std::move(AbsoluteSolver::create(std::move(context)).value());
-			parser->print_table(file, {'n', 'o', 't', 'h', 'i', 'g', '\n'});
+			parser->print_table(file);
 			_parser = std::move(parser);
 		} else {
 			TRY(c.prep());

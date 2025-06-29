@@ -1,4 +1,6 @@
 #include "CfgContext.hpp"
+#include "tests/Test.hpp"
+#include "util/KError.hpp"
 #include "util/log.hpp"
 
 
@@ -98,6 +100,33 @@ namespace cg {
 				}
 			}
 		}
+
+		//Make sure rule is the correct format
+		{
+			auto root = *get_root();
+			if (root.rules().size() != 1) {
+				return KError::codegen(util::f("Root rule set must consist of one rule."));
+			}
+
+			auto rule = root.rules().front();
+			auto msg = "Rot rule must have the structure \"<var_name> eof\"";
+
+			if (rule.leaves().size() != 2) {
+				return KError::codegen(msg);
+			}
+			if (rule.leaves().front().type() != CfgLeaf::Type::var) {
+				return KError::codegen(msg);
+			}
+			if (rule.leaves().back().type() != CfgLeaf::Type::token) {
+				return KError::codegen(msg);
+			}
+			if (rule.leaves().back().token_type() != Token::Type::Eof) {
+				return KError::codegen(msg);
+			}
+		}
+
+		_update_set_ids();
+
 		return {};
 	}
 
@@ -188,5 +217,16 @@ namespace cg {
 			}
 		}
 		_cfg_rule_sets = std::move(new_sets);
+		_update_set_ids();
+	}
+
+	void CfgContext::_update_set_ids() {
+
+		for (uint32_t i = 0; i < _cfg_rule_sets.size(); i++) {
+			auto &set = _cfg_rule_sets[i];
+			for (auto &rule : set.rules()) {
+				rule.set_set_id(i);
+			}
+		}
 	}
 }

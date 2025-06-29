@@ -47,10 +47,11 @@ namespace cg {
 		using T = Token::Type;
 
 		log_debug() << "size: " << c.cfg_rule_sets().size() << std::endl;
-		c.root("hello") = T::Unmatched + T::Eof;
+		c.root("root") = c["hello"] + T::Eof;
+		c.prim("hello") = T::Unmatched;
 		log_debug() << "size: " << c.cfg_rule_sets().size() << std::endl;
 
-		EXPECT(c.prep());
+		c.prep().value();
 
 		EXPECT_EQ(f.match("Hello").value(), 5);
 		EXPECT_KERROR(f.match("{\% %}"), KError::Type::CODEGEN);
@@ -60,10 +61,11 @@ namespace cg {
 		auto &c = f.cfg();
 		using T = Token::Type;
 
+		c.root("root") = c["exp"] + T::Eof;
 		c.prim("integer") = T::IntConst | c.empty();
 		c.prim("decimal")
 			= c["integer"] + T::Period + c["integer"];
-		c.root("root") = T::ExpB + c["decimal"] + T::ExpE + T::Eof;
+		c.prim("exp") = T::ExpB + c["decimal"] + T::ExpE;
 
 		EXPECT(c.prep());
 
@@ -101,9 +103,10 @@ namespace cg {
 			| c["exp_mult_div"];
 		c.prim("exp") = c["exp_add_sub"];
 
-		c.root("root") = T::ExpB + c["exp"] + T::ExpE + T::Eof;
+		c.prim("e") = T::ExpB + c["exp"] + T::ExpE;
+		c.root("root") = c["e"] + T::Eof;
 
-		EXPECT(c.prep());
+		c.prep().value();
 
 		EXPECT_EQ(f.match("{{1}}").value(), 5);
 		EXPECT_EQ(f.match("{{42.1}}").value(), 8);

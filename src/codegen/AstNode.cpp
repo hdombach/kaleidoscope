@@ -166,7 +166,12 @@ namespace cg {
 	}
 
 	std::ostream &AstNode::print_pre_order(std::ostream &os) const {
-		os << _cfg_rule << " ";
+		if (_type == Type::Leaf) {
+			os << tok().type();
+		} else {
+			os << _cfg_rule;
+		}
+		os << " ";
 		for (auto &child : children()) {
 			child.print_pre_order(os);
 		}

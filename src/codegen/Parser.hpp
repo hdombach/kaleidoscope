@@ -23,7 +23,7 @@ namespace cg {
 				} catch_kerror;
 			}
 			inline virtual util::Result<size_t, KError> match(
-				util::StringRef str
+				util::StringRef const &str
 			) {
 				try {
 					return match(simplify_tokens(tokenize(str)));
@@ -35,7 +35,7 @@ namespace cg {
 				std::vector<Token> const &tokens
 			) = 0;
 			inline virtual util::Result<AstNode, KError> parse(
-				util::StringRef str
+				util::StringRef const &str
 			) {
 				try {
 					return parse(simplify_tokens(tokenize(str)));

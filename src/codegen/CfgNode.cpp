@@ -60,6 +60,14 @@ namespace cg {
 
 	CfgRule::CfgRule(std::vector<CfgLeaf> const &leaves): _leaves(leaves) {}
 
+	uint32_t CfgRule::set_id() const {
+		return _set_id;
+	}
+
+	void CfgRule::set_set_id(uint32_t id) {
+		_set_id = id;
+	}
+
 	std::ostream& CfgRule::print_debug(std::ostream &os) const {
 		bool is_first = true;
 		for (auto &leaf : _leaves) {

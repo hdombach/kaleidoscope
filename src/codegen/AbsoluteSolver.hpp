@@ -59,12 +59,10 @@ namespace cg::abs {
 				CfgContext::Ptr &&ctx
 			);
 
-			void print_table(std::ostream &os, std::set<char> const &chars);
+			void print_table(std::ostream &os);
 
-			util::Result<AstNode, KError> parse(
-				std::string const &str,
-				std::string const &filenames
-			);
+			using Parser::match;
+			using Parser::parse;
 
 			util::Result<AstNode, KError> parse(
 				std::vector<Token> const &tokens
@@ -90,9 +88,8 @@ namespace cg::abs {
 			/**
 			 * @brief Reduces the top of the stack using the provided rule_id
 			 * @param[in, out] stack The stack to reduce
-			 * @param[in] cur_state_id
-			 * @returns The new cur_state_id. Can be the same as cur_state_id
-			 * @returns Keeps track of node_id
+			 * @param[in] rule_id
+			 * @param[in, out] node_id uid to assign the node
 			 */
 			void _reduce(
 				std::vector<StackElement> &stack,
@@ -112,7 +109,6 @@ namespace cg::abs {
 			 * The id 0 is reserved for null
 			 */
 			uint32_t _get_rule_id(RulePos const &pos);
-			uint32_t _get_rule_set_id(uint32_t rule_id) const;
 			/**
 			 * @brief Get a unique_id for a corresponding rule
 			 * The id 0 is reserved for null

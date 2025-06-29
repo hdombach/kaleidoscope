@@ -9,32 +9,39 @@ namespace cg {
 	TEST(AbsoluteSolver, debug_print) {
 		auto ctx = CfgContext::create();
 		auto &c = *ctx;
+		using T = Token::Type;
 
-		c.root("S") = c["E"] + c.eof();
-		c.prim("E") = c["E"] + c.s("*") + c["B"];
-		c.prim("E") = c["E"] + c.s("+") + c["B"];
+		c.root("root") = c["S"] + T::Eof; 
+		c.prim("S") = T::ExpB + c["E"] + T::ExpE;
+		c.prim("E") = c["E"] + T::Mult + c["B"];
+		c.prim("E") = c["E"] + T::Plus + c["B"];
 		c.prim("E") = c["B"];
-		c.prim("B") = c.s("0");
-		c.prim("B") = c.s("1");
+		c.prim("B") = T::IntConst;
+		c.prep().value();
 		c.simplify();
 
 		auto solver = std::move(AbsoluteSolver::create(std::move(ctx)).value());
+		auto node = solver->parse(util::StringRef("{{1*1+2}}"));
 
-		std::ofstream file("gen/ast-test.gv");
+		auto ss = std::stringstream();
+		node.value().print_pre_order(ss);
+		EXPECT_EQ(ss.str(), "S ExpB E E E B IntConstant Multiply B IntConstant Plus B IntConstant ExpE ");
 
-		solver->print_table(log_debug() << "\n", {'*', '+', '0', '1', '\x03'});
-		auto node = solver->parse("1*1", "S");
-		node->print_dot(file, "ast-test");
-		log_debug() << node.value() << std::endl;
+		//std::ofstream file("gen/ast-test.gv");
+		//node->print_dot(file, "ast-test");
+		std::ofstream table("gen/table.txt");
+		solver->print_table(table);
 	}
 
 	TEST(AbsoluteSolver, simplify_strings) {
 		auto ctx = CfgContext::create();
 		auto &c = *ctx;
+		using T = Token::Type;
 
-		c.root("opening") = c.s("< ");
-		c.prim("closing") = c.s(" >");
-		c.prim("message") = c["opening"] + c.s("Hello world") + c["closing"];
+		c.root("root") = c["message"] + T::Eof;
+		c.prim("opening") = T::Great;
+		c.prim("closing") = T::Less;
+		c.prim("message") = c["opening"] + T::Ident + c["closing"] + T::Eof;
 
 		c.prep().value();
 		log_debug() << "before simplifying:\n" << c << std::endl;
@@ -42,82 +49,9 @@ namespace cg {
 		log_debug() << "after simplifying:\n" << c << std::endl;
 
 		auto solver = std::move(AbsoluteSolver::create(std::move(ctx)).value());
-		solver->print_table(log_debug() << "\n", {' ', '<', '>', 'H', 'e', 'l', 'o', 'r', 'd'});
-	}
-
-	TEST(AbsoluteSolver, simplify_sets) {
-		auto ctx = CfgContext::create();
-		auto &c = *ctx;
-
-		c.root("digit-pair") = c.i("0123456789") + c.s(".") + c.i("1234567890");
-		c.prim("str") = c.s("\"") + c.e("\"") + c.s("\"");
-
-		c.prep().value();
-		c.simplify();
-
-		auto solver = std::move(AbsoluteSolver::create(std::move(ctx)).value());
-	}
-
-	TEST(AbsoluteSolver, lists) {
-		auto ctx = CfgContext::create();
-		auto &c = *ctx;
-
-		c.root("root") = c["chars"] + c.eof();
-		c.prim("chars")
-			= c.s("a") + c["chars"]
-			| c.s("");
-
-		c.prep().value();
-		c.simplify();
-
-		auto solver = std::move(AbsoluteSolver::create(std::move(ctx)).value());
-
-		solver->print_table(log_debug() << "\n", {'a', '\x03'});
-
-		EXPECT_EQ(1, solver->match("a", "root").value());
-		EXPECT_EQ(2, solver->match("aa", "root").value());
-	}
-
-	TEST(AbsoluteSolver, lines) {
-		auto ctx = CfgContext::create();
-		auto &c = *ctx;
-
-		//all characters:
-		//'{', 'a', '\n', ' '
-
-		c.root("file") = c["lines"] + c.eof();
-		c.prim("lines")
-			= c["line"] + c["lines"]
-			| c.s("");
-		c.prim("line")
-			= c["line_single"] + c["line"]
-			| c.s("\n");
-
-		c.prim("line_single")
-			= c["raw"]
-			| c["comment"];
-
-
-		c.temp("raw_opt")
-			= c["raw"]
-			| c.s("");
-		c.prim("raw")
-			= c.i("a ") + c["raw_opt"];
-
-		c.prim("comment") = c.s("{");
-
-		c.prim("padding")
-			= c.s(" ") + c["padding"]
-			| c.s("");
-		c.prim("padding_b") = c["padding"];
-
-		c.simplify();
-		EXPECT(c.prep());
-
-		auto solver = std::move(AbsoluteSolver::create(std::move(ctx)).value());
-
-		solver->print_table(log_debug() << "\n", {'a', '{', '}', ' ', '\n', '\x03'});
-		EXPECT_EQ(2, solver->match("a\n", "file").value());
-
+		//auto node = solver->parse(util::StringRef"")
+		
+		//std::ofstream file("gen/ast-test.gv");
+		//node->print_dot(file, "ast-test");
 	}
 }

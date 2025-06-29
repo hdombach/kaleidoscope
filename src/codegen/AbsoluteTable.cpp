@@ -188,17 +188,18 @@ namespace cg::abs {
 
 	AbsoluteTable::AbsoluteTable(CfgContext const &cfg) {
 		_ctx = &cfg;
-		_state_size = 128 + _ctx->cfg_rule_sets().size();
+		_token_size = Token::Type::Eof - Token::Type::Unmatched + 1;
+		_ruleset_size = _ctx->cfg_rule_sets().size();
 	}
 
-	void AbsoluteTable::print(std::ostream &os, std::set<char> const &chars) {
+	void AbsoluteTable::print(std::ostream &os) {
 		log_assert(_ctx, "CfgContext must be provided");
 		auto table = std::vector<std::vector<std::string>>();
 		auto label_row = std::vector<std::string>();
 		label_row.push_back("state");
 		label_row.push_back("current rules");
-		for (auto c : chars) {
-			label_row.push_back(util::f("\"", util::escape_str({c}), "\""));
+		for (int i = Token::Type::Unmatched; i <= Token::Type::Eof; i++) {
+			label_row.push_back(Token::type_str(static_cast<Token::Type>(i)));
 		}
 		for (auto &rule : _ctx->cfg_rule_sets()) {
 			label_row.push_back(rule.name());
@@ -211,18 +212,8 @@ namespace cg::abs {
 			row_str.push_back(std::to_string(i));
 			row_str.push_back(_table_states[i].str());
 			auto state  = row(_table_states[i]);
-			uint32_t state_i = 0;
 			for (auto s : state) {
-				auto state_str = action_str(s);
-
-				if (state_i < 128) {
-					if (chars.contains(state_i)) {
-						row_str.push_back(state_str);
-					}
-				} else {
-					row_str.push_back(state_str);
-				}
-				state_i++;
+				row_str.push_back(action_str(s));
 			}
 			table.push_back(row_str);
 		}
@@ -240,7 +231,7 @@ namespace cg::abs {
 		//State rule does not already exist. Create a new one
 		if (r == _table_states.end()) {
 			_table_states.push_back(table_state);
-			for (auto i = 0; i < _state_size; i++) {
+			for (auto i = 0; i < _state_size(); i++) {
 				_states.push_back(0);
 			}
 		}
@@ -254,8 +245,8 @@ namespace cg::abs {
 
 	AbsoluteTable::Row AbsoluteTable::row(StateId const &state_id) {
 		return util::Adapt(
-			&_states[state_id * _state_size],
-			&_states[(state_id + 1) * _state_size]
+			&_states[state_id * _state_size()],
+			&_states[(state_id + 1) * _state_size()]
 		);
 	}
 
@@ -263,32 +254,32 @@ namespace cg::abs {
 		return util::contains(_table_states, table_state);
 	}
 
-	AbsoluteTable::StateId &AbsoluteTable::lookup_char(
+	AbsoluteTable::StateId &AbsoluteTable::lookup_tok(
 		TableState const &r,
-		char c
+		Token::Type t
 	) {
-		return row(r).begin()[c];
+		return row(r).begin()[t];
 	}
 
-	AbsoluteTable::StateId &AbsoluteTable::lookup_char(
+	AbsoluteTable::StateId &AbsoluteTable::lookup_tok(
 		uint32_t state_id,
-		char c
+		Token::Type t
 	) {
-		return row(state_id).begin()[c];
+		return row(state_id).begin()[t];
 	}
 
 	AbsoluteTable::StateId &AbsoluteTable::lookup_ruleset(
 		TableState const &r,
 		uint32_t ruleset
 	) {
-		return row(r).begin()[ruleset + 128];
+		return row(r).begin()[ruleset + _token_size];
 	}
 
 	AbsoluteTable::StateId &AbsoluteTable::lookup_ruleset(
 		uint32_t state_id,
 		uint32_t ruleset
 	) {
-		return row(state_id).begin()[ruleset + 128];
+		return row(state_id).begin()[ruleset + _token_size];
 	}
 
 	std::string AbsoluteTable::action_str(uint32_t action) const {
@@ -301,5 +292,9 @@ namespace cg::abs {
 		}
 		s += std::to_string(action & ~REDUCE_MASK);
 		return s;
+	}
+
+	uint32_t AbsoluteTable::_state_size() const {
+		return _ruleset_size + _token_size;
 	}
 }

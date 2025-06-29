@@ -166,9 +166,8 @@ namespace cg::abs {
 			/**
 			 * @brief Prints a debug table
 			 * @param[in] os: ostream to print to
-			 * @param[in] chars: what characters to include in the table
 			 */
-			void print(std::ostream &os, std::set<char> const &chars);
+			void print(std::ostream &os);
 
 			/**
 			 * @brief Returns a row for a corresponding table_state.
@@ -198,15 +197,15 @@ namespace cg::abs {
 			 * @param[in] c
 			 * @returns id of the new state
 			 */
-			StateId &lookup_char(TableState const &row, char c);
+			StateId &lookup_tok(TableState const &row, Token::Type t);
 
 			/**
-			 * @brief Looks up a cell for a corresponding row and character
+			 * @brief Looks up a cell for a corresponding row and token
 			 * @param[in] state_id
 			 * @param[in] c
 			 * @returns id of the new state
 			 */
-			StateId &lookup_char(uint32_t state_id, char c);
+			StateId &lookup_tok(uint32_t state_id, Token::Type t);
 
 			/**
 			 * @brief Gets the next state for a given set
@@ -232,8 +231,11 @@ namespace cg::abs {
 
 		private:
 			CfgContext const *_ctx = nullptr;
-			uint32_t _state_size;
+			uint32_t _token_size;
+			uint32_t _ruleset_size;
 			std::vector<uint32_t> _states;
 			std::vector<TableState> _table_states;
+
+			uint32_t _state_size() const;
 	};
 }

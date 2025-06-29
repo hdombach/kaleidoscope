@@ -92,6 +92,8 @@ namespace cg {
 			std::string _root_name;
 
 			void _remove_empty();
+
+			void _update_set_ids();
 	};
 
 	inline std::ostream &operator<<(std::ostream &os, CfgContext const &ctx) {
