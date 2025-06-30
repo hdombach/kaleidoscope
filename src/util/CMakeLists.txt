@@ -5,6 +5,7 @@ set(UTIL_SRC
 	${CMAKE_CURRENT_SOURCE_DIR}/math.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/PrintTools.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/StringRef.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/Env.cpp
 )
 
 add_library(util OBJECT ${UTIL_SRC})

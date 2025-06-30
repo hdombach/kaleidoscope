@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <iostream>
 
 namespace util {
 	struct Env {
@@ -13,7 +14,7 @@ namespace util {
 		static void setup(int argc, char **argv);
 	};
 
-	static Env g_env;
+	extern Env g_env;
 
 	inline void Env::setup(int argc, char **argv) {
 		g_env.argc = argc;
@@ -21,5 +22,6 @@ namespace util {
 
 		g_env.prog_path = std::filesystem::path(argv[0]);
 		g_env.working_dir = g_env.prog_path.parent_path();
+		std::cout << "setting work dir: " << g_env.working_dir << std::endl;
 	}
 }

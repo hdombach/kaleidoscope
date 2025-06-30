@@ -9,6 +9,7 @@
 #include "file.hpp"
 #include "result.hpp"
 #include "util/Env.hpp"
+#include "util/log.hpp"
 
 namespace util {
 
