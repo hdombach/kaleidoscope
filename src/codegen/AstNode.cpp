@@ -9,6 +9,46 @@ namespace cg {
 		_id(0)
 	{}
 
+	AstNode::AstNode(AstNode const &other):
+		_type(other._type),
+		_id(other._id),
+		_cfg_rule(other._cfg_rule),
+		_token(other._token),
+		_children(other._children)
+	{}
+
+	AstNode::AstNode(AstNode &&other):
+		_type(other._type),
+		_id(other._id),
+		_cfg_rule(std::move(other._cfg_rule)),
+		_token(std::move(other._token)),
+		_children(std::move(other._children))
+	{
+		other._type = Type::None;
+		other._id = 0;
+	}
+
+	AstNode &AstNode::operator=(AstNode const &other) {
+		_type = other._type;
+		_id = other._id;
+		_cfg_rule = other._cfg_rule;
+		_token = other._token;
+		_children = other._children;
+		return *this;
+	}
+
+	AstNode &AstNode::operator=(AstNode &&other) {
+		_type = other._type;
+		_id = other._id;
+		_cfg_rule = std::move(other._cfg_rule);
+		_token = std::move(other._token);
+		_children = std::move(other._children);
+
+		other._type = Type::None;
+		other._id = 0;
+		return *this;
+	}
+
 	AstNode AstNode::create_rule(
 		uint32_t id,
 		std::string const &cfg_name

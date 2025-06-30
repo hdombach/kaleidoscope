@@ -14,9 +14,26 @@
 namespace cg::abs {
 	StackElement::StackElement() = default;
 
+	StackElement::StackElement(StackElement const &other): _value(other._value) {}
+
+	StackElement::StackElement(StackElement &&other): _value(std::move(other._value)) {}
+
 	StackElement::StackElement(AstNode const &node):
 		_value(node)
 	{}
+	StackElement::StackElement(AstNode &&node):
+		_value(std::move(node))
+	{}
+
+	StackElement &StackElement::operator=(StackElement const &other) {
+		_value = other._value;
+		return *this;
+	}
+
+	StackElement &StackElement::operator=(StackElement &&other) {
+		_value = std::move(other._value);
+		return *this;
+	}
 
 	StackElement::StackElement(uint32_t table_state):
 		_value(table_state)
@@ -37,6 +54,11 @@ namespace cg::abs {
 	AstNode const &StackElement::node() const {
 		return std::get<AstNode>(_value);
 	}
+
+	AstNode &StackElement::node() {
+		return std::get<AstNode>(_value);
+	}
+
 
 	std::ostream &StackElement::debug(std::ostream &os) const {
 		if (is_table_state()) {
@@ -151,24 +173,16 @@ namespace cg::abs {
 		uint32_t rule_id,
 		uint32_t &node_id
 	){
-		auto ss = std::stringstream();
-		ss << "Reducing stack: " << util::plist(stack) << " -> ";
-
 		auto &rule = _get_rule(rule_id);
 		log_trace() << "Reducing rule " << rule_id << std::endl;
 		log_assert(rule.leaves().size() <= stack.size() * 2 + 1, "Stack must contain enough elements for the rule");
-		auto popped = std::vector<StackElement>();
-		for (uint32_t i = 0; i < rule.leaves().size(); i++) {
-			log_assert(stack.back().is_table_state(), "Back of the stack must be a table state");
-			stack.pop_back();
-			log_assert(stack.back().is_node(), "Back of the satck must be a node");
-			popped.push_back(stack.back());
-			stack.pop_back();
-		}
 		auto new_node = AstNode::create_rule(node_id++, _ctx->cfg_rule_sets()[rule.set_id()].name());
-
-		for (int i = popped.size()-1; i >= 0; i--){
-			new_node.add_child(popped[i].node());
+		for (uint32_t i = stack.size() - rule.leaves().size() * 2; i < stack.size(); i += 2) {
+			new_node.add_child(std::move(stack[i].node()));
+		}
+		for (uint32_t i = 0; i < rule.leaves().size(); i++) {
+			stack.pop_back();
+			stack.pop_back();
 		}
 
 		auto cur_state_id = stack.back().table_state();
@@ -178,11 +192,8 @@ namespace cg::abs {
 		log_trace() << "state is " << cur_state_id << std::endl;
 		log_trace() << "Looking up <" << _ctx->cfg_rule_sets()[cur_rule_set].name() << ">" << std::endl;
 
-		stack.push_back(StackElement(new_node));
+		stack.push_back(StackElement(std::move(new_node)));
 		stack.push_back(StackElement(next_state_id));
-
-		ss << util::plist(stack) << std::endl;
-		log_trace() << ss.str();
 	}
 
 	uint32_t AbsoluteSolver::_add_state(TableState const &state_rule) {

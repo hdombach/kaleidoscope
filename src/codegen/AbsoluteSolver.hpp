@@ -19,13 +19,20 @@ namespace cg::abs {
 	class StackElement {
 		public:
 			StackElement();
+			StackElement(StackElement const &other);
+			StackElement(StackElement &&other);
 			StackElement(AstNode const &node);
+			StackElement(AstNode &&node);
 			StackElement(uint32_t table_state);
+
+			StackElement &operator=(StackElement const &other);
+			StackElement &operator=(StackElement &&other);
 
 			bool is_table_state() const;
 			uint32_t table_state() const;
 			bool is_node() const;
 			AstNode const &node() const;
+			AstNode &node();
 
 			std::ostream &debug(std::ostream &os) const;
 

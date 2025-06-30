@@ -27,6 +27,12 @@ namespace cg {
 			};
 		public:
 			AstNode();
+
+			AstNode(AstNode const &other);
+			AstNode(AstNode &&other);
+
+			AstNode &operator=(AstNode const &other);
+			AstNode &operator=(AstNode &&other);
 			/**
 			 * @brief Create an astnode based on a rule
 			 */

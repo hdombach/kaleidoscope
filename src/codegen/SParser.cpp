@@ -97,7 +97,7 @@ namespace cg {
 	) {
 		log_trace() << "Parsing rule: " << rule << std::endl;
 
-		auto node = AstNode::create_rule(++_uid, set_name);
+		auto node = AstNode::create_rule(++_uid, set_name.c_str());
 		for (auto &leaf : rule.leaves()) {
 			if (auto child = _parse(tokens, i, leaf)) {
 				i += child->leaf_count();

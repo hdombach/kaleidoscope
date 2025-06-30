@@ -13,6 +13,19 @@
 #include <cctype>
 #include <fstream>
 
+/**
+ * Timing
+ *
+ * SParser
+ * Initial: 7918ms
+ *
+ * AbsoluteSolver
+ *
+ * Initial 35920ms
+ * Remove debugging 11775ms
+ * currently 7081ms
+ */
+
 namespace cg {
 	util::Result<TemplGen, KError> TemplGen::create() {
 		if (!_parser) TRY(_setup_parser());
@@ -385,7 +398,7 @@ namespace cg {
 		} else if (node.cfg_rule() == "sfrag_endfor") {
 			return {""};
 		} else {
-			return KError::codegen("Unimplimented AstNode type: " + node.cfg_rule());
+			return KError::codegen("Unimplimented AstNode type: " + std::string(node.cfg_rule()));
 		}
 	}
 
@@ -715,7 +728,7 @@ namespace cg {
 		} else if (name == "exp_filter") {
 			return _eval_filter(node, args);
 		} else {
-			return KError::codegen("Unimplimented AstNode type: " + node.cfg_rule());
+			return KError::codegen("Unimplimented AstNode type: " + std::string(node.cfg_rule()));
 		}
 	}
 
@@ -807,7 +820,7 @@ namespace cg {
 				} else if (child.cfg_rule() == "exp_call") {
 					res = _eval_exp_call(res.value(), child, l_args);
 				} else {
-					return KError::codegen("Unrecognized cfg node: " + child.cfg_rule());
+					return KError::codegen("Unrecognized cfg node: " + std::string(child.cfg_rule()));
 				}
 			}
 			return res;
@@ -864,7 +877,7 @@ namespace cg {
 			} else if (name == "exp1") {
 				return _eval(child, args);
 			} else {
-				return KError::codegen("Unknown child in _eval_exp2: " + name);
+				return KError::codegen("Unknown child in _eval_exp2: " + std::string(name));
 			}
 		}
 		return KError::codegen("Empty node passed to _eval_exp2");
@@ -895,7 +908,7 @@ namespace cg {
 				} else if (name == "exp_mod") {
 					res = res % _eval(exp2, args);
 				} else {
-					return KError::codegen("Unknown child in _eval_exp3: " + name);
+					return KError::codegen("Unknown child in _eval_exp3: " + std::string(name));
 				}
 			}
 			return res;
@@ -925,7 +938,7 @@ namespace cg {
 				} else if (name == "exp_sub") {
 					res = res - _eval(exp3, args);
 				} else {
-					return KError::codegen("Unknown child in _eval_exp4: " + name);
+					return KError::codegen("Unknown child in _eval_exp4: " + std::string(name));
 				}
 			}
 			return res;
@@ -958,7 +971,7 @@ namespace cg {
 				} else if (name == "exp_comp_le") {
 					res = res <= _eval(exp4, args);
 				} else {
-					return KError::codegen("Unknown child in _eval_exp6: " + name);
+					return KError::codegen("Unknown child in _eval_exp6: " + std::string(name));
 				}
 			}
 			return res;
@@ -987,7 +1000,7 @@ namespace cg {
 				} else if (name == "exp_comp_neq") {
 					res = res != _eval(exp6, args);
 				} else {
-					return KError::codegen("Unknown child in _eval_exp7: " + name);
+					return KError::codegen("Unknown child in _eval_exp7: " + std::string(name));
 				}
 			}
 			return res;
@@ -1014,7 +1027,7 @@ namespace cg {
 				} else if (name == "exp_log_and") {
 					res = res && _eval(exp7, args);
 				} else {
-					return KError::codegen("Unknown child in _eval_exp11: " + name);
+					return KError::codegen("Unknown child in _eval_exp11: " + std::string(name));
 				}
 			}
 			return res;
@@ -1042,7 +1055,7 @@ namespace cg {
 				} else if (name == "exp_log_or") {
 					res = res || _eval(exp11, args);
 				} else {
-					return KError::codegen("Unknown child in _eval_exp12: " + name);
+					return KError::codegen("Unknown child in _eval_exp12: " + std::string(name));
 				}
 			}
 			return res;
