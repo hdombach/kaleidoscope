@@ -66,6 +66,8 @@ namespace cg::abs {
 		for (auto &leaf : r.leaves()) {
 			if (i == _offset) {
 				str += "|";
+			} else {
+				str += " ";
 			}
 			str += leaf.str();
 			i++;

@@ -99,6 +99,9 @@ namespace cg::abs {
 				log_trace() << "state is " << cur_state_id << std::endl;
 				log_trace() << "Looking up \"" << Token::type_str(cur_t) << "\"" << std::endl;
 				uint32_t action = _table.lookup_tok(cur_state_id, cur_t);
+				if (action == 0) {
+					return KError::codegen(util::f("Unexpected token: ", *t, " at ", t->loc()));
+				}
 				log_trace() << "action: " << _table.action_str(action) << std::endl;
 
 				if (action == AbsoluteTable::ACCEPT_ACTION) {

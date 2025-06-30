@@ -31,7 +31,7 @@ namespace cg {
 			| T::Newline + c["whitespace"]
 			| c.empty();
 
-		c.temp("line_single")
+		c.prim("line_single")
 			= c["statement"]
 			| c["expression"]
 			| c["comment"]
@@ -172,23 +172,22 @@ namespace cg {
 			T::StmtB +
 			c["whitespace"] + T::Elif + c["whitespace"] + c["exp"] + c["whitespace"] +
 			T::StmtE;
-		c.temp("sfrag_endif") =
+		c.prim("sfrag_endif") =
 			T::StmtB +
 			c["whitespace"] + T::Endif + c["whitespace"] +
 			T::StmtE;
-		c.prim("sif_start_chain") = c["sfrag_if"] + c["lines"];
-		c.prim("sif_elif_chain") = c["sfrag_elif"] + c["lines"];
-		c.temp("sif_elif_chain_cls")
-			= c["sif_elif_chain"] + c["sif_elif_chain_cls"]
-			| c.empty();
-		c.prim("sif_else_chain")
-			= c["sfrag_else"] + c["lines"]
-			| c.empty();
+		c.prim("sif_start_chain") = c["sfrag_if"] + c["sif_start_chain_cls"];
+		c.temp("sif_start_chain_cls")
+			= c["line_single"] + c["sif_start_chain_cls"]
+			| c["sfrag_elif"] + c["sif_start_chain_cls"]
+			| c["sfrag_else"] + c["sif_else_chain_cls"]
+			| c["sfrag_endif"];
+
+		c.temp("sif_else_chain_cls")
+			= c["line_single"] + c["sif_else_chain_cls"]
+			| c["sfrag_endif"];
 		c.prim("sif") =
-			c["sif_start_chain"] +
-			c["sif_elif_chain_cls"] +
-			c["sif_else_chain"] +
-			c["sfrag_endif"];
+			c["sif_start_chain"];
 
 		c.prim("sfrag_for") =
 			T::StmtB +
@@ -196,11 +195,15 @@ namespace cg {
 			c["whitespace"] + T::Ident + c["whitespace"] +
 			T::In + c["whitespace"] + c["exp"] +
 			T::StmtE;
-		c.temp("sfrag_endfor") =
+		c.prim("sfrag_endfor") =
 			T::StmtB +
 			c["whitespace"] + T::EndFor +  c["whitespace"] +
 			T::StmtE;
-		c.prim("sfor") = c["sfrag_for"] + c["lines"] + c["sfrag_endfor"];
+		c.prim("sfor") = c["sfrag_for"] + c["sfor_lines"];
+		c.prim("sfor_lines")
+			= c["line_single"] + c["sfor_lines"]
+			| c["sfrag_endfor"];
+
 
 		c.temp("sfrag_argdef_cls")
 			= T::Comma + c["whitespace"] + c["sfrag_argdef"] + c["sfrag_argdef_cls"]
@@ -222,7 +225,11 @@ namespace cg {
 			T::StmtB +
 			c["whitespace"] + T::Endmacro + c["whitespace"] +
 			T::StmtE;
-		c.prim("smacro") = c["sfrag_macro"] + c["lines"] + c["sfrag_endmacro"];
+		c.prim("smacro") = c["sfrag_macro"] + c["smacro_lines"];
+
+		c.prim("smacro_lines")
+			= c["line_single"] + c["smacro_lines"]
+			| c["sfrag_endmacro"];
 
 		c.prim("sinclude") =
 			T::StmtB +
@@ -235,9 +242,9 @@ namespace cg {
 		if (true) {
 			TRY(c.prep());
 			c.simplify();
-			std::ofstream file("gen/nothing-table.txt");
+			//std::ofstream file("gen/nothing-table.txt");
 			auto parser = std::move(AbsoluteSolver::create(std::move(context)).value());
-			parser->print_table(file);
+			//parser->print_table(file);
 			_parser = std::move(parser);
 		} else {
 			TRY(c.prep());
@@ -276,16 +283,16 @@ namespace cg {
 		std::string const &filename
 	) const {
 		try {
-			std::ofstream file("gen/templgen.gv");
-			auto label = util::f("Graph for file: ", filename);
+			//std::ofstream file("gen/templgen.gv");
+			//auto label = util::f("Graph for file: ", filename);
 
 			//auto parser = AbsoluteSolver::setup(_ctx, "file").value();
 
 			auto node = _parser->parse({str.c_str(), filename.c_str()}).value();
 			node.compress(_parser->cfg().prim_names());
-			node.print_dot(file, label);
+			//node.print_dot(file, label);
 
-			file.close();
+			//file.close();
 
 			auto l_args = args;
 			TRY(_add_builtin_identifiers(l_args));
@@ -348,9 +355,13 @@ namespace cg {
 			return _cg_identifier(node, args, parser);
 		} else if (node.cfg_rule() == "raw") {
 			return _cg_recursive(node, args, parser);
-		} else if (node.cfg_rule() == "line") {
+		} else if (node.cfg_rule() == "line_single") {
 			return _cg_line(node, args, parser);
 		} else if (node.cfg_rule() == "lines") {
+			return _cg_lines(node, args, parser);
+		} else if (node.cfg_rule() == "smacro_lines") {
+			return _cg_lines(node, args, parser);
+		} else if (node.cfg_rule() == "sfor_lines") {
 			return _cg_lines(node, args, parser);
 		} else if (node.cfg_rule() == "file") {
 			return _cg_ref(node, args, parser, 2);
@@ -369,6 +380,10 @@ namespace cg {
 			return {""};
 		} else if (node.cfg_rule() == "sinclude") {
 			return _cg_sinclude(node, args, parser);
+		} else if (node.cfg_rule() == "sfrag_endmacro") {
+			return {""};
+		} else if (node.cfg_rule() == "sfrag_endfor") {
+			return {""};
 		} else {
 			return KError::codegen("Unimplimented AstNode type: " + node.cfg_rule());
 		}
@@ -379,11 +394,7 @@ namespace cg {
 		TemplDict &args,
 		Parser &parser
 	) const {
-		CG_ASSERT(
-			node.children().size() == 0,
-			util::f("Children count of ", node.cfg_rule(), " must be 0")
-		);
-		return node.tok().content();
+		return node.consumed_all();
 	}
 
 	TemplGen::CodegenRes TemplGen::_cg_recursive(
@@ -502,43 +513,42 @@ namespace cg {
 		auto result = std::string();
 		CG_ASSERT(node.cfg_rule() == "sif", "INTERNAL func can only parser sif nodes");
 
-		for (auto &child : node.children()) {
-			if (child.cfg_rule() == "sif_start_chain") {
-				auto if_node = child.child_with_cfg("sfrag_if").value();
-				auto exp_node = if_node.child_with_cfg("exp").value();
+		auto sif_chain = node.child_with_cfg("sif_start_chain").value();
+
+		int i = 0;
+		bool cg_current_block = false;
+		TemplDict block_args;
+		while (i < sif_chain.children().size()) {
+			auto &child = sif_chain.children()[i];
+			if (cg_current_block) {
+				if (child.cfg_rule() == "line_single") {
+					result += _codegen(child, block_args, parser).value();
+				} else {
+					break;
+				}
+			} else if (child.cfg_rule() == "sfrag_if") {
+				auto exp_node = child.child_with_cfg("exp").value();
 
 				auto bool_value = _eval(exp_node, args).value();
 				if (bool_value.boolean().value()) {
-					//if statement could be empty
-					if (auto lines_node = child.child_with_cfg("lines")) {
-						auto scope = args;
-						result += _codegen(lines_node.value(), scope, parser).value();
-					}
-					break;
+					block_args = args;
+					cg_current_block = true;
 				}
-			} else if (child.cfg_rule() == "sif_elif_chain") {
-				auto elif_node = child.child_with_cfg("sfrag_elif").value();
-				auto exp_node = elif_node.child_with_cfg("exp").value();
+			} else if (child.cfg_rule() == "sfrag_elif") {
+				auto exp_node = child.child_with_cfg("exp").value();
 
 				auto bool_value = _eval(exp_node, args).value();
 				if (bool_value.boolean().value()) {
-					//elif statement could be empty
-					if (auto lines_node = child.child_with_cfg("lines")) {
-						auto scope = args;
-						result += _codegen(lines_node.value(), scope, parser).value();
-					}
-					break;
+					block_args = args;
+					cg_current_block = true;
 				}
-			} else if (child.cfg_rule() == "sif_else_chain") {
-				//else statement could be empty
-				if (auto lines_node = child.child_with_cfg("lines")) {
-					auto scope = args;
-					result += _codegen(lines_node.value(), args, parser).value();
-				}
+			} else if (child.cfg_rule() == "sfrag_else") {
+				block_args = args;
+				cg_current_block = true;
+			} else if (child.cfg_rule() == "sfrag_endif") {
 				break;
-			} else {
-				continue;
 			}
+			i++;
 		}
 
 		return result;
@@ -559,7 +569,7 @@ namespace cg {
 				.child_with_tok(Token::Type::Ident)
 				->tok().content();
 			auto iter = sfrag_for.child_with_cfg("exp").value();
-			auto lines = node.child_with_cfg("lines").value();
+			auto lines = node.child_with_cfg("sfor_lines").value();
 
 			auto iter_obj = _eval(iter, args)->list().value();
 			int index = 0;
@@ -590,8 +600,8 @@ namespace cg {
 		try {
 			auto arg_def = node.child_with_cfg("sfrag_macro").value();
 			auto macro_name = arg_def.child_with_tok(Token::Type::Ident)->tok().content();
-			auto macro_arg_list = arg_def.child_with_cfg("sfrag_argdef_list").value();
-			auto content = node.child_with_cfg("lines").value();
+			auto macro_arg_list = arg_def.child_with_cfg("sfrag_argdef_list").value(AstNode());
+			auto content = node.child_with_cfg("smacro_lines").value();
 
 			if (args.contains(macro_name)) {
 				return KError::codegen(util::f(
