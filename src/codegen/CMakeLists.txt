@@ -8,6 +8,7 @@ set(CG_SRC
 	${CMAKE_CURRENT_SOURCE_DIR}/AbsoluteSolver.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/AbsoluteTable.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/Tokenizer.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/ParserResult.cpp
 )
 
 set(CG_TEST

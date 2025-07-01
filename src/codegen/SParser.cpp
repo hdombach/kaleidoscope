@@ -2,13 +2,11 @@
 
 #include "util/KError.hpp"
 #include "util/StringRef.hpp"
-#include "util/Util.hpp"
 #include "util/log.hpp"
 #include "util/log.hpp"
 #include "util/result.hpp"
 #include "CfgContext.hpp"
 #include "AstNode.hpp"
-#include "util/PrintTools.hpp"
 
 namespace cg {
 	SParser::Ptr SParser::create(std::unique_ptr<CfgContext> &&ctx) {
@@ -29,26 +27,28 @@ namespace cg {
 		return *this;
 	}
 
-	util::Result<AstNode, KError> SParser::parse(
-		std::vector<Token> const &tokens
+	util::Result<ParserResult, KError> SParser::parse(
+		util::StringRef const &str
 	) {
 		//log_debug() << "mark1 " << util::plist(tokens) << std::endl;
 		try {
+			auto result = ParserResult();
+			auto &tokens = result.get_tokens(str);
 			log_assert(static_cast<bool>(_ctx), "SParser is not initialized");
 			// _last_failure is a value specific to this function but it is easier to
 			// pass it around everywhere as a property.
 			// Should be fine since can't call multiple parses at same time.
 			_last_failure = KError();
 			//TODO: error handling for root
-			auto node = _parse(tokens, 0, *_ctx->get_root()).value();
-			if (node.leaf_count() < tokens.size()) {
+			result.root_node() = _parse(tokens, 0, *_ctx->get_root()).value();
+			if (result.root_node().leaf_count() < tokens.size()) {
 				if (_last_failure.type() == KError::Type::UNKNOWN) {
 					return KError::codegen("Not all characters were consumed");
 				} else {
 					return _last_failure;
 				}
 			} else {
-				return node;
+				return result;
 			}
 		} catch_kerror;
 	}

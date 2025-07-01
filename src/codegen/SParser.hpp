@@ -30,8 +30,8 @@ namespace cg {
 			 * @param[in] root_node Name of CfgRuleSet to generate with
 			 * @returns Generated abstract syntax tree
 			 */
-			util::Result<AstNode, KError> parse(
-				std::vector<Token> const &tokens
+			util::Result<ParserResult, KError> parse(
+				util::StringRef const &str
 			) override;
 
 			CfgContext const &cfg() const override;

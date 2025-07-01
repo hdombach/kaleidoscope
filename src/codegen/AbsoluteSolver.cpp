@@ -1,7 +1,6 @@
 #include "AbsoluteSolver.hpp"
 
 #include <glm/detail/qualifier.hpp>
-#include <sstream>
 #include <string>
 #include <variant>
 #include <vector>
@@ -105,10 +104,12 @@ namespace cg::abs {
 		return _table.print(os);
 	}
 
-	util::Result<AstNode, KError> AbsoluteSolver::parse(
-		std::vector<Token> const &tokens
+	util::Result<ParserResult, KError> AbsoluteSolver::parse(
+		util::StringRef const &str
 	) {
 		try {
+			auto result = ParserResult();
+			auto &tokens = result.get_tokens(str);
 			uint32_t node_id=0;
 			// uint32_t is the current state
 			auto stack = std::vector<StackElement>();
@@ -156,7 +157,8 @@ namespace cg::abs {
 			if (!stack[1].is_node()) {
 				return KError::codegen("The second element must be a node");
 			}
-			return stack[1].node();
+			result.root_node() = stack[1].node();
+			return result;
 		} catch_kerror;
 	}
 

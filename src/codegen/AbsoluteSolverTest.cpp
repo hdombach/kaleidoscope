@@ -21,10 +21,10 @@ namespace cg {
 		c.simplify();
 
 		auto solver = std::move(AbsoluteSolver::create(std::move(ctx)).value());
-		auto node = solver->parse(util::StringRef("{{1*1+2}}"));
+		auto r = solver->parse(util::StringRef("{{1*1+2}}")).value();
 
 		auto ss = std::stringstream();
-		node.value().print_pre_order(ss);
+		r.root_node().print_pre_order(ss);
 		EXPECT_EQ(ss.str(), "S ExpB E E E B IntConstant Multiply B IntConstant Plus B IntConstant ExpE ");
 
 		//std::ofstream file("gen/ast-test.gv");

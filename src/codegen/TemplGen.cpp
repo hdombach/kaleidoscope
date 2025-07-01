@@ -8,6 +8,7 @@
 #include "util/log.hpp"
 #include "util/PrintTools.hpp"
 #include "util/lines_iterator.hpp"
+#include "ParserResult.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -301,15 +302,15 @@ namespace cg {
 
 			//auto parser = AbsoluteSolver::setup(_ctx, "file").value();
 
-			auto node = _parser->parse({str.c_str(), filename.c_str()}).value();
-			node.compress(_parser->cfg().prim_names());
+			auto r = _parser->parse({str.c_str(), filename.c_str()}).value();
+			r.root_node().compress(_parser->cfg().prim_names());
 			//node.print_dot(file, label);
 
 			//file.close();
 
 			auto l_args = args;
 			TRY(_add_builtin_identifiers(l_args));
-			return _codegen(node, l_args, *_parser);
+			return _codegen(r.root_node(), l_args, *_parser);
 		} catch_kerror;
 	}
 
@@ -679,7 +680,8 @@ namespace cg {
 		try {
 			auto filename = _unpack_str(node.child_with_tok(Token::Type::StrConst)->tok().content()).value();
 			auto include_src = util::readEnvFile(filename);
-			auto include_node = parser.parse({include_src.c_str(), filename.c_str()})->compressed(_parser->cfg().prim_names());
+			auto r = parser.parse({include_src.c_str(), filename.c_str()}).value();
+			auto include_node = r.root_node().compressed(_parser->cfg().prim_names());
 
 			std::ofstream file("gen/templgen-include.gv");
 			include_node.print_dot(file, "templgen-include");
