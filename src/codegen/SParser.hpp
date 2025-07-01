@@ -30,8 +30,9 @@ namespace cg {
 			 * @param[in] root_node Name of CfgRuleSet to generate with
 			 * @returns Generated abstract syntax tree
 			 */
-			util::Result<ParserResult, KError> parse(
-				util::StringRef const &str
+			util::Result<AstNode, KError> parse(
+				util::StringRef const &str,
+				ParserContext &result
 			) override;
 
 			CfgContext const &cfg() const override;

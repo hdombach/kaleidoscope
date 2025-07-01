@@ -26,20 +26,23 @@ namespace cg {
 				std::string const &src,
 				TemplDict const &args)
 			{
-				return _gen.codegen(src, args, _test.suite_name + "-" + _test.test_name);
+				count++;
+				return _gen.codegen(src, args, _test.suite_name + "-" + _test.test_name + "-" + std::to_string(count));
 			}
 
 			util::Result<std::string, KError> gen(
 				std::string const &src,
 				TemplObj const &args)
 			{
-				return _gen.codegen(src, args, _test.suite_name + "-" + _test.test_name);
+				count++;
+				return _gen.codegen(src, args, _test.suite_name + "-" + _test.test_name + "-" + std::to_string(count));
 			}
 
 		private:
 			Test _test;
 			TemplGen _gen;
 			bool _should_simplify = true;
+			int count=0;
 	};
 
 	TEST_F(TemplGenTest, nothing) {

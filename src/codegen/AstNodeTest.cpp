@@ -33,13 +33,15 @@ namespace cg {
 
 					_is_prepped = true;
 				}
-				return _parser->match(util::StringRef(str.c_str()));
+				auto file = "temp-file-" + std::to_string(count++);
+				return _parser->match(util::StringRef(str.c_str(), file.c_str()));
 			}
 
 		private:
 			bool _should_simplify;
 			Parser::Ptr _parser;
 			bool _is_prepped = false;
+			uint32_t count;
 	};
 
 	TEST_F(AstNodeTest, match_literals) {

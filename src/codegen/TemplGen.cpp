@@ -8,7 +8,7 @@
 #include "util/log.hpp"
 #include "util/PrintTools.hpp"
 #include "util/lines_iterator.hpp"
-#include "ParserResult.hpp"
+#include "ParserContext.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -283,7 +283,7 @@ namespace cg {
 		std::string const &str,
 		TemplObj const &args,
 		std::string const &filename
-	) const {
+	) {
 		if (auto dict = args.dict()) {
 			return codegen(str, dict.value(), filename);
 		} else {
@@ -295,22 +295,22 @@ namespace cg {
 		std::string const &str,
 		TemplDict const &args,
 		std::string const &filename
-	) const {
+	) {
 		try {
 			//std::ofstream file("gen/templgen.gv");
 			//auto label = util::f("Graph for file: ", filename);
 
 			//auto parser = AbsoluteSolver::setup(_ctx, "file").value();
 
-			auto r = _parser->parse({str.c_str(), filename.c_str()}).value();
-			r.root_node().compress(_parser->cfg().prim_names());
+			auto node = _parser->parse({str.c_str(), filename.c_str()}, _parser_result);
+			node->compress(_parser->cfg().prim_names());
 			//node.print_dot(file, label);
 
 			//file.close();
 
 			auto l_args = args;
 			TRY(_add_builtin_identifiers(l_args));
-			return _codegen(r.root_node(), l_args, *_parser);
+			return _codegen(node.value(), l_args, *_parser);
 		} catch_kerror;
 	}
 
@@ -354,7 +354,7 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args,
 		Parser &parser
-	) const {
+	) {
 		if (node.type() == AstNode::Type::Leaf) {
 			return node.tok().content();
 		} else if (node.type() == AstNode::Type::None) {
@@ -407,7 +407,7 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args,
 		Parser &parser
-	) const {
+	) {
 		return node.consumed_all();
 	}
 
@@ -415,7 +415,7 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args,
 		Parser &parser
-	) const {
+	) {
 		try {
 			auto r = node.tok().content();
 			for (auto &child : node.children()) {
@@ -430,7 +430,7 @@ namespace cg {
 		TemplDict &args,
 		Parser &parser,
 		size_t count
-	) const {
+	) {
 		CG_ASSERT(node.children().size() == count, "Children count of codegen_ref must be 1");
 		return _codegen(node.children()[0], args, parser);
 	}
@@ -439,7 +439,7 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args,
 		Parser &parser
-	) const {
+	) {
 		return KError::codegen("Identifier does not have a codegen implimentation");
 	}
 
@@ -447,7 +447,7 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args,
 		Parser &parser
-	) const {
+	) {
 		auto result = std::string();
 		for (auto &child : node.children()) {
 			if (auto str = _codegen(child, args, parser)) {
@@ -463,7 +463,7 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args,
 		Parser &parser
-	) const {
+	) {
 		auto result = std::string();
 		for (auto &child : node.children()) {
 			if (auto str = _codegen(child, args, parser)) {
@@ -479,7 +479,7 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args,
 		Parser &parser
-	) const {
+	) {
 		return {""};
 	}
 
@@ -487,7 +487,7 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args,
 		Parser &parser
-	) const {
+	) {
 		try {
 			auto result = std::string();
 
@@ -514,7 +514,7 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args,
 		Parser &parser
-	) const {
+	) {
 		return KError::codegen("statment not implimented");
 	}
 
@@ -522,7 +522,7 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args,
 		Parser &parser
-	) const {
+	) {
 		try {
 		auto result = std::string();
 		CG_ASSERT(node.cfg_rule() == "sif", "INTERNAL func can only parser sif nodes");
@@ -573,7 +573,7 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args,
 		Parser &parser
-	) const {
+	) {
 		try {
 			auto result = std::string();
 
@@ -610,7 +610,7 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args,
 		Parser &parser
-	) const {
+	) {
 		try {
 			auto arg_def = node.child_with_cfg("sfrag_macro").value();
 			auto macro_name = arg_def.child_with_tok(Token::Type::Ident)->tok().content();
@@ -676,12 +676,12 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args,
 		Parser &parser
-	) const {
+	) {
 		try {
 			auto filename = _unpack_str(node.child_with_tok(Token::Type::StrConst)->tok().content()).value();
 			auto include_src = util::readEnvFile(filename);
-			auto r = parser.parse({include_src.c_str(), filename.c_str()}).value();
-			auto include_node = r.root_node().compressed(_parser->cfg().prim_names());
+			auto node = parser.parse({include_src.c_str(), filename.c_str()}, _parser_result).value();
+			auto include_node = node.compressed(_parser->cfg().prim_names());
 
 			std::ofstream file("gen/templgen-include.gv");
 			include_node.print_dot(file, "templgen-include");
@@ -694,7 +694,7 @@ namespace cg {
 	TemplGen::EvalRes TemplGen::_eval(
 		util::Result<AstNode, KError> const &node,
 		TemplDict const &args
-	) const {
+	) {
 		if (node.has_value()) {
 			return _eval(node.value(), args);
 		} else {
@@ -705,7 +705,7 @@ namespace cg {
 	TemplGen::EvalRes TemplGen::_eval(
 		AstNode const &node,
 		TemplDict const &args
-	) const {
+	) {
 		auto name = node.cfg_rule();
 		if (name == "exp") {
 			return _eval(node.children()[0], args);
@@ -737,7 +737,7 @@ namespace cg {
 	util::Result<TemplObj, KError> TemplGen::_eval_exp_sing(
 		AstNode const &node,
 		TemplDict const &args
-	) const {
+	) {
 		CG_ASSERT(node.cfg_rule() == "exp_sing", "_eval_exp_sing must be used to parse exp_sing nodes");
 		CG_ASSERT(node.type() == AstNode::Type::Rule, "_eval_exp_sing must be of type Rule");
 		for (auto &child : node.children()) {
@@ -767,7 +767,7 @@ namespace cg {
 	util::Result<TemplObj, KError> TemplGen::_eval_exp_id(
 		AstNode const &node,
 		TemplDict const &args
-	) const {
+	) {
 		try {
 			auto name = node.tok().content();
 			if (args.count(name) == 0) {
@@ -780,7 +780,7 @@ namespace cg {
 	util::Result<TemplObj, KError> TemplGen::_eval_exp_int(
 		AstNode const &node,
 		TemplDict const &args
-	) const {
+	) {
 		try {
 			CG_ASSERT(node.tok().type() == Token::Type::IntConst, "IntConst must be passed to _eval_exp_int");
 			auto value = TemplInt(0);
@@ -795,7 +795,7 @@ namespace cg {
 	util::Result<TemplObj, KError> TemplGen::_eval_exp_str(
 		AstNode const &node,
 		TemplDict const &args
-	) const {
+	) {
 		try {
 			return TemplObj(_unpack_str(node.consumed_all()).value())
 				.set_location(node.location());
@@ -805,7 +805,7 @@ namespace cg {
 	util::Result<TemplObj, KError> TemplGen::_eval_exp1(
 		AstNode const &node,
 		TemplDict const &args
-	) const {
+	) {
 		TemplDict l_args = args;
 		try {
 			auto exp = node.child_with_cfg("exp_sing").value();
@@ -833,7 +833,7 @@ namespace cg {
 		TemplObj const &lhs,
 		AstNode const &node,
 		TemplDict const &args
-	) const {
+	) {
 		try {
 			auto name = node.child_with_tok(Token::Type::Ident)->tok().content();
 			return lhs.get_attribute(name);
@@ -844,7 +844,7 @@ namespace cg {
 		TemplObj const &lhs,
 		AstNode const &node,
 		TemplDict const &args
-	) const {
+	) {
 		try {
 			auto call_args = TemplList();
 			if (args.contains("self")) {
@@ -863,7 +863,7 @@ namespace cg {
 	TemplGen::EvalRes TemplGen::_eval_exp2(
 		AstNode const &node,
 		TemplDict const &args
-	) const {
+	) {
 		for (auto &child : node.children()) {
 			auto name = child.cfg_rule();
 			auto exp2 = child.child_with_cfg("exp2");
@@ -888,7 +888,7 @@ namespace cg {
 	TemplGen::EvalRes TemplGen::_eval_exp3(
 		AstNode const &node,
 		TemplDict const &args
-	) const {
+	) {
 		try {
 			auto exp = node.child_with_cfg("exp2").value();
 			auto res = _eval(exp, args);
@@ -920,7 +920,7 @@ namespace cg {
 	TemplGen::EvalRes TemplGen::_eval_exp4(
 		AstNode const &node,
 		TemplDict const &args
-	) const {
+	) {
 		try {
 			auto exp = node.child_with_cfg("exp3").value();
 			auto res = _eval(exp, args);
@@ -950,7 +950,7 @@ namespace cg {
 	TemplGen::EvalRes TemplGen::_eval_exp6(
 		AstNode const &node,
 		TemplDict const &args
-	) const {
+	) {
 		try {
 			auto exp = node.child_with_cfg("exp4").value();
 			auto res = _eval(exp, args);
@@ -983,7 +983,7 @@ namespace cg {
 	TemplGen::EvalRes TemplGen::_eval_exp7(
 		AstNode const &node,
 		TemplDict const &args
-	) const {
+	) {
 		try {
 			auto exp = node.child_with_cfg("exp6").value();
 			auto res = _eval(exp, args);
@@ -1012,7 +1012,7 @@ namespace cg {
 	TemplGen::EvalRes TemplGen::_eval_exp11(
 		AstNode const &node,
 		TemplDict const &args
-	) const {
+	) {
 		try {
 			auto exp = node.child_with_cfg("exp7").value();
 			auto res = _eval(exp, args);
@@ -1039,7 +1039,7 @@ namespace cg {
 	TemplGen::EvalRes TemplGen::_eval_exp12(
 		AstNode const &node,
 		TemplDict const &args
-	) const {
+	) {
 		try {
 			auto exp = node.child_with_cfg("exp11").value();
 			auto res = _eval(exp, args);
@@ -1068,7 +1068,7 @@ namespace cg {
 		TemplObj const &lhs,
 		AstNode const &node,
 		TemplDict const &args
-	) const {
+	) {
 		try {
 			CG_ASSERT(node.cfg_rule() == "exp_filter_frag", "Must be an filter frag");
 			auto filter = _eval_exp_id(node.child_with_tok(Token::Type::Ident).value(), args);
@@ -1087,7 +1087,7 @@ namespace cg {
 	TemplGen::EvalRes TemplGen::_eval_filter(
 		AstNode const &node,
 		TemplDict const &args
-	) const {
+	) {
 		try {
 			auto exp = node.child_with_cfg("exp12").value();
 			auto res = _eval(exp, args);
@@ -1110,7 +1110,7 @@ namespace cg {
 	util::Result<bool, KError> TemplGen::_tag_keep_padding(
 		AstNode const &node,
 		bool def
-	) const {
+	) {
 		auto cons = node.consumed_all();
 		auto const &name = node.cfg_rule();
 		if (name == "comment_b" || name == "expression_b") {
@@ -1146,7 +1146,7 @@ namespace cg {
 		std::string const &name,
 		TemplObj const &func,
 		TemplDict &args
-	) const {
+	) {
 		if (args.contains(name)) {
 			return KError::codegen(
 				util::f("Cannot pass in arg with name ", name, " because it is a builtin identifier")
@@ -1235,7 +1235,7 @@ namespace cg {
 		} catch_kerror;
 	}
 
-	util::Result<void, KError> TemplGen::_add_builtin_identifiers(TemplDict &args) const {
+	util::Result<void, KError> TemplGen::_add_builtin_identifiers(TemplDict &args) {
 		TRY(_add_builtin_identifier("true", true, args));
 		TRY(_add_builtin_identifier("false", false, args));
 

@@ -109,7 +109,7 @@ namespace cg {
 			Type _type;
 			uint32_t _id;
 			std::string _cfg_rule;
-			Token _token;
+			Token const *_token=nullptr;
 			std::vector<AstNode> _children;
 
 		private:

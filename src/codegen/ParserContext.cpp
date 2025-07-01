@@ -1,8 +1,8 @@
-#include "ParserResult.hpp"
+#include "ParserContext.hpp"
 #include "codegen/Tokenizer.hpp"
 
 namespace cg {
-	std::vector<Token> const &ParserResult::get_tokens(util::StringRef str) {
+	std::vector<Token> const &ParserContext::get_tokens(util::StringRef str) {
 		auto &item = _items[str.location().file_name];
 		if (item.source.empty()) {
 			item.source = str.str();

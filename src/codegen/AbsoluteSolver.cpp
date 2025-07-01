@@ -104,11 +104,11 @@ namespace cg::abs {
 		return _table.print(os);
 	}
 
-	util::Result<ParserResult, KError> AbsoluteSolver::parse(
-		util::StringRef const &str
+	util::Result<AstNode, KError> AbsoluteSolver::parse(
+		util::StringRef const &str,
+		ParserContext &result
 	) {
 		try {
-			auto result = ParserResult();
 			auto &tokens = result.get_tokens(str);
 			uint32_t node_id=0;
 			// uint32_t is the current state
@@ -157,8 +157,7 @@ namespace cg::abs {
 			if (!stack[1].is_node()) {
 				return KError::codegen("The second element must be a node");
 			}
-			result.root_node() = stack[1].node();
-			return result;
+			return stack[1].node();
 		} catch_kerror;
 	}
 

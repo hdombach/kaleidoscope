@@ -4,9 +4,11 @@
 #include "util/PrintTools.hpp"
 
 namespace cg {
+	Token _default_token;
 	AstNode::AstNode():
 		_type(Type::None),
-		_id(0)
+		_id(0),
+		_token(&_default_token)
 	{}
 
 	AstNode::AstNode(AstNode const &other):
@@ -21,11 +23,12 @@ namespace cg {
 		_type(other._type),
 		_id(other._id),
 		_cfg_rule(std::move(other._cfg_rule)),
-		_token(std::move(other._token)),
+		_token(other._token),
 		_children(std::move(other._children))
 	{
 		other._type = Type::None;
 		other._id = 0;
+		other._token = &_default_token;
 	}
 
 	AstNode &AstNode::operator=(AstNode const &other) {
@@ -41,11 +44,12 @@ namespace cg {
 		_type = other._type;
 		_id = other._id;
 		_cfg_rule = std::move(other._cfg_rule);
-		_token = std::move(other._token);
+		_token = other._token;
 		_children = std::move(other._children);
 
 		other._type = Type::None;
 		other._id = 0;
+		other._token = &_default_token;
 		return *this;
 	}
 
@@ -67,7 +71,7 @@ namespace cg {
 		AstNode r;
 		r._type = Type::Leaf;
 		r._id = id;
-		r._token = token;
+		r._token = &token;
 		return r;
 	}
 
@@ -109,7 +113,7 @@ namespace cg {
 	}
 
 	Token const &AstNode::tok() const {
-		return _token;
+		return *_token;
 	}
 
 	std::string AstNode::consumed_all() const {
@@ -135,7 +139,7 @@ namespace cg {
 
 	util::FileLocation AstNode::location() const {
 		if (_type == Type::Leaf) {
-			return _token.loc();
+			return _token->loc();
 		} else {
 			log_assert(_children.size() > 0, "Rule AstNode must have children");
 			return _children.front().location();
@@ -245,7 +249,7 @@ namespace cg {
 			os << "<" << _cfg_rule << ">";
 		} else if (_type == Type::Leaf) {
 			log_assert(_children.empty(), "A string AstNode must have now children");
-			os << "\\\"" << util::escape_str(_token.content()) << "\\\"" << std::endl;
+			os << "\\\"" << util::escape_str(_token->content()) << "\\\"" << std::endl;
 		} else {
 			os << "none" << std::endl;
 		}

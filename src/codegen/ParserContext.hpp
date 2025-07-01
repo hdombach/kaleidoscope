@@ -14,10 +14,8 @@ namespace cg {
 	 * scope.
 	 * This makes sure points to assets like the file source code remain valid
 	 */
-	class ParserResult {
+	class ParserContext {
 		public:
-			AstNode &root_node() { return _root_node; }
-			AstNode const &root_node() const;
 			std::vector<Token> const &get_tokens(util::StringRef str);
 
 		private:
@@ -27,6 +25,5 @@ namespace cg {
 			};
 
 			std::map<std::string, FileItem> _items;
-			AstNode _root_node;
 	};
 }

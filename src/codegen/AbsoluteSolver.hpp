@@ -71,8 +71,9 @@ namespace cg::abs {
 			using Parser::match;
 			using Parser::parse;
 
-			util::Result<ParserResult, KError> parse(
-				util::StringRef const &str
+			util::Result<AstNode, KError> parse(
+				util::StringRef const &str,
+				ParserContext &result
 			) override;
 
 			CfgContext const &cfg() const override;
