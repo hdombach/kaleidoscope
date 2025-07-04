@@ -101,7 +101,7 @@ namespace util {
 
 				void value() const {
 					if (parent_t::has_value()) {
-						throw std::bad_variant_access();
+						throw std::runtime_error("Cannot get value from a Result object");
 					}
 				}
 				Error const &error() const {

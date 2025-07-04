@@ -17,11 +17,8 @@ namespace cg::abs {
 
 	StackElement::StackElement(StackElement &&other): _value(std::move(other._value)) {}
 
-	StackElement::StackElement(AstNode const &node):
-		_value(node)
-	{}
-	StackElement::StackElement(AstNode &&node):
-		_value(std::move(node))
+	StackElement::StackElement(AstNode &node):
+		_value(&node)
 	{}
 
 	StackElement &StackElement::operator=(StackElement const &other) {
@@ -43,19 +40,23 @@ namespace cg::abs {
 	}
 
 	uint32_t StackElement::table_state() const {
+		log_assert(std::holds_alternative<uint32_t>(_value), "tabestate must hold uint32_t");
 		return std::get<uint32_t>(_value);
 	}
 
 	bool StackElement::is_node() const {
-		return std::holds_alternative<AstNode>(_value);
+		log_assert(std::holds_alternative<AstNode*>(_value), "tablestate must hold astnode");
+		return std::holds_alternative<AstNode*>(_value);
 	}
 
 	AstNode const &StackElement::node() const {
-		return std::get<AstNode>(_value);
+		log_assert(std::holds_alternative<AstNode*>(_value), "tablestate must hold astnode");
+		return *std::get<AstNode*>(_value);
 	}
 
 	AstNode &StackElement::node() {
-		return std::get<AstNode>(_value);
+		log_assert(std::holds_alternative<AstNode*>(_value), "tablestate must hold astnode");
+		return *std::get<AstNode*>(_value);
 	}
 
 
@@ -104,11 +105,12 @@ namespace cg::abs {
 		return _table.print(os);
 	}
 
-	util::Result<AstNode, KError> AbsoluteSolver::parse(
+	util::Result<AstNode*, KError> AbsoluteSolver::parse(
 		util::StringRef const &str,
 		ParserContext &result
 	) {
 		try {
+			_parser_ctx = &result;
 			auto &tokens = result.get_tokens(str);
 			uint32_t node_id=0;
 			// uint32_t is the current state
@@ -143,7 +145,7 @@ namespace cg::abs {
 					}
 					//TODO: update source location
 					stack.push_back(StackElement(
-							AstNode::create_tok(node_id++, *t)
+							result.create_tok_node(*t)
 					));
 					log_trace() << "shifted token: " << *t << std::endl;
 					stack.push_back(StackElement(action)); // push back the next state
@@ -157,7 +159,7 @@ namespace cg::abs {
 			if (!stack[1].is_node()) {
 				return KError::codegen("The second element must be a node");
 			}
-			return stack[1].node();
+			return &stack[1].node();
 		} catch_kerror;
 	}
 
@@ -177,9 +179,9 @@ namespace cg::abs {
 		auto &rule = _get_rule(rule_id);
 		log_trace() << "Reducing rule " << rule_id << std::endl;
 		log_assert(rule.leaves().size() <= stack.size() * 2 + 1, "Stack must contain enough elements for the rule");
-		auto new_node = AstNode::create_rule(node_id++, _ctx->cfg_rule_sets()[rule.set_id()].name());
+		auto &new_node = _parser_ctx->create_rule_node(_ctx->cfg_rule_sets()[rule.set_id()].name());
 		for (uint32_t i = stack.size() - rule.leaves().size() * 2; i < stack.size(); i += 2) {
-			new_node.add_child(std::move(stack[i].node()));
+			new_node.add_child(stack[i].node());
 		}
 		for (uint32_t i = 0; i < rule.leaves().size(); i++) {
 			stack.pop_back();
@@ -193,7 +195,7 @@ namespace cg::abs {
 		log_trace() << "state is " << cur_state_id << std::endl;
 		log_trace() << "Looking up <" << _ctx->cfg_rule_sets()[cur_rule_set].name() << ">" << std::endl;
 
-		stack.push_back(StackElement(std::move(new_node)));
+		stack.push_back(StackElement(new_node));
 		stack.push_back(StackElement(next_state_id));
 	}
 

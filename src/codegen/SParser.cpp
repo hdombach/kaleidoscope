@@ -27,13 +27,14 @@ namespace cg {
 		return *this;
 	}
 
-	util::Result<AstNode, KError> SParser::parse(
+	util::Result<AstNode*, KError> SParser::parse(
 		util::StringRef const &str,
-		ParserContext &result
+		ParserContext &ctx
 	) {
 		//log_debug() << "mark1 " << util::plist(tokens) << std::endl;
 		try {
-			auto &tokens = result.get_tokens(str);
+			_parser_ctx = &ctx;
+			auto &tokens = _parser_ctx->get_tokens(str);
 			log_assert(static_cast<bool>(_ctx), "SParser is not initialized");
 			// _last_failure is a value specific to this function but it is easier to
 			// pass it around everywhere as a property.
@@ -41,7 +42,7 @@ namespace cg {
 			_last_failure = KError();
 			//TODO: error handling for root
 			auto node = _parse(tokens, 0, *_ctx->get_root()).value();
-			if (node.leaf_count() < tokens.size()) {
+			if (node->leaf_count() < tokens.size()) {
 				if (_last_failure.type() == KError::Type::UNKNOWN) {
 					return KError::codegen("Not all characters were consumed");
 				} else {
@@ -74,7 +75,7 @@ namespace cg {
 	 * Parser helper functions
 	 * *********************************/
 
-	util::Result<AstNode, KError> SParser::_parse(
+	util::Result<AstNode*, KError> SParser::_parse(
 		std::vector<Token> const &tokens,
 		uint32_t i,
 		CfgRuleSet const &set
@@ -89,7 +90,7 @@ namespace cg {
 		return _last_failure;
 	}
 
-	util::Result<AstNode, KError> SParser::_parse(
+	util::Result<AstNode*, KError> SParser::_parse(
 		std::vector<Token> const &tokens,
 		uint32_t i,
 		CfgRule const &rule,
@@ -97,19 +98,19 @@ namespace cg {
 	) {
 		log_trace() << "Parsing rule: " << rule << std::endl;
 
-		auto node = AstNode::create_rule(++_uid, set_name.c_str());
+		auto &node = _parser_ctx->create_rule_node(set_name);
 		for (auto &leaf : rule.leaves()) {
 			if (auto child = _parse(tokens, i, leaf)) {
-				i += child->leaf_count();
-				node.add_child(child.value());
+				i += child.value()->leaf_count();
+				node.add_child(*child.value());
 			} else {
 				return _set_failure(child.error());
 			}
 		}
-		return node;
+		return &node;
 	}
 
-	util::Result<AstNode, KError> SParser::_parse(
+	util::Result<AstNode*, KError> SParser::_parse(
 		std::vector<Token> const &tokens,
 		uint32_t i,
 		CfgLeaf const &leaf
@@ -126,7 +127,7 @@ namespace cg {
 			}
 			return _parse(tokens, i, *set);
 		} else if (leaf.type() == CfgLeaf::Type::empty) {
-			return AstNode();
+			return &_parser_ctx->create_node();
 		}
 
 		auto &token = tokens[i];
@@ -135,7 +136,7 @@ namespace cg {
 			log_trace()
 				<< "leaf " << leaf
 				<< " matched: \"" << token << "\"" << std::endl;
-			return AstNode::create_tok(++_uid, token);
+			return &_parser_ctx->create_tok_node(token);
 		} else {
 			log_trace() << "leaf " << leaf << " didn't match: " << "\"" << token << "\"" << std::endl;
 			auto msg = util::f(

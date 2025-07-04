@@ -1,4 +1,5 @@
 #include "TemplGen.hpp"
+#include "codegen/AstNode.hpp"
 #include "codegen/CfgContext.hpp"
 #include "codegen/SParser.hpp"
 #include "codegen/TemplObj.hpp"
@@ -9,6 +10,7 @@
 #include "util/PrintTools.hpp"
 #include "util/lines_iterator.hpp"
 #include "ParserContext.hpp"
+#include "AstNodeIterator.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -24,7 +26,9 @@
  *
  * Initial 35920ms
  * Remove debugging 11775ms
- * currently 7081ms
+ * After using linked list in AstNode: 1704 ms (278ms with optimization).
+ *
+ * Final speed up. 2125ms (branch 23ff4d8 ) to 200ms (branch 9a8d6f1)
  */
 
 namespace cg {
@@ -262,6 +266,7 @@ namespace cg {
 			_parser = std::move(parser);
 		} else {
 			TRY(c.prep());
+			c.simplify();
 
 			auto parser = SParser::create(std::move(context));
 			_parser = std::move(parser);
@@ -297,20 +302,21 @@ namespace cg {
 		std::string const &filename
 	) {
 		try {
-			//std::ofstream file("gen/templgen.gv");
-			//auto label = util::f("Graph for file: ", filename);
+			std::ofstream file("gen/templgen.gv");
+			auto label = util::f("Graph for file: ", filename);
 
 			//auto parser = AbsoluteSolver::setup(_ctx, "file").value();
 
 			auto node = _parser->parse({str.c_str(), filename.c_str()}, _parser_result);
-			node->compress(_parser->cfg().prim_names());
-			//node.print_dot(file, label);
+			node.value()->compress(_parser->cfg().prim_names());
 
-			//file.close();
+			node.value()->print_dot(file, label);
+
+			file.close();
 
 			auto l_args = args;
 			TRY(_add_builtin_identifiers(l_args));
-			return _codegen(node.value(), l_args, *_parser);
+			return _codegen(*node.value(), l_args, *_parser);
 		} catch_kerror;
 	}
 
@@ -418,7 +424,7 @@ namespace cg {
 	) {
 		try {
 			auto r = node.tok().content();
-			for (auto &child : node.children()) {
+			for (auto &child : node) {
 				r += _codegen(child, args, parser).value();
 			}
 			return r;
@@ -431,8 +437,8 @@ namespace cg {
 		Parser &parser,
 		size_t count
 	) {
-		CG_ASSERT(node.children().size() == count, "Children count of codegen_ref must be 1");
-		return _codegen(node.children()[0], args, parser);
+		//CG_ASSERT(node.children().size() == count, "Children count of codegen_ref must be 1");
+		return _codegen(*node.begin(), args, parser);
 	}
 
 	util::Result<std::string, KError> TemplGen::_cg_identifier(
@@ -449,7 +455,7 @@ namespace cg {
 		Parser &parser
 	) {
 		auto result = std::string();
-		for (auto &child : node.children()) {
+		for (auto &child : node) {
 			if (auto str = _codegen(child, args, parser)) {
 				result += str.value();
 			} else {
@@ -465,7 +471,7 @@ namespace cg {
 		Parser &parser
 	) {
 		auto result = std::string();
-		for (auto &child : node.children()) {
+		for (auto &child : node) {
 			if (auto str = _codegen(child, args, parser)) {
 				result += str.value();
 			} else {
@@ -491,7 +497,7 @@ namespace cg {
 		try {
 			auto result = std::string();
 
-			for (auto &child : node.children()) {
+			for (auto &child : node) {
 				auto name = child.cfg_rule();
 				if (name == "whitespace") {
 					continue;
@@ -532,8 +538,9 @@ namespace cg {
 		int i = 0;
 		bool cg_current_block = false;
 		TemplDict block_args;
-		while (i < sif_chain.children().size()) {
-			auto &child = sif_chain.children()[i];
+		//TODO
+		while (i < sif_chain->child_count()) {
+			auto &child = sif_chain->begin()[i];
 			if (cg_current_block) {
 				if (child.cfg_rule() == "line_single") {
 					result += _codegen(child, block_args, parser).value();
@@ -543,7 +550,7 @@ namespace cg {
 			} else if (child.cfg_rule() == "sfrag_if") {
 				auto exp_node = child.child_with_cfg("exp").value();
 
-				auto bool_value = _eval(exp_node, args).value();
+				auto bool_value = _eval(*exp_node, args).value();
 				if (bool_value.boolean().value()) {
 					block_args = args;
 					cg_current_block = true;
@@ -551,7 +558,7 @@ namespace cg {
 			} else if (child.cfg_rule() == "sfrag_elif") {
 				auto exp_node = child.child_with_cfg("exp").value();
 
-				auto bool_value = _eval(exp_node, args).value();
+				auto bool_value = _eval(*exp_node, args).value();
 				if (bool_value.boolean().value()) {
 					block_args = args;
 					cg_current_block = true;
@@ -580,12 +587,12 @@ namespace cg {
 
 			auto sfrag_for = node.child_with_cfg("sfrag_for").value();
 			auto iter_name = sfrag_for
-				.child_with_tok(Token::Type::Ident)
+				->child_with_tok(Token::Type::Ident).value()
 				->tok().content();
-			auto iter = sfrag_for.child_with_cfg("exp").value();
+			auto iter = sfrag_for->child_with_cfg("exp").value();
 			auto lines = node.child_with_cfg("sfor_lines").value();
 
-			auto iter_obj = _eval(iter, args)->list().value();
+			auto iter_obj = _eval(*iter, args)->list().value();
 			int index = 0;
 			for (auto &i : iter_obj) {
 				auto loop = TemplObj{
@@ -598,7 +605,7 @@ namespace cg {
 				auto local_args = args;
 				local_args[iter_name] = i;
 				local_args["loop"] = loop;
-				result += _codegen(lines, local_args, parser).value();
+				result += _codegen(*lines, local_args, parser).value();
 				index++;
 			}
 
@@ -613,8 +620,8 @@ namespace cg {
 	) {
 		try {
 			auto arg_def = node.child_with_cfg("sfrag_macro").value();
-			auto macro_name = arg_def.child_with_tok(Token::Type::Ident)->tok().content();
-			auto macro_arg_list = arg_def.child_with_cfg("sfrag_argdef_list").value(AstNode());
+			auto macro_name = arg_def->child_with_tok(Token::Type::Ident).value()->tok().content();
+			auto macro_arg_list = arg_def->child_with_cfg("sfrag_argdef_list").value(nullptr);
 			auto content = node.child_with_cfg("smacro_lines").value();
 
 			if (args.contains(macro_name)) {
@@ -626,13 +633,15 @@ namespace cg {
 			}
 
 			auto macro_args = std::vector<std::tuple<std::string, TemplObj>>();
-			for (auto &macro_arg_node : macro_arg_list.children_with_cfg("sfrag_argdef")) {
-				auto macro_arg_name = macro_arg_node.child_with_tok(Token::Type::Ident)->tok().content();
-				auto macro_arg_value = TemplObj();
-				if (auto exp_node = macro_arg_node.child_with_cfg("exp")) {
-					macro_arg_value = _eval(exp_node, args).value();
+			if (macro_arg_list) {
+				for (auto &macro_arg_node : macro_arg_list->children_with_cfg("sfrag_argdef")) {
+					auto macro_arg_name = macro_arg_node->child_with_tok(Token::Type::Ident).value()->tok().content();
+					auto macro_arg_value = TemplObj();
+					if (auto exp_node = macro_arg_node->child_with_cfg("exp")) {
+						macro_arg_value = _eval(*exp_node.value(), args).value();
+					}
+					macro_args.push_back({macro_arg_name, macro_arg_value});
 				}
-				macro_args.push_back({macro_arg_name, macro_arg_value});
 			}
 			
 			TemplFunc func = [this, macro_args, args, macro_name, content, &parser](TemplList l) -> TemplFuncRes {
@@ -665,7 +674,7 @@ namespace cg {
 					}
 					i++;
 				}
-				return {_codegen(content, local_args, parser).value()};
+				return {_codegen(*content, local_args, parser).value()};
 			};
 			args[macro_name] = func;
 			return {};
@@ -678,16 +687,17 @@ namespace cg {
 		Parser &parser
 	) {
 		try {
-			auto filename = _unpack_str(node.child_with_tok(Token::Type::StrConst)->tok().content()).value();
+			auto filename = _unpack_str(node.child_with_tok(Token::Type::StrConst).value()->tok().content()).value();
 			auto include_src = util::readEnvFile(filename);
-			auto node = parser.parse({include_src.c_str(), filename.c_str()}, _parser_result).value();
-			auto include_node = node.compressed(_parser->cfg().prim_names());
+			auto include_node = parser.parse({include_src.c_str(), filename.c_str()}, _parser_result).value();
+			include_node->compress(_parser->cfg().prim_names());
+
 
 			std::ofstream file("gen/templgen-include.gv");
-			include_node.print_dot(file, "templgen-include");
+			include_node->print_dot(file, "templgen-include");
 			file.close();
 
-			return _codegen(include_node, args, parser);
+			return _codegen(*include_node, args, parser);
 		} catch_kerror;
 	}
 
@@ -708,7 +718,7 @@ namespace cg {
 	) {
 		auto name = node.cfg_rule();
 		if (name == "exp") {
-			return _eval(node.children()[0], args);
+			return _eval(node.begin()[0], args);
 		} else if (name == "exp_sing") {
 			return _eval_exp_sing(node, args);
 		} else if (name == "exp1") {
@@ -740,7 +750,7 @@ namespace cg {
 	) {
 		CG_ASSERT(node.cfg_rule() == "exp_sing", "_eval_exp_sing must be used to parse exp_sing nodes");
 		CG_ASSERT(node.type() == AstNode::Type::Rule, "_eval_exp_sing must be of type Rule");
-		for (auto &child : node.children()) {
+		for (auto &child : node) {
 			//TODO
 			//if (child.type() == AstNode::Type::Token) continue;
 			auto name = child.cfg_rule();
@@ -809,10 +819,12 @@ namespace cg {
 		TemplDict l_args = args;
 		try {
 			auto exp = node.child_with_cfg("exp_sing").value();
-			auto res = _eval(exp, l_args);
-			CG_ASSERT(node.children().size() > 0, "Node must have at least one child");
+			auto res = _eval(*exp, l_args);
+			CG_ASSERT(node.begin() != node.end(), "Node must have at least one child");
 
-			auto children = util::Adapt(node.children().begin() + 1, node.children().end());
+			auto start = node.begin();
+			start++;
+			auto children = util::Adapt(start, node.end());
 			for (auto const &child : children) {
 				//TODO
 				//if (child.type() == AstNode::Type::Token) continue;
@@ -835,7 +847,7 @@ namespace cg {
 		TemplDict const &args
 	) {
 		try {
-			auto name = node.child_with_tok(Token::Type::Ident)->tok().content();
+			auto name = node.child_with_tok(Token::Type::Ident).value()->tok().content();
 			return lhs.get_attribute(name);
 		} catch_kerror;
 	}
@@ -850,7 +862,7 @@ namespace cg {
 			if (args.contains("self")) {
 				call_args.push_back(args.at("self"));
 			}
-			for (auto const &child : node.children()) {
+			for (auto const &child : node) {
 				if (child.type() == AstNode::Type::Leaf) continue;
 				if (child.cfg_rule() == "whitespace") continue;
 				CG_ASSERT(child.cfg_rule() == "exp", "Function call list must have exp nodes");
@@ -864,18 +876,18 @@ namespace cg {
 		AstNode const &node,
 		TemplDict const &args
 	) {
-		for (auto &child : node.children()) {
+		for (auto &child : node) {
 			auto name = child.cfg_rule();
 			auto exp2 = child.child_with_cfg("exp2");
 
 			if (name == "whitespace") {
 				continue;
 			} else if (name == "exp_plus") {
-				return +_eval(exp2, args);
+				return +_eval(*exp2.value(), args);
 			} else if (name == "exp_min") {
-				return -_eval(exp2, args);
+				return -_eval(*exp2.value(), args);
 			} else if (name == "exp_log_not") {
-				return !_eval(exp2, args);
+				return !_eval(*exp2.value(), args);
 			} else if (name == "exp1") {
 				return _eval(child, args);
 			} else {
@@ -891,9 +903,9 @@ namespace cg {
 	) {
 		try {
 			auto exp = node.child_with_cfg("exp2").value();
-			auto res = _eval(exp, args);
+			auto res = _eval(*exp, args);
 
-			for (auto &child : node.children()) {
+			for (auto &child : node) {
 				//TODO
 				//if (child.type() == AstNode::Type::Token) continue;
 				auto name = child.cfg_rule();
@@ -904,11 +916,11 @@ namespace cg {
 				} else if (name == "exp2") {
 					continue;
 				} else if (name == "exp_mult") {
-					res = res * _eval(exp2, args);
+					res = res * _eval(*exp2.value(), args);
 				} else if (name == "exp_div") {
-					res = res / _eval(exp2, args);
+					res = res / _eval(*exp2.value(), args);
 				} else if (name == "exp_mod") {
-					res = res % _eval(exp2, args);
+					res = res % _eval(*exp2.value(), args);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp3: " + std::string(name));
 				}
@@ -923,9 +935,9 @@ namespace cg {
 	) {
 		try {
 			auto exp = node.child_with_cfg("exp3").value();
-			auto res = _eval(exp, args);
+			auto res = _eval(*exp, args);
 
-			for (auto &child : node.children()) {
+			for (auto &child : node) {
 				//TODO
 				//if (child.type() == AstNode::Type::Token) continue;
 				auto name = child.cfg_rule();
@@ -936,9 +948,9 @@ namespace cg {
 				} else if (name == "exp3") {
 					continue;
 				} else if (name == "exp_add") {
-					res = res + _eval(exp3, args);
+					res = res + _eval(*exp3.value(), args);
 				} else if (name == "exp_sub") {
-					res = res - _eval(exp3, args);
+					res = res - _eval(*exp3.value(), args);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp4: " + std::string(name));
 				}
@@ -953,9 +965,9 @@ namespace cg {
 	) {
 		try {
 			auto exp = node.child_with_cfg("exp4").value();
-			auto res = _eval(exp, args);
+			auto res = _eval(*exp, args);
 
-			for (auto &child : node.children()) {
+			for (auto &child : node) {
 				//TODO
 				//if (child.type() == AstNode::Type::Token) continue;
 				auto name = child.cfg_rule();
@@ -965,13 +977,13 @@ namespace cg {
 				} else if (name == "exp4") {
 					continue;
 				} else if (name == "exp_comp_g") {
-					res = res > _eval(exp4, args);
+					res = res > _eval(*exp4.value(), args);
 				} else if (name == "exp_comp_ge") {
-					res = res >= _eval(exp4, args);
+					res = res >= _eval(*exp4.value(), args);
 				} else if (name == "exp_comp_l") {
-					res = res < _eval(exp4, args);
+					res = res < _eval(*exp4.value(), args);
 				} else if (name == "exp_comp_le") {
-					res = res <= _eval(exp4, args);
+					res = res <= _eval(*exp4.value(), args);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp6: " + std::string(name));
 				}
@@ -986,9 +998,9 @@ namespace cg {
 	) {
 		try {
 			auto exp = node.child_with_cfg("exp6").value();
-			auto res = _eval(exp, args);
+			auto res = _eval(*exp, args);
 
-			for (auto &child : node.children()) {
+			for (auto &child : node) {
 				//TODO
 				//if (child.type() == AstNode::Type::Token) continue;
 				auto name = child.cfg_rule();
@@ -998,9 +1010,9 @@ namespace cg {
 				} else if (name == "exp6") {
 					continue;
 				} else if (name == "exp_comp_eq") {
-					res = res == _eval(exp6, args);
+					res = res == _eval(*exp6.value(), args);
 				} else if (name == "exp_comp_neq") {
-					res = res != _eval(exp6, args);
+					res = res != _eval(*exp6.value(), args);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp7: " + std::string(name));
 				}
@@ -1015,9 +1027,9 @@ namespace cg {
 	) {
 		try {
 			auto exp = node.child_with_cfg("exp7").value();
-			auto res = _eval(exp, args);
+			auto res = _eval(*exp, args);
 
-			for (auto &child : node.children()) {
+			for (auto &child : node) {
 				//TODO
 				//if (child.type() == AstNode::Type::Token) continue;
 				auto name = child.cfg_rule();
@@ -1027,7 +1039,7 @@ namespace cg {
 				} else if (name == "exp7") {
 					continue;
 				} else if (name == "exp_log_and") {
-					res = res && _eval(exp7, args);
+					res = res && _eval(*exp7.value(), args);
 				} else {
 					return KError::codegen("Unknown child in _eval_exp11: " + std::string(name));
 				}
@@ -1042,21 +1054,22 @@ namespace cg {
 	) {
 		try {
 			auto exp = node.child_with_cfg("exp11").value();
-			auto res = _eval(exp, args);
+			auto res = _eval(*exp, args);
 
-			for (auto &child : node.children()) {
+			for (auto &child : node) {
 				//TODO
 				//if (child.type() == AstNode::Type::Token) continue;
 				auto name = child.cfg_rule();
-				auto exp11 = child.child_with_cfg("exp11");
 
+				auto exp11 = child.child_with_cfg("exp11");
 				if (name == "whitespace") {
 					continue;
 				} else if (name == "exp11") {
 					continue;
 				} else if (name == "exp_log_or") {
-					res = res || _eval(exp11, args);
+					res = res || _eval(*exp11.value(), args);
 				} else {
+					if (name.empty()) name = child.tok().debug_str();
 					return KError::codegen("Unknown child in _eval_exp12: " + std::string(name));
 				}
 			}
@@ -1071,11 +1084,11 @@ namespace cg {
 	) {
 		try {
 			CG_ASSERT(node.cfg_rule() == "exp_filter_frag", "Must be an filter frag");
-			auto filter = _eval_exp_id(node.child_with_tok(Token::Type::Ident).value(), args);
+			auto filter = _eval_exp_id(*node.child_with_tok(Token::Type::Ident).value(), args);
 			auto l_args = args;
 			l_args["self"] = lhs;
 			if (auto call = node.child_with_cfg("exp_call")) {
-				return _eval_exp_call(filter.value(), call.value(), l_args);
+				return _eval_exp_call(filter.value(), *call.value(), l_args);
 			} else {
 				auto call_args = TemplList();
 				call_args.push_back(lhs);
@@ -1090,9 +1103,9 @@ namespace cg {
 	) {
 		try {
 			auto exp = node.child_with_cfg("exp12").value();
-			auto res = _eval(exp, args);
+			auto res = _eval(*exp, args);
 
-			for (auto &child : node.children()) {
+			for (auto &child : node) {
 				auto name = child.cfg_rule();
 				if (name == "whitespace") {
 					continue;

@@ -21,8 +21,7 @@ namespace cg::abs {
 			StackElement();
 			StackElement(StackElement const &other);
 			StackElement(StackElement &&other);
-			StackElement(AstNode const &node);
-			StackElement(AstNode &&node);
+			StackElement(AstNode &node);
 			StackElement(uint32_t table_state);
 
 			StackElement &operator=(StackElement const &other);
@@ -37,7 +36,7 @@ namespace cg::abs {
 			std::ostream &debug(std::ostream &os) const;
 
 		private:
-			std::variant<AstNode, uint32_t> _value;
+			std::variant<AstNode*, uint32_t> _value;
 	};
 
 	inline std::ostream &operator<<(std::ostream &os, StackElement const &element) {
@@ -71,7 +70,7 @@ namespace cg::abs {
 			using Parser::match;
 			using Parser::parse;
 
-			util::Result<AstNode, KError> parse(
+			util::Result<AstNode*, KError> parse(
 				util::StringRef const &str,
 				ParserContext &result
 			) override;
@@ -91,6 +90,7 @@ namespace cg::abs {
 			CfgContext::Ptr _ctx;
 			AbsoluteTable _table;
 			std::vector<CfgRule> _rules;
+			ParserContext *_parser_ctx;
 
 		private:
 			/**

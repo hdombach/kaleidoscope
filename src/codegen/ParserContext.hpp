@@ -17,6 +17,9 @@ namespace cg {
 	class ParserContext {
 		public:
 			std::vector<Token> const &get_tokens(util::StringRef str);
+			AstNode &create_tok_node(Token const &token);
+			AstNode &create_rule_node(std::string const &cfg_name);
+			AstNode &create_node();
 
 		private:
 			struct FileItem {
@@ -24,6 +27,11 @@ namespace cg {
 				std::vector<Token> tokens;
 			};
 
+			uint32_t _node_id=0;
+			uint32_t _node_count;
+			uint32_t _bank_count=100;
 			std::map<std::string, FileItem> _items;
+			std::vector<std::vector<AstNode>> _node_bank;
+
 	};
 }

@@ -20,11 +20,11 @@ namespace cg {
 			) {
 				try {
 					auto r = ParserContext();
-					return parse(str, r).value().consumed_all().size();
+					return parse(str, r).value()->consumed_all().size();
 				} catch_kerror;
 			}
 
-			virtual util::Result<AstNode, KError> parse(
+			virtual util::Result<AstNode*, KError> parse(
 				util::StringRef const &str,
 				ParserContext &result
 			) = 0;

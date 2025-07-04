@@ -18,6 +18,7 @@ namespace cg {
 	 * A string literal contains the string that is consumed.
 	 */
 
+	class AstNodeIterator;
 	class AstNode {
 		public:
 			enum class Type {
@@ -54,15 +55,18 @@ namespace cg {
 			bool has_value() const;
 			operator bool() const { return has_value(); }
 
-			std::vector<AstNode> const &children() const { return _children; }
+			AstNodeIterator begin();
+			AstNodeIterator end();
+			AstNodeIterator begin() const;
+			AstNodeIterator end() const;
 
-			void add_child(AstNode const &node);
+			void add_child(AstNode &node);
 
-			util::Result<AstNode, KError> child_with_cfg(std::string const &name) const;
+			util::Result<AstNode*, KError> child_with_cfg(std::string const &name) const;
 
-			std::vector<AstNode> children_with_cfg(std::string const &name) const;
+			std::vector<AstNode*> children_with_cfg(std::string const &name) const;
 
-			util::Result<AstNode, KError> child_with_tok(Token::Type type) const;
+			util::Result<AstNode*, KError> child_with_tok(Token::Type type) const;
 
 			/**
 			 * @brief The rule that was used to generate this node
@@ -78,16 +82,14 @@ namespace cg {
 			 */
 			size_t leaf_count() const;
 
+			size_t child_count() const;
+
 			util::FileLocation location() const;
 
 			/**
 			 * @brief Combines all nodes that aren't in the list of provided cfg's
 			 */
 			void compress(std::set<std::string> const &cfg_names);
-
-			AstNode compressed(
-				std::set<std::string> const &cfg_names
-			) const;
 
 			/**
 			 * @brief Trims nodes that do not have children or consumed tokens
@@ -106,11 +108,18 @@ namespace cg {
 			std::string str_pre_order() const;
 
 		private:
+			friend class AstNodeIterator;
 			Type _type;
 			uint32_t _id;
 			std::string _cfg_rule;
 			Token const *_token=nullptr;
-			std::vector<AstNode> _children;
+
+			// Use linked list to reduce number of reallocations.
+			// All AstNodes are reserved in a pool in ParserContext to reduce fragmantation.
+			AstNode *_sibling_prev=nullptr;
+			AstNode *_sibling_next=nullptr;
+			AstNode *_child_head=nullptr;
+			AstNode *_child_tail=nullptr;
 
 		private:
 			void _print_dot_attributes(std::ostream &os) const;

@@ -25,7 +25,7 @@ namespace cg {
 		auto node = solver->parse(util::StringRef("{{1*1+2}}"), result).value();
 
 		auto ss = std::stringstream();
-		node.print_pre_order(ss);
+		node->print_pre_order(ss);
 		EXPECT_EQ(ss.str(), "S ExpB E E E B IntConstant Multiply B IntConstant Plus B IntConstant ExpE ");
 
 		//std::ofstream file("gen/ast-test.gv");
