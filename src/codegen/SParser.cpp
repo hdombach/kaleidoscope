@@ -11,47 +11,24 @@
 namespace cg {
 	SParser::Ptr SParser::create(std::unique_ptr<CfgContext> &&ctx) {
 		auto parser = std::make_unique<SParser>();;
-		parser->_uid = 0;
 		parser->_ctx = std::move(ctx);
 		return parser;
 	}
 
 	SParser::SParser(SParser &&other) {
-		_uid = other._uid;
 		_ctx = std::move(other._ctx);
 	}
 
 	SParser &SParser::operator=(SParser &&other) {
-		_uid = other._uid;
 		_ctx = std::move(other._ctx);
 		return *this;
 	}
 
 	util::Result<AstNode*, KError> SParser::parse(
 		util::StringRef const &str,
-		ParserContext &ctx
+		ParserContext &parser_ctx
 	) {
-		//log_debug() << "mark1 " << util::plist(tokens) << std::endl;
-		try {
-			_parser_ctx = &ctx;
-			auto &tokens = _parser_ctx->get_tokens(str);
-			log_assert(static_cast<bool>(_ctx), "SParser is not initialized");
-			// _last_failure is a value specific to this function but it is easier to
-			// pass it around everywhere as a property.
-			// Should be fine since can't call multiple parses at same time.
-			_last_failure = KError();
-			//TODO: error handling for root
-			auto node = _parse(tokens, 0, *_ctx->get_root()).value();
-			if (node->leaf_count() < tokens.size()) {
-				if (_last_failure.type() == KError::Type::UNKNOWN) {
-					return KError::codegen("Not all characters were consumed");
-				} else {
-					return _last_failure;
-				}
-			} else {
-				return node;
-			}
-		} catch_kerror;
+		return SParserInstance::parse(str, *_ctx, parser_ctx);
 	}
 
 	CfgContext const &SParser::cfg() const {
@@ -62,7 +39,37 @@ namespace cg {
 		return *_ctx;
 	}
 
-	KError SParser::_set_failure(KError const &failure) {
+	util::Result<AstNode*, KError> SParserInstance::parse(
+		util::StringRef const &str,
+		CfgContext const &cfg_ctx,
+		ParserContext &parser_ctx
+	) {
+		try {
+			auto instance = SParserInstance();
+			instance._cfg_ctx = &cfg_ctx;
+			instance._parser_ctx = &parser_ctx;
+
+			auto &tokens = instance._parser_ctx->get_tokens(str);
+			log_assert(static_cast<bool>(instance._cfg_ctx), "SParser is not initialized");
+			// _last_failure is a value specific to this function but it is easier to
+			// pass it around everywhere as a property.
+			// Should be fine since can't call multiple parses at same time.
+			instance._last_failure = KError();
+			//TODO: error handling for root
+			auto node = instance._parse(tokens, 0, *instance._cfg_ctx->get_root()).value();
+			if (node->leaf_count() < tokens.size()) {
+				if (instance._last_failure.type() == KError::Type::UNKNOWN) {
+					return KError::codegen("Not all characters were consumed");
+				} else {
+					return instance._last_failure;
+				}
+			} else {
+				return node;
+			}
+		} catch_kerror;
+	}
+
+	KError SParserInstance::_set_failure(KError const &failure) {
 		if (_last_failure.type() == KError::Type::UNKNOWN) {
 			_last_failure = failure;
 		} else if (failure.loc() > _last_failure.loc()) {
@@ -75,7 +82,7 @@ namespace cg {
 	 * Parser helper functions
 	 * *********************************/
 
-	util::Result<AstNode*, KError> SParser::_parse(
+	util::Result<AstNode*, KError> SParserInstance::_parse(
 		std::vector<Token> const &tokens,
 		uint32_t i,
 		CfgRuleSet const &set
@@ -90,7 +97,7 @@ namespace cg {
 		return _last_failure;
 	}
 
-	util::Result<AstNode*, KError> SParser::_parse(
+	util::Result<AstNode*, KError> SParserInstance::_parse(
 		std::vector<Token> const &tokens,
 		uint32_t i,
 		CfgRule const &rule,
@@ -110,13 +117,13 @@ namespace cg {
 		return &node;
 	}
 
-	util::Result<AstNode*, KError> SParser::_parse(
+	util::Result<AstNode*, KError> SParserInstance::_parse(
 		std::vector<Token> const &tokens,
 		uint32_t i,
 		CfgLeaf const &leaf
 	) {
 		if (leaf.type() == CfgLeaf::Type::var) {
-			auto set = _ctx->get(leaf.var_name());
+			auto set = _cfg_ctx->get(leaf.var_name());
 			if (set == nullptr) {
 				auto msg = util::f(
 					"Variable ",

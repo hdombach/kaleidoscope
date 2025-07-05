@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include "codegen/ParserContext.hpp"
 #include "util/StringRef.hpp"
 #include "util/result.hpp"
 #include "CfgContext.hpp"
@@ -39,16 +40,29 @@ namespace cg {
 			CfgContext &cfg() override;
 
 		private:
-			/**
-			 * @brief uid for constructing AstNodes
-			 */
-			uint32_t _uid;
 			CfgContext::Ptr _ctx;
+	};
+
+	/**
+	 * @brief State for a single parse
+	 */
+	class SParserInstance {
+		public:
+			SParserInstance() = default;
+
+			static util::Result<AstNode*, KError> parse(
+				util::StringRef const &str,
+				CfgContext const &cfg_ctx,
+				ParserContext &parser_ctx
+			);
+
+		private:
+			CfgContext const *_cfg_ctx=nullptr;
 			/**
 			 * @brief Most recent failure (even if it isn't officially error yet)
 			 */
 			KError _last_failure;
-			ParserContext *_parser_ctx;
+			ParserContext *_parser_ctx=nullptr;
 
 		private:
 			/**
@@ -75,5 +89,6 @@ namespace cg {
 				uint32_t i,
 				CfgLeaf const &leaf
 			);
+
 	};
 }

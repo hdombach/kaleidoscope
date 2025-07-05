@@ -53,6 +53,10 @@ namespace cg::abs {
 	 *
 	 * This means the context free grammar needs to be modified to not use string
 	 * constants. (Only use character sets).
+	 *
+	 * The AbsoluteSolver is meant to be setup using a provided context free grammar.
+	 * Once created, a parser can parse any number of strings and uses a ParserContext
+	 * to pass lifetime of generated AST to caller
 	 */
 	class AbsoluteSolver: public Parser {
 		public:
@@ -72,7 +76,7 @@ namespace cg::abs {
 
 			util::Result<AstNode*, KError> parse(
 				util::StringRef const &str,
-				ParserContext &result
+				ParserContext &parser_ctx
 			) override;
 
 			CfgContext const &cfg() const override;
@@ -90,7 +94,6 @@ namespace cg::abs {
 			CfgContext::Ptr _ctx;
 			AbsoluteTable _table;
 			std::vector<CfgRule> _rules;
-			ParserContext *_parser_ctx;
 
 		private:
 			/**
@@ -102,7 +105,8 @@ namespace cg::abs {
 			void _reduce(
 				std::vector<StackElement> &stack,
 				uint32_t rule_id,
-				uint32_t &node_id
+				uint32_t &node_id,
+				ParserContext &parser_ctx
 			);
 
 			/**

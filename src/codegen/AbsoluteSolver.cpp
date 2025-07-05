@@ -107,11 +107,10 @@ namespace cg::abs {
 
 	util::Result<AstNode*, KError> AbsoluteSolver::parse(
 		util::StringRef const &str,
-		ParserContext &result
+		ParserContext &parser_ctx
 	) {
 		try {
-			_parser_ctx = &result;
-			auto &tokens = result.get_tokens(str);
+			auto &tokens = parser_ctx.get_tokens(str);
 			uint32_t node_id=0;
 			// uint32_t is the current state
 			auto stack = std::vector<StackElement>();
@@ -137,7 +136,8 @@ namespace cg::abs {
 					_reduce(
 						stack,
 						production_rule_id,
-						node_id
+						node_id,
+						parser_ctx
 					);
 				} else {
 					if (cur_t == Token::Type::Eof) {
@@ -145,7 +145,7 @@ namespace cg::abs {
 					}
 					//TODO: update source location
 					stack.push_back(StackElement(
-							result.create_tok_node(*t)
+							parser_ctx.create_tok_node(*t)
 					));
 					log_trace() << "shifted token: " << *t << std::endl;
 					stack.push_back(StackElement(action)); // push back the next state
@@ -174,12 +174,13 @@ namespace cg::abs {
 	void AbsoluteSolver::_reduce(
 		std::vector<StackElement> &stack,
 		uint32_t rule_id,
-		uint32_t &node_id
+		uint32_t &node_id,
+		ParserContext &parser_ctx
 	){
 		auto &rule = _get_rule(rule_id);
 		log_trace() << "Reducing rule " << rule_id << std::endl;
 		log_assert(rule.leaves().size() <= stack.size() * 2 + 1, "Stack must contain enough elements for the rule");
-		auto &new_node = _parser_ctx->create_rule_node(_ctx->cfg_rule_sets()[rule.set_id()].name());
+		auto &new_node = parser_ctx.create_rule_node(_ctx->cfg_rule_sets()[rule.set_id()].name());
 		for (uint32_t i = stack.size() - rule.leaves().size() * 2; i < stack.size(); i += 2) {
 			new_node.add_child(stack[i].node());
 		}
