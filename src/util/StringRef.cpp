@@ -96,13 +96,13 @@ namespace util {
 		return *this;
 	}
 
-	std::string StringRef::str() const {
-		if (empty()) return std::string();
+	std::string_view StringRef::str() const {
+		if (empty()) return std::string_view();
 		try {
 			if (_end) {
-				return std::string(_str + _start, _str + _end);
+				return std::string_view(_str + _start, _str + _end);
 			} else {
-				return std::string(_str + _start);
+				return std::string_view(_str + _start);
 			}
 		} catch (...) {
 			log_error() << "couldn't create string" << std::endl;

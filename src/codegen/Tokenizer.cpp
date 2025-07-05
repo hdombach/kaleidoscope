@@ -146,7 +146,7 @@ namespace cg {
 				auto match = std::cmatch();
 				auto flags = std::regex_constants::match_continuous
 					| std::regex_constants::match_not_null;
-				if (std::regex_search(c.str().c_str(), match, rule, flags)) {
+				if (std::regex_search(c.str().begin(), c.str().end(), match, rule, flags)) {
 					result.push_back(Token(type, c.substr(0, match.length())));
 					c += match.length();
 					break;

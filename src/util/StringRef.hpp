@@ -30,7 +30,7 @@ namespace util {
 			StringRef& set_size(uint32_t size);
 			uint32_t size() const;
 			StringRef& set_filename(const char *filename);
-			std::string str() const;
+			std::string_view str() const;
 			StringRef substr(uint32_t s, uint32_t e) const;
 			StringRef operator+(uint32_t offset) const;
 			StringRef &operator++();
