@@ -18,7 +18,6 @@ namespace cg {
 	class TemplGen {
 		public:
 			TemplGen() = default;
-			static util::Result<TemplGen, KError> create();
 
 			TemplGen(TemplGen const &other) = delete;
 			TemplGen(TemplGen &&other);
@@ -26,13 +25,13 @@ namespace cg {
 			TemplGen &operator=(TemplGen const &other) = delete;
 			TemplGen &operator=(TemplGen &&other);
 
-			util::Result<std::string, KError> codegen(
+			static util::Result<std::string, KError> codegen(
 				std::string const &str,
 				TemplObj const &args,
 				std::string const &filename = "codegen"
 			);
 
-			util::Result<std::string, KError> codegen(
+			static util::Result<std::string, KError> codegen(
 				std::string const &str,
 				TemplDict const &args,
 				std::string const &filename = "codegen"
@@ -49,25 +48,25 @@ namespace cg {
 			using CodegenRes = util::Result<std::string, KError>;
 			using EvalRes = util::Result<TemplObj, KError>;
 
-			CodegenRes _codegen(AstNode const &node, TemplDict &args, Parser &parser);
+			CodegenRes _codegen(AstNode const &node, TemplDict &args);
 
-			CodegenRes _cg_default(AstNode const &node, TemplDict &args, Parser &parser);
-			CodegenRes _cg_recursive(AstNode const &node, TemplDict &args, Parser &parser);
-			CodegenRes _cg_ref(AstNode const &node, TemplDict &args, Parser &sparser, size_t count=1);
+			CodegenRes _cg_default(AstNode const &node, TemplDict &args);
+			CodegenRes _cg_recursive(AstNode const &node, TemplDict &args);
+			CodegenRes _cg_ref(AstNode const &node, TemplDict &args, size_t count=1);
 
-			CodegenRes _cg_identifier(AstNode const &node, TemplDict &args, Parser &sparser);
-			CodegenRes _cg_line(AstNode const &node, TemplDict &args, Parser &sparser);
-			CodegenRes _cg_lines(AstNode const &node, TemplDict &args, Parser &sparser);
+			CodegenRes _cg_identifier(AstNode const &node, TemplDict &args);
+			CodegenRes _cg_line(AstNode const &node, TemplDict &args);
+			CodegenRes _cg_lines(AstNode const &node, TemplDict &args);
 
-			CodegenRes _cg_comment(AstNode const &node, TemplDict &args, Parser &parser);
+			CodegenRes _cg_comment(AstNode const &node, TemplDict &args);
 
-			CodegenRes _cg_expression(AstNode const &node, TemplDict &args, Parser &parser);
+			CodegenRes _cg_expression(AstNode const &node, TemplDict &args);
 
-			CodegenRes _cg_statement(AstNode const &node, TemplDict &args, Parser &parser);
-			CodegenRes _cg_sif(AstNode const &node, TemplDict &args, Parser &parser);
-			CodegenRes _cg_sfor(AstNode const &node, TemplDict &args, Parser &parser);
-			util::Result<void, KError> _cg_smacro(AstNode const &node, TemplDict &args, Parser &parser);
-			CodegenRes _cg_sinclude(AstNode const &node, TemplDict &args, Parser &parser);
+			CodegenRes _cg_statement(AstNode const &node, TemplDict &args);
+			CodegenRes _cg_sif(AstNode const &node, TemplDict &args);
+			CodegenRes _cg_sfor(AstNode const &node, TemplDict &args);
+			util::Result<void, KError> _cg_smacro(AstNode const &node, TemplDict &args);
+			CodegenRes _cg_sinclude(AstNode const &node, TemplDict &args);
 
 			EvalRes _eval(util::Result<AstNode, KError> const &node, TemplDict const &args);
 			EvalRes _eval(AstNode const &node, TemplDict const &args);

@@ -753,8 +753,6 @@ namespace vulkan {
 	}
 
 	std::string RayPass::_codegen(uint32_t texture_count) {
-		auto gen = cg::TemplGen::create();
-
 		auto source = util::readEnvFile("assets/shaders/raytrace.comp.cg");
 
 		auto materials = cg::TemplList();
@@ -778,7 +776,7 @@ namespace vulkan {
 		};
 
 		auto start = log_start_timer();
-		source = gen->codegen(source, args, "raytrace.comp.cg").value();
+		source = cg::TemplGen::codegen(source, args, "raytrace.comp.cg").value();
 		log_debug() << "raypass codegen took " << start << std::endl;
 
 		log_debug() << "raytrace codegen: \n" << util::add_strnum(source) << std::endl;

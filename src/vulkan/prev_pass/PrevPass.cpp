@@ -548,8 +548,6 @@ namespace vulkan {
 		try {
 		_destroy_overlay_pipeline();
 
-		auto gen = cg::TemplGen::create();
-
 		auto buffer = MappedOverlayUniform::create();
 		TRY(buffer);
 		_mapped_overlay_uniform = std::move(buffer.value());
@@ -580,7 +578,7 @@ namespace vulkan {
 		};
 		auto source_code = util::readEnvFile("assets/shaders/preview_overlay.comp.cg");
 		auto start = log_start_timer();
-		source_code = gen->codegen(source_code, codegen_args, "preview_overlay.comp.cg").value();
+		source_code = cg::TemplGen::codegen(source_code, codegen_args, "preview_overlay.comp.cg").value();
 		log_debug() << "preview_overlay codegen took " << start << std::endl;
 		auto compute_shader = Shader::from_source_code(source_code, Shader::Type::Compute);
 		log_debug() << "\n" << util::add_strnum(source_code) << std::endl;
@@ -1280,8 +1278,6 @@ namespace vulkan {
 	}
 
 	std::string PrevPass::_codegen_de() {
-		auto gen = cg::TemplGen::create();
-
 		auto source_code = util::readEnvFile("assets/shaders/preview_de.frag.cg");
 
 		auto meshes = cg::TemplList();
@@ -1294,7 +1290,7 @@ namespace vulkan {
 			{"node_declarations", PrevPassNode::VImpl::declaration},
 			{"meshes", meshes}
 		};
-		source_code = gen->codegen(source_code, args, "preview_de.frag.cg").value();
+		source_code = cg::TemplGen::codegen(source_code, args, "preview_de.frag.cg").value();
 
 		log_debug() << "Prev pass de code: " << util::add_strnum(source_code) << std::endl;
 

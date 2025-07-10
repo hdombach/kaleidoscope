@@ -15,7 +15,6 @@ namespace cg {
 				TestFixture(test),
 				_should_simplify(variant)
 			{
-				_gen = std::move(TemplGen::create().value());
 			}
 
 			TemplGenTest(TemplGenTest const &other) = delete;
@@ -27,7 +26,7 @@ namespace cg {
 				TemplDict const &args)
 			{
 				count++;
-				return _gen.codegen(src, args, _test.suite_name + "-" + _test.test_name + "-" + std::to_string(count));
+				return TemplGen::codegen(src, args, _test.suite_name + "-" + _test.test_name + "-" + std::to_string(count));
 			}
 
 			util::Result<std::string, KError> gen(
@@ -35,12 +34,11 @@ namespace cg {
 				TemplObj const &args)
 			{
 				count++;
-				return _gen.codegen(src, args, _test.suite_name + "-" + _test.test_name + "-" + std::to_string(count));
+				return TemplGen::codegen(src, args, _test.suite_name + "-" + _test.test_name + "-" + std::to_string(count));
 			}
 
 		private:
 			Test _test;
-			TemplGen _gen;
 			bool _should_simplify = true;
 			int count=0;
 	};

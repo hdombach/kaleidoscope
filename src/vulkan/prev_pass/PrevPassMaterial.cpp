@@ -358,8 +358,6 @@ namespace vulkan {
 			const types::Material *material,
 			std::vector<std::string> &textures)
 	{
-		auto gen = cg::TemplGen::create();
-
 		frag_source = util::readEnvFile("assets/shaders/preview_material.frag.cg");
 
 		vert_source = util::readEnvFile("assets/shaders/preview_material.vert.cg");
@@ -368,7 +366,7 @@ namespace vulkan {
 			{"material_declarations", material->resources().templ_declarations()}
 		};
 		auto start = log_start_timer();
-		vert_source = gen->codegen(vert_source, vert_args.dict().value(), "preview_material.vert.cg").value();
+		vert_source = cg::TemplGen::codegen(vert_source, vert_args.dict().value(), "preview_material.vert.cg").value();
 		log_debug() << "codegenerating preview_material.vert.cg took " << start << std::endl;
 
 		auto templ_textures = cg::TemplList();
@@ -383,7 +381,7 @@ namespace vulkan {
 			{"frag_source", material->frag_shader_src()}
 		};
 		start = log_start_timer();
-		frag_source = gen->codegen(frag_source, frag_args.dict().value(), "preview_material.frag.cg").value();
+		frag_source = cg::TemplGen::codegen(frag_source, frag_args.dict().value(), "preview_material.frag.cg").value();
 		log_debug() << "codegenerating preview_material.frag.cg took " << start << std::endl;
 
 		log_debug() << "vert codegen:\n" << util::add_strnum(vert_source) << std::endl;

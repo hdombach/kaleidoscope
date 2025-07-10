@@ -32,14 +32,11 @@
  */
 
 namespace cg {
-	util::Result<TemplGen, KError> TemplGen::create() {
-		if (!_parser) TRY(_setup_parser());
-		return TemplGen();
-	}
-
 	Parser::Ptr TemplGen::_parser;
 
 	util::Result<void, KError> TemplGen::_setup_parser() {
+		if (_parser) return {};
+
 		auto context = CfgContext::create();
 		auto &c = *context;
 		using T = Token::Type;
@@ -302,12 +299,14 @@ namespace cg {
 		std::string const &filename
 	) {
 		try {
+			_setup_parser();
+			auto t = TemplGen();
 			std::ofstream file("gen/templgen.gv");
 			auto label = util::f("Graph for file: ", filename);
 
 			//auto parser = AbsoluteSolver::setup(_ctx, "file").value();
 
-			auto node = _parser->parse({str.c_str(), filename.c_str()}, _parser_result);
+			auto node = _parser->parse({str.c_str(), filename.c_str()}, t._parser_result);
 			node.value()->compress(_parser->cfg().prim_names());
 
 			node.value()->print_dot(file, label);
@@ -315,8 +314,8 @@ namespace cg {
 			file.close();
 
 			auto l_args = args;
-			TRY(_add_builtin_identifiers(l_args));
-			return _codegen(*node.value(), l_args, *_parser);
+			TRY(t._add_builtin_identifiers(l_args));
+			return t._codegen(*node.value(), l_args);
 		} catch_kerror;
 	}
 
@@ -358,8 +357,7 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_codegen(
 		AstNode const &node,
-		TemplDict &args,
-		Parser &parser
+		TemplDict &args
 	) {
 		if (node.type() == AstNode::Type::Leaf) {
 			return node.tok().content();
@@ -368,38 +366,38 @@ namespace cg {
 		}
 
 		if (node.cfg_rule() == "whitespace") {
-			return _cg_default(node, args, parser);
+			return _cg_default(node, args);
 		} else if (node.tok().type() == Token::Type::Pad) {
-			return _cg_recursive(node, args, parser);
+			return _cg_recursive(node, args);
 		} else if (node.tok().type() == Token::Type::Ident) {
-			return _cg_identifier(node, args, parser);
+			return _cg_identifier(node, args);
 		} else if (node.cfg_rule() == "raw") {
-			return _cg_recursive(node, args, parser);
+			return _cg_recursive(node, args);
 		} else if (node.cfg_rule() == "line_single") {
-			return _cg_line(node, args, parser);
+			return _cg_line(node, args);
 		} else if (node.cfg_rule() == "lines") {
-			return _cg_lines(node, args, parser);
+			return _cg_lines(node, args);
 		} else if (node.cfg_rule() == "smacro_lines") {
-			return _cg_lines(node, args, parser);
+			return _cg_lines(node, args);
 		} else if (node.cfg_rule() == "sfor_lines") {
-			return _cg_lines(node, args, parser);
+			return _cg_lines(node, args);
 		} else if (node.cfg_rule() == "file") {
-			return _cg_ref(node, args, parser, 2);
+			return _cg_ref(node, args, 2);
 		} else if (node.cfg_rule() == "comment") {
-			return _cg_comment(node, args, parser);
+			return _cg_comment(node, args);
 		} else if (node.cfg_rule() == "expression") {
-			return _cg_expression(node, args, parser);
+			return _cg_expression(node, args);
 		} else if (node.cfg_rule() == "statement") {
-			return _cg_ref(node, args, parser);
+			return _cg_ref(node, args);
 		} else if (node.cfg_rule() == "sif") {
-			return _cg_sif(node, args, parser);
+			return _cg_sif(node, args);
 		} else if (node.cfg_rule() == "sfor") {
-			return _cg_sfor(node, args, parser);
+			return _cg_sfor(node, args);
 		} else if (node.cfg_rule() == "smacro") {
-			TRY(_cg_smacro(node, args, parser));
+			TRY(_cg_smacro(node, args));
 			return {""};
 		} else if (node.cfg_rule() == "sinclude") {
-			return _cg_sinclude(node, args, parser);
+			return _cg_sinclude(node, args);
 		} else if (node.cfg_rule() == "sfrag_endmacro") {
 			return {""};
 		} else if (node.cfg_rule() == "sfrag_endfor") {
@@ -411,21 +409,19 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_default(
 		AstNode const &node,
-		TemplDict &args,
-		Parser &parser
+		TemplDict &args
 	) {
 		return node.consumed_all();
 	}
 
 	TemplGen::CodegenRes TemplGen::_cg_recursive(
 		AstNode const &node,
-		TemplDict &args,
-		Parser &parser
+		TemplDict &args
 	) {
 		try {
 			auto r = node.tok().content();
 			for (auto &child : node) {
-				r += _codegen(child, args, parser).value();
+				r += _codegen(child, args).value();
 			}
 			return r;
 		} catch_kerror;
@@ -434,29 +430,26 @@ namespace cg {
 	util::Result<std::string, KError> TemplGen::_cg_ref(
 		AstNode const &node,
 		TemplDict &args,
-		Parser &parser,
 		size_t count
 	) {
 		//CG_ASSERT(node.children().size() == count, "Children count of codegen_ref must be 1");
-		return _codegen(*node.begin(), args, parser);
+		return _codegen(*node.begin(), args);
 	}
 
 	util::Result<std::string, KError> TemplGen::_cg_identifier(
 		AstNode const &node,
-		TemplDict &args,
-		Parser &parser
+		TemplDict &args
 	) {
 		return KError::codegen("Identifier does not have a codegen implimentation");
 	}
 
 	util::Result<std::string, KError> TemplGen::_cg_line(
 		AstNode const &node,
-		TemplDict &args,
-		Parser &parser
+		TemplDict &args
 	) {
 		auto result = std::string();
 		for (auto &child : node) {
-			if (auto str = _codegen(child, args, parser)) {
+			if (auto str = _codegen(child, args)) {
 				result += str.value();
 			} else {
 				return str;
@@ -467,12 +460,11 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_lines(
 		AstNode const &node,
-		TemplDict &args,
-		Parser &parser
+		TemplDict &args
 	) {
 		auto result = std::string();
 		for (auto &child : node) {
-			if (auto str = _codegen(child, args, parser)) {
+			if (auto str = _codegen(child, args)) {
 				result += str.value();
 			} else {
 				return str;
@@ -483,16 +475,14 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_comment(
 		AstNode const &node,
-		TemplDict &args,
-		Parser &parser
+		TemplDict &args
 	) {
 		return {""};
 	}
 
 	util::Result<std::string, KError> TemplGen::_cg_expression(
 		AstNode const &node,
-		TemplDict &args,
-		Parser &parser
+		TemplDict &args
 	) {
 		try {
 			auto result = std::string();
@@ -518,16 +508,14 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_statement(
 		AstNode const &node,
-		TemplDict &args,
-		Parser &parser
+		TemplDict &args
 	) {
 		return KError::codegen("statment not implimented");
 	}
 
 	util::Result<std::string, KError> TemplGen::_cg_sif(
 		AstNode const &node,
-		TemplDict &args,
-		Parser &parser
+		TemplDict &args
 	) {
 		try {
 		auto result = std::string();
@@ -543,7 +531,7 @@ namespace cg {
 			auto &child = sif_chain->begin()[i];
 			if (cg_current_block) {
 				if (child.cfg_rule() == "line_single") {
-					result += _codegen(child, block_args, parser).value();
+					result += _codegen(child, block_args).value();
 				} else {
 					break;
 				}
@@ -578,8 +566,7 @@ namespace cg {
 
 	util::Result<std::string, KError> TemplGen::_cg_sfor(
 		AstNode const &node,
-		TemplDict &args,
-		Parser &parser
+		TemplDict &args
 	) {
 		try {
 			auto result = std::string();
@@ -605,7 +592,7 @@ namespace cg {
 				auto local_args = args;
 				local_args[iter_name] = i;
 				local_args["loop"] = loop;
-				result += _codegen(*lines, local_args, parser).value();
+				result += _codegen(*lines, local_args).value();
 				index++;
 			}
 
@@ -615,8 +602,7 @@ namespace cg {
 
 	util::Result<void, KError> TemplGen::_cg_smacro(
 		AstNode const &node,
-		TemplDict &args,
-		Parser &parser
+		TemplDict &args
 	) {
 		try {
 			auto arg_def = node.child_with_cfg("sfrag_macro").value();
@@ -644,7 +630,7 @@ namespace cg {
 				}
 			}
 			
-			TemplFunc func = [this, macro_args, args, macro_name, content, &parser](TemplList l) -> TemplFuncRes {
+			TemplFunc func = [this, macro_args, args, macro_name, content](TemplList l) -> TemplFuncRes {
 				auto local_args = args;
 				if (macro_args.size() < l.size()) {
 					return KError::codegen(util::f(
@@ -674,7 +660,7 @@ namespace cg {
 					}
 					i++;
 				}
-				return {_codegen(*content, local_args, parser).value()};
+				return {_codegen(*content, local_args).value()};
 			};
 			args[macro_name] = func;
 			return {};
@@ -683,13 +669,12 @@ namespace cg {
 
 	TemplGen::CodegenRes TemplGen::_cg_sinclude(
 		AstNode const &node,
-		TemplDict &args,
-		Parser &parser
+		TemplDict &args
 	) {
 		try {
 			auto filename = _unpack_str(node.child_with_tok(Token::Type::StrConst).value()->tok().content()).value();
 			auto include_src = util::readEnvFile(filename);
-			auto include_node = parser.parse({include_src.c_str(), filename.c_str()}, _parser_result).value();
+			auto include_node = _parser->parse({include_src.c_str(), filename.c_str()}, _parser_result).value();
 			include_node->compress(_parser->cfg().prim_names());
 
 
@@ -697,7 +682,7 @@ namespace cg {
 			include_node->print_dot(file, "templgen-include");
 			file.close();
 
-			return _codegen(*include_node, args, parser);
+			return _codegen(*include_node, args);
 		} catch_kerror;
 	}
 
