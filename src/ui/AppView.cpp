@@ -345,10 +345,11 @@ namespace ui {
 			return;
 		}
 		auto &texture = resource.as_texture().value();
-		if (ImGui::BeginCombo(name.data(), texture.name().data())) {
+		if (ImGui::BeginCombo(name.data(), texture->name().data())) {
 			for (auto &t : resource_manager.textures()) {
-				if (ImGui::Selectable(t->name().data(), texture.id() == t->id())) {
-					if (texture.id() != t->id()) {
+				if (ImGui::Selectable(t->name().data(), texture->id() == t->id())) {
+					if (texture->id() != t->id()) {
+						log_trace() << "Setting texture " << t->id() << " of " << resource.name() << std::endl;
 						resources.set_texture(resource.name(), t.get());
 					}
 				}

@@ -352,7 +352,7 @@ vec3 raytrace(Ray ray, inout uvec4 seed) {
 			{% endfor %}
 			}
 			absorbed *= color.xyz;
-			ray.pos += ray.dir * (hit_info.dist - 0.0001);
+			ray.pos += ray.dir * (hit_info.dist - global_uniform.de_small_step);
 
 			if (dot(hit_info.normal, ray.dir.xyz) > 0) {
 				hit_info.normal *= -1; //correct normal

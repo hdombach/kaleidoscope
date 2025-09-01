@@ -49,13 +49,13 @@ namespace types {
 			cg::TemplObj templ_declaration() const;
 
 			util::Result<void, KError> set_texture(const vulkan::Texture *texture);
-			util::Result<vulkan::Texture const &, void> as_texture() const;
+			util::Result<vulkan::Texture const *, void> as_texture() const;
 			util::Result<void, KError> set_mat4(glm::mat4 const &val);
 			util::Result<glm::mat4, void> as_mat4() const;
 			util::Result<void, KError> set_vec3(glm::vec3 const &val);
-			util::Result<glm::vec3 const &, void> as_vec3() const;
+			util::Result<glm::vec3, void> as_vec3() const;
 			util::Result<void, KError> set_color3(glm::vec3 const &vale);
-			util::Result<glm::vec3 const &, void> as_color3() const;
+			util::Result<glm::vec3, void> as_color3() const;
 			util::Result<void, KError> set_float(float val);
 			util::Result<float, void> as_float() const;
 			util::Result<void, KError> set_uint32(uint32_t val);

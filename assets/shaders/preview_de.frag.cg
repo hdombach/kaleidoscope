@@ -34,7 +34,7 @@ layout(set = 1, binding = 2) readonly buffer node_buffer {
 {{ de_funcs() }}
 
 
-bool intersect_nodes(vec3 pos, vec3 dir, inout float d, inout uint id, inout int iterations, inout vec3 closest_pos) {
+bool intersect_nodes(vec3 pos, vec3 dir, inout float d, inout uint id, inout int iterations, inout vec3 closest_pos, inout vec3 normal) {
 	uint n = 1;
 	d = global_uniform.z_far;
 	HitInfo hit_info;
@@ -55,6 +55,7 @@ bool intersect_nodes(vec3 pos, vec3 dir, inout float d, inout uint id, inout int
 				trans_pos = nodes[n].inverse_transformation * vec4(hit_info.pos, 1.0);
 				hit_info.pos = trans_pos.xyz;
 				iterations = hit_info.iterations;
+				normal = hit_info.normal;
 				id = n;
 			}
 		}
@@ -88,7 +89,7 @@ void main() {
 	float d = 0;
 	float cur_depth = texture(depthSampler, uv).x;
 	outNode = texture(node_id_sampler, uv).x;
-	if (intersect_nodes(position.xyz, dir.xyz, d, node_id, iterations, hit_pos.xyz)) {
+	if (intersect_nodes(position.xyz, dir.xyz, d, node_id, iterations, hit_pos.xyz, normal)) {
 
 		hit_pos.w = 1.0;
 		hit_pos = global_uniform.camera_transformation * hit_pos;

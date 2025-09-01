@@ -48,7 +48,7 @@ float de(uint mesh_id, vec3 pos) {
 vec3 de_normal(uint mesh_id, vec3 pos) {
 	//e is an abitrary number
 	//e can cause white specks to appear if chosen wrongly
-	float e = 0.000001;
+	float e = global_uniform.de_small_step / 8;
 	float n = de(mesh_id, pos);
 	float dx = de(mesh_id, pos + vec3(e, 0, 0)) - n;
 	float dy = de(mesh_id, pos + vec3(0, e, 0)) - n;

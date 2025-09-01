@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 
 #include "ShaderResource.hpp"
+#include "util/log.hpp"
 #include "vulkan/MappedUniform.hpp"
 #include "vulkan/Texture.hpp"
 #include "util/format.hpp"
@@ -58,6 +59,7 @@ namespace types {
 	{
 		auto result = ShaderResource(name, Type::Vec3);
 		result._as_vec3 = vec;
+		log_trace() << "vec3 = " << result._as_vec3 << std::endl;
 		result._primitive_size = sizeof(vec);
 		result._declaration = util::f("vec3 ", name);
 		result._uniform_declaration = result._glsl_declaration = "vec3";
@@ -119,7 +121,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		}
 	}
 
-	util::Result<vulkan::Texture const &, void> ShaderResource::as_texture() const {
+	util::Result<vulkan::Texture const *, void> ShaderResource::as_texture() const {
 		if (type() == Type::Texture) {
 			return _as_texture;
 		} else {
@@ -151,6 +153,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 			if (val != _as_vec3) {
 				_set_dirty_bit();
 				_as_vec3 = val;
+				log_trace() << "vec3 = " << _as_vec3 << std::endl;
 			}
 			return {};
 		} else {
@@ -158,7 +161,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		}
 	}
 
-	util::Result<glm::vec3 const &, void> ShaderResource::as_vec3() const {
+	util::Result<glm::vec3, void> ShaderResource::as_vec3() const {
 		if (type() == Type::Vec3) {
 			return _as_vec3;
 		} else {
@@ -171,6 +174,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 			if (val != _as_vec3) {
 				_set_dirty_bit();
 				_as_vec3 = val;
+				log_trace() << "vec3 = " << _as_vec3 << std::endl;
 			}
 			return {};
 		} else {
@@ -178,8 +182,9 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		}
 	}
 
-	util::Result<glm::vec3 const &, void> ShaderResource::as_color3() const {
+	util::Result<glm::vec3, void> ShaderResource::as_color3() const {
 		if (type() == Type::Color3) {
+			log_trace() << "&_as_vec3 = " << &_as_vec3 << std::endl;
 			return _as_vec3;
 		} else {
 			return {};
@@ -231,7 +236,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		_name(name),
 		_primitive_size(0),
 		_type(type),
-		_dirty_bit(false)
+		_dirty_bit(true)
 	{
 	}
 
@@ -254,6 +259,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 				return;
 			}
 		}
+		log_trace() << "Added resource " << resource.name() << std::endl;
 		_resources.push_back(resource);
 		_range = _calc_range();
 	}
@@ -309,12 +315,15 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 			const std::string &name,
 			const vulkan::Texture *texture)
 	{
+		log_trace() << "updating " << name << std::endl;
 		for (auto &resource : _resources) {
 			if (resource.name() == name) {
+				log_trace() << "set texture2 " << texture->id() << std::endl;
 				resource.set_texture(texture);
 				return;
 			}
 		}
+		log_trace() << "Added resource " << name << std::endl;
 		add_resource(ShaderResource::create_texture(name, texture));
 	}
 
@@ -395,7 +404,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 			if (resource->is_primitive()) {
 				memcpy(value, resource->data(), resource->primitive_size());
 			} else if (auto texture = resource->as_texture()) {
-				uint32_t id = texture.value().id();
+				uint32_t id = texture.value()->id();
 				memcpy(value, &id, sizeof(id));
 			}
 			cur_offset += resource->primitive_size();
