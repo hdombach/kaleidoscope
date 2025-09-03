@@ -20,100 +20,50 @@ namespace vulkan {
 			using Ptr = std::unique_ptr<Node>;
 
 			static Ptr create(
-					uint32_t id,
-					types::Mesh const &mesh,
-					types::Material const &material)
-			{
-				auto result = Ptr(new Node(id));
-				result->name() = "Node " + std::to_string(id);
-				result->set_mesh(mesh);
-				result->set_material(material);
+				uint32_t id,
+				types::Mesh const &mesh,
+				types::Material const &material
+			);
 
-				return std::move(result);
-			}
+			static Ptr create_virtual(uint32_t id);
 
 			Node(const Node& other) = delete;
 			Node(Node &&other) = default;
 			Node& operator=(const Node& other) = delete;
 			Node& operator=(Node&& other) = delete;
 
-			std::string const &name() const { return _name; }
-			std::string &name() { return _name; }
+			std::string const &name() const;
+			std::string &name();
 
-			types::Mesh const &mesh() const { return *_mesh; }
-			void set_mesh(types::Mesh const &mesh) {
-				_dirty_bity = true;
-				_mesh = &mesh;
-			}
+			types::Mesh const &mesh() const;
+			void set_mesh(types::Mesh const &mesh);
 
-			types::Material const &material() const { return *_material; }
-			void set_material(types::Material const &material) {
-				_dirty_bity = true;
-				_material = &material;
+			types::Material const &material() const;
+			void set_material(types::Material const &material);
 
-				_resources = types::ShaderResources(&material.resources());
+			bool is_virtual() const;
 
-				_resources.set_uint32("node_id", _id);
-				_resources.set_mat4("object_transformation", get_matrix());
-			}
+			uint32_t id() const;
 
-			uint32_t id() const { return _id; }
+			glm::vec3 position() const;
+			void set_position(glm::vec3 position);
+			glm::vec3 rotation() const;
+			void set_rotation(glm::vec3 rotation);
+			glm::vec3 scale() const;
+			void set_scale(glm::vec3 scale);
+			glm::mat4 get_matrix() const;
+			glm::mat4 get_matrix_inverse() const;
+			types::ShaderResources const &resources() const;
+			types::ShaderResources &resources();
 
-			glm::vec3 position() const { return _position; };
-			void set_position(glm::vec3 position) {
-				if (position == _position) return;
-				_position = position;
-				_resources.set_vec3("position", position);
-				_resources.set_mat4("object_transformation", get_matrix());
-			}
-			glm::vec3 rotation() const { return _rotation; }
-			void set_rotation(glm::vec3 rotation) {
-				if (rotation == _rotation) return;
-				_rotation = rotation;
-				_resources.set_mat4("object_transformation", get_matrix());
-			}
-			glm::vec3 scale() const { return _scale; }
-			void set_scale(glm::vec3 scale) {
-				if (scale == _scale) return;
-				_scale = scale;
-				_resources.set_mat4("object_transformation", get_matrix());
-			}
-			glm::mat4 get_matrix() const {
-				auto result = glm::mat4(1.0);
-				result = glm::translate(result, _position);
-				result *= glm::eulerAngleYXZ(_rotation.y, _rotation.x, _rotation.z);
-				result = glm::scale(result, _scale);
-				return result;
-			}
-			glm::mat4 get_matrix_inverse() const {
-				auto s = _scale;
-				auto small = 0.000001;
-				//Get rid of the divide by 0 error
-				if (s.x == 0) { s.x = small; }
-				if (s.y == 0) { s.y = small; }
-				if (s.z == 0) { s.z = small; }
-
-				auto result = glm::mat4(1.0);
-				result = glm::scale(result, glm::vec3(1.0) / s);
-				result *= glm::inverse(glm::eulerAngleYXZ(_rotation.y, _rotation.x, _rotation.z));
-				result = glm::translate(result, -_position);
-				return result;
-			}
-			types::ShaderResources const &resources() const { return _resources; }
-			types::ShaderResources &resources() { return _resources; }
-
-			bool dirty_bits() const {
-				return _resources.dirty_bits() || _dirty_bity;
-			}
-			void clear_dirty_bits() {
-				_resources.clear_dirty_bits();
-				_dirty_bity = false;
-			}
+			bool dirty_bits() const;
+			void clear_dirty_bits();
 
 		private:
 			uint32_t _id;
-			types::Mesh const *_mesh;
-			types::Material const *_material;
+			bool _is_virtual;
+			types::Mesh const *_mesh=nullptr;;
+			types::Material const *_material=nullptr;
 
 			std::string _name;
 
@@ -123,7 +73,7 @@ namespace vulkan {
 
 			types::ShaderResources _resources;
 			
-			bool _dirty_bity;
+			bool _dirty_bit;
 
 			Node(uint32_t id):
 				_id(id),

@@ -1,4 +1,5 @@
 set(TYPES_SRC
+	${CMAKE_CURRENT_SOURCE_DIR}/Node.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/Camera.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/ColorMaterial.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/CombTextureMaterial.cpp
