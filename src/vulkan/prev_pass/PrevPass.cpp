@@ -185,6 +185,7 @@ namespace vulkan {
 			//TODO: pass the filter view
 			for (auto &node : nodes) {
 				if (!node) continue;
+				if (node->is_virtual()) continue;
 				auto &mesh = _meshes[node->mesh().id()];
 				auto &material = _materials[node->material().id()];
 				auto &prev_node = _nodes[node->id()];
@@ -392,10 +393,13 @@ namespace vulkan {
 	}
 
 	void PrevPass::node_create(uint32_t id) {
-		if (auto node = PrevPassNode::create(*_scene, *this, _scene->get_node(id))) {
-			log_assert(_nodes.insert(std::move(node.value())), "Duplicated node in PrevPass");
+		auto node = _scene->get_node(id);
+		if (node->is_virtual()) return;
+
+		if (auto prev_node = PrevPassNode::create(*_scene, *this, node)) {
+			log_assert(_nodes.insert(std::move(prev_node.value())), "Duplicated node in PrevPass");
 		} else {
-			TRY_LOG(node);
+			TRY_LOG(prev_node);
 		}
 
 		_create_de_buffers();
@@ -403,6 +407,8 @@ namespace vulkan {
 	}
 
 	void PrevPass::node_update(uint32_t id) {
+		if (!_nodes.contains(id)) return;
+
 		_nodes[id].update();
 
 		_create_de_buffers();
@@ -410,6 +416,8 @@ namespace vulkan {
 	}
 
 	void PrevPass::node_remove(uint32_t id) {
+		if (!_nodes.contains(id)) return;
+
 		_nodes[id].destroy();
 
 		_create_de_buffers();

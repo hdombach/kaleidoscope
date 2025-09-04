@@ -442,19 +442,25 @@ namespace vulkan {
 	}
 
 	void RayPass::node_create(uint32_t id) {
-		if (auto node = RayPassNode::create(_scene->get_node(id), this)) {
-			log_assert(_nodes.insert(std::move(node.value())), "Duplicate node in RayPass");
+		auto node = _scene->get_node(id);
+		if (node->is_virtual()) return;
+
+		if (auto rt_node = RayPassNode::create(node, this)) {
+			log_assert(_nodes.insert(std::move(rt_node.value())), "Duplicate node in RayPass");
 		} else {
-			TRY_LOG(node);
+			TRY_LOG(rt_node);
 		}
 		_node_dirty_bit = true;
 	}
 
 	void RayPass::node_update(uint32_t id) {
-		if (auto node = RayPassNode::create(_scene->get_node(id), this)) {
-			_nodes[id] = std::move(node.value());
+		auto node = _scene->get_node(id);
+		if (node->is_virtual()) return;
+
+		if (auto rt_node = RayPassNode::create(node, this)) {
+			_nodes[id] = std::move(rt_node.value());
 		} else {
-			TRY_LOG(node);
+			TRY_LOG(rt_node);
 		}
 		_node_dirty_bit = true;
 	}

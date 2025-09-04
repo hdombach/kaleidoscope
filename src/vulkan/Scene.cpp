@@ -153,6 +153,15 @@ namespace vulkan {
 		return id;
 	}
 
+	util::Result<uint32_t, KError> Scene::add_virtual_node() {
+		auto id = _nodes.get_id();
+		_nodes.insert(Node::create_virtual(id));
+		for (auto &observer : _node_observers) {
+			observer->obs_create(id);
+		}
+		return id;
+	}
+
 	util::Result<void, KError> Scene::rem_node(uint32_t id) {
 		if (!_nodes.contains(id)) {
 			return KError::invalid_node(id);

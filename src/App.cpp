@@ -71,9 +71,16 @@ App::Ptr App::create(std::string const &name) {
 	}
 
 	{
-		auto id = result->_scene->add_node(
+		{
+			auto id = result->_scene->add_node(
 				result->_resource_manager->get_mesh("mandelbulb"), 
-				result->_resource_manager->get_material("color"));
+				result->_resource_manager->get_material("color")
+			);
+		}
+
+		{
+			auto id = result->_scene->add_virtual_node();
+		}
 	}
 
 	result->_view_state = ui::State::create(*result->_scene);

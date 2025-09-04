@@ -62,8 +62,9 @@ namespace vulkan {
 			}
 
 			util::Result<uint32_t, KError> add_node(
-					types::Mesh const *mesh,
-					types::Material const *material);
+				types::Mesh const *mesh,
+				types::Material const *material);
+			util::Result<uint32_t, KError> add_virtual_node();
 			util::Result<void, KError> rem_node(uint32_t id);
 			//TODO: removing, identifiying node
 			types::ResourceManager &resource_manager();
