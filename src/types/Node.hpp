@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/glm.hpp>
@@ -18,6 +19,9 @@ namespace vulkan {
 	class Node {
 		public:
 			using Ptr = std::unique_ptr<Node>;
+			using Container = std::vector<Node *>;
+			using iterator = Container::iterator;
+			using const_iterator = Container::const_iterator;
 
 			static Ptr create(
 				uint32_t id,
@@ -45,6 +49,21 @@ namespace vulkan {
 
 			uint32_t id() const;
 
+			Node *parent();
+			Node const *parent() const;
+			Container children();
+			Container const children() const;
+
+			void move_to(Node *parent);
+			void add_child(Node *child);
+			void remove_child(Node *child);
+			void remove_child(uint32_t id);
+
+			iterator begin();
+			iterator end();
+			const_iterator begin() const;
+			const_iterator end() const;
+
 			glm::vec3 position() const;
 			void set_position(glm::vec3 position);
 			glm::vec3 rotation() const;
@@ -66,6 +85,11 @@ namespace vulkan {
 			types::Material const *_material=nullptr;
 
 			std::string _name;
+
+			// The nodes are owned by the Scene so that the scene can keep track
+			// of uid's and observers
+			Node *_parent;
+			Container _children;
 
 			glm::vec3 _position;
 			glm::vec3 _rotation;

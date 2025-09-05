@@ -50,29 +50,33 @@ App::Ptr App::create(std::string const &name) {
 		log_fatal_error() << scene.error() << std::endl;
 	}
 
-	if (auto id = result->_scene->add_node(
+	if (auto node = result->_scene->create_node(
 				result->_resource_manager->get_mesh("viking_room"),
 				result->_resource_manager->get_material("grunge_comb")))
 	{
-		result->_scene->get_node_mut(id.value())->set_position({0, 2.5, 0});
-		result->_scene->get_node_mut(id.value())->resources().add_resource(types::ShaderResource::create_primitive("comb_ratio", comb_ratio_value));
+		node.value()->set_position({0, 2.5, 0});
+		node.value()->resources().add_resource(
+			types::ShaderResource::create_primitive("comb_ratio", comb_ratio_value)
+		);
 	} else {
-		log_error() << id.error() << std::endl;
+		log_error() << node.error() << std::endl;
 	}
 
-	if (auto id = result->_scene->add_node(
+	if (auto node = result->_scene->create_node(
 				result->_resource_manager->get_mesh("square"),
 				result->_resource_manager->get_material("color")))
 	{
-		result->_scene->get_node_mut(id.value())->set_position({0, 3.0, 0});
-		result->_scene->get_node_mut(id.value())->resources().add_resource(types::ShaderResource::create_color("color", glm::vec3(0.2, 0.3, 1.0)));
+		node.value()->set_position({0, 3, 0});
+		node.value()->resources().add_resource(
+			types::ShaderResource::create_color("color", glm::vec3(0.2, 0.3, 1.0))
+		);
 	} else {
-		log_error() << id.error() << std::endl;
+		log_error() << node.error() << std::endl;
 	}
 
 	{
 		{
-			auto id = result->_scene->add_node(
+			auto id = result->_scene->create_node(
 				result->_resource_manager->get_mesh("mandelbulb"), 
 				result->_resource_manager->get_material("color")
 			);

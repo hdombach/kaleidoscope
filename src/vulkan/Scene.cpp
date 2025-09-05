@@ -34,6 +34,8 @@ namespace vulkan {
 		resource_manager.add_mesh_observer(&scene->_raytrace_render_pass->mesh_observer());
 		resource_manager.add_material_observer(&scene->_raytrace_render_pass->material_observer());
 
+		scene->_root = scene->add_virtual_node().value();
+
 		return scene;
 	}
 
@@ -135,7 +137,7 @@ namespace vulkan {
 		}
 	}
 
-	util::Result<uint32_t, KError> Scene::add_node(
+	util::Result<Node *, KError> Scene::create_node(
 			types::Mesh const *mesh,
 			types::Material const *material)
 	{
@@ -150,16 +152,18 @@ namespace vulkan {
 		for (auto &observer : _node_observers) {
 			observer->obs_create(id);
 		}
-		return id;
+		auto node = _nodes[id].get();
+		node->move_to(_root);
+		return node;
 	}
 
-	util::Result<uint32_t, KError> Scene::add_virtual_node() {
+	util::Result<Node *, KError> Scene::add_virtual_node() {
 		auto id = _nodes.get_id();
 		_nodes.insert(Node::create_virtual(id));
 		for (auto &observer : _node_observers) {
 			observer->obs_create(id);
 		}
-		return id;
+		return _nodes[id].get();
 	}
 
 	util::Result<void, KError> Scene::rem_node(uint32_t id) {
@@ -177,6 +181,14 @@ namespace vulkan {
 
 	types::ResourceManager &Scene::resource_manager() {
 		return *_resource_manager;
+	}
+
+	Node *Scene::root() {
+		return _root;
+	}
+
+	Node const *Scene::root() const {
+		return _root;
 	}
 
 	util::Result<void, KError> Scene::add_node_observer(util::Observer *observer) {

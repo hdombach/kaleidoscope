@@ -84,6 +84,74 @@ namespace vulkan {
 		return _id;
 	}
 
+	Node *Node::parent() {
+		return _parent;
+	}
+
+	Node const *Node::parent() const {
+		return _parent;
+	}
+
+	Node::Container Node::children() {
+		return _children;
+	}
+
+	Node::Container const Node::children() const {
+		return _children;
+	}
+
+	void Node::move_to(Node *parent) {
+		if (_parent && parent && _parent->id() == parent->id()) return;
+		if (!parent && !_parent) return;
+
+		if (_parent) {
+			_parent->remove_child(id());
+		}
+		if (parent) {
+			parent->_children.push_back(this);
+		}
+		_parent = parent;
+	}
+
+	void Node::add_child(Node *child) {
+		child->move_to(this);
+	}
+
+	void Node::remove_child(Node *child) {
+		if (!child) return;
+		remove_child(child->id());
+	}
+
+	void Node::remove_child(uint32_t id) {
+		for (auto c = _children.begin(); c != _children.end(); c++) {
+			auto &child = *(*c);
+			if (child.id() == id) {
+				child._parent = nullptr;
+				_children.erase(c);
+
+				_dirty_bit = true;
+				child._dirty_bit = true;
+				return;
+			}
+		}
+	}
+
+	Node::iterator Node::begin() {
+		return _children.begin();
+	}
+
+	Node::iterator Node::end() {
+		return _children.end();
+	}
+
+	Node::const_iterator Node::begin() const {
+		return _children.begin();
+	}
+
+	Node::const_iterator Node::end() const {
+		return _children.end();
+	}
+
 	glm::vec3 Node::position() const {
 		return _position;
 	}
