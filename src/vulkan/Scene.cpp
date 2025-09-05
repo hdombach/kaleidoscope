@@ -35,6 +35,7 @@ namespace vulkan {
 		resource_manager.add_material_observer(&scene->_raytrace_render_pass->material_observer());
 
 		scene->_root = scene->add_virtual_node().value();
+		scene->_root->name() = "root";
 
 		return scene;
 	}

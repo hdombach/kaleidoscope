@@ -179,24 +179,26 @@ namespace ui {
 			ImGui::PushID(node->id());
 			ImGui::Text("Node (id: %d)", node->id());
 			ui::InputText("Name", &node->name());
-			if (ImGui::BeginCombo("Mesh", node->mesh().name().data())) {
-				for (auto &mesh : scene.resource_manager().meshes()) {
-					if (!mesh) continue;
-					if (ImGui::Selectable(mesh->name().data(), mesh->id() == node->mesh().id())) {
-						node->set_mesh(*mesh);
+			if (!node->is_virtual()) {
+				if (ImGui::BeginCombo("Mesh", node->mesh().name().data())) {
+					for (auto &mesh : scene.resource_manager().meshes()) {
+						if (!mesh) continue;
+						if (ImGui::Selectable(mesh->name().data(), mesh->id() == node->mesh().id())) {
+							node->set_mesh(*mesh);
+						}
 					}
+					ImGui::EndCombo();
 				}
-				ImGui::EndCombo();
-			}
 
-			if (ImGui::BeginCombo("Material", node->material().name().data())) {
-				for (auto &material : scene.resource_manager().materials()) {
-					if (!material) continue;
-					if (ImGui::Selectable(material->name().data(), material->id() == node->material().id())) {
-						node->set_material(*material);
+				if (ImGui::BeginCombo("Material", node->material().name().data())) {
+					for (auto &material : scene.resource_manager().materials()) {
+						if (!material) continue;
+						if (ImGui::Selectable(material->name().data(), material->id() == node->material().id())) {
+							node->set_material(*material);
+						}
 					}
+					ImGui::EndCombo();
 				}
-				ImGui::EndCombo();
 			}
 
 			ImGui::DragFloat3("Position", pos.data(), 0.01f);
