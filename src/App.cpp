@@ -134,6 +134,7 @@ void App::main_loop() {
 		}
 		_prev_semaphore = _ui_render_pipeline->submit([&] {
 				ui::AppView(*this, *_view_state);
+				ImGui::ShowDemoWindow();
 		}, semaphore);
 		//TODO: temp
 	}

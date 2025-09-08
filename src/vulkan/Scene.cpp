@@ -164,7 +164,9 @@ namespace vulkan {
 		for (auto &observer : _node_observers) {
 			observer->obs_create(id);
 		}
-		return _nodes[id].get();
+		auto node = _nodes[id].get();
+		node->move_to(_root);
+		return node;
 	}
 
 	util::Result<void, KError> Scene::rem_node(uint32_t id) {

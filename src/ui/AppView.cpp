@@ -120,7 +120,7 @@ namespace ui {
 		ImGui::Begin("Selected");
 		switch (state.scene_tab) {
 			case State::Nodes:
-				NodeView(scene, scene.get_node_mut(state.selected_item), state);
+				NodeSelectedView(scene, scene.get_node_mut(state.selected_item), state);
 				break;
 			case State::Textures:
 				TextureSelectedView(scene.resource_manager(), scene.resource_manager().get_texture(state.selected_item), state);
@@ -143,23 +143,7 @@ namespace ui {
 		char *name;
 		float width = 250;
 		ImGui::BeginChild("Node List", ImVec2(width, -ImGui::GetFrameHeightWithSpacing()), true);
-		for (auto &node : scene) {
-			if (node->name().empty()) {
-				snprintf(name_buf, sizeof(name_buf), "Node %d", node->id());
-				name = name_buf;
-			} else {
-				name = node->name().data();
-			}
-
-			if (ImGui::Selectable(name, state.selected_item == node->id())) {
-				if (state.selected_item == node->id()) {
-					state.selected_item = -1;
-				} else {
-					state.selected_item = node->id();
-					state.selected_name = node->name();
-				}
-			}
-		}
+		NodeItemView(scene, *scene.root(), state);
 		ImGui::EndChild();
 		if (ImGui::Button("New node", ImVec2(width, 0))) {
 			if (auto node = scene.create_node(scene.resource_manager().default_mesh(), scene.resource_manager().default_material())) {
@@ -171,51 +155,96 @@ namespace ui {
 		}
 	}
 
-	void NodeView(vulkan::Scene &scene, vulkan::Node *node, State &state) {
-		if (node) {
-			auto pos = util::as_array(node->position());
-			auto rotation = util::as_array(node->rotation());
-			auto scale = util::as_array(node->scale());
-			ImGui::PushID(node->id());
-			ImGui::Text("Node (id: %d)", node->id());
-			ui::InputText("Name", &node->name());
-			if (!node->is_virtual()) {
-				if (ImGui::BeginCombo("Mesh", node->mesh().name().data())) {
-					for (auto &mesh : scene.resource_manager().meshes()) {
-						if (!mesh) continue;
-						if (ImGui::Selectable(mesh->name().data(), mesh->id() == node->mesh().id())) {
-							node->set_mesh(*mesh);
-						}
-					}
-					ImGui::EndCombo();
-				}
+	void NodeItemView(vulkan::Scene &scene, vulkan::Node &node, State &state) {
+		char name_buf[128];
+		char *name;
+		ImGuiTreeNodeFlags tree_flags = ImGuiTreeNodeFlags_OpenOnArrow;
 
-				if (ImGui::BeginCombo("Material", node->material().name().data())) {
-					for (auto &material : scene.resource_manager().materials()) {
-						if (!material) continue;
-						if (ImGui::Selectable(material->name().data(), material->id() == node->material().id())) {
-							node->set_material(*material);
-						}
-					}
-					ImGui::EndCombo();
-				}
-			}
-
-			ImGui::DragFloat3("Position", pos.data(), 0.01f);
-			ImGui::DragFloat3("Rotation", rotation.data(), 0.01f);
-			ImGui::DragFloat3("Scale", scale.data(), 0.01f);
-			if (ImGui::Button("Delete")) {
-				scene.rem_node(node->id());
-			}
-			ImGui::PopID();
-			node->set_position(util::as_vec(pos));
-			node->set_rotation(util::as_vec(rotation));
-			node->set_scale(util::as_vec(scale));
-			ShaderResourcesView(node->resources(), scene.resource_manager(), state);
+		if (node.name().empty()) {
+			snprintf(name_buf, sizeof(name_buf), "Node %d", node.id());
+			name = name_buf;
 		} else {
-			ImGui::Text("No node selected");
+			name = node.name().data();
 		}
 
+		if (state.selected_item == node.id()) {
+			tree_flags |= ImGuiTreeNodeFlags_Selected;
+		}
+
+
+		bool show_children = ImGui::TreeNodeEx(node.name().data(), tree_flags);
+		if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
+			if (state.selected_item == node.id()) {
+				state.selected_item = -1;
+			} else {
+				state.selected_item = node.id();
+				state.selected_name = node.name();
+			}
+		}
+		if (node.id() != scene.root()->id() && ImGui::BeginDragDropSource()) {
+			ImGui::SetDragDropPayload("NodeItems", &node, sizeof(vulkan::Node));
+			ImGui::Text("%s", node.name().data());
+			ImGui::EndDragDropSource();
+		}
+		if (ImGui::BeginDragDropTarget()) {
+			if (auto payload = ImGui::AcceptDragDropPayload("NodeItems")) {
+				auto n = static_cast<vulkan::Node const *>(payload->Data);
+				scene.get_node_mut(n->id())->move_to(&node);
+			}
+		}
+		if (show_children) {
+			for (auto &child : node) {
+				NodeItemView(scene, *child, state);
+			}
+			ImGui::TreePop();
+		}
+	}
+
+	void NodeSelectedView(vulkan::Scene &scene, vulkan::Node *node, State &state) {
+		if (!node) {
+			ImGui::Text("No node selected");
+			return;
+		}
+
+		auto pos = util::as_array(node->position());
+		auto rotation = util::as_array(node->rotation());
+		auto scale = util::as_array(node->scale());
+		ImGui::PushID(node->id());
+		ImGui::Text("Node (id: %d)", node->id());
+		ui::InputText("Name", &node->name());
+		if (!node->is_virtual()) {
+			if (ImGui::BeginCombo("Mesh", node->mesh().name().data())) {
+				for (auto &mesh : scene.resource_manager().meshes()) {
+					if (!mesh) continue;
+					if (ImGui::Selectable(mesh->name().data(), mesh->id() == node->mesh().id())) {
+						node->set_mesh(*mesh);
+					}
+				}
+				ImGui::EndCombo();
+			}
+
+			if (ImGui::BeginCombo("Material", node->material().name().data())) {
+				for (auto &material : scene.resource_manager().materials()) {
+					if (!material) continue;
+					if (ImGui::Selectable(material->name().data(), material->id() == node->material().id())) {
+						node->set_material(*material);
+					}
+				}
+				ImGui::EndCombo();
+			}
+		}
+
+		ImGui::DragFloat3("Position", pos.data(), 0.01f);
+		ImGui::DragFloat3("Rotation", rotation.data(), 0.01f);
+		ImGui::DragFloat3("Scale", scale.data(), 0.01f);
+		if (ImGui::Button("Delete")) {
+			scene.rem_node(node->id());
+		}
+		ImGui::PopID();
+		node->set_position(util::as_vec(pos));
+		node->set_rotation(util::as_vec(rotation));
+		node->set_scale(util::as_vec(scale));
+		ShaderResourcesView(node->resources(), scene.resource_manager(), state);
 	}
 
 	void TextureListView(types::ResourceManager &resources, State &state) {
