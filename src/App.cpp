@@ -55,7 +55,7 @@ App::Ptr App::create(std::string const &name) {
 				result->_resource_manager->get_mesh("viking_room"),
 				result->_resource_manager->get_material("grunge_comb")))
 	{
-		//node.value()->set_position({0, 2.5, 0});
+		node.value()->set_position({0, 2.5, 0});
 		node.value()->resources().add_resource(
 			types::ShaderResource::create_primitive("comb_ratio", comb_ratio_value)
 		);
@@ -67,7 +67,7 @@ App::Ptr App::create(std::string const &name) {
 				result->_resource_manager->get_mesh("square"),
 				result->_resource_manager->get_material("color")))
 	{
-		//node.value()->set_position({0, 3, 0});
+		node.value()->set_position({0, 3, 0});
 		node.value()->resources().add_resource(
 			types::ShaderResource::create_color("color", glm::vec3(0.2, 0.3, 1.0))
 		);
@@ -75,7 +75,7 @@ App::Ptr App::create(std::string const &name) {
 		log_error() << node.error() << std::endl;
 	}
 
-	if (false) {
+	{
 		{
 			auto id = result->_scene->create_node(
 				result->_resource_manager->get_mesh("mandelbulb"), 
@@ -134,7 +134,7 @@ void App::main_loop() {
 		}
 		_prev_semaphore = _ui_render_pipeline->submit([&] {
 				ui::AppView(*this, *_view_state);
-				ImGui::ShowDemoWindow();
+				//ImGui::ShowDemoWindow();
 		}, semaphore);
 		//TODO: temp
 	}
