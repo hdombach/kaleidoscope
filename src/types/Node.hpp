@@ -104,5 +104,7 @@ namespace vulkan {
 				_mesh(nullptr),
 				_material(nullptr)
 		{}
+
+		void _propagate_matrix();
 	};
 }

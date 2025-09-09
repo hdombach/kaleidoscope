@@ -6,6 +6,7 @@
 #include "Scene.hpp"
 #include "prev_pass/PrevPass.hpp"
 #include "Uniforms.hpp"
+#include "util/log.hpp"
 
 namespace vulkan {
 	util::Result<Scene::Ptr, KError> Scene::create(

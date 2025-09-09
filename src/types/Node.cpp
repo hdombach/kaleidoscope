@@ -1,5 +1,6 @@
 #include "Node.hpp"
 #include "util/log.hpp"
+#include <glm/gtx/euler_angles.hpp>
 
 namespace vulkan {
 	Node::Ptr Node::create(
@@ -104,6 +105,8 @@ namespace vulkan {
 		if (_parent && parent && _parent->id() == parent->id()) return;
 		if (!parent && !_parent) return;
 
+		//TODO: Calculate translation relative to parent
+
 		if (_parent) {
 			_parent->remove_child(id());
 		}
@@ -111,6 +114,11 @@ namespace vulkan {
 			parent->_children.push_back(this);
 		}
 		_parent = parent;
+		
+		//set_position(og_position - abs_position());
+		//set_rotation(og_rotation - abs_rotation());
+		//set_scale(og_scale / abs_scale());
+		_propagate_matrix();
 	}
 
 	void Node::add_child(Node *child) {
@@ -160,7 +168,7 @@ namespace vulkan {
 		if (position == _position) return;
 		_position = position;
 		_resources.set_vec3("position", position);
-		_resources.set_mat4("object_transformation", get_matrix());
+		_propagate_matrix();
 	}
 
 	glm::vec3 Node::rotation() const {
@@ -170,7 +178,7 @@ namespace vulkan {
 	void Node::set_rotation(glm::vec3 rotation) {
 		if (rotation == _rotation) return;
 		_rotation = rotation;
-		_resources.set_mat4("object_transformation", get_matrix());
+		_propagate_matrix();
 	}
 
 	glm::vec3 Node::scale() const {
@@ -180,11 +188,14 @@ namespace vulkan {
 	void Node::set_scale(glm::vec3 scale) {
 		if (scale == _scale) return;
 		_scale = scale;
-		_resources.set_mat4("object_transformation", get_matrix());
+		_propagate_matrix();
 	}
 
 	glm::mat4 Node::get_matrix() const {
 		auto result = glm::mat4(1.0);
+		if (_parent) {
+			result *=_parent->get_matrix();
+		}
 		result = glm::translate(result, _position);
 		result *= glm::eulerAngleYXZ(_rotation.y, _rotation.x, _rotation.z);
 		result = glm::scale(result, _scale);
@@ -221,5 +232,13 @@ namespace vulkan {
 	void Node::clear_dirty_bits() {
 		_resources.clear_dirty_bits();
 		_dirty_bit = false;
+	}
+
+	void Node::_propagate_matrix() {
+		_dirty_bit = true;
+		_resources.set_mat4("object_transformation", get_matrix());
+		for (auto &child : _children) {
+			child->_propagate_matrix();
+		}
 	}
 }
