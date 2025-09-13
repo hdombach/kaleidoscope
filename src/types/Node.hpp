@@ -18,6 +18,22 @@ namespace vulkan {
 	 */
 	class Node {
 		public:
+			enum class Type {
+				/**
+				 * @brief A renderable object with a mesh and material associated with it
+				 */
+				Object,
+				/**
+				 * @brief A non-renderable node used for grouping and applying
+				 * translations
+				 */
+				Virtual,
+				/**
+				 * @brief A node you can render the scene from
+				 */
+				Camera
+			};
+
 			using Ptr = std::unique_ptr<Node>;
 			using Container = std::vector<Node *>;
 			using iterator = Container::iterator;
@@ -39,13 +55,13 @@ namespace vulkan {
 			std::string const &name() const;
 			std::string &name();
 
+			Type type() const;
+
 			types::Mesh const &mesh() const;
 			void set_mesh(types::Mesh const &mesh);
 
 			types::Material const &material() const;
 			void set_material(types::Material const &material);
-
-			bool is_virtual() const;
 
 			uint32_t id() const;
 
@@ -78,9 +94,12 @@ namespace vulkan {
 			bool dirty_bits() const;
 			void clear_dirty_bits();
 
+		protected:
+			Node(uint32_t id, Type type);
+
 		private:
 			uint32_t _id;
-			bool _is_virtual;
+			Type _type;
 			types::Mesh const *_mesh=nullptr;;
 			types::Material const *_material=nullptr;
 

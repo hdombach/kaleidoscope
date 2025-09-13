@@ -443,7 +443,7 @@ namespace vulkan {
 
 	void RayPass::node_create(uint32_t id) {
 		auto node = _scene->get_node(id);
-		if (node->is_virtual()) return;
+		if (node->type() != vulkan::Node::Type::Object) return;
 
 		if (auto rt_node = RayPassNode::create(node, this)) {
 			log_assert(_nodes.insert(std::move(rt_node.value())), "Duplicate node in RayPass");
@@ -455,7 +455,7 @@ namespace vulkan {
 
 	void RayPass::node_update(uint32_t id) {
 		auto node = _scene->get_node(id);
-		if (node->is_virtual()) return;
+		if (node->type() != vulkan::Node::Type::Object) return;
 
 		if (auto rt_node = RayPassNode::create(node, this)) {
 			_nodes[id] = std::move(rt_node.value());

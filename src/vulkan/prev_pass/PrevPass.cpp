@@ -185,7 +185,7 @@ namespace vulkan {
 			//TODO: pass the filter view
 			for (auto &node : nodes) {
 				if (!node) continue;
-				if (node->is_virtual()) continue;
+				if (node->type() != vulkan::Node::Type::Object) continue;
 				auto &mesh = _meshes[node->mesh().id()];
 				auto &material = _materials[node->material().id()];
 				auto &prev_node = _nodes[node->id()];
@@ -394,7 +394,7 @@ namespace vulkan {
 
 	void PrevPass::node_create(uint32_t id) {
 		auto node = _scene->get_node(id);
-		if (node->is_virtual()) return;
+		if (node->type() != vulkan::Node::Type::Object) return;
 
 		if (auto prev_node = PrevPassNode::create(*_scene, *this, node)) {
 			log_assert(_nodes.insert(std::move(prev_node.value())), "Duplicated node in PrevPass");

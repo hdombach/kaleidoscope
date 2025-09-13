@@ -37,6 +37,7 @@ namespace vulkan {
 
 		scene->_root = scene->add_virtual_node().value();
 		scene->_root->name() = "root";
+		scene->_free_camera = types::Camera::create(scene->_nodes.get_id());
 
 		return scene;
 	}
@@ -91,11 +92,11 @@ namespace vulkan {
 	VkSemaphore Scene::render_raytrace(VkSemaphore semaphore) {
 		auto uniform_buffer = ComputeUniform{};
 		uniform_buffer.camera_rotation = camera().gen_rotate_mat();
-		uniform_buffer.camera_translation = glm::vec4(camera().position, 0.0);
-		uniform_buffer.aspect = static_cast<float>(camera().width) / static_cast<float>(camera().height);
-		uniform_buffer.fovy = camera().fovy;
-		uniform_buffer.de_iterations = camera().de_iterations;
-		uniform_buffer.de_small_step = std::pow(10.0f, -camera().de_small_step);
+		uniform_buffer.camera_translation = glm::vec4(camera().position(), 0.0);
+		uniform_buffer.aspect = static_cast<float>(camera().width()) / static_cast<float>(camera().height());
+		uniform_buffer.fovy = camera().fovy();
+		uniform_buffer.de_iterations = camera().de_iterations();
+		uniform_buffer.de_small_step = std::pow(10.0f, -camera().de_small_step());
 
 		return _raytrace_render_pass->submit(*_nodes.raw()[0], _render_rate, uniform_buffer, semaphore);
 	}
@@ -109,18 +110,22 @@ namespace vulkan {
 		}
 		if (_camera_dirty_bit) {
 			VkExtent2D new_size;
-			new_size.width = _camera.width;
-			new_size.height = _camera.height;
+			new_size.width = camera().width();
+			new_size.height = camera().height();
 			resize(new_size);
 		}
 	}
 
-	void Scene::set_camera(const types::Camera &camera) {
-		if (camera == _camera) return;
-		if (!_is_preview) return;
-		_camera_dirty_bit = true;
+	void Scene::set_active_camera(uint32_t id) {
+		_active_camera = id;
+	}
 
-		_camera = camera;
+	types::Camera &Scene::camera() {
+		if (_active_camera == 0) {
+			return *_free_camera;
+		} else {
+			return *static_cast<types::Camera*>(_nodes[_active_camera].get());
+		}
 	}
 
 	Node const *Scene::get_node(uint32_t id) const {

@@ -24,13 +24,13 @@ namespace vulkan {
 			return {
 				camera.gen_rotate_mat(),
 				camera.gen_raster_mat(),
-				glm::vec4(camera.position, 0.0f),
+				glm::vec4(camera.position(), 0.0f),
 				camera.get_aspect(),
-				camera.fovy,
-				camera.z_near,
-				camera.z_far,
-				camera.de_iterations,
-				std::pow(10.0f, -camera.de_small_step),
+				camera.fovy(),
+				camera.z_near(),
+				camera.z_far(),
+				camera.de_iterations(),
+				std::pow(10.0f, -camera.de_small_step()),
 			};
 		}
 

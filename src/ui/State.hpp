@@ -15,7 +15,6 @@ namespace ui {
 	struct State {
 		enum SceneTab {
 			Nothing,
-			Camera,
 			Nodes,
 			Textures,
 			Meshes,

@@ -8,21 +8,19 @@ namespace vulkan {
 		const types::Mesh &mesh,
 		const types::Material &material
 	) {
-		auto result = Ptr(new Node(id));
+		auto result = Ptr(new Node(id, Type::Object));
 		//The default name
 		result->name() = "Node " + std::to_string(id);
 		result->set_mesh(mesh);
 		result->set_material(material);
-		result->_is_virtual = false;
 
 		return std::move(result);
 	}
 
 	Node::Ptr Node::create_virtual(uint32_t id) {
-		auto result = Ptr(new Node(id));
+		auto result = Ptr(new Node(id, Type::Virtual));
 		//The default name
 		result->name() = "Node " + std::to_string(id);
-		result->_is_virtual = true;
 		return std::move(result);
 	}
 
@@ -34,20 +32,24 @@ namespace vulkan {
 		return _name;
 	}
 
+	Node::Type Node::type() const {
+		return _type;
+	}
+
 	types::Mesh const &Node::mesh() const {
 		log_assert(
-			!_is_virtual,
-			"Cannot get the mesh of a virtual node. "
-			"Make sure you check is_virtual() first."
+			_type == Type::Object,
+			"Cannot get the mesh of a non-renderable node. "
+			"Make sure you check type() first."
 		);
 		return *_mesh;
 	}
 
 	void Node::set_mesh(types::Mesh const &mesh) {
 		log_assert(
-			!_is_virtual,
-			"Cannot set mesh on a virtual node. "
-			"Make sure you check is_virtual() first."
+			_type == Type::Object,
+			"Cannot set mesh of a non-renderable node. "
+			"Make sure you check type() first."
 		);
 		_dirty_bit = true;
 		_mesh = &mesh;
@@ -55,18 +57,18 @@ namespace vulkan {
 
 	types::Material const &Node::material() const {
 		log_assert(
-			!_is_virtual,
-			"Cannot get the material of a virtual node. "
-			"Make sure you check is is_virtual() first."
+			_type == Type::Object,
+			"Cannot get the material of a non-renderable node. "
+			"Make sure you check type() first."
 		);
 		return *_material;
 	}
 
 	void Node::set_material(types::Material const &material) {
 		log_assert(
-			!_is_virtual,
-			"Cannot set material on a virtual node. "
-			"Make sure you check is_virtual() first."
+			_type == Type::Object,
+			"Cannot set material on a non-renderable node. "
+			"Make sure you check type() first."
 		);
 		_dirty_bit = true;
 		_material = &material;
@@ -75,10 +77,6 @@ namespace vulkan {
 
 		_resources.set_uint32("node_id", _id);
 		_resources.set_mat4("object_transformation", get_matrix());
-	}
-
-	bool Node::is_virtual() const {
-		return _is_virtual;
 	}
 
 	uint32_t Node::id() const {
@@ -177,6 +175,7 @@ namespace vulkan {
 
 	void Node::set_rotation(glm::vec3 rotation) {
 		if (rotation == _rotation) return;
+		log_debug() << "setting rotation: " << rotation << std::endl;
 		_rotation = rotation;
 		_propagate_matrix();
 	}
@@ -232,6 +231,14 @@ namespace vulkan {
 	void Node::clear_dirty_bits() {
 		_resources.clear_dirty_bits();
 		_dirty_bit = false;
+	}
+
+	Node::Node(uint32_t id, Node::Type type):
+		_id(id),
+		_type(type),
+		_mesh(nullptr),
+		_material(nullptr)
+	{
 	}
 
 	void Node::_propagate_matrix() {

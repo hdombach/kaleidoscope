@@ -7,45 +7,100 @@
 #include <glm/fwd.hpp>
 #include <glm/geometric.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+#include "util/math.hpp"
+
 namespace types {
-	Camera::Camera() {
-		position = glm::vec3(0, -1, 0);
-		rotation = glm::angleAxis(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		width = 500;
-		height = 500;
-		fovy = 45;
-		z_near = 0.01f;
-		z_far = 10.0f;
-		de_iterations = 120;
-		de_small_step = 3;
+	Camera::Ptr Camera::create(uint32_t id) {
+		auto result = Ptr(new Camera(id, Node::Type::Camera));
+
+		result->set_position({0, -1, 0});
+		result->_q = glm::angleAxis(glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		result->set_rotation(util::quaternion_to_euler(result->_q));
+		result->_width = 500;
+		result->_height = 500;
+		result->_fovy = 45;
+		result->_z_near = 0.01f;
+		result->_z_far = 10.0f;
+		result->_de_iterations = 120;
+		result->_de_small_step = 3;
+
+		return std::move(result);
 	}
 
 	bool Camera::operator==(const Camera &other) const {
-		return
-			position == other.position &&
-			rotation == other.rotation &&
-			width == other.width &&
-			height == other.height &&
-			fovy == other.fovy &&
-			z_near == other.z_near &&
-			z_far == other.z_far &&
-			de_iterations == other.de_iterations &&
-			de_small_step == other.de_small_step;
+		return id() == other.id();
 	}
 
 	bool Camera::operator!=(const Camera &other) const {
 		return !(*this == other);
 	}
 
+	int Camera::width() const {
+		return _width;
+	}
+
+	void Camera::set_width(int w) {
+		_width = w;
+	}
+
+	int Camera::height() const {
+		return _height;
+	}
+
+	void Camera::set_height(int h) {
+		_height = h;
+	}
+
+	float Camera::fovy() const {
+		return _fovy;
+	}
+
+	void Camera::set_fovy(float fovy) {
+		_fovy = fovy;
+	}
+
+	float Camera::z_near() const {
+		return _z_near;
+	}
+
+	void Camera::set_z_near(float z_near) {
+		_z_near = z_near;
+	}
+
+	float Camera::z_far() const {
+		return _z_far;
+	}
+
+	void Camera::set_z_far(float z_far) {
+		_z_far = z_far;
+	}
+
+	int Camera::de_iterations() const {
+		return _de_iterations;
+	}
+
+	void Camera::set_de_iterations(int de_iterations) {
+		_de_iterations = de_iterations;
+	}
+
+	float Camera::de_small_step() const {
+		return _de_small_step;
+	}
+
+	void Camera::set_de_small_step(float small_step) {
+		_de_small_step = small_step;
+	}
+
 	glm::mat4 Camera::gen_raster_mat() const {
 		auto result = glm::mat4(1.0);
 		auto perspective = glm::perspective(
-				glm::radians(fovy), 
-				(float) width / (float) height, 
-				z_near, 
-				z_far);
+				glm::radians(_fovy), 
+				(float) _width / (float) _height, 
+				_z_near, 
+				_z_far);
 		perspective[1][1] *= -1;
 		result *= perspective;
 		result *= gen_rotate_mat();
@@ -54,15 +109,16 @@ namespace types {
 	}
 
 	glm::mat4 Camera::gen_rotate_mat() const {
-		return glm::toMat4(rotation);
+		auto r = rotation();
+		return glm::eulerAngleYXZ(r.y, r.x, r.z);
 	}
 
 	glm::mat4 Camera::gen_translate_mat() const {
-		return glm::translate(glm::mat4(1.0), position);
+		return glm::translate(glm::mat4(1.0), position());
 	}
 
 	float Camera::get_aspect() const {
-		return static_cast<float>(width) / static_cast<float>(height);
+		return static_cast<float>(_width) / static_cast<float>(_height);
 	}
 
 	void Camera::rotate_drag(float deltax, float deltay) {
@@ -72,10 +128,32 @@ namespace types {
 
 		auto angle = acos(glm::dot(rotation_start, rotation_end));
 		auto rotation_axis = glm::normalize(glm::cross(rotation_start, rotation_end));
-		rotation_axis = rotation_axis * rotation;
+		rotation_axis = rotation_axis * _q;
+
 		if (!std::isnan(rotation_axis.x)) {
 			auto rotation_quat = glm::angleAxis(angle, rotation_axis);
-			this->rotation = glm::normalize(this->rotation * rotation_quat);
+			this->_q = glm::normalize(this->_q * rotation_quat);
+			set_rotation(util::quaternion_to_euler(this->_q));
 		}
+	}
+
+	void Camera::rotate_drag(glm::vec2 delta) {
+		rotate_drag(delta.x, -delta.y);
+	}
+
+	std::array<float, 3> Camera::get_position_array() {
+		return std::array<float, 3>{position().x, position().y, position().z};
+	}
+
+	void Camera::set_position(std::array<float, 3> &position) {
+		Node::set_position(glm::vec3(position[0], position[1], position[2]));
+	}
+
+	std::array<float, 3> Camera::get_rotation_array() {
+		return std::array<float, 3>{rotation().x, rotation().y, rotation().z};
+	}
+
+	void Camera::set_rotation(std::array<float, 3> &r) {
+		Node::set_rotation(glm::vec3(r[0], r[1], r[2]));
 	}
 }

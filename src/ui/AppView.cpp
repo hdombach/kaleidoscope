@@ -22,7 +22,10 @@ namespace ui {
 		auto mouse_raw = ImGui::GetMousePos();
 		auto cur_mouse_pos = glm::vec2(mouse_raw.x, mouse_raw.y);
 		auto mouse_offset = cur_mouse_pos - state.prev_mouse_pos;
-		auto scene_size = ImVec2(app.scene().camera().width, app.scene().camera().height);
+		auto scene_size = ImVec2(
+			app.scene().camera().width(),
+			app.scene().camera().height()
+		);
 		int render_rate = app.scene().render_rate();
 
 		ImGui::Begin("Viewport");
@@ -30,12 +33,12 @@ namespace ui {
 		ImGui::Text("offsett: %f, %f", mouse_offset.x, mouse_offset.y);
 		TextureView(state.scene_texture, scene_size);
 		if (ImGui::IsItemHovered()) {
-			auto camera = app.scene().camera();
+			auto &camera = app.scene().camera();
 			if (ImGui::IsMouseDown(0)) {
 				camera.rotate_drag(mouse_offset * -0.004f);
 			}
-			camera.position += get_cam_movement() * camera.rotation * 0.01f;
-			app.scene().set_camera(camera);
+			auto p = get_cam_movement() * camera.gen_rotate_mat() * 0.01f;
+			camera.set_position(camera.position() + glm::vec3(p.x, p.y, p.z));
 		}
 		ImGui::End();
 
@@ -51,8 +54,8 @@ namespace ui {
 		state.prev_mouse_pos = cur_mouse_pos;
 	}
 
-	glm::vec3 get_cam_movement() {
-		auto result = glm::vec3(0);
+	glm::vec4 get_cam_movement() {
+		auto result = glm::vec4(0);
 
 		if (ImGui::IsKeyDown(ImGui::GetKeyIndex(ImGuiKey_W))) {
 			result.z += 1;
@@ -81,14 +84,6 @@ namespace ui {
 	void SceneView(vulkan::Scene &scene, State &state) {
 		ImGui::Separator();
 		if (ImGui::BeginTabBar("##SceneTabs")) {
-			if (ImGui::BeginTabItem("Camera")) {
-				auto camera = scene.camera();
-				state.scene_tab = State::Camera;
-				CameraView::show(camera);
-				scene.set_camera(camera);
-				ImGui::EndTabItem();
-			}
-
 			if (ImGui::BeginTabItem("Nodes")) {
 				state.scene_tab = State::Nodes;
 				NodesView(scene, state);
@@ -212,7 +207,7 @@ namespace ui {
 		ImGui::PushID(node->id());
 		ImGui::Text("Node (id: %d)", node->id());
 		ui::InputText("Name", &node->name());
-		if (!node->is_virtual()) {
+		if (node->type() == vulkan::Node::Type::Object) {
 			if (ImGui::BeginCombo("Mesh", node->mesh().name().data())) {
 				for (auto &mesh : scene.resource_manager().meshes()) {
 					if (!mesh) continue;

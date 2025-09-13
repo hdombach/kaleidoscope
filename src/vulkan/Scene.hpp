@@ -51,8 +51,9 @@ namespace vulkan {
 
 			void set_selected_node(uint32_t n) { _selected_node = n; }
 			uint32_t selected_node() { return _selected_node; }
-			void set_camera(types::Camera const &camera);
-			types::Camera const& camera() const { return _camera; }
+			void set_active_camera(uint32_t id);
+			types::Camera &camera();
+			types::Camera const& camera() const;
 			Node const *get_node(uint32_t id) const;
 			Node *get_node_mut(uint32_t id);
 			void update_node(uint32_t id) { 
@@ -100,13 +101,15 @@ namespace vulkan {
 			 * First element is reserved for unused id
 			 */
 			Container _nodes;
+			types::Camera::Ptr _free_camera;
 			Node *_root;
-			types::Camera _camera;
 			bool _camera_dirty_bit = false;
 			types::ResourceManager *_resource_manager;
 			bool _is_preview;
 			int _render_rate = 10000;
 			std::list<util::Observer *> _node_observers;
 			uint32_t _selected_node;
+			//active_camera = 0 for freeform camera
+			uint32_t _active_camera;
 	};
 }
