@@ -192,6 +192,10 @@ namespace vulkan {
 			return KError::invalid_node(id);
 		}
 
+		if (id == _root->id()) {
+			return KError::invalid_arg("Cannot delete root");
+		}
+
 		for (auto child : *_nodes[id].get()) {
 			remove_node(child->id());
 		}

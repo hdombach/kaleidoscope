@@ -144,7 +144,7 @@ namespace ui {
 		ImGui::EndChild();
 
 		log_debug() << (state.selected_item == 0) << ", " << state.selected_item << std::endl;
-		ImGui::BeginDisabled(state.selected_item == State::SELECTED_NONE);
+		ImGui::BeginDisabled(state.selected_item == State::SELECTED_NONE || state.selected_item == scene.root()->id());
 		if (ImGui::Button("Delete node", ImVec2(width, 0))) {
 			if (state.selected_item != 0) {
 				scene.remove_node(state.selected_item);
@@ -265,9 +265,11 @@ namespace ui {
 		ImGui::DragFloat3("Position", pos.data(), 0.01f);
 		ImGui::DragFloat3("Rotation", rotation.data(), 0.01f);
 		ImGui::DragFloat3("Scale", scale.data(), 0.01f);
+		ImGui::BeginDisabled(node->id() == scene.root()->id());
 		if (ImGui::Button("Delete")) {
 			scene.remove_node(node->id());
 		}
+		ImGui::EndDisabled();
 		ImGui::PopID();
 		node->set_position(util::as_vec(pos));
 		node->set_rotation(util::as_vec(rotation));
