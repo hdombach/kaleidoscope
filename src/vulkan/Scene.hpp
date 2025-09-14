@@ -64,9 +64,11 @@ namespace vulkan {
 
 			util::Result<Node *, KError> create_node(
 				types::Mesh const *mesh,
-				types::Material const *material);
-			util::Result<Node *, KError> add_virtual_node();
-			util::Result<void, KError> rem_node(uint32_t id);
+				types::Material const *material
+			);
+			util::Result<Node *, KError> create_virtual_node();
+			util::Result<types::Camera *, KError> create_camera();
+			util::Result<void, KError> remove_node(uint32_t id);
 			//TODO: removing, identifiying node
 			types::ResourceManager &resource_manager();
 
@@ -101,7 +103,7 @@ namespace vulkan {
 			 * First element is reserved for unused id
 			 */
 			Container _nodes;
-			types::Camera::Ptr _free_camera;
+			types::Camera::Ptr _viewport_camera;
 			Node *_root;
 			bool _camera_dirty_bit = false;
 			types::ResourceManager *_resource_manager;

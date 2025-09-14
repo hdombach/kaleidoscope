@@ -35,9 +35,10 @@ namespace vulkan {
 		resource_manager.add_mesh_observer(&scene->_raytrace_render_pass->mesh_observer());
 		resource_manager.add_material_observer(&scene->_raytrace_render_pass->material_observer());
 
-		scene->_root = scene->add_virtual_node().value();
+		scene->_root = scene->create_virtual_node().value();
 		scene->_root->name() = "root";
-		scene->_free_camera = types::Camera::create(scene->_nodes.get_id());
+		scene->_viewport_camera = types::Camera::create(scene->_nodes.get_id());
+		scene->_viewport_camera->name() = "Viewport camera";
 
 		return scene;
 	}
@@ -122,7 +123,7 @@ namespace vulkan {
 
 	types::Camera &Scene::camera() {
 		if (_active_camera == 0) {
-			return *_free_camera;
+			return *_viewport_camera;
 		} else {
 			return *static_cast<types::Camera*>(_nodes[_active_camera].get());
 		}
@@ -164,7 +165,7 @@ namespace vulkan {
 		return node;
 	}
 
-	util::Result<Node *, KError> Scene::add_virtual_node() {
+	util::Result<Node *, KError> Scene::create_virtual_node() {
 		auto id = _nodes.get_id();
 		_nodes.insert(Node::create_virtual(id));
 		for (auto &observer : _node_observers) {
@@ -175,15 +176,31 @@ namespace vulkan {
 		return node;
 	}
 
-	util::Result<void, KError> Scene::rem_node(uint32_t id) {
+	util::Result<types::Camera *, KError> Scene::create_camera() {
+		auto id = _nodes.get_id();
+		_nodes.insert(types::Camera::create(id));
+		for (auto &observer : _node_observers) {
+			observer->obs_create(id);
+		}
+		auto node = _nodes[id].get();
+		node->move_to(_root);
+		return static_cast<types::Camera *>(node);
+	}
+
+	util::Result<void, KError> Scene::remove_node(uint32_t id) {
 		if (!_nodes.contains(id)) {
 			return KError::invalid_node(id);
+		}
+
+		for (auto child : *_nodes[id].get()) {
+			remove_node(child->id());
 		}
 
 		for (auto &observer : _node_observers) {
 			observer->obs_remove(id);
 		}
 
+		_nodes[id]->parent()->remove_child(id);
 		_nodes[id].reset();
 		return {};
 	}

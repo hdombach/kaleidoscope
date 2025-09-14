@@ -51,6 +51,8 @@ namespace vulkan {
 			RayPassNode();
 			static util::Result<RayPassNode, KError> create(const Node *node, const RayPass *ray_pass);
 
+			void destroy();
+
 			/**
 			 * @brief Creates vulkan implimentation
 			 */

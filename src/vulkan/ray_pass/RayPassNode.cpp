@@ -38,6 +38,11 @@ namespace vulkan {
 		return result;
 	}
 
+	void RayPassNode::destroy() {
+		_node = nullptr;
+		_ray_pass = nullptr;
+	}
+
 	RayPassNode::VImpl RayPassNode::vimpl() const {
 		if (_node) {
 			if (!_ray_pass->mesh(_node->mesh().id())) {

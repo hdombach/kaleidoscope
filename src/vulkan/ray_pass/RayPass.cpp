@@ -465,7 +465,10 @@ namespace vulkan {
 		_node_dirty_bit = true;
 	}
 
-	void RayPass::node_remove(uint32_t id) {}
+	void RayPass::node_remove(uint32_t id) {
+		_nodes[id].destroy();
+		_node_dirty_bit = true;
+	}
 
 	util::Result<void, KError> RayPass::_create_descriptor_sets() {
 		auto descriptor_templates = std::vector<DescriptorSetTemplate>();

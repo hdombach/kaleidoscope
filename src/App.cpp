@@ -84,7 +84,7 @@ App::Ptr App::create(std::string const &name) {
 		}
 
 		{
-			auto id = result->_scene->add_virtual_node();
+			auto id = result->_scene->create_virtual_node();
 		}
 	}
 
@@ -133,8 +133,8 @@ void App::main_loop() {
 			semaphore = _scene->render_raytrace(_prev_semaphore);
 		}
 		_prev_semaphore = _ui_render_pipeline->submit([&] {
-				ui::AppView(*this, *_view_state);
-				//ImGui::ShowDemoWindow();
+			ImGui::ShowDemoWindow();
+			ui::AppView(*this, *_view_state);
 		}, semaphore);
 		//TODO: temp
 	}

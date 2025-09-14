@@ -13,6 +13,7 @@ namespace vulkan {
 
 namespace ui {
 	struct State {
+		static constexpr int SELECTED_NONE = -1;
 		enum SceneTab {
 			Nothing,
 			Nodes,

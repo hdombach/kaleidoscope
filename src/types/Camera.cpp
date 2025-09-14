@@ -27,6 +27,8 @@ namespace types {
 		result->_de_iterations = 120;
 		result->_de_small_step = 3;
 
+		result->name() = "Camera " + std::to_string(id);
+
 		return std::move(result);
 	}
 

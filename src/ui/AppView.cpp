@@ -11,6 +11,7 @@
 #include "Misc.hpp"
 #include "State.hpp"
 #include "ui/TextureView.hpp"
+#include "util/KError.hpp"
 #include "util/Util.hpp"
 #include "types/ResourceManager.hpp"
 #include "types/Material.hpp"
@@ -42,7 +43,7 @@ namespace ui {
 		}
 		ImGui::End();
 
-		ImGui::Begin("Settings");
+		ImGui::Begin("Scene");
 		ImGui::Checkbox("Showing preview", &state.showing_preview);
 		ImGui::DragInt("Render rate", &render_rate, 200);
 		ImGui::Separator();
@@ -136,17 +137,49 @@ namespace ui {
 	void NodesView(vulkan::Scene &scene, State &state) {
 		char name_buf[128];
 		char *name;
-		float width = 250;
-		ImGui::BeginChild("Node List", ImVec2(width, -ImGui::GetFrameHeightWithSpacing()), true);
+		//float width = 250;
+		ImGui::BeginChild("Node List", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true);
+		float width = (ImGui::GetWindowSize().x - ImGui::GetFrameHeightWithSpacing()) / 2;
 		NodeItemView(scene, *scene.root(), state);
 		ImGui::EndChild();
+
+		log_debug() << (state.selected_item == 0) << ", " << state.selected_item << std::endl;
+		ImGui::BeginDisabled(state.selected_item == State::SELECTED_NONE);
+		if (ImGui::Button("Delete node", ImVec2(width, 0))) {
+			if (state.selected_item != 0) {
+				scene.remove_node(state.selected_item);
+			}
+		}
+		ImGui::EndDisabled();
+
+		ImGui::SameLine(0, 0);
 		if (ImGui::Button("New node", ImVec2(width, 0))) {
 			if (auto node = scene.create_node(scene.resource_manager().default_mesh(), scene.resource_manager().default_material())) {
 				state.selected_item = node.value()->id();
+				log_event() << "Created node " << state.selected_item << std::endl;
 			} else {
 				log_error() << node.error() << std::endl;
 			}
-			log_debug() << "created new node: " << state.selected_item << std::endl;
+		}
+		ImGui::SameLine(0, 0);
+		if (ImGui::BeginCombo("##Create combo", "", ImGuiComboFlags_NoPreview | ImGuiComboFlags_PopupAlignLeft)) {
+			if (ImGui::Selectable("New virtual node")) {
+				if (auto n = scene.create_virtual_node()) {
+					state.selected_item = n.value()->id();
+					log_event() << "Created virtual node " << state.selected_item << std::endl;
+				} else {
+					log_error() << n.error() << std::endl;
+				}
+			}
+			if (ImGui::Selectable("New camera")) {
+				if (auto n = scene.create_camera()) {
+					state.selected_item = n.value()->id();
+					log_event() << "Created camera " << state.selected_item << std::endl;
+				} else {
+					log_error() << n.error() << std::endl;
+				}
+			}
+			ImGui::EndCombo();
 		}
 	}
 
@@ -170,7 +203,7 @@ namespace ui {
 		bool show_children = ImGui::TreeNodeEx(node.name().data(), tree_flags);
 		if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
 			if (state.selected_item == node.id()) {
-				state.selected_item = -1;
+				state.selected_item = State::SELECTED_NONE;
 			} else {
 				state.selected_item = node.id();
 				state.selected_name = node.name();
@@ -233,7 +266,7 @@ namespace ui {
 		ImGui::DragFloat3("Rotation", rotation.data(), 0.01f);
 		ImGui::DragFloat3("Scale", scale.data(), 0.01f);
 		if (ImGui::Button("Delete")) {
-			scene.rem_node(node->id());
+			scene.remove_node(node->id());
 		}
 		ImGui::PopID();
 		node->set_position(util::as_vec(pos));
