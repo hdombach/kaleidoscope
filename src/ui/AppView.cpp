@@ -43,15 +43,8 @@ namespace ui {
 		}
 		ImGui::End();
 
-		ImGui::Begin("Scene");
-		ImGui::Checkbox("Showing preview", &state.showing_preview);
-		ImGui::DragInt("Render rate", &render_rate, 200);
-		ImGui::Separator();
 		SceneView(app.scene(), state);
-		ImGui::End();
 
-		app.scene().set_is_preview(state.showing_preview);
-		app.scene().set_render_rate(render_rate);
 		state.prev_mouse_pos = cur_mouse_pos;
 	}
 
@@ -83,6 +76,13 @@ namespace ui {
 	}
 
 	void SceneView(vulkan::Scene &scene, State &state) {
+		int render_rate = scene.render_rate();
+		ImGui::Begin("Scene");
+		ImGui::Checkbox("Showing preview", &state.showing_preview);
+		ImGui::DragInt("Render rate", &render_rate, 200);
+		scene.set_is_preview(state.showing_preview);
+		scene.set_render_rate(render_rate);
+
 		ImGui::Separator();
 		if (ImGui::BeginTabBar("##SceneTabs")) {
 			if (ImGui::BeginTabItem("Nodes")) {
@@ -131,7 +131,8 @@ namespace ui {
 				ImGui::Text("Nothing selected");
 				break;
 		}
-		ImGui::End();
+		ImGui::End(); // Selected
+		ImGui::End(); // Scene
 	}
 
 	void NodesView(vulkan::Scene &scene, State &state) {
