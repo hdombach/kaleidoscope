@@ -8,8 +8,8 @@ namespace vulkan {
 		_name("Internal Scene")
 	{ }
 
-	VkDescriptorSet SceneTexture::imgui_descriptor_set() {
-		return _scene.imgui_descriptor_set();
+	ImTextureID SceneTexture::imgui_id() {
+		return reinterpret_cast<ImTextureID>(_scene.imgui_descriptor_set());
 	}
 
 	VkImageView SceneTexture::image_view() const {

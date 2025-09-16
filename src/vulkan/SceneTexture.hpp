@@ -12,7 +12,7 @@ namespace vulkan {
 	class SceneTexture: public Texture {
 		public:
 			SceneTexture(uint32_t id, Scene &scene);
-			VkDescriptorSet imgui_descriptor_set() override;
+			ImTextureID imgui_id() override;
 			VkImageView image_view() const override;
 			uint32_t id() const override;
 			std::string const &name() const override { return _name; }

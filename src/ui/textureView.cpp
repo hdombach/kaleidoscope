@@ -34,12 +34,16 @@ namespace ui {
 
 		ImGui::SetCursorPos(pos);
 
+		ImGui::PushStyleVarX(ImGuiStyleVar_FramePadding, 0);
+		ImGui::PushStyleVarY(ImGuiStyleVar_FramePadding, 0);
 		ImGui::ImageButton(
-				texture.imgui_descriptor_set(),
-				size,
-				ImVec2(0, 0),
-				ImVec2(1, 1),
-				0);
+			texture.name().c_str(),
+			texture.imgui_id(),
+			size,
+			ImVec2(0, 0),
+			ImVec2(1, 1)
+		);
+		ImGui::PopStyleVar(2);
 
 	}
 }

@@ -104,8 +104,8 @@ namespace vulkan {
 		ImGui_ImplVulkan_RemoveTexture(_imgui_descriptor_set);
 	}
 
-	VkDescriptorSet StaticTexture::imgui_descriptor_set() {
-		return _imgui_descriptor_set;
+	ImTextureID StaticTexture::imgui_id() {
+		return reinterpret_cast<ImTextureID>(_imgui_descriptor_set);
 	}
 
 	VkImageView StaticTexture::image_view() const {

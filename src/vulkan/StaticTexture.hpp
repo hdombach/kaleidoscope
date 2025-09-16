@@ -1,4 +1,5 @@
 #pragma once
+#include <imgui.h>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
@@ -17,7 +18,7 @@ namespace vulkan {
 					std::string const &url);
 			~StaticTexture();
 
-			VkDescriptorSet imgui_descriptor_set() override;
+			ImTextureID imgui_id() override;
 			VkImageView image_view() const override;
 			uint32_t id() const override;
 			void set_name(std::string const &name) override { _name = name; }

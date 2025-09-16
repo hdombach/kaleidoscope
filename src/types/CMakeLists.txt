@@ -17,4 +17,5 @@ target_link_libraries(types PUBLIC vulkan-headers::vulkan-headers)
 target_link_libraries(types PUBLIC glm::glm)
 target_link_libraries(types PUBLIC glfw)
 target_link_libraries(types PUBLIC tinyobjloader)
+target_link_libraries(types PUBLIC imgui::imgui)
 

@@ -1,4 +1,5 @@
 #pragma once
+#include <imgui.h>
 #include <string>
 #include <memory>
 
@@ -19,7 +20,7 @@ namespace vulkan {
 			using Ptr = std::unique_ptr<Texture>;
 
 			virtual ~Texture() = default;
-			virtual VkDescriptorSet imgui_descriptor_set() = 0;
+			virtual ImTextureID imgui_id() = 0;
 			virtual VkImageView image_view() const = 0;
 			virtual uint32_t id() const = 0;
 			virtual void set_name(std::string const &name) = 0;

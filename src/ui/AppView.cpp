@@ -302,11 +302,10 @@ namespace ui {
 			ImGui::EndCombo();
 		}
 
-		//#define ICON_FA_LOCK "\xef\x80\xa3"
+		#define ICON_FA_LOCK "\xef\x80\xa3"
 
-		//ImGui::SameLine();
-		//ImGui::Button("🔒");
-		//ImGui::Text("%s", ICON_FA_LOCK);
+		ImGui::SameLine();
+		ImGui::Button(ICON_FA_LOCK);
 
 		scene.set_is_preview(state.showing_preview);
 		scene.set_render_rate(render_rate);
@@ -351,7 +350,7 @@ namespace ui {
 			if (state.dup_name_error) {
 				ImGui::TextColored({1.0, 0.0, 0.0, 1.0}, "ERROR: Duplicate name");
 			}
-			ImGui::Image(texture->imgui_descriptor_set(), ImVec2(250, 250));
+			ImGui::Image(texture->imgui_id(), ImVec2(250, 250));
 		} else {
 			ImGui::Text("No texture selected");
 		}

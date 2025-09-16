@@ -11,7 +11,7 @@ class MainRecipe(ConanFile):
         self.requires("glfw/3.4")
         self.requires("tinyobjloader/2.0.0-rc10")
         self.requires("glm/cci.20230113")
-        self.requires("imgui/cci.20230105+1.89.2.docking")
+        self.requires("imgui/1.91.4-docking")
         self.requires("vulkan-headers/1.3.268.0")
         self.requires("shaderc/2023.6")
         self.requires("portable-file-dialogs/0.1.0")

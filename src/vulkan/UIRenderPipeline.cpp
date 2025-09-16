@@ -5,6 +5,7 @@
 #include <vulkan/vulkan_core.h>
 #include <vulkan/vulkan.h>
 #include <imgui.h>
+#include <imgui_impl_vulkan.h>
 
 #include "UIRenderPipeline.hpp"
 #include "defs.hpp"
@@ -129,21 +130,21 @@ namespace vulkan {
 
 		_io = &ImGui::GetIO();
 		_io->ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-		_io->ConfigFlags |= ImGuiConfigFlags_DockingEnable; //Allows imgui windows to be combined
-		_io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // allows imgui windows to be dragged outisde of main window
+		_io->ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+		//_io->ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // allows imgui windows to be dragged outisde of main window
 		log_debug() << "Font path is " << util::g_env.working_dir << "/assets/Helvetica.ttc" << std::endl;
 		//TODO: error handling
 		_io->Fonts->AddFontFromFileTTF(util::env_file_path("./assets/Helvetica.ttc").value().c_str(), 14);
 
-		/*
+
 		#define ICON_MIN_FA 0xe005
 		#define ICON_MAX_FA 0xf8ff
 
 		auto config = ImFontConfig();
 		config.MergeMode = true;
 		static ImWchar ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
-		_io->Fonts->AddFontFromFileTTF(util::env_file_path("./assets/NotoEmoji-Medium.ttf").value().c_str(), 14, &config, ranges);
-		*/
+		_io->Fonts->AddFontFromFileTTF(util::env_file_path("./assets/fontawesome-webfont.ttf").value().c_str(), 14, &config, ranges);
+
 
 		ImGui::StyleColorsDark();
 
@@ -165,13 +166,11 @@ namespace vulkan {
 		init_info.MinImageCount = FRAMES_IN_FLIGHT;
 		init_info.ImageCount = FRAMES_IN_FLIGHT;
 		init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+		init_info.RenderPass = _window_data.RenderPass;
 
-		ImGui_ImplVulkan_Init(&init_info, _window_data.RenderPass);
+		ImGui_ImplVulkan_Init(&init_info);
 
-		Graphics::DEFAULT->execute_single_time_command([&](VkCommandBuffer commandBuffer) {
-				ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
-		});
-		ImGui_ImplVulkan_DestroyFontUploadObjects();
+		ImGui_ImplVulkan_CreateFontsTexture();
 	}
 
 	void UIRenderPipeline::_setup_vulkan_window(int width, int height) {
