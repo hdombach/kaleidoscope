@@ -150,7 +150,6 @@ namespace vulkan {
 
 		auto& style = ImGui::GetStyle();
 		style.WindowRounding = 10.0f;
-		//style.Colors[ImGuiCol_WindowBg] = ImVec4{0.2f, 0.2f, 0.2f, 1.0f};
 
 
 		ImGui_ImplGlfw_InitForVulkan(Graphics::DEFAULT->window(), true);

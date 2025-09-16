@@ -20,6 +20,8 @@
 
 namespace ui {
 	void AppView(App &app, State &state) {
+		ImGui::DockSpaceOverViewport();
+
 		auto mouse_raw = ImGui::GetMousePos();
 		auto cur_mouse_pos = glm::vec2(mouse_raw.x, mouse_raw.y);
 		auto mouse_offset = cur_mouse_pos - state.prev_mouse_pos;
@@ -27,7 +29,6 @@ namespace ui {
 			app.scene().camera().width(),
 			app.scene().camera().height()
 		);
-		int render_rate = app.scene().render_rate();
 
 		ImGui::Begin("Viewport");
 

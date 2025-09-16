@@ -133,7 +133,7 @@ void App::main_loop() {
 			semaphore = _scene->render_raytrace(_prev_semaphore);
 		}
 		_prev_semaphore = _ui_render_pipeline->submit([&] {
-			ImGui::ShowDemoWindow();
+			//ImGui::ShowDemoWindow();
 			ui::AppView(*this, *_view_state);
 		}, semaphore);
 		//TODO: temp
