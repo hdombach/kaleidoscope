@@ -9,6 +9,8 @@
 #include "util/KError.hpp"
 #include "util/Observer.hpp"
 #include "util/Util.hpp"
+#include "util/map_iterator.hpp"
+#include "util/IterAdapter.hpp"
 #include "types/ResourceManager.hpp"
 #include "types/Camera.hpp"
 #include "prev_pass/PrevPass.hpp"
@@ -26,6 +28,8 @@ namespace vulkan {
 			using Container = util::UIDList<Node::Ptr, util::has_value, util::id_deref_trait>;
 			using iterator = Container::iterator;
 			using const_iterator = Container::const_iterator;
+
+			using camera_iterator = util::filter_iterator<util::map_iterator<iterator, types::Camera*>>;
 
 			Scene(types::ResourceManager &resource_manager, PrevPass::Ptr preview_render_pass);
 
@@ -52,6 +56,8 @@ namespace vulkan {
 			void set_selected_node(uint32_t n) { _selected_node = n; }
 			uint32_t selected_node() { return _selected_node; }
 			void set_active_camera(uint32_t id);
+			/* Get id of active camera. Is 0 if node based camera is not selected */
+			uint32_t camera_id();
 			types::Camera &camera();
 			types::Camera const& camera() const;
 			Node const *get_node(uint32_t id) const;
@@ -78,17 +84,15 @@ namespace vulkan {
 			util::Result<void, KError> add_node_observer(util::Observer *observer);
 			util::Result<void, KError> rem_node_observer(util::Observer *observer);
 
-			iterator begin() {
-				return _nodes.begin();
-			}
-			iterator end() {
-				return _nodes.end();
-			}
-			const_iterator begin() const {
-				return _nodes.begin();
-			}
-			const_iterator end() const {
-				return _nodes.end();
+			iterator begin();
+			iterator end();
+			const_iterator begin() const;
+			const_iterator end() const;
+
+			camera_iterator cameras_begin();
+			camera_iterator cameras_end();
+			inline auto cameras() {
+				return util::Adapt(cameras_begin(), cameras_end());
 			}
 
 		private:

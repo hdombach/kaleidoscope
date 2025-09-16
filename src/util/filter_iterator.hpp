@@ -26,7 +26,7 @@ namespace util {
 		}
 
 		filter_iterator operator++(int) {
-			auto ret = *_begin;
+			auto ret = *this;
 			++(*this);
 			return ret;
 		}

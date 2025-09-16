@@ -7,6 +7,7 @@
 #include "prev_pass/PrevPass.hpp"
 #include "Uniforms.hpp"
 #include "util/log.hpp"
+#include "util/map_iterator.hpp"
 
 namespace vulkan {
 	util::Result<Scene::Ptr, KError> Scene::create(
@@ -119,6 +120,10 @@ namespace vulkan {
 
 	void Scene::set_active_camera(uint32_t id) {
 		_active_camera = id;
+	}
+
+	uint32_t Scene::camera_id() {
+		return _active_camera;
 	}
 
 	types::Camera &Scene::camera() {
@@ -241,5 +246,43 @@ namespace vulkan {
 				_node_observers.end(),
 				observer);
 		return {};
+	}
+
+	Scene::iterator Scene::begin() {
+		return _nodes.begin();
+	}
+
+	Scene::iterator Scene::end() {
+		return _nodes.end();
+	}
+
+	Scene::const_iterator Scene::begin() const {
+		return _nodes.begin();
+	}
+
+	Scene::const_iterator Scene::end() const {
+		return _nodes.end();
+	}
+
+	inline types::Camera *_cam_cast(Scene::iterator node) {
+		if ((*node)->type() != Node::Type::Camera) return nullptr;
+		return static_cast<types::Camera *>((*node).get());
+	}
+
+	Scene::camera_iterator Scene::cameras_begin() {
+		auto test = _nodes.begin();
+		using M = util::map_iterator<Scene::iterator, types::Camera *>;
+		return camera_iterator(
+			M(_nodes.begin(), _cam_cast),
+			M(_nodes.end(), _cam_cast)
+		);
+	}
+
+	Scene::camera_iterator Scene::cameras_end() {
+		using M = util::map_iterator<Scene::iterator, types::Camera *>;
+		return camera_iterator(
+			M(_nodes.end(), _cam_cast),
+			M(_nodes.end(), _cam_cast)
+		);
 	}
 }

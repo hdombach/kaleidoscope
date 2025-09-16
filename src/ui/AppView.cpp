@@ -76,12 +76,8 @@ namespace ui {
 	}
 
 	void SceneView(vulkan::Scene &scene, State &state) {
-		int render_rate = scene.render_rate();
 		ImGui::Begin("Scene");
-		ImGui::Checkbox("Showing preview", &state.showing_preview);
-		ImGui::DragInt("Render rate", &render_rate, 200);
-		scene.set_is_preview(state.showing_preview);
-		scene.set_render_rate(render_rate);
+		RenderOptions(scene, state);
 
 		ImGui::Separator();
 		if (ImGui::BeginTabBar("##SceneTabs")) {
@@ -144,7 +140,6 @@ namespace ui {
 		NodeItemView(scene, *scene.root(), state);
 		ImGui::EndChild();
 
-		log_debug() << (state.selected_item == 0) << ", " << state.selected_item << std::endl;
 		ImGui::BeginDisabled(state.selected_item == State::SELECTED_NONE || state.selected_item == scene.root()->id());
 		if (ImGui::Button("Delete node", ImVec2(width, 0))) {
 			if (state.selected_item != 0) {
@@ -276,6 +271,45 @@ namespace ui {
 		node->set_rotation(util::as_vec(rotation));
 		node->set_scale(util::as_vec(scale));
 		ShaderResourcesView(node->resources(), scene.resource_manager(), state);
+	}
+
+
+	void RenderOptions(vulkan::Scene &scene, State &state) {
+		int render_rate = scene.render_rate();
+
+		auto button_text = state.showing_preview ? "Render" : "Stop rendering";
+		if (ImGui::Button(button_text)) {
+			state.showing_preview = !state.showing_preview;
+		}
+		ImGui::SameLine();
+		ImGui::DragInt("Render rate", &render_rate, 200);
+
+		auto camera_text = std::string();
+		if (scene.camera_id() == 0) {
+			camera_text = "Unselected";
+		} else {
+			camera_text = scene.camera().name();
+		}
+		if (ImGui::BeginCombo("##current_camera", camera_text.data())) {
+			if (ImGui::Selectable("Unselected", scene.camera_id() == 0)) {
+				scene.set_active_camera(0);
+			}
+			for (auto camera : scene.cameras()) {
+				if (ImGui::Selectable(camera->name().data(), scene.camera_id() == camera->id())) {
+					scene.set_active_camera(camera->id());
+				}
+			}
+			ImGui::EndCombo();
+		}
+
+		//#define ICON_FA_LOCK "\xef\x80\xa3"
+
+		//ImGui::SameLine();
+		//ImGui::Button("🔒");
+		//ImGui::Text("%s", ICON_FA_LOCK);
+
+		scene.set_is_preview(state.showing_preview);
+		scene.set_render_rate(render_rate);
 	}
 
 	void TextureListView(types::ResourceManager &resources, State &state) {

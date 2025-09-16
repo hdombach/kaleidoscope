@@ -135,6 +135,16 @@ namespace vulkan {
 		//TODO: error handling
 		_io->Fonts->AddFontFromFileTTF(util::env_file_path("./assets/Helvetica.ttc").value().c_str(), 14);
 
+		/*
+		#define ICON_MIN_FA 0xe005
+		#define ICON_MAX_FA 0xf8ff
+
+		auto config = ImFontConfig();
+		config.MergeMode = true;
+		static ImWchar ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+		_io->Fonts->AddFontFromFileTTF(util::env_file_path("./assets/NotoEmoji-Medium.ttf").value().c_str(), 14, &config, ranges);
+		*/
+
 		ImGui::StyleColorsDark();
 
 		auto& style = ImGui::GetStyle();
