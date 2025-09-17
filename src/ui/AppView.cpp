@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <string>
+#include <array>
 
 #include <glm/fwd.hpp>
 #include <imgui.h>
@@ -120,7 +121,14 @@ namespace ui {
 		ImGui::Begin("Selected");
 		switch (state.scene_tab) {
 			case State::Nodes:
-				NodeSelectedView(scene, scene.get_node_mut(state.selected_item), state);
+				{
+					auto node = scene.get_node_mut(state.selected_item);
+					if (node && node->type() == vulkan::Node::Type::Camera) {
+						CameraSelectedView(scene, static_cast<types::Camera *>(node), state);
+					} else {
+						NodeSelectedView(scene, node, state);
+					}
+				}
 				break;
 			case State::Textures:
 				TextureSelectedView(scene.resource_manager(), scene.resource_manager().get_texture(state.selected_item), state);
@@ -281,6 +289,36 @@ namespace ui {
 		ShaderResourcesView(node->resources(), scene.resource_manager(), state);
 	}
 
+	void CameraSelectedView(
+		vulkan::Scene &scene,
+		types::Camera *camera,
+		State &state
+	) {
+		NodeSelectedView(scene, camera, state);
+
+		auto size = std::array<int, 2>{camera->width(), camera->height()};
+		auto fovy = camera->fovy();
+		auto z_near = camera->z_near();
+		auto z_far = camera->z_far();
+		auto de_iterations = camera->de_iterations();
+		auto de_small_step = camera->de_small_step();
+
+		ImGui::DragInt2("Size", size.data());
+		ImGui::DragFloat("fovy", &fovy);
+		ImGui::DragFloat("z_near", &z_near, 0.1, 0.0, z_far, "%.3f", ImGuiSliderFlags_Logarithmic);
+		ImGui::DragFloat("z_far", &z_far, 0.1, z_near, 0.0, "%.3f", ImGuiSliderFlags_Logarithmic);
+		ImGui::DragInt("de_iterations", &de_iterations);
+		ImGui::DragFloat("de_small_step", &de_small_step);
+
+		camera->set_width(size[0]);
+		camera->set_height(size[1]);
+		camera->set_fovy(fovy);
+		camera->set_z_near(z_near);
+		camera->set_z_far(z_far);
+		camera->set_de_iterations(de_iterations);
+		camera->set_de_small_step(de_small_step);
+	}
+
 
 	void RenderOptions(vulkan::Scene &scene, State &state) {
 		int render_rate = scene.render_rate();
@@ -289,7 +327,7 @@ namespace ui {
 		if (ImGui::Button(button_text)) {
 			state.showing_preview = !state.showing_preview;
 		}
-		ImGui::SameLine();
+
 		ImGui::DragInt("Render rate", &render_rate, 200);
 
 		auto camera_text = std::string();

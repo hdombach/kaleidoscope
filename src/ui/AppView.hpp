@@ -16,6 +16,7 @@ namespace ui {
 	void NodesView(vulkan::Scene &scene, State &state);
 	void NodeItemView(vulkan::Scene &scene, vulkan::Node &node, State &state);
 	void NodeSelectedView(vulkan::Scene &scene, vulkan::Node *node, State &state);
+	void CameraSelectedView(vulkan::Scene &scene, types::Camera *camera, State &state);
 	void RenderOptions(vulkan::Scene &scene, State &state);
 
 	void TextureListView(types::ResourceManager &resources, State &state);

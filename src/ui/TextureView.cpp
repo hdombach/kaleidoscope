@@ -2,6 +2,7 @@
 #include <imgui.h>
 
 #include "TextureView.hpp"
+#include "util/log.hpp"
 #include "vulkan/Texture.hpp"
 
 namespace ui {

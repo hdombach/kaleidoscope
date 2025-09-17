@@ -119,6 +119,7 @@ namespace vulkan {
 	}
 
 	void Scene::set_active_camera(uint32_t id) {
+		_camera_dirty_bit = true;
 		_active_camera = id;
 	}
 
@@ -144,6 +145,9 @@ namespace vulkan {
 
 	Node *Scene::get_node_mut(uint32_t id) {
 		if (id >= 0 && id < _nodes.size()) {
+			if (_nodes[id]->type() == vulkan::Node::Type::Camera) {
+				_camera_dirty_bit = true;
+			}
 			return _nodes[id].get();
 		} else {
 			return nullptr;
