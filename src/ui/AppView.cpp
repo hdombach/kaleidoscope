@@ -36,11 +36,18 @@ namespace ui {
 		TextureView(state.scene_texture, scene_size);
 		if (ImGui::IsItemHovered()) {
 			auto &camera = app.scene().camera();
+			auto r = glm::vec2(0, 0);
 			if (ImGui::IsMouseDown(0)) {
-				camera.rotate_drag(mouse_offset * -0.004f);
+				r = mouse_offset * -0.004f;
 			}
 			auto p = get_cam_movement() * camera.gen_rotate_mat() * 0.01f;
-			camera.set_position(camera.position() + glm::vec3(p.x, p.y, p.z));
+			if (glm::length(p) > 0 || glm::length(r) > 0) {
+				if (!state.camera_locked) {
+					app.scene().set_active_camera(0);
+				}
+				app.scene().camera().rotate_drag(r);
+				app.scene().camera().set_position(camera.position() + glm::vec3(p.x, p.y, p.z));
+			}
 		}
 		ImGui::End();
 
@@ -303,10 +310,25 @@ namespace ui {
 			ImGui::EndCombo();
 		}
 
-		#define ICON_FA_LOCK "\xef\x80\xa3"
+		constexpr auto ICON_FA_LOCK = "\xef\x80\xa3";
+		constexpr auto ICON_FA_UNLOCK = "\xef\x82\x9c";
 
 		ImGui::SameLine();
-		ImGui::Button(ICON_FA_LOCK);
+
+		const char *icon;
+		if (state.camera_locked) {
+			icon = ICON_FA_LOCK;
+		} else {
+			icon = ICON_FA_UNLOCK;
+		}
+
+
+		ImGui::BeginDisabled(scene.camera_id() == 0);
+		if (ImGui::Button(icon)) {
+			state.camera_locked = !state.camera_locked;
+		}
+		ImGui::SetItemTooltip("Lock selected camera to the viewport movement");
+		ImGui::EndDisabled();
 
 		scene.set_is_preview(state.showing_preview);
 		scene.set_render_rate(render_rate);

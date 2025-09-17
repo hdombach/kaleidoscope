@@ -40,5 +40,6 @@ namespace ui {
 		std::string selected_name = "";
 		bool dup_name_error;
 		uint32_t selected_shader_resource;
+		bool camera_locked;
 	};
 }
