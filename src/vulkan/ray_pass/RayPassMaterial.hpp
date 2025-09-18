@@ -21,7 +21,6 @@ namespace vulkan {
 			operator bool() const { return has_value(); }
 			uint32_t id() const { return _material->id(); }
 
-			cg::TemplObj const &cg_templobj();
 			/**
 			 * @brief Gets underlying generic material
 			 */
@@ -36,9 +35,5 @@ namespace vulkan {
 			std::string _cg_buf_decl;
 			std::string _cg_frag_def;
 			std::string _cg_frag_call;
-			cg::TemplObj _cg_templobj;
-
-		private:
-			void _create_cg_templobj();
 	};
 }

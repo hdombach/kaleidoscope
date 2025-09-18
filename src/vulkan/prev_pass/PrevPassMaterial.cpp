@@ -23,6 +23,10 @@ namespace vulkan {
 		auto result = PrevPassMaterial();
 		result._material = material;
 
+		if (material == nullptr) {
+			return KError::invalid_arg("Cannot pass null material");
+		}
+
 		result._render_pass = &preview_pass;
 		
 		/* code gen vertex code */
@@ -107,6 +111,9 @@ namespace vulkan {
 
 	PrevPassMaterial& PrevPassMaterial::operator=(PrevPassMaterial &&other) {
 		destroy();
+
+		_material = other._material;
+		other._material = nullptr;
 
 		_render_pass = other._render_pass;
 		other._render_pass = nullptr;

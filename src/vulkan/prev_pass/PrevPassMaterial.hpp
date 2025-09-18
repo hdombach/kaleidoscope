@@ -1,5 +1,6 @@
 #pragma once
 
+#include "util/log.hpp"
 #include "vulkan/Shader.hpp"
 #include "util/result.hpp"
 #include "util/KError.hpp"
@@ -34,6 +35,11 @@ namespace vulkan {
 
 			VkPipeline pipeline() { return _pipeline; }
 			VkPipelineLayout pipeline_layout() { return _pipeline_layout; }
+
+			const types::Material *material() const {
+				log_assert(_material, "material must exist");
+				return _material;
+			}
 
 		private:
 			/**

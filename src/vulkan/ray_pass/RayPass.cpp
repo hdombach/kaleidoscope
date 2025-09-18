@@ -7,6 +7,7 @@
 #include "RayPassMaterial.hpp"
 #include "RayPassMesh.hpp"
 #include "RayPassNode.hpp"
+#include "../PassUtil.hpp"
 #include "codegen/TemplGen.hpp"
 #include "util/log.hpp"
 #include "util/result.hpp"
@@ -766,7 +767,10 @@ namespace vulkan {
 
 		auto materials = cg::TemplList();
 		for (auto &material : _materials) {
-			materials.push_back(material.cg_templobj());
+			materials.push_back(material_templobj(
+				material.id(),
+				_scene->resource_manager().materials()
+			));
 		}
 		auto meshes = cg::TemplList();
 		for (auto &mesh : _meshes) {

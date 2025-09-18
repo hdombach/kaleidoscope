@@ -331,10 +331,11 @@ namespace vulkan {
 
 		TRY_LOG(_create_overlay_pipeline());
 
+		log_debug() << "starting de render pass" << std::endl;
 		TRY_LOG(_create_de_render_pass());
-
+		log_debug() << "starting de descriptor sets" << std::endl;
 		TRY_LOG(_create_de_descriptor_set());
-
+		log_debug() << "starting de pipeline" << std::endl;
 		TRY_LOG(_create_de_pipeline());
 	}
 
@@ -985,11 +986,13 @@ namespace vulkan {
 				nullptr, 
 				&_de_pipeline);
 
-		if (res == VK_SUCCESS) {
-			return {};
-		} else {
+		if (res != VK_SUCCESS) {
 			return {res};
 		}
+
+		log_debug() << "Create DE preview pipeline: " << _de_pipeline << std::endl;
+
+		return {};
 	}
 
 	void PrevPass::_destroy_de_pipeline() {
@@ -1293,10 +1296,17 @@ namespace vulkan {
 			meshes.push_back(m.base()->cg_templobj());
 		}
 
+		auto materials = cg::TemplList();
+		for (auto &material : _materials) {
+			if (!material) continue;
+			materials.push_back(material.material()->resources().templ_declarations());
+		}
+
 		auto args = cg::TemplObj{
 			{"global_declarations", GlobalPrevPassUniform::declaration_content},
 			{"node_declarations", PrevPassNode::VImpl::declaration},
-			{"meshes", meshes}
+			{"meshes", meshes},
+			{"materials", materials}
 		};
 		source_code = cg::TemplGen::codegen(source_code, args, "preview_de.frag.cg").value();
 
