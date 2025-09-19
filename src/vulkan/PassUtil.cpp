@@ -33,4 +33,24 @@ namespace vulkan {
 			{"frag_src", material->frag_shader_src()},
 		};
 	}
+
+	util::Result<StaticBuffer, KError> create_material_buffer(Scene &scene) {
+		auto material_range = max_material_range(scene.resource_manager().materials());
+		auto buffer_range = material_range * scene.nodes().size();
+		if (buffer_range == 0) {
+			buffer_range = 1;
+		}
+
+		auto buf = std::vector<char>(buffer_range);
+		size_t i = 0;
+		for (auto &node : scene.nodes().raw()) {
+			if (node) {
+				auto &n = *node.get();
+				n.resources().update_prim_uniform(buf.data() + i * material_range);
+			}
+			i++;
+		}
+
+		return StaticBuffer::create(buf.data(), buffer_range);
+	}
 }

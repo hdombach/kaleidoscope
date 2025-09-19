@@ -77,7 +77,7 @@ namespace util {
 					try {
 						return std::get<Error>(*this);
 					} catch (std::bad_variant_access) {
-						throw std::runtime_error("Cannot get error from function that returned normally");
+						throw std::get<Error>(*this);
 					}
 				}
 

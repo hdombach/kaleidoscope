@@ -11,7 +11,7 @@
 
 namespace vulkan {
 	PrevPassNode::VImpl PrevPassNode::VImpl::create_empty() {
-		return {0, glm::vec3()};
+		return {0, 0,glm::vec3()};
 	}
 
 	util::Result<PrevPassNode, KError> PrevPassNode::create(
@@ -45,6 +45,7 @@ namespace vulkan {
 		auto mat = _node->get_matrix();
 		return VImpl{
 			_node->mesh().id(),
+			_node->material().id(),
 			_node->position(),
 			glm::inverse(mat),
 			mat,

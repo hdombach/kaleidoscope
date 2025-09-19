@@ -665,7 +665,8 @@ namespace vulkan {
 		}
 
 		if (_material_dirty_bit) {
-			_create_material_buffers();
+			//_create_material_buffers();
+			_material_buffer = std::move(create_material_buffer(*_scene).value());
 			_material_dirty_bit = false;
 			update = true;
 		}
@@ -734,31 +735,6 @@ namespace vulkan {
 			if (buffer.error().type() != KError::Type::EMPTY_BUFFER) {
 				log_error() << buffer.error() << std::endl;
 			}
-		}
-	}
-
-	void RayPass::_create_material_buffers() {
-		for (auto &m : _materials) {
-			m.update(); //TODO: keep track of a dirty bit
-		}
-
-		auto range = max_material_range() * _nodes.size();
-		if (range == 0) {
-			range = 1;
-		}
-		auto buf = std::vector<char>(range);
-		size_t i = 0;
-		for (auto &node : _nodes.raw()) {
-			if (node) {
-				auto &n = node.get();
-				n.resources().update_prim_uniform(buf.data() + i * max_material_range());
-			}
-			i++;
-		}
-		if (auto buffer = StaticBuffer::create(buf.data(), range)) {
-			_material_buffer = std::move(buffer.value());
-		} else {
-			log_error() << buffer.error() << std::endl;
 		}
 	}
 

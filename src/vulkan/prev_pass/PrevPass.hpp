@@ -194,6 +194,7 @@ namespace vulkan {
 			VkFramebuffer _de_framebuffer;
 			DescriptorSets _de_descriptor_set;
 			StaticBuffer _de_node_buffer;
+			StaticBuffer _material_buffer;
 
 			MappedOverlayUniform _mapped_overlay_uniform;
 			VkPipelineLayout _overlay_pipeline_layout;

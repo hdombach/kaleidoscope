@@ -20,6 +20,8 @@
 #include "util/log.hpp"
 #include "util/file.hpp"
 #include "types/Mesh.hpp"
+#include "../PassUtil.hpp"
+#include "vulkan/Texture.hpp"
 
 namespace vulkan {
 	/************************ Observers *********************************/
@@ -382,6 +384,13 @@ namespace vulkan {
 			_scene->resource_manager().get_material(id))
 		) {
 			log_assert(_materials.insert(std::move(material.value())), "Duplicated material in PrevPass");
+
+			_destroy_de_buffers();
+			_create_de_buffers();
+			_destroy_de_descriptor_set();
+			_create_de_descriptor_set();
+			_destroy_de_pipeline();
+			_create_de_pipeline();
 		} else {
 			TRY_LOG(material);
 		}
@@ -654,28 +663,72 @@ namespace vulkan {
 		_overlay_descriptor_set.destroy();
 	}
 
+	//TODO unify this as well.
+	std::vector<VkImageView> used_textures(
+		types::ResourceManager::TextureContainer const &textures
+	) {
+		auto result = std::vector<VkImageView>();
+
+		for (auto &t : textures.raw()) {
+			if (t) {
+				result.push_back(t->image_view());
+			} else {
+				result.push_back(nullptr);
+			}
+		}
+
+		return result;
+	}
+
 	util::Result<void, KError> PrevPass::_create_de_descriptor_set() {
 		_destroy_de_descriptor_set();
+
+		auto textures = used_textures(_scene->resource_manager().textures());
+
 		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
 		descriptor_templates.push_back(DescriptorSetTemplate::create_image(
-					0,
-					VK_SHADER_STAGE_FRAGMENT_BIT,
-					_depth_buf_image.image_view(),
-					VK_IMAGE_LAYOUT_GENERAL));
+			0,
+			VK_SHADER_STAGE_FRAGMENT_BIT,
+			_depth_buf_image.image_view(),
+			VK_IMAGE_LAYOUT_GENERAL
+		));
 
 		descriptor_templates.push_back(std::move(DescriptorSetTemplate::create_image(
-					1, VK_SHADER_STAGE_FRAGMENT_BIT,
-					_node_image.image_view(),
-					VK_IMAGE_LAYOUT_GENERAL).set_sampler(Graphics::DEFAULT->near_texture_sampler())));
+			1, VK_SHADER_STAGE_FRAGMENT_BIT,
+			_node_image.image_view(),
+			VK_IMAGE_LAYOUT_GENERAL
+		).set_sampler(Graphics::DEFAULT->near_texture_sampler())));
 
 		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
-					2,
-					VK_SHADER_STAGE_FRAGMENT_BIT,
-					_de_node_buffer))
+			2,
+			VK_SHADER_STAGE_FRAGMENT_BIT,
+			_de_node_buffer))
 		{
 			descriptor_templates.push_back(std::move(buffer.value()));
 		} else {
 			log_error() << "Problem creating de node buffer: " << buffer.error() << std::endl;
+		}
+
+		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
+			3,
+			VK_SHADER_STAGE_FRAGMENT_BIT,
+			_material_buffer
+		)) {
+			descriptor_templates.push_back(std::move(buffer.value()));
+		} else {
+			return buffer.error();
+		}
+
+		if (textures.size() > 0) {
+			if (auto images = DescriptorSetTemplate::create_images(
+				4,
+				VK_SHADER_STAGE_FRAGMENT_BIT,
+				textures
+			)) {
+				descriptor_templates.push_back(std::move(images.value()));
+			} else {
+				log_error() << "Problem attaching images: " << images.error() << std::endl;
+			}
 		}
 
 		auto descriptor_sets = DescriptorSets::create(
@@ -1035,11 +1088,18 @@ namespace vulkan {
 			return buffer.error();
 		}
 
+		if (auto material_buffer = create_material_buffer(*_scene)) {
+			_material_buffer = std::move(material_buffer.value());
+		} else {
+			return material_buffer.error();
+		}
+
 		return {};
 	}
 
 	void PrevPass::_destroy_de_buffers() {
 		_de_node_buffer.destroy();
+		_material_buffer.destroy();
 	}
 
 	util::Result<void, KError> PrevPass::_create_images() {
@@ -1291,6 +1351,8 @@ namespace vulkan {
 	std::string PrevPass::_codegen_de() {
 		auto source_code = util::readEnvFile("assets/shaders/preview_de.frag.cg");
 
+		auto textures = used_textures(_scene->resource_manager().textures());
+
 		auto meshes = cg::TemplList();
 		for (auto &m : _meshes) {
 			meshes.push_back(m.base()->cg_templobj());
@@ -1299,14 +1361,17 @@ namespace vulkan {
 		auto materials = cg::TemplList();
 		for (auto &material : _materials) {
 			if (!material) continue;
-			materials.push_back(material.material()->resources().templ_declarations());
+			materials.push_back(material_templobj(material.id(), _scene->resource_manager().materials()));
 		}
+
+		log_event() << "materials size is " << materials.size() << std::endl;
 
 		auto args = cg::TemplObj{
 			{"global_declarations", GlobalPrevPassUniform::declaration_content},
 			{"node_declarations", PrevPassNode::VImpl::declaration},
 			{"meshes", meshes},
-			{"materials", materials}
+			{"materials", materials},
+			{"texture_count", cg::TemplInt(textures.size())}
 		};
 		source_code = cg::TemplGen::codegen(source_code, args, "preview_de.frag.cg").value();
 

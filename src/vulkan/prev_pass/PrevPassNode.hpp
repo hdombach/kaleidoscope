@@ -18,6 +18,7 @@ namespace vulkan {
 		public:
 			struct VImpl {
 				alignas(4) uint32_t mesh_id;
+				alignas(4) uint32_t material_id;
 				alignas(16) glm::vec3 position;
 				alignas(16) glm::mat4 transformation;
 				alignas(16) glm::mat4 inverse_transformation;
@@ -26,6 +27,7 @@ namespace vulkan {
 
 				inline const static auto declaration = std::vector{
 					templ_property("uint", "mesh_id"),
+					templ_property("uint", "material_id"),
 					templ_property("vec3", "position"),
 					templ_property("mat4", "transformation"),
 					templ_property("mat4", "inverse_transformation")

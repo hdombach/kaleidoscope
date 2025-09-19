@@ -14,6 +14,7 @@ namespace vulkan {
 			types::ResourceManager &resource_manager)
 	{
 		auto scene = Scene::Ptr(new Scene());
+		scene->_resource_manager = &resource_manager; // Needs to be initialized before prev pass
 
 		auto raytrace_render_pass = RayPass::create(*scene, {500, 500});
 		TRY(raytrace_render_pass);
@@ -24,7 +25,6 @@ namespace vulkan {
 		if (!render_pass_res) {
 			return render_pass_res.error();
 		}
-		scene->_resource_manager = &resource_manager;
 		scene->_preview_render_pass = std::move(render_pass_res.value());
 		scene->_raytrace_render_pass = std::move(raytrace_render_pass.value());
 		scene->_is_preview = true;
@@ -250,6 +250,14 @@ namespace vulkan {
 				_node_observers.end(),
 				observer);
 		return {};
+	}
+
+	Scene::Container const &Scene::nodes() const {
+		return _nodes;
+	}
+
+	Scene::Container &Scene::nodes() {
+		return _nodes;
 	}
 
 	Scene::iterator Scene::begin() {

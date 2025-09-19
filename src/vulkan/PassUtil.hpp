@@ -6,6 +6,8 @@
 #include "types/Material.hpp"
 #include "types/ResourceManager.hpp"
 #include "codegen/TemplObj.hpp"
+#include "vulkan/Scene.hpp"
+#include "vulkan/StaticBuffer.hpp"
 
 /**
  * @file
@@ -21,4 +23,6 @@ namespace vulkan {
 		uint32_t id,
 		MaterialContainer const &materials
 	);
+
+	util::Result<StaticBuffer, KError> create_material_buffer(Scene &scene);
 }

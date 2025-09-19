@@ -84,6 +84,9 @@ namespace vulkan {
 			util::Result<void, KError> add_node_observer(util::Observer *observer);
 			util::Result<void, KError> rem_node_observer(util::Observer *observer);
 
+			Container const &nodes() const;
+			Container &nodes();
+
 			iterator begin();
 			iterator end();
 			const_iterator begin() const;
