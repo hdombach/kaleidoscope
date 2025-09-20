@@ -90,11 +90,10 @@ namespace vulkan {
 
 		TRY(result->_create_prim_render_pass());
 		TRY(result->_create_de_render_pass());
-		TRY(result->_create_de_buffers());
-		TRY(result->_create_de_descriptor_set());
-		TRY(result->_create_de_pipeline());
 		TRY(result->_create_overlay_pipeline());
 		TRY(result->_create_framebuffers());
+
+		result->_de_dirty_bit = true;
 
 		result->_mesh_observer = MeshObserver(*result);
 		result->_material_observer = MaterialObserver(*result);
@@ -131,6 +130,14 @@ namespace vulkan {
 			types::Camera const &camera,
 			VkSemaphore semaphore)
 	{
+		if (_de_dirty_bit) {
+			_create_de_buffers();
+			_create_de_descriptor_set();
+			_create_de_pipeline();
+
+			_de_dirty_bit = false;
+		}
+
 		_fence.wait();
 		auto submit_info = VkSubmitInfo{};
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -363,12 +370,7 @@ namespace vulkan {
 			TRY_LOG(mesh);
 		}
 
-		_destroy_de_buffers();
-		_create_de_buffers();
-		_destroy_de_descriptor_set();
-		_create_de_descriptor_set();
-		_destroy_de_pipeline();
-		_create_de_pipeline();
+		_de_dirty_bit = true;
 	}
 
 	void PrevPass::mesh_update(uint32_t id) { }
@@ -385,12 +387,7 @@ namespace vulkan {
 		) {
 			log_assert(_materials.insert(std::move(material.value())), "Duplicated material in PrevPass");
 
-			_destroy_de_buffers();
-			_create_de_buffers();
-			_destroy_de_descriptor_set();
-			_create_de_descriptor_set();
-			_destroy_de_pipeline();
-			_create_de_pipeline();
+			_de_dirty_bit = true;
 		} else {
 			TRY_LOG(material);
 		}
@@ -412,8 +409,7 @@ namespace vulkan {
 			TRY_LOG(prev_node);
 		}
 
-		_create_de_buffers();
-		_create_de_descriptor_set();
+		_de_dirty_bit = true;
 	}
 
 	void PrevPass::node_update(uint32_t id) {
@@ -421,8 +417,7 @@ namespace vulkan {
 
 		_nodes[id].update();
 
-		_create_de_buffers();
-		_create_de_descriptor_set();
+		_de_dirty_bit = true;
 	}
 
 	void PrevPass::node_remove(uint32_t id) {
@@ -430,8 +425,7 @@ namespace vulkan {
 
 		_nodes[id].destroy();
 
-		_create_de_buffers();
-		_create_de_descriptor_set();
+		_de_dirty_bit = true;
 	}
 
 	PrevPass::PrevPass(Scene &scene, VkExtent2D size):
@@ -712,7 +706,7 @@ namespace vulkan {
 		if (auto buffer = DescriptorSetTemplate::create_storage_buffer(
 			3,
 			VK_SHADER_STAGE_FRAGMENT_BIT,
-			_material_buffer
+			_de_material_buffer
 		)) {
 			descriptor_templates.push_back(std::move(buffer.value()));
 		} else {
@@ -1089,7 +1083,7 @@ namespace vulkan {
 		}
 
 		if (auto material_buffer = create_material_buffer(*_scene)) {
-			_material_buffer = std::move(material_buffer.value());
+			_de_material_buffer = std::move(material_buffer.value());
 		} else {
 			return material_buffer.error();
 		}
@@ -1099,7 +1093,7 @@ namespace vulkan {
 
 	void PrevPass::_destroy_de_buffers() {
 		_de_node_buffer.destroy();
-		_material_buffer.destroy();
+		_de_material_buffer.destroy();
 	}
 
 	util::Result<void, KError> PrevPass::_create_images() {
