@@ -90,6 +90,7 @@ namespace vulkan {
 
 		TRY(result->_create_prim_render_pass());
 		TRY(result->_create_de_render_pass());
+		TRY(result->_create_overlay_descriptor_set());
 		TRY(result->_create_overlay_pipeline());
 		TRY(result->_create_framebuffers());
 
@@ -117,6 +118,7 @@ namespace vulkan {
 		_destroy_de_pipeline();
 		_destroy_de_descriptor_set();
 		_destroy_overlay_pipeline();
+		_overlay_descriptor_set.destroy();
 		_fence.destroy();
 		_semaphore.destroy();
 	}
@@ -338,14 +340,9 @@ namespace vulkan {
 
 		TRY_LOG(_create_framebuffers());
 
-		TRY_LOG(_create_overlay_pipeline());
+		TRY_LOG(_create_overlay_descriptor_set());
 
-		log_debug() << "starting de render pass" << std::endl;
-		TRY_LOG(_create_de_render_pass());
-		log_debug() << "starting de descriptor sets" << std::endl;
 		TRY_LOG(_create_de_descriptor_set());
-		log_debug() << "starting de pipeline" << std::endl;
-		TRY_LOG(_create_de_pipeline());
 	}
 
 	VkExtent2D PrevPass::size() const {
@@ -556,10 +553,7 @@ namespace vulkan {
 		}
 	}
 
-	util::Result<void, KError> PrevPass::_create_overlay_pipeline() {
-		try {
-		_destroy_overlay_pipeline();
-
+	util::Result<void, KError> PrevPass::_create_overlay_descriptor_set() {
 		auto buffer = MappedOverlayUniform::create();
 		TRY(buffer);
 		_mapped_overlay_uniform = std::move(buffer.value());
@@ -584,6 +578,13 @@ namespace vulkan {
 				_descriptor_pool);
 		TRY(descriptor_sets);
 		_overlay_descriptor_set = std::move(descriptor_sets.value());
+
+		return {};
+	}
+
+	util::Result<void, KError> PrevPass::_create_overlay_pipeline() {
+		try {
+		_destroy_overlay_pipeline();
 
 		auto codegen_args = cg::TemplObj{
 			{"overlay_declarations", OverlayUniform::declaration_content}
@@ -654,7 +655,6 @@ namespace vulkan {
 					nullptr);
 			_overlay_pipeline = nullptr;
 		}
-		_overlay_descriptor_set.destroy();
 	}
 
 	//TODO unify this as well.
