@@ -209,7 +209,8 @@ namespace vulkan {
 			VkCommandBuffer _command_buffer;
 			DescriptorPool _descriptor_pool;
 
-			bool _de_dirty_bit;
+			bool _de_buf_dirty_bit;
+			bool _de_pipe_dirty_bit;
 
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
 			const static VkFormat _NODE_IMAGE_FORMAT = VK_FORMAT_R16_UINT;

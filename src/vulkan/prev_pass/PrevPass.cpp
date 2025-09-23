@@ -94,7 +94,8 @@ namespace vulkan {
 		TRY(result->_create_overlay_pipeline());
 		TRY(result->_create_framebuffers());
 
-		result->_de_dirty_bit = true;
+		result->_de_buf_dirty_bit = true;
+		result->_de_pipe_dirty_bit = true;;
 
 		result->_mesh_observer = MeshObserver(*result);
 		result->_material_observer = MaterialObserver(*result);
@@ -132,12 +133,15 @@ namespace vulkan {
 			types::Camera const &camera,
 			VkSemaphore semaphore)
 	{
-		if (_de_dirty_bit) {
+		if (_de_buf_dirty_bit) {
 			_create_de_buffers();
 			_create_de_descriptor_set();
-			_create_de_pipeline();
+			_de_buf_dirty_bit = false;
+		}
 
-			_de_dirty_bit = false;
+		if (_de_pipe_dirty_bit) {
+			_create_de_pipeline();
+			_de_pipe_dirty_bit = false;
 		}
 
 		_fence.wait();
@@ -367,7 +371,7 @@ namespace vulkan {
 			TRY_LOG(mesh);
 		}
 
-		_de_dirty_bit = true;
+		_de_buf_dirty_bit = true;
 	}
 
 	void PrevPass::mesh_update(uint32_t id) { }
@@ -384,7 +388,7 @@ namespace vulkan {
 		) {
 			log_assert(_materials.insert(std::move(material.value())), "Duplicated material in PrevPass");
 
-			_de_dirty_bit = true;
+			_de_buf_dirty_bit = true;
 		} else {
 			TRY_LOG(material);
 		}
@@ -406,7 +410,7 @@ namespace vulkan {
 			TRY_LOG(prev_node);
 		}
 
-		_de_dirty_bit = true;
+		_de_buf_dirty_bit = true;
 	}
 
 	void PrevPass::node_update(uint32_t id) {
@@ -414,7 +418,7 @@ namespace vulkan {
 
 		_nodes[id].update();
 
-		_de_dirty_bit = true;
+		_de_buf_dirty_bit = true;
 	}
 
 	void PrevPass::node_remove(uint32_t id) {
@@ -422,7 +426,7 @@ namespace vulkan {
 
 		_nodes[id].destroy();
 
-		_de_dirty_bit = true;
+		_de_buf_dirty_bit = true;
 	}
 
 	PrevPass::PrevPass(Scene &scene, VkExtent2D size):

@@ -231,6 +231,7 @@ namespace ui {
 				auto n = static_cast<vulkan::Node const *>(payload->Data);
 				scene.get_node_mut(n->id())->move_to(&node);
 			}
+			ImGui::EndDragDropTarget();
 		}
 		if (show_children) {
 			for (auto &child : node) {
