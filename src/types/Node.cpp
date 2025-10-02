@@ -176,7 +176,6 @@ namespace vulkan {
 
 	void Node::set_rotation(glm::vec3 rotation) {
 		if (rotation == _rotation) return;
-		log_debug() << "setting rotation: " << rotation << std::endl;
 		_rotation = rotation;
 		_propagate_matrix();
 	}

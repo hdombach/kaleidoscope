@@ -24,7 +24,6 @@ namespace vulkan {
 		static GlobalPrevPassUniform create(types::Camera const &camera) {
 			glm::vec3 angle;
 			glm::extractEulerAngleYXZ(glm::inverse(camera.rotation_matrix()), angle.y, angle.x, angle.z);
-			log_debug() << "angle: " << angle << std::endl;
 			return {
 				camera.rotation_matrix(),
 				camera.gen_raster_mat(),

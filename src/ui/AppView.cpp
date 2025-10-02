@@ -155,6 +155,7 @@ namespace ui {
 		//float width = 250;
 		ImGui::BeginChild("Node List", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true);
 		float width = (ImGui::GetWindowSize().x - ImGui::GetFrameHeightWithSpacing()) / 2;
+		ImGui::SetNextItemOpen(true, ImGuiCond_Appearing);
 		NodeItemView(scene, *scene.root(), state);
 		ImGui::EndChild();
 
@@ -232,6 +233,8 @@ namespace ui {
 			if (auto payload = ImGui::AcceptDragDropPayload("NodeItems")) {
 				auto n = static_cast<vulkan::Node const *>(payload->Data);
 				scene.get_node_mut(n->id())->move_to(&node);
+				ImGui::SetNextItemStorageID(ImGui::GetItemID());
+				ImGui::SetNextItemOpen(true);
 			}
 			ImGui::EndDragDropTarget();
 		}

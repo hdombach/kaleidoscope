@@ -10,6 +10,7 @@
 #include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/quaternion.hpp>
 
+#include "util/log.hpp"
 #include "util/math.hpp"
 
 namespace types {
