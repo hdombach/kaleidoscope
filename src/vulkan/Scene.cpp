@@ -145,7 +145,7 @@ namespace vulkan {
 
 	Node *Scene::get_node_mut(uint32_t id) {
 		if (id >= 0 && id < _nodes.size()) {
-			if (_nodes[id]->type() == vulkan::Node::Type::Camera) {
+			if (_nodes[id] && _nodes[id]->type() == vulkan::Node::Type::Camera) {
 				_camera_dirty_bit = true;
 			}
 			return _nodes[id].get();
