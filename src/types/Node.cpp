@@ -1,5 +1,6 @@
 #include "Node.hpp"
 #include "util/log.hpp"
+#include <glm/ext/matrix_transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
 
 namespace vulkan {
@@ -247,5 +248,14 @@ namespace vulkan {
 		for (auto &child : _children) {
 			child->_propagate_matrix();
 		}
+	}
+
+	glm::mat4 Node::rotation_matrix() const {
+		auto result = glm::mat4(1.0);
+		if (_parent) {
+			result *= _parent->rotation_matrix();
+		}
+		result *= glm::eulerAngleYXZ(_rotation.y, _rotation.x, _rotation.z);
+		return result;
 	}
 }

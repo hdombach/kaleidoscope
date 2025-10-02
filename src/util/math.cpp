@@ -33,14 +33,29 @@ namespace util {
 		auto m = glm::mat3_cast(q);
 
 		//zxy ordering from https://github.com/mrdoob/three.js/blob/dev/src/math/Euler.js
-		v.x = asin(-glm::clamp(m[2][1], -1.0f, 1.0f));
+		if (0) {
+			v.x = asin(-glm::clamp(m[2][1], -1.0f, 1.0f));
 
-		if (m[2][1] < 0.999999) {
-			v.y = atan2(m[2][0], m[2][2]);
-			v.z = atan2(m[0][1], m[1][1]);
-		} else {
-			v.y = 0;
-			v.z = atan2(m[1][0], m[0][0]);
+			if (abs(m[2][1]) < 0.999999) {
+				v.y = atan2(m[2][0], m[2][2]);
+				v.z = atan2(m[0][1], m[1][1]);
+			} else {
+				v.y = 0;
+				v.z = atan2(m[1][0], m[0][0]);
+			}
+		}
+
+		//yxz
+		if (1) {
+			v.x = asin(-glm::clamp(m[1][2], -1.0f, 1.0f));
+
+			if (abs(m[1][2]) < 0.999999) {
+				v.y = atan2(m[0][2], m[2][2]);
+				v.z = atan2(m[1][0], m[1][1]);
+			} else {
+				v.y = atan2(-m[2][0], m[0][0]);
+				v.z = 0;
+			}
 		}
 
 		return v;

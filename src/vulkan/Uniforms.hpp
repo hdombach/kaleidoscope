@@ -1,5 +1,6 @@
 #pragma once
 
+#include "util/log.hpp"
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #include <glm/glm.hpp>
@@ -21,10 +22,13 @@ namespace vulkan {
 		alignas(4) float de_small_step;
 
 		static GlobalPrevPassUniform create(types::Camera const &camera) {
+			glm::vec3 angle;
+			glm::extractEulerAngleYXZ(glm::inverse(camera.rotation_matrix()), angle.y, angle.x, angle.z);
+			log_debug() << "angle: " << angle << std::endl;
 			return {
-				camera.gen_rotate_mat(),
+				camera.rotation_matrix(),
 				camera.gen_raster_mat(),
-				glm::vec4(camera.position(), 0.0f),
+				camera.get_matrix() * glm::vec4(0, 0, 0, 1),
 				camera.get_aspect(),
 				camera.fovy(),
 				camera.z_near(),
@@ -45,20 +49,6 @@ namespace vulkan {
 				templ_property("int", "de_iterations"),
 				templ_property("float", "de_small_step")
 			};
-
-			static constexpr const char *declaration_content_str() {
-				return
-					"\tmat4 camera_rotation;\n"
-					"\tmat4 camera_transformation;\n"
-					"\tvec4 camera_translation;\n"
-					"\tfloat aspect;\n"
-					"\tfloat fovy;\n"
-					"\tfloat z_near;\n"
-					"\tfloat z_far;\n"
-					"\tint de_iterations;\n"
-					"\tfloat de_small_step;\n";
-			};
-
 	};
 
 	struct OverlayUniform {
@@ -67,11 +57,6 @@ namespace vulkan {
 		inline const static auto declaration_content = std::vector{
 			templ_property("uint", "selected_node")
 		};
-
-		static constexpr const char *declaration_content_str() {
-			return
-				"\tuint selected_node;\n";
-		}
 	};
 
 	struct ComputeUniform {
@@ -86,8 +71,8 @@ namespace vulkan {
 		alignas(4) float de_small_step;
 
 		inline const static auto declarations = std::vector{
-			templ_property("mat4", "rotation"),
-			templ_property("vec4", "translation"),
+			templ_property("mat4", "camera_rotation"),
+			templ_property("vec4", "camera_translation"),
 			templ_property("float", "aspect"),
 			templ_property("float", "fovy"),
 			templ_property("float", "z_near"),
@@ -98,21 +83,6 @@ namespace vulkan {
 			templ_property("int", "de_iterations"),
 			templ_property("float", "de_small_step")
 		};
-
-		static constexpr const char *declaration_content_str() {
-			return
-				"\tmat4 rotation;\n"
-				"\tvec4 translation;\n"
-				"\tfloat aspect;\n"
-				"\tfloat fovy;\n"
-				"\tfloat z_near;\n"
-				"\tfloat z_far;\n"
-				"\tuvec4 seed;\n"
-				"\tuint ray_count;\n"
-				"\tuint compute_index;\n"
-				"\tint de_iterations;\n"
-				"\tfloat de_small_step;\n";
-		}
 	};
 
 	using MappedPrevPassUniform = MappedUniform<GlobalPrevPassUniform>;

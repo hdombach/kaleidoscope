@@ -41,7 +41,9 @@ namespace ui {
 			if (ImGui::IsMouseDown(0)) {
 				r = mouse_offset * -0.004f;
 			}
-			auto p = get_cam_movement() * camera.gen_rotate_mat() * 0.01f;
+			auto p = get_cam_movement() * -0.01f;
+			p.w = 0;
+			p = camera.rotation_matrix() * p;
 			if (glm::length(p) > 0 || glm::length(r) > 0) {
 				if (!state.camera_locked) {
 					app.scene().set_active_camera(0);

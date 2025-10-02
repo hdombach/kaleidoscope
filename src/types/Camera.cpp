@@ -105,18 +105,13 @@ namespace types {
 				_z_far);
 		perspective[1][1] *= -1;
 		result *= perspective;
-		result *= gen_rotate_mat();
-		result *= gen_translate_mat();
+
+		auto p = get_matrix() * glm::vec4(0, 0, 0, 1);
+
+		result *= glm::inverse(rotation_matrix());
+		result = glm::translate(result, glm::vec3(-p.x, -p.y, -p.z));
+
 		return result;
-	}
-
-	glm::mat4 Camera::gen_rotate_mat() const {
-		auto r = rotation();
-		return glm::eulerAngleYXZ(r.y, r.x, r.z);
-	}
-
-	glm::mat4 Camera::gen_translate_mat() const {
-		return glm::translate(glm::mat4(1.0), position());
 	}
 
 	float Camera::get_aspect() const {
@@ -129,11 +124,12 @@ namespace types {
 		rotation_end = glm::normalize(rotation_end);
 
 		auto angle = acos(glm::dot(rotation_start, rotation_end));
-		auto rotation_axis = glm::normalize(glm::cross(rotation_start, rotation_end));
-		rotation_axis = rotation_axis * _q;
+		auto r = glm::normalize(glm::cross(rotation_start, rotation_end));
+		auto rotation_axis = glm::vec4(r.x, r.y, r.z, 0);
+		rotation_axis = rotation_matrix() * rotation_axis;
 
 		if (!std::isnan(rotation_axis.x)) {
-			auto rotation_quat = glm::angleAxis(angle, rotation_axis);
+			auto rotation_quat = glm::angleAxis(angle, glm::vec3(rotation_axis.x, rotation_axis.y, rotation_axis.z));
 			this->_q = glm::normalize(this->_q * rotation_quat);
 			set_rotation(util::quaternion_to_euler(this->_q));
 		}

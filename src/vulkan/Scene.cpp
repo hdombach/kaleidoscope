@@ -93,8 +93,8 @@ namespace vulkan {
 
 	VkSemaphore Scene::render_raytrace(VkSemaphore semaphore) {
 		auto uniform_buffer = ComputeUniform{};
-		uniform_buffer.camera_rotation = camera().gen_rotate_mat();
-		uniform_buffer.camera_translation = glm::vec4(camera().position(), 0.0);
+		uniform_buffer.camera_rotation = camera().rotation_matrix();
+		uniform_buffer.camera_translation = camera().get_matrix() * glm::vec4(0, 0, 0, 1.0);
 		uniform_buffer.aspect = static_cast<float>(camera().width()) / static_cast<float>(camera().height());
 		uniform_buffer.fovy = camera().fovy();
 		uniform_buffer.de_iterations = camera().de_iterations();

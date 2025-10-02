@@ -80,6 +80,7 @@ bool intersect_nodes(vec3 pos, vec3 dir, inout float d, inout uint id, inout int
 			}
 		}
 	}
+	closest_pos = hit_info.pos.xyz; // TODO undo
 	return hit;
 }
 
@@ -101,15 +102,15 @@ void material{{material.id}}_main(
 void main() {
 	vec2 uv = fragTexCoord;
 
-	vec4 dir = vec4(1.0 - uv.x * 2.0, uv.y * 2.0 - 1.0, 2.0, 0.0);
+	vec4 dir = vec4(1.0 - uv.x * 2.0, uv.y * 2.0 - 1.0, 0.0, 0.0);
 	dir.x *= global_uniform.aspect;
 	dir.z = 1.0 / tan(global_uniform.fovy * PI / 360.0f);
-	dir = normalize(dir) * -1 * global_uniform.camera_rotation;
+	dir = global_uniform.camera_rotation * normalize(dir) * -1.0;
 	vec2 intr_uv;
 	vec2 tex_uv;
 	uint node_id = 0;
 
-	vec4 position = vec4(0, 0, 0, 1) - global_uniform.camera_translation;
+	vec4 position = global_uniform.camera_translation;
 
 
 	uint debug = 0;
@@ -126,7 +127,7 @@ void main() {
 
 		hit_pos.w = 1.0;
 		hit_pos = global_uniform.camera_transformation * hit_pos;
-		d = hit_pos.z / global_uniform.z_far;
+		d = (hit_pos.z - global_uniform.z_near) / (global_uniform.z_far - global_uniform.z_near);
 
 		if (cur_depth > d) {
 			outNode = node_id;

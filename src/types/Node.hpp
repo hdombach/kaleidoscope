@@ -88,6 +88,8 @@ namespace vulkan {
 			void set_scale(glm::vec3 scale);
 			glm::mat4 get_matrix() const;
 			glm::mat4 get_matrix_inverse() const;
+			/* Matrix for just rotation */
+			glm::mat4 rotation_matrix() const;
 			types::ShaderResources const &resources() const;
 			types::ShaderResources &resources();
 

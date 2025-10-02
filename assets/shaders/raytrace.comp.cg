@@ -391,17 +391,17 @@ void main() {
 	}
 
 	vec2 uv = (vec2(dst) + rand_vec2(seed)) / vec2(size);
-	vec4 dir = vec4(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, 2.0, 0.0);
+	vec4 dir = vec4(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, 0.0, 0.0);
 	dir.x *= global_uniform.aspect;
 	dir.z = 1.0 / tan(global_uniform.fovy * PI / 360.0f);
-	dir = normalize(dir) * -1 * global_uniform.rotation;
+	dir = global_uniform.camera_rotation * normalize(dir) * -1.0;
 	vec2 intr_uv;
 	vec2 tex_uv;
 	uint node_id = 0;
 
 	dst = size - dst;
 
-	vec4 position = vec4(0, 0, 0, 1) - global_uniform.translation;
+	vec4 position = global_uniform.camera_translation;
 
 
 	uint debug = 0;

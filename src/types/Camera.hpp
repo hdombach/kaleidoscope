@@ -37,8 +37,6 @@ namespace types {
 			void set_de_small_step(float de_small_step);
 
 			glm::mat4 gen_raster_mat() const;
-			glm::mat4 gen_rotate_mat() const;
-			glm::mat4 gen_translate_mat() const;
 			float get_aspect() const;
 
 			void rotate_drag(float deltax, float deltay);
