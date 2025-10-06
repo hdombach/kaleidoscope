@@ -4,6 +4,7 @@
 
 #include "App.hpp"
 #include "util/Env.hpp"
+#include "util/ThreadPool.hpp"
 
 int parse_args(int argc, char **argv) {
 	if (argc <= 0) {
@@ -36,8 +37,10 @@ int main(int argc, char **argv) {
 		log_fatal_error(e) << std::endl;
 	} catch (const std::exception& e) {
 		std::cerr << e.what() << std::endl;
+		ThreadPool::DEFAULT.shutdown();
 		return EXIT_FAILURE;
 	}
 
+	ThreadPool::DEFAULT.shutdown();
 	return EXIT_SUCCESS;
 }
