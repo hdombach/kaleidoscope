@@ -1,4 +1,5 @@
 #include <array>
+#include <iterator>
 #include <vector>
 
 #include <vulkan/vulkan_core.h>
@@ -13,86 +14,33 @@
 #include "types/Material.hpp"
 #include "codegen/TemplObj.hpp"
 #include "codegen/TemplGen.hpp"
+#include "util/ThreadPool.hpp"
 
 namespace vulkan {
-	util::Result<PrevPassMaterial, KError> PrevPassMaterial::create(
+	util::Result<PrevPassMaterial::Ptr, KError> PrevPassMaterial::create(
 			Scene &scene,
 			PrevPass &preview_pass,
 			const types::Material *material)
 	{
-		auto result = PrevPassMaterial();
-		result._material = material;
+		auto result = Ptr(new PrevPassMaterial());
 
 		if (material == nullptr) {
 			return KError::invalid_arg("Cannot pass null material");
 		}
 
-		result._render_pass = &preview_pass;
-		
-		/* code gen vertex code */
-		auto vert_source = std::string();
-		auto frag_source = std::string();
-		auto texture_names = std::vector<std::string>();
-		for (auto resource : material->resources().get()) {
-			if (resource->type() == types::ShaderResource::Type::Texture) {
-				texture_names.push_back(resource->name());
-			}
-		}
-		_codegen(frag_source, vert_source, material, texture_names);
+		result->_material = material;
+		result->_render_pass = &preview_pass;
+		result->_pipeline_ready = false;
+		result->_pipeline_layout = nullptr;
+		result->_pipeline = nullptr;
 
-		auto vert_shader = vulkan::Shader::from_source_code(vert_source, Shader::Type::Vertex);
-		TRY(vert_shader);
-		auto frag_shader = vulkan::Shader::from_source_code(frag_source, Shader::Type::Fragment);
-		TRY(frag_shader);
+		auto r = result.get();
 
-		auto layout_bindings = std::vector<VkDescriptorSetLayoutBinding>(
-				1,
-				VkDescriptorSetLayoutBinding{});
-		layout_bindings[0].binding = 0;
-		layout_bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		layout_bindings[0].descriptorCount = 1;
-		layout_bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-		layout_bindings[0].pImmutableSamplers = nullptr;
+		ThreadPool::DEFAULT.add_task(util::f("PrevPass material", material->name()), [r](){
+			TRY_LOG(r->_create());
+		});
 
-		bool has_image = false;
-		for (auto &resource : material->resources().get()) {
-			if (resource->type() == types::ShaderResource::Type::Texture) {
-				has_image = true;
-			}
-		}
-		if (texture_names.size() > 0) {
-			auto binding = VkDescriptorSetLayoutBinding{};
-			binding.binding = 1;
-			binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			binding.descriptorCount = texture_names.size();
-			binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-			binding.pImmutableSamplers = nullptr;
-			layout_bindings.push_back(binding);
-		}
-
-		auto layout_info = VkDescriptorSetLayoutCreateInfo{};
-		layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layout_info.bindingCount = static_cast<uint32_t>(layout_bindings.size());
-		layout_info.pBindings = layout_bindings.data();
-
-		auto descriptor_layout = DescriptorSetLayout::create(layout_info);
-		TRY(descriptor_layout);
-
-		//Nodes need to be created first.
-		auto descriptor_layouts = std::vector<VkDescriptorSetLayout>{
-			result._render_pass->shared_descriptor_set_layout(),
-			descriptor_layout.value().layout(),
-		};
-
-		TRY(_create_pipeline(
-				vert_shader.value(), 
-				frag_shader.value(), 
-				*result._render_pass,
-				descriptor_layouts,
-				&result._pipeline,
-				&result._pipeline_layout));
-		log_memory() << "Just created a pipeline " << result._pipeline << std::endl;
-		return result;
+		return std::move(result);
 	}
 
 	PrevPassMaterial::PrevPassMaterial(PrevPassMaterial &&other) {
@@ -154,6 +102,14 @@ namespace vulkan {
 
 	uint32_t PrevPassMaterial::id() const {
 		return _material->id();
+	}
+
+	VkPipeline PrevPassMaterial::pipeline() {
+		return _pipeline_ready ? _pipeline : nullptr;
+	}
+
+	VkPipelineLayout PrevPassMaterial::pipeline_layout() {
+		return _pipeline_ready ? _pipeline_layout : nullptr;
 	}
 
 	util::Result<void, KError> PrevPassMaterial::_create_pipeline(
@@ -393,5 +349,75 @@ namespace vulkan {
 
 		log_debug() << "vert codegen:\n" << util::add_strnum(vert_source) << std::endl;
 		log_debug() << "frag codegen:\n" << util::add_strnum(frag_source) << std::endl;
+	}
+
+	util::Result<void, KError> PrevPassMaterial::_create() {
+		/* code gen vertex code */
+		auto vert_source = std::string();
+		auto frag_source = std::string();
+		auto texture_names = std::vector<std::string>();
+		for (auto resource : _material->resources().get()) {
+			if (resource->type() == types::ShaderResource::Type::Texture) {
+				texture_names.push_back(resource->name());
+			}
+		}
+		_codegen(frag_source, vert_source, _material, texture_names);
+
+		auto vert_shader = vulkan::Shader::from_source_code(vert_source, Shader::Type::Vertex);
+		TRY(vert_shader);
+		auto frag_shader = vulkan::Shader::from_source_code(frag_source, Shader::Type::Fragment);
+		TRY(frag_shader);
+
+		auto layout_bindings = std::vector<VkDescriptorSetLayoutBinding>(
+				1,
+				VkDescriptorSetLayoutBinding{});
+		layout_bindings[0].binding = 0;
+		layout_bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		layout_bindings[0].descriptorCount = 1;
+		layout_bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		layout_bindings[0].pImmutableSamplers = nullptr;
+
+		bool has_image = false;
+		for (auto &resource : _material->resources().get()) {
+			if (resource->type() == types::ShaderResource::Type::Texture) {
+				has_image = true;
+			}
+		}
+		if (texture_names.size() > 0) {
+			auto binding = VkDescriptorSetLayoutBinding{};
+			binding.binding = 1;
+			binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			binding.descriptorCount = texture_names.size();
+			binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+			binding.pImmutableSamplers = nullptr;
+			layout_bindings.push_back(binding);
+		}
+
+		auto layout_info = VkDescriptorSetLayoutCreateInfo{};
+		layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layout_info.bindingCount = static_cast<uint32_t>(layout_bindings.size());
+		layout_info.pBindings = layout_bindings.data();
+
+		auto descriptor_layout = DescriptorSetLayout::create(layout_info);
+		TRY(descriptor_layout);
+
+		//Nodes need to be created first.
+		auto descriptor_layouts = std::vector<VkDescriptorSetLayout>{
+			_render_pass->shared_descriptor_set_layout(),
+			descriptor_layout.value().layout(),
+		};
+
+		TRY(_create_pipeline(
+				vert_shader.value(), 
+				frag_shader.value(), 
+				*_render_pass,
+				descriptor_layouts,
+				&_pipeline,
+				&_pipeline_layout));
+		log_memory() << "Just created a pipeline " << _pipeline << std::endl;
+
+		_pipeline_ready = true;
+
+		return {};
 	}
 }

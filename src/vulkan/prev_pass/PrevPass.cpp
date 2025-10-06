@@ -206,17 +206,17 @@ namespace vulkan {
 				auto &prev_node = _nodes[node->id()];
 
 				if (mesh.is_de()) continue;
+				if (material->pipeline() == nullptr) continue;
 
 				auto size = glm::vec2{_size.width, _size.height};
 				/*node.material().preview_impl()->update_uniform(
 						_frame_index, 
 						node.position(), 
 						size);*/
-				log_assert(material.pipeline(), "Material pipeline does not exist");
 				vkCmdBindPipeline(
 						command_buffer, 
 						VK_PIPELINE_BIND_POINT_GRAPHICS, 
-						material.pipeline());
+						material->pipeline());
 
 				VkBuffer vertex_buffers[] = {mesh.vertex_buffer()};
 				VkDeviceSize offsets[] = {0};
@@ -231,7 +231,7 @@ namespace vulkan {
 				vkCmdBindDescriptorSets(
 						command_buffer, 
 						VK_PIPELINE_BIND_POINT_GRAPHICS, 
-						material.pipeline_layout(),
+						material->pipeline_layout(),
 						0,
 						descriptor_sets.size(),
 						descriptor_sets.data(),
@@ -397,7 +397,7 @@ namespace vulkan {
 	void PrevPass::material_update(uint32_t id) { }
 
 	void PrevPass::material_remove(uint32_t id) {
-		_materials[id].destroy();
+		_materials[id]->destroy();
 	}
 
 	void PrevPass::node_create(uint32_t id) {
@@ -1359,7 +1359,7 @@ namespace vulkan {
 		auto materials = cg::TemplList();
 		for (auto &material : _materials) {
 			if (!material) continue;
-			materials.push_back(material_templobj(material.id(), _scene->resource_manager().materials()));
+			materials.push_back(material_templobj(material->id(), _scene->resource_manager().materials()));
 		}
 
 		log_event() << "materials size is " << materials.size() << std::endl;

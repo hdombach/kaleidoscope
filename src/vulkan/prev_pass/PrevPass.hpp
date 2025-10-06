@@ -169,7 +169,7 @@ namespace vulkan {
 
 		private:
 			util::UIDList<PrevPassMesh> _meshes;
-			util::UIDList<PrevPassMaterial> _materials;
+			util::UIDList<PrevPassMaterial::Ptr, util::has_value, util::id_deref_trait> _materials;
 			util::UIDList<PrevPassNode> _nodes;
 			MeshObserver _mesh_observer;
 			MaterialObserver _material_observer;

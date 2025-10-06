@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "util/log.hpp"
 #include "vulkan/Shader.hpp"
 #include "util/result.hpp"
@@ -12,9 +14,11 @@ namespace vulkan {
 
 	class PrevPassMaterial {
 		public:
+			using Ptr = std::unique_ptr<PrevPassMaterial>;
+
 			PrevPassMaterial() = default;
 
-			static util::Result<PrevPassMaterial, KError> create(
+			static util::Result<Ptr, KError> create(
 					Scene &scene,
 					PrevPass &preview_pass,
 					const types::Material *material);
@@ -33,8 +37,14 @@ namespace vulkan {
 
 			uint32_t id() const;
 
-			VkPipeline pipeline() { return _pipeline; }
-			VkPipelineLayout pipeline_layout() { return _pipeline_layout; }
+			/**
+			 * @brief Optional pipeline
+			 */
+			VkPipeline pipeline();
+			/**
+			 * @brief Optional pipeline layout
+			 */
+			VkPipelineLayout pipeline_layout();
 
 			const types::Material *material() const {
 				log_assert(_material, "material must exist");
@@ -63,11 +73,13 @@ namespace vulkan {
 					const types::Material *material,
 					std::vector<std::string> &textures);
 
+			util::Result<void, KError> _create();
+
 		private:
 			const types::Material *_material;
 			PrevPass *_render_pass;
+			bool _pipeline_ready;
 			VkPipelineLayout _pipeline_layout;
 			VkPipeline _pipeline;
-
 	};
 }
