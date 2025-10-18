@@ -66,6 +66,7 @@ namespace vulkan {
 			uint32_t _id;
 			const vulkan::Node *_node;
 			DescriptorSets _descriptor_set;
+			DescriptorSetLayout _descriptor_set_layout;
 			Uniform _uniform;
 			PrevPass *_prev_pass;
 

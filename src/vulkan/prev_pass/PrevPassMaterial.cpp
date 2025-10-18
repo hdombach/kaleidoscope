@@ -36,9 +36,9 @@ namespace vulkan {
 
 		auto r = result.get();
 
-		ThreadPool::DEFAULT.add_task(util::f("PrevPass material", material->name()), [r](){
+		//ThreadPool::DEFAULT.add_task(util::f("PrevPass material", material->name()), [r](){
 			TRY_LOG(r->_create());
-		});
+		//});
 
 		return std::move(result);
 	}
@@ -368,43 +368,18 @@ namespace vulkan {
 		auto frag_shader = vulkan::Shader::from_source_code(frag_source, Shader::Type::Fragment);
 		TRY(frag_shader);
 
-		auto layout_bindings = std::vector<VkDescriptorSetLayoutBinding>(
-				1,
-				VkDescriptorSetLayoutBinding{});
-		layout_bindings[0].binding = 0;
-		layout_bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		layout_bindings[0].descriptorCount = 1;
-		layout_bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
-		layout_bindings[0].pImmutableSamplers = nullptr;
-
-		bool has_image = false;
-		for (auto &resource : _material->resources().get()) {
-			if (resource->type() == types::ShaderResource::Type::Texture) {
-				has_image = true;
-			}
-		}
+		auto bindings = std::vector<VkDescriptorSetLayoutBinding>();
+		bindings.push_back(descriptor_layout_uniform(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT));
 		if (texture_names.size() > 0) {
-			auto binding = VkDescriptorSetLayoutBinding{};
-			binding.binding = 1;
-			binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			binding.descriptorCount = texture_names.size();
-			binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-			binding.pImmutableSamplers = nullptr;
-			layout_bindings.push_back(binding);
+			bindings.push_back(descriptor_layout_images(VK_SHADER_STAGE_FRAGMENT_BIT, texture_names.size()));
 		}
 
-		auto layout_info = VkDescriptorSetLayoutCreateInfo{};
-		layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layout_info.bindingCount = static_cast<uint32_t>(layout_bindings.size());
-		layout_info.pBindings = layout_bindings.data();
-
-		auto descriptor_layout = DescriptorSetLayout::create(layout_info);
-		TRY(descriptor_layout);
+		auto descriptor_layout = DescriptorSetLayout::create(bindings).move_value();
 
 		//Nodes need to be created first.
 		auto descriptor_layouts = std::vector<VkDescriptorSetLayout>{
 			_render_pass->shared_descriptor_set_layout(),
-			descriptor_layout.value().layout(),
+			descriptor_layout.layout(),
 		};
 
 		TRY(_create_pipeline(

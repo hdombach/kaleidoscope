@@ -1,407 +1,503 @@
-#include <vector>
+#include "DescriptorSet.hpp"
 
 #include <vulkan/vulkan_core.h>
 
-#include "DescriptorSet.hpp"
-
 namespace vulkan {
-	DescriptorSetTemplate DescriptorSetTemplate::create_image(
-			uint32_t binding,
-			VkShaderStageFlags stage_flags,
-			VkImageView image_view)
-	{
-		return create_image(binding, stage_flags, image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	VkDescriptorSetLayoutBinding descriptor_layout_uniform(
+		VkShaderStageFlags stage_flags
+	) {
+		auto binding = VkDescriptorSetLayoutBinding{};
+		binding.binding = DESCRIPTOR_BINDING_UNUSED;
+		binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		binding.descriptorCount = 1;
+		binding.stageFlags = stage_flags;
+		binding.pImmutableSamplers = nullptr;
+
+		return binding;
 	}
 
-	DescriptorSetTemplate DescriptorSetTemplate::create_image(
-			uint32_t binding,
-			VkShaderStageFlags stage_flags,
-			VkImageView image_view,
-			VkImageLayout image_layout)
-	{
-		auto result = DescriptorSetTemplate();
-
-		result._layout_binding.binding = binding;
-		result._layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		result._layout_binding.descriptorCount = 1;
-		result._layout_binding.stageFlags = stage_flags;
-		result._layout_binding.pImmutableSamplers = nullptr;
-
-		auto image_info = VkDescriptorImageInfo{};
-		image_info.imageLayout = image_layout;
-		image_info.imageView = image_view;
-		image_info.sampler = *Graphics::DEFAULT->main_texture_sampler();
-		result._image_infos.push_back(image_info);
-
-		result._descriptor_writes = VkWriteDescriptorSet{};
-		result._descriptor_writes.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		//dstSet not handeled here
-		result._descriptor_writes.dstBinding = binding;
-		result._descriptor_writes.dstArrayElement = 0;
-		result._descriptor_writes.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		result._descriptor_writes.pImageInfo = result._image_infos.data();
-		result._descriptor_writes.descriptorCount = result._image_infos.size();
-
-		result._image_views = std::vector<VkImageView>{image_view};
-		result._image_layout = image_layout;
-
-		return result;
+	VkDescriptorSetLayoutBinding descriptor_layout_image(
+		VkShaderStageFlags stage_flags
+	) {
+		auto binding = VkDescriptorSetLayoutBinding{};
+		binding.binding = DESCRIPTOR_BINDING_UNUSED;
+		binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		binding.descriptorCount = 1;
+		binding.stageFlags = stage_flags;
+		binding.pImmutableSamplers = nullptr;
+		return binding;
 	}
 
-
-	util::Result<DescriptorSetTemplate, KError> DescriptorSetTemplate::create_images(
-			uint32_t binding,
-			VkShaderStageFlags stage_flags,
-			std::vector<VkImageView> const &image_views)
-	{
-		if (image_views.empty()) {
-			return KError::invalid_arg("Descriptor set images is emty");
-		}
-
-		auto result = DescriptorSetTemplate{};
-		result._layout_binding.binding = binding;
-		result._layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		result._layout_binding.descriptorCount = image_views.size();
-		result._layout_binding.stageFlags = stage_flags;
-		result._layout_binding.pImmutableSamplers = nullptr;
-
-		for (auto &image_view : image_views) {
-			result._image_views.push_back(image_view);
-		}
-		result._image_layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-		for (auto &image_view : image_views) {
-			auto image_info = VkDescriptorImageInfo{};
-			image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-			image_info.imageView = image_view;
-			image_info.sampler = *Graphics::DEFAULT->main_texture_sampler();
-			result._image_infos.push_back(image_info);
-		}
-
-		result._descriptor_writes = VkWriteDescriptorSet{};
-		result._descriptor_writes.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		//dstSet not handeled here
-		result._descriptor_writes.dstBinding = binding;
-		result._descriptor_writes.dstArrayElement = 0;
-		result._descriptor_writes.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		result._descriptor_writes.pImageInfo = result._image_infos.data();
-		result._descriptor_writes.descriptorCount = result._image_infos.size();
-
-		return std::move(result);
+	VkDescriptorSetLayoutBinding descriptor_layout_images(
+		VkShaderStageFlags stage_flags,
+		size_t image_count
+	) {
+		auto binding = VkDescriptorSetLayoutBinding{};
+		binding.binding = DESCRIPTOR_BINDING_UNUSED;
+		binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		binding.descriptorCount = image_count;
+		binding.stageFlags = stage_flags;
+		binding.pImmutableSamplers = nullptr;
+		return binding;
 	}
 
-	DescriptorSetTemplate DescriptorSetTemplate::create_image_target(
-			uint32_t binding,
-			VkShaderStageFlags stage_flags,
-			VkImageView image_view)
-	{
-		auto result = DescriptorSetTemplate{};
-
-		result._layout_binding.binding = binding;
-		result._layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		result._layout_binding.descriptorCount = 1;
-		result._layout_binding.stageFlags = stage_flags;
-		result._layout_binding.pImmutableSamplers = nullptr;
-
-		auto image_info = VkDescriptorImageInfo{};
-		image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
-		image_info.imageView = image_view;
-		image_info.sampler = *Graphics::DEFAULT->main_texture_sampler();
-		result._image_infos.push_back(image_info);
-
-		auto descriptor_write = VkWriteDescriptorSet{};
-		descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		//dstSet not handeled here
-		descriptor_write.dstBinding = binding;
-		descriptor_write.dstArrayElement = 0;
-		descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-		descriptor_write.pImageInfo = result._image_infos.data();
-		descriptor_write.descriptorCount = result._image_infos.size();
-		result._descriptor_writes = descriptor_write;
-
-		result._image_views = std::vector<VkImageView>{image_view};
-		result._image_layout = VK_IMAGE_LAYOUT_GENERAL;
-
-		return result;
+	VkDescriptorSetLayoutBinding descriptor_layout_image_target(
+		VkShaderStageFlags stage_flags,
+		size_t image_count
+	) {
+		auto binding = VkDescriptorSetLayoutBinding{};
+		binding.binding = DESCRIPTOR_BINDING_UNUSED;
+		binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		binding.descriptorCount = 1;
+		binding.stageFlags = stage_flags;
+		binding.pImmutableSamplers = nullptr;
+		return binding;
 	}
 
-	util::Result<DescriptorSetTemplate, KError> DescriptorSetTemplate::create_storage_buffer(
-			uint32_t binding,
-			VkShaderStageFlags stage_flags,
-			VkBuffer buffer,
-			size_t range)
-	{
-		if (buffer == nullptr) {
-			return KError::invalid_arg("Null buffer");
-		}
-
-		auto result = DescriptorSetTemplate{};
-		result._layout_binding.binding = binding;
-		result._layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		result._layout_binding.descriptorCount = 1;
-		result._layout_binding.stageFlags = stage_flags;
-		result._layout_binding.pImmutableSamplers = nullptr;
-
-		auto buffer_info = VkDescriptorBufferInfo{};
-		buffer_info.buffer = buffer;
-		buffer_info.offset = 0;
-		buffer_info.range = range;
-		result._buffer_infos.push_back(buffer_info);
-		
-		auto descriptor_write = VkWriteDescriptorSet{};
-		descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptor_write.dstBinding = binding;
-		descriptor_write.dstArrayElement = 0;
-		descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-		descriptor_write.pBufferInfo = result._buffer_infos.data();
-		descriptor_write.descriptorCount = result._buffer_infos.size();
-		result._descriptor_writes = descriptor_write;
-
-		result._buffers = std::vector<VkBuffer>{buffer};
-		result._buffer_range = range;
-
-		return result;
+	VkDescriptorSetLayoutBinding descriptor_layout_storage_buffer(
+		VkShaderStageFlags stage_flags
+	) {
+		auto binding = VkDescriptorSetLayoutBinding{};
+		binding.binding = DESCRIPTOR_BINDING_UNUSED;
+		binding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		binding.descriptorCount = 1;
+		binding.stageFlags = stage_flags;
+		binding.pImmutableSamplers = nullptr;
+		return binding;
 	}
-
-	util::Result<DescriptorSetTemplate, KError> DescriptorSetTemplate::create_storage_buffer(
-			uint32_t binding,
-			VkShaderStageFlags stage_flags,
-			StaticBuffer &static_buffer)
-	{
-		return create_storage_buffer(
-				binding,
-				stage_flags,
-				static_buffer.buffer(),
-				static_buffer.range());
-	}
-
-	DescriptorSetTemplate &DescriptorSetTemplate::set_sampler(Sampler const &sampler) {
-		for (auto &image_info : _image_infos) {
-			image_info.sampler = *sampler;
-		}
-
-		return *this;
-	}
-
-	DescriptorSetTemplate DescriptorSetTemplate::_create_uniform_impl(
-			uint32_t binding,
-			VkShaderStageFlags stage_flags,
-			std::vector<VkBuffer> &&buffers,
-			size_t buffer_size)
-	{
-		auto result = DescriptorSetTemplate{};
-		result._layout_binding.binding = binding;
-		result._layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		result._layout_binding.descriptorCount = 1;
-		result._layout_binding.stageFlags = stage_flags;
-		result._layout_binding.pImmutableSamplers = nullptr;
-		result._buffers = std::move(buffers);
-		result._buffer_range = buffer_size;
-
-		for (auto buffer : result._buffers) {
-			auto buffer_info = VkDescriptorBufferInfo{};
-
-			buffer_info.buffer = buffer;
-			buffer_info.offset = 0;
-			buffer_info.range = buffer_size;
-
-			result._buffer_infos.push_back(buffer_info);
-
-		}
-
-		auto descriptor_write = VkWriteDescriptorSet{};
-		descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		descriptor_write.dstBinding = binding;
-		descriptor_write.dstArrayElement = 0;
-		descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		descriptor_write.pBufferInfo = result._buffer_infos.data();
-		descriptor_write.descriptorCount = result._buffer_infos.size();
-		result._descriptor_writes = descriptor_write;
-
-		return result;
-
-	}
-
+	
 	util::Result<DescriptorSetLayout, KError> DescriptorSetLayout::create(
-			std::vector<DescriptorSetTemplate> &templates)
-	{
-		auto result = DescriptorSetLayout();
+		std::vector<VkDescriptorSetLayoutBinding> const &bindings
+	) {
+		auto layout = DescriptorSetLayout();
+		layout._bindings = bindings;
 
-		auto layout_bindings = std::vector<VkDescriptorSetLayoutBinding>();
-		for (auto &templ : templates) {
-			layout_bindings.push_back(templ.layout_binding());
+		uint32_t i = 0;
+		for (auto &b : layout._bindings) {
+			if (b.binding == DESCRIPTOR_BINDING_UNUSED) {
+				b.binding = i;
+			} else if (b.binding != i) {
+				return KError::invalid_arg("Invalid binding order");
+			}
+			i++;
 		}
 
 		auto layout_info = VkDescriptorSetLayoutCreateInfo{};
 		layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layout_info.bindingCount = static_cast<uint32_t>(layout_bindings.size());
-		layout_info.pBindings = layout_bindings.data();
+		layout_info.pBindings = layout._bindings.data();
+		layout_info.bindingCount = static_cast<uint32_t>(layout._bindings.size());
+		
+		auto r = vkCreateDescriptorSetLayout(
+			Graphics::DEFAULT->device(),
+			&layout_info,
+			nullptr,
+			&layout._layout
+		);
 
-		return create(layout_info);
-	}
-
-	util::Result<DescriptorSetLayout, KError> DescriptorSetLayout::create(
-			VkDescriptorSetLayoutCreateInfo &layout_info)
-	{
-		auto result = DescriptorSetLayout();
-
-		auto res = vkCreateDescriptorSetLayout(
-				Graphics::DEFAULT->device(),
-				&layout_info,
-				nullptr,
-				&result._descriptor_set_layout);
-
-		if (res != VK_SUCCESS) {
-			return {res};
+		if (r != VK_SUCCESS) {
+			return {r};
 		}
 
-		return result;
+		return layout;
 	}
 
 	DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout &&other) {
-		_descriptor_set_layout = other._descriptor_set_layout;
-		other._descriptor_set_layout = nullptr;
+		_bindings = std::move(other._bindings);
+		_layout = other._layout;
+		other._layout = nullptr;
 	}
 
-	DescriptorSetLayout& DescriptorSetLayout::operator=(DescriptorSetLayout&& other) {
+	DescriptorSetLayout& DescriptorSetLayout::operator=(DescriptorSetLayout &&other) {
 		destroy();
 
-		_descriptor_set_layout = other._descriptor_set_layout;
-		other._descriptor_set_layout = nullptr;
+		_bindings = std::move(other._bindings);
+		_layout = other._layout;
+		other._layout = nullptr;
 
 		return *this;
 	}
 
-	DescriptorSetLayout::DescriptorSetLayout():
-		_descriptor_set_layout(nullptr)
-	{}
-
 	void DescriptorSetLayout::destroy() {
-		if (_descriptor_set_layout) {
+		if (_layout) {
 			vkDestroyDescriptorSetLayout(
-					Graphics::DEFAULT->device(), 
-					_descriptor_set_layout, 
-					nullptr);
-			_descriptor_set_layout = nullptr;
+				Graphics::DEFAULT->device(),
+				_layout,
+				nullptr
+			);
+			_layout = nullptr;
 		}
 	}
 
-	util::Result<DescriptorSets, KError> DescriptorSets::create(
-			std::vector<DescriptorSetTemplate> &templates,
-			uint32_t frame_count,
-			DescriptorPool &descriptor_pool)
-	{
-		auto result = DescriptorSets();
-		result._descriptor_pool = &descriptor_pool;
+	DescriptorSetLayout::~DescriptorSetLayout() { destroy(); }
 
-		if (auto layout = DescriptorSetLayout::create(templates)) {
-			result._descriptor_set_layout = std::move(layout.value());
-		} else {
-			return layout.error();
+	bool DescriptorSetLayout::has_value() const { return _layout; }
+
+	DescriptorSetLayout::operator bool() const { return has_value(); }
+
+	DescriptorSetBuilder DescriptorSetLayout::builder(uint32_t frame_count) {
+		return DescriptorSetBuilder(*this, frame_count);
+	}
+
+	VkDescriptorSetLayout &DescriptorSetLayout::layout() {
+		return _layout;
+	}
+
+	std::vector<VkDescriptorSetLayoutBinding> const &DescriptorSetLayout::bindings() const {
+		return _bindings;
+	}
+
+	DescriptorSetBuilder::DescriptorSetBuilder(
+		DescriptorSetLayout &layout,
+		uint32_t frame_count
+	):
+		_layout(&layout),
+		_cur_binding(0),
+		_frame_count(frame_count),
+		_descriptor_writes(layout.bindings().size()),
+		_buffer_infos(layout.bindings().size()),
+		_image_infos(layout.bindings().size()),
+		_buffer_ranges(layout.bindings().size()),
+		_image_views(layout.bindings().size()),
+		_image_layout(layout.bindings().size())
+	{}
+
+	DescriptorSetBuilder::DescriptorSetBuilder(DescriptorSetBuilder &&other) {
+		_layout = other._layout;
+		other._layout = nullptr;
+
+		_cur_binding = other._cur_binding;
+
+		_descriptor_writes = std::move(other._descriptor_writes);
+		_buffer_infos = std::move(other._buffer_infos);
+		_image_infos = std::move(other._image_infos);
+		_buffer_ranges = std::move(other._buffer_ranges);
+		_image_views = std::move(other._image_views);
+		_image_layout = std::move(other._image_layout);
+	}
+
+	DescriptorSetBuilder &DescriptorSetBuilder::operator=(DescriptorSetBuilder &&other) {
+		_layout = other._layout;
+		other._layout = nullptr;
+
+		_cur_binding = other._cur_binding;
+
+		_descriptor_writes = std::move(other._descriptor_writes);
+		_buffer_infos = std::move(other._buffer_infos);
+		_image_infos = std::move(other._image_infos);
+		_buffer_ranges = std::move(other._buffer_ranges);
+		_image_views = std::move(other._image_views);
+		_image_layout = std::move(other._image_layout);
+
+		return *this;
+	}
+
+	bool DescriptorSetBuilder::has_value() const { return _layout; }
+
+	DescriptorSetBuilder::operator bool() const { return has_value(); }
+
+	DescriptorSetLayout &DescriptorSetBuilder::layout() {
+		return *_layout;
+	}
+
+	VkDescriptorSetLayout *DescriptorSetBuilder::vk_layout() {
+		return &_layout->layout();
+	}
+
+	std::vector<VkWriteDescriptorSet> &DescriptorSetBuilder::writes() {
+		return _descriptor_writes;
+	}
+
+	uint32_t DescriptorSetBuilder::frame_count() const {
+		return _frame_count;
+	}
+
+	util::Result<DescriptorSetBuilder &, KError> DescriptorSetBuilder::add_uniform(
+		Uniform &uniform
+	) {
+		return add_uniform({uniform.buffer()}, uniform.size());
+	}
+
+	util::Result<DescriptorSetBuilder &, KError> DescriptorSetBuilder::add_uniform(
+		std::vector<VkBuffer> const &buffers,
+		size_t buffer_size
+	) {
+		auto &binding = _layout->bindings()[_cur_binding];
+		if (binding.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+			return KError::invalid_arg(util::f("Binding ", _cur_binding, " is not a uniform buffer"));
 		}
 
-		auto layout_binding_vec = std::vector<VkDescriptorSetLayout>(
-				frame_count,
-				result._descriptor_set_layout.layout());
+		auto &buffer_infos = _buffer_infos[_cur_binding];
+		for (auto &buffer : buffers) {
+			auto buffer_info = VkDescriptorBufferInfo{};
+			
+			buffer_info.buffer = buffer;
+			buffer_info.offset = 0;
+			buffer_info.range = buffer_size;
+
+			buffer_infos.push_back(buffer_info);
+		}
+
+		auto &descriptor_write = _descriptor_writes[_cur_binding];
+		descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptor_write.dstBinding = _cur_binding;
+		descriptor_write.dstArrayElement = 0;
+		descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptor_write.pBufferInfo = buffer_infos.data();
+		descriptor_write.descriptorCount = buffer_infos.size();
+
+		_cur_binding++;
+		return *this;
+	}
+
+	util::Result<DescriptorSetBuilder &, KError> DescriptorSetBuilder::add_image(
+		VkImageView image_view
+	) {
+		return add_image(image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	}
+
+	util::Result<DescriptorSetBuilder &, KError> DescriptorSetBuilder::add_image(
+		VkImageView image_view,
+		VkImageLayout image_layout
+	) {
+		auto &binding = _layout->bindings()[_cur_binding];
+		if (binding.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
+			return KError::invalid_arg(util::f("Binding ", _cur_binding, " is not an image sampler"));
+		}
+
+		if (image_view == VK_NULL_HANDLE) {
+			return KError::invalid_arg("image_view cannot be VK_NULL_HANDLE");
+		}
+
+		auto &image_infos = _image_infos[_cur_binding];
+		auto image_info = VkDescriptorImageInfo{};
+		image_info.imageLayout = image_layout;
+		image_info.imageView = image_view;
+		image_info.sampler = *Graphics::DEFAULT->main_texture_sampler();
+		image_infos.push_back(image_info);
+
+		auto &descriptor_write = _descriptor_writes[_cur_binding];
+		descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptor_write.dstBinding = _cur_binding;
+		descriptor_write.dstArrayElement = 0;
+		descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptor_write.pImageInfo = image_infos.data();
+		descriptor_write.descriptorCount = image_infos.size();
+
+		_cur_binding++;
+		return *this;
+	}
+
+	util::Result<DescriptorSetBuilder &, KError> DescriptorSetBuilder::add_image(
+		std::vector<VkImageView> const &image_views
+	) {
+		auto &binding = _layout->bindings()[_cur_binding];
+		if (binding.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
+			return KError::invalid_arg(util::f("Binding ", _cur_binding, " is not an image sampler"));
+		}
+		if (image_views.size() == 0) {
+			return KError::invalid_arg("Cannot use 0 images");
+		}
+
+		auto &image_infos = _image_infos[_cur_binding];
+		
+		for (auto &image_view : image_views) {
+			if (image_view == VK_NULL_HANDLE) {
+				//return KError::invalid_arg("image_views cannot contain VK_NULL_HANDLE");
+			}
+			auto image_info = VkDescriptorImageInfo{};
+			image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			image_info.imageView = image_view;
+			image_info.sampler = *Graphics::DEFAULT->main_texture_sampler();
+			image_infos.push_back(image_info);
+		}
+
+		auto &descriptor_write = _descriptor_writes[_cur_binding];
+		descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptor_write.dstBinding = _cur_binding;
+		descriptor_write.dstArrayElement = 0;
+		descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptor_write.pImageInfo = image_infos.data();
+		descriptor_write.descriptorCount = image_infos.size();
+
+		_cur_binding++;
+		return *this;
+	}
+
+	util::Result<DescriptorSetBuilder &, KError> DescriptorSetBuilder::add_image_target(
+		VkImageView image_view
+	) {
+		auto &binding = _layout->bindings()[_cur_binding];
+		if (binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
+			return KError::invalid_arg(util::f("Binding ", _cur_binding, " is not an image target"));
+		}
+
+		if (image_view == VK_NULL_HANDLE) {
+			return KError::invalid_arg("image_view cannot be VK_NULL_HANDLE");
+		}
+
+		auto &image_infos = _image_infos[_cur_binding];
+		auto image_info = VkDescriptorImageInfo{};
+		image_info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+		image_info.imageView = image_view;
+		image_info.sampler = *Graphics::DEFAULT->main_texture_sampler();
+		image_infos.push_back(image_info);
+
+		auto &descriptor_write = _descriptor_writes[_cur_binding];
+		descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptor_write.dstBinding = _cur_binding;
+		descriptor_write.dstArrayElement = 0;
+		descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+		descriptor_write.pImageInfo = image_infos.data();
+		descriptor_write.descriptorCount = image_infos.size();
+
+		_cur_binding++;
+		return *this;
+	}
+
+	util::Result<DescriptorSetBuilder &, KError> DescriptorSetBuilder::add_storage_buffer(
+		VkBuffer buffer,
+		size_t range
+	) {
+		auto &binding = _layout->bindings()[_cur_binding];
+		if (binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+			return KError::invalid_arg(util::f("Binding ", _cur_binding, " is not a storage buffer"));
+		}
+
+
+		auto &buffer_infos = _buffer_infos[_cur_binding];
+		auto buffer_info = VkDescriptorBufferInfo{};
+		buffer_info.buffer = buffer;
+		buffer_info.offset = 0;
+		buffer_info.range = range;
+		buffer_infos.push_back(buffer_info);
+
+		auto &descriptor_write = _descriptor_writes[_cur_binding];
+		descriptor_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptor_write.dstBinding = _cur_binding;
+		descriptor_write.dstArrayElement = 0;
+		descriptor_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		descriptor_write.pBufferInfo = buffer_infos.data();
+		descriptor_write.descriptorCount = buffer_infos.size();
+
+		_cur_binding++;
+		return *this;
+	}
+
+	util::Result<DescriptorSetBuilder &, KError> DescriptorSetBuilder::add_storage_buffer(
+		StaticBuffer &static_buffer
+	) {
+		return add_storage_buffer(
+			static_buffer.buffer(),
+			static_buffer.range()
+		);
+	}
+
+	DescriptorSetBuilder &DescriptorSetBuilder::set_sampler(
+		uint32_t binding,
+		Sampler const &sampler
+	) {
+		for (auto &image_info : _image_infos[binding]) {
+			image_info.sampler = sampler.get();
+		}
+		return *this;
+	}
+
+	uint32_t DescriptorSetBuilder::initialized_bindings() const {
+		return _cur_binding;
+	}
+
+	util::Result<DescriptorSets, KError> DescriptorSets::create(
+		DescriptorSetBuilder &builder,
+		DescriptorPool &pool
+	) {
+		auto result = DescriptorSets();
+		result._descriptor_pool = &pool;
+
+		if (builder.initialized_bindings() != builder.layout().bindings().size()) {
+			return KError::invalid_arg("Not all bindings in the builder are initialized.");
+		}
+		
+		auto layout_vec = std::vector<VkDescriptorSetLayout>(
+			builder.frame_count(),
+			*builder.vk_layout()
+		);
 
 		auto alloc_info = VkDescriptorSetAllocateInfo{};
 		alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		alloc_info.descriptorPool = descriptor_pool.descriptor_pool();
-		alloc_info.descriptorSetCount = static_cast<uint32_t>(frame_count);
-		alloc_info.pSetLayouts = layout_binding_vec.data();
+		alloc_info.descriptorPool = pool.descriptor_pool();
+		alloc_info.descriptorSetCount = layout_vec.size();
+		alloc_info.pSetLayouts = layout_vec.data();
 
-		result._descriptor_sets.resize(frame_count);
+		result._descriptor_sets.resize(builder.frame_count());
 		auto res = vkAllocateDescriptorSets(
-				Graphics::DEFAULT->device(),
-				&alloc_info,
-				result._descriptor_sets.data());
+			Graphics::DEFAULT->device(),
+			&alloc_info,
+			result._descriptor_sets.data()
+		);
 		if (res != VK_SUCCESS) {
 			return {res};
 		}
 
-		for (size_t frame = 0; frame < frame_count; frame++) {
-			auto descriptor_writes = std::vector<VkWriteDescriptorSet>();
-
-			size_t write_i = 0;
-			for (auto &templ : templates) {
-				auto descriptor_write = templ.descriptor_write();
-				descriptor_write.dstSet = result._descriptor_sets[frame];
-				descriptor_writes.push_back(descriptor_write);
-				write_i++;
+		for (size_t frame = 0; frame < builder.frame_count(); frame++) {
+			for (auto &write : builder.writes()) {
+				//Feels wrong as I am modifying a parameter passed in
+				//However, builder is so specialzied rn that I don't
+				//think there will be side effects
+				write.dstSet = result._descriptor_sets[frame];
 			}
-
 			vkUpdateDescriptorSets(
-					Graphics::DEFAULT->device(), 
-					static_cast<uint32_t>(descriptor_writes.size()),
-					descriptor_writes.data(),
-					0,
-					nullptr);
+				Graphics::DEFAULT->device(),
+				static_cast<uint32_t>(builder.writes().size()),
+				builder.writes().data(),
+				0,
+				nullptr	
+			);
 		}
 
 		return result;
 	}
 
-	DescriptorSets::DescriptorSets(DescriptorSets &&other):
-		_descriptor_pool(other._descriptor_pool),
-		_descriptor_set_layout(std::move(other._descriptor_set_layout))
-	{
+	DescriptorSets::DescriptorSets(DescriptorSets &&other) {
 		_descriptor_sets = std::move(other._descriptor_sets);
 
 		_descriptor_pool = other._descriptor_pool;
+		other._descriptor_pool = nullptr;
 	}
 
-	DescriptorSets& DescriptorSets::operator=(DescriptorSets &&other) {
+	DescriptorSets &DescriptorSets::operator=(DescriptorSets &&other) {
 		destroy();
 
 		_descriptor_sets = std::move(other._descriptor_sets);
 
-		_descriptor_set_layout = std::move(other._descriptor_set_layout);
-
 		_descriptor_pool = other._descriptor_pool;
+		other._descriptor_pool = nullptr;
 
 		return *this;
 	}
 
-	DescriptorSets::DescriptorSets():
-		_descriptor_pool(nullptr),
-		_descriptor_sets(),
-		_descriptor_set_layout()
-	{ }
-
-	DescriptorSets::~DescriptorSets() {
-		destroy();
-	}
-
 	void DescriptorSets::destroy() {
-		_descriptor_set_layout.destroy();
-
 		if (_descriptor_sets.size() > 0) {
 			vkFreeDescriptorSets(
-					Graphics::DEFAULT->device(), 
-					_descriptor_pool->descriptor_pool(), 
-					_descriptor_sets.size(), 
-					_descriptor_sets.data());
+				Graphics::DEFAULT->device(),
+				_descriptor_pool->descriptor_pool(),
+				_descriptor_sets.size(),
+				_descriptor_sets.data()
+			);
 			_descriptor_sets.clear();
 		}
 	}
 
+	DescriptorSets::~DescriptorSets() { destroy(); }
+
+	bool DescriptorSets::has_value() const {
+		return _descriptor_sets.size() > 0;
+	}
+
+	DescriptorSets::operator bool() const {
+		return has_value();
+	}
+
 	VkDescriptorSet DescriptorSets::descriptor_set(uint32_t frame_index) {
 		return _descriptor_sets[frame_index];
-	}
-
-	VkDescriptorSetLayout DescriptorSets::layout() {
-		return _descriptor_set_layout.layout();
-	}
-
-	VkDescriptorSetLayout *DescriptorSets::layout_ptr() {
-		return _descriptor_set_layout.layout_ptr();
-	}
-
-	DescriptorPool &DescriptorSets::descriptor_pool() {
-		return *_descriptor_pool;
-	}
-
-	bool DescriptorSets::is_cleared() {
-		return _descriptor_pool == nullptr;
 	}
 }

@@ -43,6 +43,14 @@ namespace util {
 					}
 				}
 
+				Value &&move_value() {
+					try {
+						return std::move(std::get<Value>(*this));
+					} catch (std::bad_variant_access) {
+						throw std::get<Error>(*this);
+					}
+				}
+
 				Value *operator->() {
 					return &value();
 				}
@@ -159,10 +167,8 @@ namespace util {
 
 			public:
 				Result() = default;
-				Result(BaseValue value): _base(&value) {}
-
-				template<class ...Args>
-					Result(Args ...args): _base(args...) {}
+				Result(Value value): _base(&value) {}
+				Result(Error error): _base(error) {}
 
 				Result(const Result& other) = delete;
 				Result(Result &&other) = default;
@@ -182,6 +188,14 @@ namespace util {
 				}
 
 				BaseValue const &value() const {
+					return *_base.value();
+				}
+
+				BaseValue *operator->() {
+					return *_base.value();
+				}
+
+				BaseValue const *operator->() const {
 					return *_base.value();
 				}
 

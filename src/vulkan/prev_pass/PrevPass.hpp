@@ -98,7 +98,7 @@ namespace vulkan {
 			/**
 			 * @brief Descriptor set layout used across rasterization and de render pass
 			 */
-			VkDescriptorSetLayout shared_descriptor_set_layout() { return _shared_descriptor_set.layout(); }
+			VkDescriptorSetLayout shared_descriptor_set_layout() { return _shared_descriptor_set_layout.layout(); }
 			/**
 			 * @brief Descriptor set used across rasterization and de render pass
 			 */
@@ -184,6 +184,7 @@ namespace vulkan {
 			/** @brief Texture written to by de pass (accumulates _node_image) */
 			Image _de_node_image;
 
+			DescriptorSetLayout _shared_descriptor_set_layout;
 			DescriptorSets _shared_descriptor_set;
 
 			VkRenderPass _prim_render_pass;
@@ -194,6 +195,7 @@ namespace vulkan {
 			VkPipeline _de_pipeline;
 			VkRenderPass _de_render_pass;
 			VkFramebuffer _de_framebuffer;
+			DescriptorSetLayout _de_descriptor_set_layout;
 			DescriptorSets _de_descriptor_set;
 			StaticBuffer _de_node_buffer;
 			StaticBuffer _de_material_buffer;
@@ -201,6 +203,7 @@ namespace vulkan {
 			MappedOverlayUniform _mapped_overlay_uniform;
 			VkPipelineLayout _overlay_pipeline_layout;
 			VkPipeline _overlay_pipeline;
+			DescriptorSetLayout _overlay_descriptor_set_layout;
 			DescriptorSets _overlay_descriptor_set;
 
 			VkDescriptorSet _imgui_descriptor_set;

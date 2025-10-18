@@ -56,12 +56,12 @@ layout(binding = 4) readonly buffer mesh_buffer {
 layout(binding = 5) readonly buffer node_buffer {
 	Node nodes[];
 };
-layout(binding = 6) uniform sampler2D textures[{{texture_count}}];
 {% for material in materials %}
-layout(binding = 7) readonly buffer material_buffer{{material.id}}{
+layout(binding = 6) readonly buffer material_buffer{{material.id}}{
 	Material{{material.id}} material{{material.id}}[];
 };
 {% endfor %}
+layout(binding = 7) uniform sampler2D textures[{{texture_count}}];
 
 float PI = 3.14159265358979;
 

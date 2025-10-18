@@ -126,6 +126,7 @@ namespace vulkan {
 			Semaphore _semaphore;
 			DescriptorPool _descriptor_pool;
 			DescriptorSets _descriptor_set;
+			DescriptorSetLayout _descriptor_set_layout;
 			VkDescriptorSet _imgui_descriptor_set;
 			VkPipelineLayout _pipeline_layout;
 			VkPipeline _pipeline;

@@ -1,186 +1,189 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
+#include <variant>
 
-#include <vector>
 #include <vulkan/vulkan_core.h>
 
-#include "MappedUniform.hpp"
+#include "util/result.hpp"
+#include "util/KError.hpp"
 #include "DescriptorPool.hpp"
+#include "MappedUniform.hpp"
 #include "StaticBuffer.hpp"
 
 namespace vulkan {
-	class DescriptorSetTemplate {
-		public:
-			DescriptorSetTemplate() = default;
-			DescriptorSetTemplate(const DescriptorSetTemplate& other) = delete;
-			DescriptorSetTemplate(DescriptorSetTemplate &&other) = default;
-			DescriptorSetTemplate& operator=(const DescriptorSetTemplate& other) = delete;
-			DescriptorSetTemplate& operator=(DescriptorSetTemplate &&other) = default;
+	static const uint32_t DESCRIPTOR_BINDING_UNUSED = std::numeric_limits<uint32_t>::max();
 
-			template<typename BufferObj>
-			static DescriptorSetTemplate create_uniform(
-					uint32_t binding,
-					VkShaderStageFlags stage_flags, 
-					std::vector<MappedUniform<BufferObj>> &mapped_uniform)
-			{
-				auto buffers = std::vector<VkBuffer>();
-				for (auto &uniform : mapped_uniform) {
-					buffers.push_back(uniform.buffer());
-				}
-				return _create_uniform_impl(
-						binding, 
-						stage_flags, 
-						std::move(buffers), 
-						sizeof(BufferObj));
-			}
+	VkDescriptorSetLayoutBinding descriptor_layout_uniform(
+		VkShaderStageFlags stage_flags
+	);
 
-			template<typename BufferObj>
-			static DescriptorSetTemplate create_uniform(
-					uint32_t binding,
-					VkShaderStageFlags stage_flags,
-					MappedUniform<BufferObj> &mapped_uniform)
-			{
-				auto buffers = std::vector<VkBuffer>();
-				buffers.push_back(mapped_uniform.buffer());
-				return _create_uniform_impl(
-						binding, 
-						stage_flags, 
-						std::move(buffers), 
-						sizeof(BufferObj));
-			}
+	VkDescriptorSetLayoutBinding descriptor_layout_image(VkShaderStageFlags stage_flags);
 
-			static DescriptorSetTemplate create_uniform(
-					uint32_t binding,
-					VkShaderStageFlags stage_flags,
-					Uniform &uniform)
-			{
-				auto buffers = std::vector<VkBuffer>{uniform.buffer()};
-				return _create_uniform_impl(
-						binding,
-						stage_flags,
-						std::move(buffers),
-						uniform.size());
-			}
+	VkDescriptorSetLayoutBinding descriptor_layout_images(
+		VkShaderStageFlags stage_flags,
+		size_t image_count
+	);
 
-			static DescriptorSetTemplate create_image(
-					uint32_t binding,
-					VkShaderStageFlags stage_flags,
-					VkImageView image_view);
+	VkDescriptorSetLayoutBinding descriptor_layout_image_target(
+		VkShaderStageFlags stage_flags,
+		size_t image_count
+	);
+	VkDescriptorSetLayoutBinding descriptor_layout_storage_buffer(
+		VkShaderStageFlags stage_flags
+	);
 
-			static DescriptorSetTemplate create_image(
-					uint32_t binding,
-					VkShaderStageFlags stage_flags,
-					VkImageView image_view,
-					VkImageLayout image_layout);
-
-			static util::Result<DescriptorSetTemplate, KError> create_images(
-					uint32_t binding,
-					VkShaderStageFlags stage_flags,
-					std::vector<VkImageView> const &image_views);
-
-			static DescriptorSetTemplate create_image_target(
-					uint32_t binding,
-					VkShaderStageFlags stage_flags,
-					VkImageView image_view);
-
-			static util::Result<DescriptorSetTemplate, KError> create_storage_buffer(
-					uint32_t binding,
-					VkShaderStageFlags stage_flags,
-					VkBuffer buffer,
-					size_t range);
-
-			static util::Result<DescriptorSetTemplate, KError> create_storage_buffer(
-					uint32_t binding,
-					VkShaderStageFlags stage_flags,
-					StaticBuffer &static_buffer);
-
-			DescriptorSetTemplate &set_sampler(Sampler const &sampler);
-
-			VkDescriptorSetLayoutBinding layout_binding() const { return _layout_binding; }
-			VkWriteDescriptorSet const &descriptor_write() const { return _descriptor_writes; }
-			std::vector<VkDescriptorBufferInfo> const &buffer_infos() const { return _buffer_infos; }
-			std::vector<VkDescriptorImageInfo> const &image_infos() const { return _image_infos; }
-			std::vector<VkBuffer> const &buffers() const { return _buffers; }
-			unsigned long buffer_range() const { return _buffer_range; }
-
-			std::vector<VkImageView> const &image_views() const { return _image_views; }
-			VkImageLayout image_layout() const { return _image_layout; }
-
-		private:
-			static DescriptorSetTemplate _create_uniform_impl(
-					uint32_t binding,
-					VkShaderStageFlags stage_flags,
-					std::vector<VkBuffer> &&buffers,
-					size_t buffer_size);
-
-		private:
-		
-			/** @brief Element in VkDescriptorSetLayoutCreateInfo */
-			VkDescriptorSetLayoutBinding _layout_binding;
-			/** @brief Descriptor writes accross multiple frames (not descriptor sets) */
-			VkWriteDescriptorSet _descriptor_writes;
-			/** @brief buffer list for descriptor writes */
-			std::vector<VkDescriptorBufferInfo> _buffer_infos;
-			/** @brief image list for descriptor writes */
-			std::vector<VkDescriptorImageInfo> _image_infos;
-
-			// used for buffer descirptor set
-			std::vector<VkBuffer> _buffers;
-			unsigned long _buffer_range;
-
-			// Used for image descriptor set
-			std::vector<VkImageView> _image_views;
-			VkImageLayout _image_layout;
-	};
+	class DescriptorSetBuilder;
 
 	class DescriptorSetLayout {
 		public:
-			static util::Result<DescriptorSetLayout, KError> create(
-					std::vector<DescriptorSetTemplate> &templates);
-			static util::Result<DescriptorSetLayout, KError> create(
-					VkDescriptorSetLayoutCreateInfo &layout_info);
+			DescriptorSetLayout() = default;
 
-			DescriptorSetLayout(const DescriptorSetLayout& other) = delete;
+			static util::Result<DescriptorSetLayout, KError> create(
+				std::vector<VkDescriptorSetLayoutBinding> const &bindings
+			);
+
+			DescriptorSetLayout(DescriptorSetLayout const &other) = delete;
 			DescriptorSetLayout(DescriptorSetLayout &&other);
-			DescriptorSetLayout& operator=(const DescriptorSetLayout& other) = delete;
-			DescriptorSetLayout& operator=(DescriptorSetLayout&& other);
-			DescriptorSetLayout();
+			DescriptorSetLayout& operator=(DescriptorSetLayout const &other) = delete;
+			DescriptorSetLayout& operator=(DescriptorSetLayout &&other);
 
-			~DescriptorSetLayout() { destroy(); }
 			void destroy();
+			~DescriptorSetLayout();
 
-			VkDescriptorSetLayout layout() { return _descriptor_set_layout; }
-			VkDescriptorSetLayout *layout_ptr() { return &_descriptor_set_layout; }
+			bool has_value() const;
+			operator bool() const;
+
+			DescriptorSetBuilder builder(uint32_t frame_count = 1);
+
+			VkDescriptorSetLayout &layout();
+
+			std::vector<VkDescriptorSetLayoutBinding> const &bindings() const;
 
 		private:
-			VkDescriptorSetLayout _descriptor_set_layout;
+			VkDescriptorSetLayout _layout = nullptr;
+			std::vector<VkDescriptorSetLayoutBinding> _bindings;
+	};
+
+	class DescriptorSetBuilder {
+		public:
+			DescriptorSetBuilder() = default;
+			DescriptorSetBuilder(DescriptorSetLayout &layout, uint32_t frame_count);
+
+			//Internal points need to remain valid
+			DescriptorSetBuilder(DescriptorSetBuilder const &other) = delete;
+			DescriptorSetBuilder(DescriptorSetBuilder &&other);
+			DescriptorSetBuilder &operator=(DescriptorSetBuilder const &other) = delete;
+			DescriptorSetBuilder &operator=(DescriptorSetBuilder &&other);
+
+			bool has_value() const;
+			operator bool() const;
+
+			DescriptorSetLayout &layout();
+			VkDescriptorSetLayout *vk_layout();
+
+			std::vector<VkWriteDescriptorSet> &writes();
+
+			uint32_t frame_count() const;
+
+			template<typename BufferObj>
+			util::Result<DescriptorSetBuilder &, KError> add_uniform(
+				std::vector<MappedUniform<BufferObj>> &mapped_uniforms
+			) {
+				auto buffers = std::vector<VkBuffer>();
+				for (auto &uniform : mapped_uniforms) {
+					buffers.push_back(uniform.buffer());
+				}
+
+				return add_uniform(std::move(buffers), sizeof(BufferObj));
+			}
+
+			template<typename BufferObj>
+			util::Result<DescriptorSetBuilder &, KError> add_uniform(
+				MappedUniform<BufferObj> &mapped_uniform
+			) {
+				return add_uniform({mapped_uniform});
+			}
+
+			util::Result<DescriptorSetBuilder &, KError> add_uniform(
+				Uniform &uniform
+			);
+
+			util::Result<DescriptorSetBuilder &, KError> add_uniform(
+				std::vector<VkBuffer> const &buffers,
+				size_t buffer_size
+			);
+
+			util::Result<DescriptorSetBuilder &, KError> add_image(
+				VkImageView image_view
+			);
+
+			util::Result<DescriptorSetBuilder &, KError> add_image(
+				VkImageView image_view,
+				VkImageLayout image_layout
+			);
+
+			util::Result<DescriptorSetBuilder &, KError> add_image(
+				std::vector<VkImageView> const &image_views
+			);
+
+			util::Result<DescriptorSetBuilder &, KError> add_image_target(
+				VkImageView image_view
+			);
+
+			util::Result<DescriptorSetBuilder &, KError> add_storage_buffer(
+				VkBuffer buffer,
+				size_t range
+			);
+
+			util::Result<DescriptorSetBuilder &, KError> add_storage_buffer(
+				StaticBuffer &static_buffer
+			);
+
+			DescriptorSetBuilder &set_sampler(uint32_t binding, Sampler const &sampler);
+
+			uint32_t initialized_bindings() const;
+
+		private:
+			DescriptorSetLayout *_layout;
+			uint32_t _cur_binding;
+			uint32_t _frame_count;
+
+			// Each contain one entry per descriptor binding
+			std::vector<VkWriteDescriptorSet> _descriptor_writes;
+			std::vector<std::vector<VkDescriptorBufferInfo>> _buffer_infos;
+			std::vector<std::vector<VkDescriptorImageInfo>> _image_infos;
+
+			std::vector<size_t> _buffer_ranges;
+
+			std::vector<std::vector<VkImageView>> _image_views;
+			std::vector<VkImageLayout> _image_layout;
 	};
 
 	class DescriptorSets {
 		public:
+			DescriptorSets() = default;
 			static util::Result<DescriptorSets, KError> create(
-					std::vector<DescriptorSetTemplate> &templates,
-					uint32_t frame_count,
-					DescriptorPool &descriptor_pool);
+				DescriptorSetBuilder &builder,
+				DescriptorPool &pool
+			);
 
-			DescriptorSets(const DescriptorSets& other) = delete;
+			DescriptorSets(const DescriptorSets &other) = delete;
 			DescriptorSets(DescriptorSets &&other);
-			DescriptorSets& operator=(const DescriptorSets& other) = delete;
-			DescriptorSets& operator=(DescriptorSets&& other);
-			DescriptorSets();
+			DescriptorSets &operator=(DescriptorSets const &other) = delete;
+			DescriptorSets &operator=(DescriptorSets &&other);
 
-			~DescriptorSets();
 			void destroy();
+			~DescriptorSets();
 
-			VkDescriptorSet descriptor_set(uint32_t frame_index);
-			VkDescriptorSetLayout layout();
-			VkDescriptorSetLayout *layout_ptr();
-			DescriptorPool &descriptor_pool();
-			bool is_cleared();
+			bool has_value() const;
+			operator bool() const;
+
+			VkDescriptorSet descriptor_set(uint32_t frame_index = 0);
+
 		private:
 			std::vector<VkDescriptorSet> _descriptor_sets;
-			DescriptorSetLayout _descriptor_set_layout;
 			DescriptorPool *_descriptor_pool;
 	};
 }

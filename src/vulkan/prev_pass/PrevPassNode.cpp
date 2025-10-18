@@ -57,8 +57,6 @@ namespace vulkan {
 	}
 
 	util::Result<void, KError> PrevPassNode::_create_descriptor_sets() {
-		auto descriptor_templates = std::vector<DescriptorSetTemplate>();
-
 		auto uniform = _node->resources().create_prim_uniform();
 		TRY(uniform);
 		_uniform = std::move(uniform.value());
@@ -70,17 +68,22 @@ namespace vulkan {
 				images.push_back(texture.value()->image_view());
 			}
 		}
-		descriptor_templates.push_back(DescriptorSetTemplate::create_uniform(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, _uniform));
-		if (auto temp = DescriptorSetTemplate::create_images(1, VK_SHADER_STAGE_FRAGMENT_BIT, images)) {
-			descriptor_templates.push_back(std::move(temp.value()));
+
+		auto bindings = std::vector<VkDescriptorSetLayoutBinding>();
+		bindings.push_back(descriptor_layout_uniform(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT));
+		if (images.size() > 0) {
+			bindings.push_back(descriptor_layout_images(VK_SHADER_STAGE_FRAGMENT_BIT, images.size()));
 		}
 
-		auto descriptor_sets = DescriptorSets::create(
-			descriptor_templates,
-			1,
-			_prev_pass->descriptor_pool());
-		TRY(descriptor_sets);
-		_descriptor_set = std::move(descriptor_sets.value());
+		_descriptor_set_layout = DescriptorSetLayout::create(bindings).move_value();
+
+		auto builder = _descriptor_set_layout.builder();
+		TRY(builder.add_uniform(_uniform));
+		if (images.size() > 0) {
+			TRY(builder.add_image(images));
+		}
+
+		_descriptor_set = DescriptorSets::create(builder, _prev_pass->descriptor_pool()).move_value();
 
 		return {};
 	}
