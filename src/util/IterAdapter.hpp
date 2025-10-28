@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iterator>
+
 namespace util {
 	template<typename I>
 		class IterAdapter {
@@ -13,4 +15,9 @@ namespace util {
 		};
 
 	#define Adapt(BEGIN, END) IterAdapter<typeof(BEGIN)>(BEGIN, END)
+
+	template<typename C>
+	inline auto reverse(C const &c) {
+		return Adapt(std::reverse_iterator(c.end()), std::reverse_iterator(c.begin()));
+	}
 }

@@ -16,8 +16,8 @@ namespace vulkan {
 		Shader(code.data(), code.size() * sizeof(uint32_t))
 	{}
 
-	Shader Shader::from_env_file(std::string const &file) {
-		return Shader(util::readEnvFile(file));
+	Shader Shader::from_env_file(std::string const &file_name) {
+		return Shader(util::readEnvFile(file_name));
 	}
 
 	util::Result<Shader, KError> Shader::from_source_code(

@@ -18,7 +18,7 @@ namespace vulkan {
 
 			Shader(const std::string& code);
 			Shader(const std::vector<uint32_t> &code);
-			static Shader from_env_file(std::string const &file);
+			static Shader from_env_file(std::string const &file_name);
 			static util::Result<Shader, KError> from_source_code(
 					std::string const &code,
 					Type type);

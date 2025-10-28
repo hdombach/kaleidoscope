@@ -164,4 +164,14 @@ namespace util {
 			return static_cast<bool>(v);
 		}
 	};
+
+	/**
+	 * @brief Peforms a move operation on a ptr
+	 */
+	template<typename T>
+		T* move_ptr(T *&ptr) {
+			T *temp = ptr;
+			ptr = nullptr;
+			return temp;
+		}
 }

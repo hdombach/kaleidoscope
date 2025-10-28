@@ -1,6 +1,7 @@
 #pragma once
 
 #include "format.hpp"
+#include "util/Util.hpp"
 #include "util/log.hpp"
 #include <optional>
 #include <stdexcept>
@@ -48,6 +49,15 @@ namespace util {
 						return std::move(std::get<Value>(*this));
 					} catch (std::bad_variant_access) {
 						throw std::get<Error>(*this);
+					}
+				}
+
+				std::optional<Error> move_or(Value &dest) {
+					if (has_value()) {
+						dest = move_value();
+						return {};
+					} else {
+						return {error()};
 					}
 				}
 
@@ -115,6 +125,15 @@ namespace util {
 				Error const &error() const {
 					return parent_t::value();
 				}
+
+				std::optional<Error> move_or() {
+					if (has_value()) {
+						return {};
+					} else {
+						return {error()};
+					}
+				}
+
 
 			private:
 				using parent_t = std::optional<Error>;
