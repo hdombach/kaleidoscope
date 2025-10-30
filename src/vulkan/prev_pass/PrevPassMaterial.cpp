@@ -6,18 +6,60 @@
 
 #include "PrevPass.hpp"
 #include "PrevPassMaterial.hpp"
-#include "PrevPassCodegen.hpp"
 #include "util/log.hpp"
+#include "PrevPassCodegen.hpp"
 #include "vulkan/Vertex.hpp"
 #include "util/file.hpp"
 #include "util/Util.hpp"
 #include "types/Material.hpp"
 #include "codegen/TemplObj.hpp"
 #include "codegen/TemplGen.hpp"
-#include "util/ThreadPool.hpp"
 
 namespace vulkan {
-	util::Result<PrevPassMaterial::Ptr, KError> PrevPassMaterial::create(
+	PrevPassMaterial::Error PrevPassMaterial::Error::invalid_arg(
+		std::string const &msg,
+		BaseError::FLoc loc
+	) {
+		return Error(ErrorType::INVALID_ARG, msg, loc);
+	}
+
+	PrevPassMaterial::Error PrevPassMaterial::Error::vulkan_err(
+		VkResult r,
+		FLoc loc
+	) {
+		return Error(ErrorType::VULKAN_ERR, util::f("TODO vulkan enum str ", r), loc);
+	}
+
+	PrevPassMaterial::Error PrevPassMaterial::Error::misc(
+		std::string const &msg,
+		Error other,
+		FLoc loc
+	) {
+		return Error(ErrorType::MISC, msg, loc, other);
+	}
+
+	PrevPassMaterial::Error PrevPassMaterial::Error::misc(
+		std::string const &msg,
+		KError other,
+		FLoc loc
+	) {
+		//TODO remove KError
+		return Error(ErrorType::MISC, util::f(msg, ". KError is ", other), loc);
+	}
+
+	PrevPassMaterial::ErrorType PrevPassMaterial::Error::type() const {
+		return _type;
+	}
+
+	PrevPassMaterial::Error::Error(ErrorType type,
+		std::string const &msg,
+		FLoc loc,
+		std::optional<BaseError> other
+	) {
+	}
+
+
+	util::Result<PrevPassMaterial::Ptr, PrevPassMaterial::Error> PrevPassMaterial::create(
 			Scene &scene,
 			PrevPass &preview_pass,
 			const types::Material *material)
@@ -25,7 +67,7 @@ namespace vulkan {
 		auto result = Ptr(new PrevPassMaterial());
 
 		if (material == nullptr) {
-			return KError::invalid_arg("Cannot pass null material");
+			return Error::invalid_arg("Cannot pass null material");
 		}
 
 		result->_material = material;
@@ -36,9 +78,9 @@ namespace vulkan {
 
 		auto r = result.get();
 
-		//ThreadPool::DEFAULT.add_task(util::f("PrevPass material", material->name()), [r](){
-			TRY_LOG(r->_create());
-		//});
+		if (auto err = r->_create().move_or()) {
+			return Error::misc("Could not finish main create function", *err);
+		}
 
 		return std::move(result);
 	}
@@ -112,7 +154,7 @@ namespace vulkan {
 		return _pipeline_ready ? _pipeline_layout : nullptr;
 	}
 
-	util::Result<void, KError> PrevPassMaterial::_create_pipeline(
+	util::Result<void, PrevPassMaterial::Error> PrevPassMaterial::_create_pipeline(
 			Shader &vertex_shader,
 			Shader &fragment_shader,
 			PrevPass &render_pass,
@@ -267,7 +309,7 @@ namespace vulkan {
 				nullptr,
 				pipeline_layout);
 		if (res != VK_SUCCESS) {
-			return {res};
+			return Error::vulkan_err(res);
 		}
 
 		auto depth_stencil = VkPipelineDepthStencilStateCreateInfo{};
@@ -311,7 +353,7 @@ namespace vulkan {
 		if (res == VK_SUCCESS) {
 			return {};
 		} else {
-			return {res};
+			return Error::vulkan_err(res);
 		}
 	}
 
@@ -351,7 +393,7 @@ namespace vulkan {
 		log_debug() << "frag codegen:\n" << util::add_strnum(frag_source) << std::endl;
 	}
 
-	util::Result<void, KError> PrevPassMaterial::_create() {
+	util::Result<void, PrevPassMaterial::Error> PrevPassMaterial::_create() {
 		/* code gen vertex code */
 		auto vert_source = std::string();
 		auto frag_source = std::string();
@@ -363,10 +405,18 @@ namespace vulkan {
 		}
 		_codegen(frag_source, vert_source, _material, texture_names);
 
-		auto vert_shader = vulkan::Shader::from_source_code(vert_source, Shader::Type::Vertex);
-		TRY(vert_shader);
-		auto frag_shader = vulkan::Shader::from_source_code(frag_source, Shader::Type::Fragment);
-		TRY(frag_shader);
+		vulkan::Shader vert_shader, frag_shader;
+		if (auto shader = vulkan::Shader::from_source_code(vert_source, Shader::Type::Vertex)) {
+			vert_shader = shader.move_value();
+		} else {
+			return Error::misc("Could not create vert shader", shader.error());
+		}
+
+		if (auto shader = vulkan::Shader::from_source_code(frag_source, Shader::Type::Fragment)) {
+			frag_shader = shader.move_value();
+		} else {
+			return Error::misc("Could not create frag shader", shader.error());
+		}
 
 		auto bindings = std::vector<VkDescriptorSetLayoutBinding>();
 		bindings.push_back(descriptor_layout_uniform(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT));
@@ -382,17 +432,29 @@ namespace vulkan {
 			descriptor_layout.layout(),
 		};
 
-		TRY(_create_pipeline(
-				vert_shader.value(), 
-				frag_shader.value(), 
-				*_render_pass,
-				descriptor_layouts,
-				&_pipeline,
-				&_pipeline_layout));
+
+		if (auto err = _create_pipeline(
+				vert_shader,
+				frag_shader, 
+				*_render_pass, 
+				descriptor_layouts, 
+				&_pipeline, 
+				&_pipeline_layout).move_or()
+		) {
+			return Error::misc("Could not create pipeline", *err);
+		}
 		log_memory() << "Just created a pipeline " << _pipeline << std::endl;
 
 		_pipeline_ready = true;
 
 		return {};
 	}
+}
+
+std::ostream &operator<<(std::ostream &os, vulkan::PrevPassMaterial::ErrorType const &t) {
+	return os << std::array{
+		"PrevPassMaterial.INVALID_ARG",
+		"PrevPassMaterial.VULKAN_ERR",
+		"PrevPassMaterial.MISC",
+	}[static_cast<int>(t)];
 }

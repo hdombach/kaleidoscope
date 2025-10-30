@@ -6,6 +6,7 @@
 #include "vulkan/Shader.hpp"
 #include "util/result.hpp"
 #include "util/KError.hpp"
+#include "util/Error.hpp"
 #include "types/Material.hpp"
 
 namespace vulkan {
@@ -14,11 +15,38 @@ namespace vulkan {
 
 	class PrevPassMaterial {
 		public:
+			enum class ErrorType {
+				INVALID_ARG,
+				VULKAN_ERR,
+				MISC,
+			};
+
+			class Error: public BaseError {
+				public:
+					static Error invalid_arg(std::string const &msg, FLoc=SLoc::current());
+					static Error vulkan_err(VkResult r, FLoc=SLoc::current());
+					static Error misc(std::string const &msg, Error err, FLoc=SLoc::current());
+					static Error misc(std::string const &msg, KError err, FLoc=SLoc::current());
+
+					ErrorType type() const;
+				private:
+					Error() = default;
+					Error(
+						ErrorType type,
+						std::string const &msg,
+						FLoc loc,
+						std::optional<BaseError> other={}
+					);
+
+					ErrorType _type;
+			};
+
 			using Ptr = std::unique_ptr<PrevPassMaterial>;
 
+		public:
 			PrevPassMaterial() = default;
 
-			static util::Result<Ptr, KError> create(
+			static util::Result<Ptr, Error> create(
 					Scene &scene,
 					PrevPass &preview_pass,
 					const types::Material *material);
@@ -59,7 +87,7 @@ namespace vulkan {
 			 * @param[out] pipeline
 			 * @param[out] pipeline_layout
 			 */
-			static util::Result<void, KError> _create_pipeline(
+			static util::Result<void, Error> _create_pipeline(
 					Shader &vertex_shader,
 					Shader &fragment_shader,
 					PrevPass &render_pass,
@@ -73,7 +101,7 @@ namespace vulkan {
 					const types::Material *material,
 					std::vector<std::string> &textures);
 
-			util::Result<void, KError> _create();
+			util::Result<void, Error> _create();
 
 		private:
 			const types::Material *_material;
@@ -83,3 +111,5 @@ namespace vulkan {
 			VkPipeline _pipeline;
 	};
 }
+
+std::ostream &operator<<(std::ostream &os, vulkan::PrevPassMaterial::ErrorType const &t);

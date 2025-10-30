@@ -16,6 +16,7 @@ namespace vulkan {
 				Compute,
 			};
 
+			Shader() = default;
 			Shader(const std::string& code);
 			Shader(const std::vector<uint32_t> &code);
 			static Shader from_env_file(std::string const &file_name);
@@ -31,11 +32,14 @@ namespace vulkan {
 			void destroy();
 			~Shader();
 
+			bool has_value() const;
+			operator bool() const;
+
 			VkShaderModule shader_module() const;
 		private:
 			Shader(const uint32_t *code, size_t code_s);
 
 		private:
-			VkShaderModule _shader_module;
+			VkShaderModule _shader_module = nullptr;
 	};
 }

@@ -391,7 +391,9 @@ namespace vulkan {
 
 			_de_buf_dirty_bit = true;
 		} else {
-			TRY_LOG(material);
+			if (!material.has_value()) {
+				log_error() << material.error() << std::endl;
+			}
 		}
 	}
 

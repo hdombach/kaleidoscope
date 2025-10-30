@@ -76,6 +76,14 @@ namespace vulkan {
 		destroy();
 	}
 
+	bool Shader::has_value() const {
+		return _shader_module != nullptr;
+	}
+
+	Shader::operator bool() const {
+		return has_value();
+	}
+
 	VkShaderModule Shader::shader_module() const {
 		return _shader_module;
 	}

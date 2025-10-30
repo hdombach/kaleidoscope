@@ -726,5 +726,4 @@ namespace vulkan {
 
 		return source;
 	}
-
 }
