@@ -5,6 +5,7 @@
 #include <vector>
 #include <set>
 
+#include "util/FileLocation.hpp" // Needed for operator resolution
 #include "codegen/CfgContext.hpp"
 #include "util/IterAdapter.hpp"
 #include "util/result.hpp"
@@ -39,9 +40,6 @@ namespace cg::abs {
 			std::variant<AstNode*, uint32_t> _value;
 	};
 
-	inline std::ostream &operator<<(std::ostream &os, StackElement const &element) {
-		return element.debug(os);
-	}
 	/**
 	 * @brief A (hopefully) fast parser for the context free grammar.
 	 * It uses an LR(1) parser I think.
@@ -155,3 +153,8 @@ namespace cg::abs {
 namespace cg {
 	using AbsoluteSolver = abs::AbsoluteSolver;
 }
+
+inline std::ostream &operator<<(std::ostream &os, cg::abs::StackElement const &element) {
+	return element.debug(os);
+}
+

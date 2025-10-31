@@ -124,12 +124,6 @@ namespace cg {
 			std::vector<CfgRule> _rules;
 	};
 
-	/******* CfgLeaf ********/
-
-	inline std::ostream &operator<<(std::ostream &os, CfgLeaf const &leaf) {
-		return leaf.print_debug(os);
-	}
-
 	/******** CfgRule *********/
 	inline CfgRule operator + (Token::Type const &lhs, Token::Type const &rhs) {
 		return CfgRule(CfgLeaf(lhs), CfgLeaf(rhs));
@@ -151,9 +145,6 @@ namespace cg {
 		return CfgRule(lhs, rhs);
 	}
 
-	inline std::ostream &operator<<(std::ostream &os, CfgRule const &rule) {
-		return rule.print_debug(os);
-	}
 
 	/*******8 Rule set ********/
 
@@ -231,7 +222,17 @@ namespace cg {
 		return r;
 	}
 
-	inline std::ostream &operator<<(std::ostream &os, CfgRuleSet const &set) {
-		return set.print_debug(os);
-	}
 }
+
+inline std::ostream &operator<<(std::ostream &os, cg::CfgLeaf const &leaf) {
+	return leaf.print_debug(os);
+}
+
+inline std::ostream &operator<<(std::ostream &os, cg::CfgRule const &rule) {
+	return rule.print_debug(os);
+}
+
+inline std::ostream &operator<<(std::ostream &os, cg::CfgRuleSet const &set) {
+	return set.print_debug(os);
+}
+

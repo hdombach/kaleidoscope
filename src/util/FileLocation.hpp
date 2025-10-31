@@ -40,25 +40,25 @@ namespace util {
 				<< "(" << line << ":" << column << ")";
 		}
 	};
+}
 
-	inline std::ostream &operator<<(std::ostream &os, FileLocation const &file) {
-		file.debug(os);
-		return os;
+inline bool operator<(util::FileLocation const &lhs, util::FileLocation const &rhs) {
+	if (lhs.line == rhs.line) {
+		return lhs.column < rhs.column;
+	} else {
+		return lhs.line < rhs.line;
 	}
+}
 
-	inline bool operator<(FileLocation const &lhs, FileLocation const &rhs) {
-		if (lhs.line == rhs.line) {
-			return lhs.column < rhs.column;
-		} else {
-			return lhs.line < rhs.line;
-		}
+inline bool operator>(util::FileLocation const &lhs, util::FileLocation const &rhs) {
+	if (lhs.line == rhs.line) {
+		return lhs.column > rhs.column;
+	} else {
+		return lhs.line > rhs.line;
 	}
+}
 
-	inline bool operator>(FileLocation const &lhs, FileLocation const &rhs) {
-		if (lhs.line == rhs.line) {
-			return lhs.column > rhs.column;
-		} else {
-			return lhs.line > rhs.line;
-		}
-	}
+inline std::ostream &operator<<(std::ostream &os, util::FileLocation const &file) {
+	file.debug(os);
+	return os;
 }

@@ -6,9 +6,14 @@
 #include <vector>
 #include <memory>
 
+#include "util/FileLocation.hpp"
+#include "Tokenizer.hpp"
+
+
 #include "util/KError.hpp"
 #include "util/log.hpp"
 #include "util/PrintTools.hpp"
+
 
 namespace cg::abs {
 	StackElement::StackElement() = default;

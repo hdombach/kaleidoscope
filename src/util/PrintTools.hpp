@@ -20,7 +20,6 @@ namespace util {
 		private:
 			std::vector<std::vector<std::string>> const &_table;
 	};
-	inline std::ostream &operator<<(std::ostream &os, ptable const &t) { return t.print(os); }
 
 	RectSize str_rect(std::string const &str);
 
@@ -46,10 +45,6 @@ namespace util {
 			private:
 				Container const &_c;
 		};
-	template<typename T>
-		inline std::ostream &operator<<(std::ostream &os, plist<T> const &l) {
-			return l.print(os);
-		}
 
 	/**
 	 * @brief Prints a vector as a numberd list
@@ -76,8 +71,17 @@ namespace util {
 				bool _one_indexed;
 		};
 
-	template<typename T>
-		inline std::ostream &operator<<(std::ostream &os, plist_enumerated<T> const &l) {
-			return l.print(os);
-		}
 }
+
+inline std::ostream &operator<<(std::ostream &os, util::ptable const &t) { return t.print(os); }
+
+template<typename T>
+	inline std::ostream &operator<<(std::ostream &os, util::plist<T> const &l) {
+		return l.print(os);
+	}
+
+template<typename T>
+	inline std::ostream &operator<<(std::ostream &os, util::plist_enumerated<T> const &l) {
+		return l.print(os);
+	}
+

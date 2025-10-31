@@ -81,14 +81,6 @@ namespace cg {
 			 */
 	};
 
-	inline std::ostream &operator<<(std::ostream &os, Token const &t) {
-		return os << t.debug_str();
-	}
-
-	inline std::ostream &operator<<(std::ostream &os, Token::Type const &t) {
-		return os << Token::type_str(t);
-	}
-
 	inline Token operator+(Token const &lhs, Token const &rhs) {
 		auto result = lhs;
 		result.concat(rhs);
@@ -102,3 +94,12 @@ namespace cg {
 	 */
 	std::vector<Token> simplify_tokens(std::vector<Token> const &tokens);
 }
+
+inline std::ostream &operator<<(std::ostream &os, cg::Token const &t) {
+	return os << t.debug_str();
+}
+
+inline std::ostream &operator<<(std::ostream &os, cg::Token::Type const &t) {
+	return os << cg::Token::type_str(t);
+}
+

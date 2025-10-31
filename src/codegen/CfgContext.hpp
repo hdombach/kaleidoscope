@@ -96,8 +96,9 @@ namespace cg {
 			void _update_set_ids();
 	};
 
-	inline std::ostream &operator<<(std::ostream &os, CfgContext const &ctx) {
-		ctx.debug_print(os);
-		return os;
-	}
+}
+
+inline std::ostream &operator<<(std::ostream &os, cg::CfgContext const &ctx) {
+	ctx.debug_print(os);
+	return os;
 }
