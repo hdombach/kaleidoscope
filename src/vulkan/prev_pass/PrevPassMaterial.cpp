@@ -6,6 +6,7 @@
 
 #include "PrevPass.hpp"
 #include "PrevPassMaterial.hpp"
+#include "util/BaseError.hpp"
 #include "util/log.hpp"
 #include "PrevPassCodegen.hpp"
 #include "vulkan/Vertex.hpp"
@@ -16,6 +17,14 @@
 #include "codegen/TemplGen.hpp"
 
 namespace vulkan {
+	const char *PrevPassMaterial::error_str(ErrorType type) {
+		return std::array{
+			"PrevPassMaterial.INVALID_ARG",
+			"PrevPassMaterial.VULKAN_ERR",
+			"PrevPassMaterial.MISC"
+		}[static_cast<int>(type)];
+	}
+
 	PrevPassMaterial::Error PrevPassMaterial::Error::invalid_arg(
 		std::string const &msg,
 		BaseError::FLoc loc
@@ -55,8 +64,9 @@ namespace vulkan {
 		std::string const &msg,
 		FLoc loc,
 		std::optional<BaseError> other
-	) {
-	}
+	):
+		BaseError(error_str(type), msg, loc, other)
+	{ }
 
 
 	util::Result<PrevPassMaterial::Ptr, PrevPassMaterial::Error> PrevPassMaterial::create(
@@ -451,10 +461,3 @@ namespace vulkan {
 	}
 }
 
-std::ostream &operator<<(std::ostream &os, vulkan::PrevPassMaterial::ErrorType const &t) {
-	return os << std::array{
-		"PrevPassMaterial.INVALID_ARG",
-		"PrevPassMaterial.VULKAN_ERR",
-		"PrevPassMaterial.MISC",
-	}[static_cast<int>(t)];
-}

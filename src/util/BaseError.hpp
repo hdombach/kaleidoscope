@@ -4,6 +4,8 @@
 #include <string>
 #include <ostream>
 
+#include <vulkan/vulkan_core.h>
+
 #include "util/FileLocation.hpp"
 #include "util/IterAdapter.hpp"
 #include "util/format.hpp"

@@ -369,7 +369,7 @@ namespace vulkan {
 		if (auto mesh = PrevPassMesh::create(*_scene, _scene->resource_manager().get_mesh(id))) {
 			log_assert(_meshes.insert(std::move(mesh.value())), "Duplicated mesh in PrevPass");
 		} else {
-			TRY_LOG(mesh);
+			std::cerr << std::endl << mesh.error() << std::endl;
 		}
 
 		_de_buf_dirty_bit = true;
@@ -392,7 +392,7 @@ namespace vulkan {
 			_de_buf_dirty_bit = true;
 		} else {
 			if (!material.has_value()) {
-				log_error() << material.error() << std::endl;
+				log_error() << std::endl << material.error() << std::endl;
 			}
 		}
 	}

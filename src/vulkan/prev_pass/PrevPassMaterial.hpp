@@ -6,7 +6,7 @@
 #include "vulkan/Shader.hpp"
 #include "util/result.hpp"
 #include "util/KError.hpp"
-#include "util/Error.hpp"
+#include "util/BaseError.hpp"
 #include "types/Material.hpp"
 
 namespace vulkan {
@@ -20,6 +20,8 @@ namespace vulkan {
 				VULKAN_ERR,
 				MISC,
 			};
+
+			static const char *error_str(ErrorType type);
 
 			class Error: public BaseError {
 				public:
@@ -112,4 +114,7 @@ namespace vulkan {
 	};
 }
 
-std::ostream &operator<<(std::ostream &os, vulkan::PrevPassMaterial::ErrorType const &t);
+inline std::ostream &operator<<(std::ostream &os, vulkan::PrevPassMaterial::ErrorType const &t) {
+	return os << vulkan::PrevPassMaterial::error_str(t);
+}
+

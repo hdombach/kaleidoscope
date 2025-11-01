@@ -2,10 +2,54 @@
 #include <vulkan/vulkan_core.h>
 
 #include "PrevPassMesh.hpp"
+#include "util/BaseError.hpp"
 #include "vulkan/graphics.hpp"
 
 namespace vulkan {
-	util::Result<PrevPassMesh, KError> PrevPassMesh::create(
+	const char *PrevPassMesh::error_str(ErrorType t) {
+		return std::array{
+			"PrevPassMesh.MISC",
+			"PrevPassMesh.VULKAN_ERR"
+		}[static_cast<int>(t)];
+	}
+
+	PrevPassMesh::Error PrevPassMesh::Error::misc(
+		const std::string &msg,
+		const BaseError &err,
+		FLoc loc
+	) {
+		return Error(msg, ErrorType::MISC, loc, err, VK_ERROR_UNKNOWN);
+	}
+
+	PrevPassMesh::Error PrevPassMesh::Error::vulkan_err(
+		std::string const &msg,
+		VkResult err,
+		FLoc loc
+	) {
+		return Error(msg, ErrorType::VULKAN_ERR, loc, {}, err);
+	}
+
+	VkResult PrevPassMesh::Error::vk_result() const {
+		return _vk_result;
+	}
+
+	PrevPassMesh::ErrorType PrevPassMesh::Error::type() const {
+		return _type;
+	}
+
+	PrevPassMesh::Error::Error(
+		std::string const &msg,
+		ErrorType type,
+		FLoc loc,
+		std::optional<BaseError> err,
+		VkResult vk_r
+	):
+		BaseError(error_str(type), msg, loc, err),
+		_type(type),
+		_vk_result(vk_r)
+	{ }
+
+	util::Result<PrevPassMesh, PrevPassMesh::Error> PrevPassMesh::create(
 			Scene &scene,
 			const types::Mesh *mesh)
 	{

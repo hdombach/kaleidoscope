@@ -3,7 +3,7 @@
 #include <vulkan/vulkan.h>
 
 #include "util/result.hpp"
-#include "util/KError.hpp"
+#include "util/BaseError.hpp"
 #include "types/Mesh.hpp"
 
 namespace vulkan {
@@ -11,9 +11,36 @@ namespace vulkan {
 
 	class PrevPassMesh {
 		public:
+			enum class ErrorType {
+				MISC,
+				VULKAN_ERR
+			};
+
+			static const char *error_str(ErrorType t);
+
+			class Error: public BaseError {
+				public:
+					static Error misc(std::string const &msg, BaseError const &err, FLoc=SLoc::current());
+					static Error vulkan_err(std::string const &msg, VkResult err, FLoc=SLoc::current());
+
+					VkResult vk_result() const;
+					ErrorType type() const;
+
+				private:
+					Error(
+						std::string const &msg,
+						ErrorType type,
+						FLoc loc,
+						std::optional<BaseError> err,
+						VkResult vk_r
+					);
+					ErrorType _type;
+					VkResult _vk_result;
+			};
+
 			PrevPassMesh();
 
-			static util::Result<PrevPassMesh, KError> create(Scene &scene, const types::Mesh *mesh);
+			static util::Result<PrevPassMesh, Error> create(Scene &scene, const types::Mesh *mesh);
 
 			PrevPassMesh(const PrevPassMesh& other) = delete;
 			PrevPassMesh(PrevPassMesh &&other);
