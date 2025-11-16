@@ -12,31 +12,10 @@ namespace vulkan {
 	class PrevPassMesh {
 		public:
 			enum class ErrorType {
-				MISC,
-				VULKAN_ERR
+				MISC
 			};
 
-			static const char *error_str(ErrorType t);
-
-			class Error: public BaseError {
-				public:
-					static Error misc(std::string const &msg, BaseError const &err, FLoc=SLoc::current());
-					static Error vulkan_err(std::string const &msg, VkResult err, FLoc=SLoc::current());
-
-					VkResult vk_result() const;
-					ErrorType type() const;
-
-				private:
-					Error(
-						std::string const &msg,
-						ErrorType type,
-						FLoc loc,
-						std::optional<BaseError> err,
-						VkResult vk_r
-					);
-					ErrorType _type;
-					VkResult _vk_result;
-			};
+			using Error = BaseError<ErrorType>;
 
 			PrevPassMesh();
 
@@ -75,4 +54,12 @@ namespace vulkan {
 			VkDeviceSize _vertex_buffer_range;
 			VkDeviceSize _index_buffer_range;
 	};
+
+}
+
+template<>
+	const char *vulkan::PrevPassMesh::Error::type_str(vulkan::PrevPassMesh::ErrorType t);
+
+inline std::ostream &operator<<(std::ostream &os, vulkan::PrevPassMesh::ErrorType type) {
+	return os << vulkan::PrevPassMesh::Error::type_str(type);
 }

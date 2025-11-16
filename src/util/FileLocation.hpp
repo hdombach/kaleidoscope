@@ -24,10 +24,10 @@ namespace util {
 			std::string const &file_name
 		): line(line), column(column), file_name(file_name) { }
 
-		FileLocation(std::source_location loc):
+		FileLocation(std::source_location const &loc):
 			line(loc.line()), column(loc.column()), file_name(loc.file_name()) { }
 
-		FileLocation& operator=(std::source_location loc) {
+		FileLocation& operator=(std::source_location const &loc) {
 			line = loc.line();
 			column = loc.column();
 			file_name = loc.file_name();

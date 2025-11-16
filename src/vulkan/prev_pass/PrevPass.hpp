@@ -24,6 +24,21 @@ namespace vulkan {
 	class Node;
 	class PrevPass {
 		public:
+			enum class ErrorType {
+				MISC,
+			};
+
+			using Error = BaseError<ErrorType>;
+
+			template<typename T>
+				Error err_misc(
+					std::string const &msg,
+					BaseError<T> const &other,
+					Error::FLoc loc=Error::SLoc::current()
+				) {
+					return Error(ErrorType::MISC, msg, other, loc);
+				}
+
 			using Ptr = std::unique_ptr<PrevPass>;
 
 			/**
@@ -222,3 +237,8 @@ namespace vulkan {
 			Scene *_scene;
 	};
 }
+
+template<>
+	const char *vulkan::PrevPass::Error::type_str(vulkan::PrevPass::ErrorType t);
+
+std::ostream &operator<<(std::ostream &os, vulkan::PrevPass::ErrorType err);

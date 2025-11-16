@@ -11,6 +11,7 @@
 #include "PrevPass.hpp"
 #include "PrevPassMaterial.hpp"
 #include "PrevPassNode.hpp"
+#include "util/BaseError.hpp"
 #include "util/format.hpp"
 #include "vulkan/DescriptorSet.hpp"
 #include "vulkan/Scene.hpp"
@@ -1341,4 +1342,15 @@ namespace vulkan {
 
 		return source_code;
 	}
+}
+
+template<>
+	const char *vulkan::PrevPass::Error::type_str(vulkan::PrevPass::ErrorType t) {
+		return std::array{
+			"PrevPass.MISC"
+		}[static_cast<int>(t)];
+	}
+
+std::ostream &operator<<(std::ostream &os, vulkan::PrevPass::ErrorType err) {
+	return os << vulkan::PrevPass::Error::type_str(err);
 }

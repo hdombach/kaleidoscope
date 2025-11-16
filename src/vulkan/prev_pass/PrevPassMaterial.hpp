@@ -5,9 +5,8 @@
 #include "util/log.hpp"
 #include "vulkan/Shader.hpp"
 #include "util/result.hpp"
-#include "util/KError.hpp"
-#include "util/BaseError.hpp"
 #include "types/Material.hpp"
+#include "util/BaseError.hpp"
 
 namespace vulkan {
 	class Scene;
@@ -21,27 +20,11 @@ namespace vulkan {
 				MISC,
 			};
 
-			static const char *error_str(ErrorType type);
+			static const char *err_str(ErrorType type);
 
-			class Error: public BaseError {
-				public:
-					static Error invalid_arg(std::string const &msg, FLoc=SLoc::current());
-					static Error vulkan_err(VkResult r, FLoc=SLoc::current());
-					static Error misc(std::string const &msg, Error err, FLoc=SLoc::current());
-					static Error misc(std::string const &msg, KError err, FLoc=SLoc::current());
+			using Error = BaseError<ErrorType>;
 
-					ErrorType type() const;
-				private:
-					Error() = default;
-					Error(
-						ErrorType type,
-						std::string const &msg,
-						FLoc loc,
-						std::optional<BaseError> other={}
-					);
-
-					ErrorType _type;
-			};
+			static Error vulkan_err(VkResult vk_error, const char *msg);
 
 			using Ptr = std::unique_ptr<PrevPassMaterial>;
 
@@ -114,7 +97,10 @@ namespace vulkan {
 	};
 }
 
+template<>
+	const char *vulkan::PrevPassMaterial::Error::type_str(vulkan::PrevPassMaterial::ErrorType t);
+
 inline std::ostream &operator<<(std::ostream &os, vulkan::PrevPassMaterial::ErrorType const &t) {
-	return os << vulkan::PrevPassMaterial::error_str(t);
+	return os << vulkan::PrevPassMaterial::err_str(t);
 }
 
