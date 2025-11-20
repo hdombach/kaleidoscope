@@ -9,6 +9,7 @@
 #include "util/KError.hpp"
 #include "types/Node.hpp"
 #include "vulkan/TemplUtils.hpp"
+#include "util/BaseError.hpp"
 
 namespace vulkan {
 	class Scene;
@@ -33,6 +34,7 @@ namespace vulkan {
 					templ_property("mat4", "inverse_transformation")
 				};
 			} __attribute__((packed));
+
 
 			PrevPassNode() = default;
 

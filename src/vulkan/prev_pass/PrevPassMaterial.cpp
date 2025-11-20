@@ -20,7 +20,7 @@ namespace vulkan {
 		VkResult vk_error,
 		const char *msg
 	) {
-		return Error(ErrorType::VULKAN_ERR, msg, VkError(vk_error, ""));
+		return Error(ErrorType::VULKAN_ERR, msg, VkError(vk_error));
 	}
 
 	util::Result<PrevPassMaterial::Ptr, PrevPassMaterial::Error> PrevPassMaterial::create(
@@ -273,7 +273,7 @@ namespace vulkan {
 				nullptr,
 				pipeline_layout);
 		if (res != VK_SUCCESS) {
-			return Error(ErrorType::MISC, "Could not create pipeline layout", VkError(res, ""));
+			return Error(ErrorType::VULKAN_ERR, "Could not create pipeline layout", VkError(res));
 		}
 
 		auto depth_stencil = VkPipelineDepthStencilStateCreateInfo{};
@@ -417,9 +417,12 @@ namespace vulkan {
 
 template<>
 	const char *vulkan::PrevPassMaterial::Error::type_str(vulkan::PrevPassMaterial::ErrorType t) {
-		return std::array{
-			"PrevPassMaterial.INVALID_ARG",
-			"PrevPassMaterial.VULKAN_ERR",
-			"PrevPassMaterial.MISC"
-		}[static_cast<int>(t)];
+		switch (t) {
+			case vulkan::PrevPassMaterial::ErrorType::INVALID_ARG:
+				return "PrevPassMaterial.INVALID_ARG";
+			case vulkan::PrevPassMaterial::ErrorType::VULKAN_ERR:
+				return "PrevPassMaterial.VULKAN_ERR";
+			case vulkan::PrevPassMaterial::ErrorType::MISC:
+				return "PrevPassMaterial.MISC";
+		}
 	}

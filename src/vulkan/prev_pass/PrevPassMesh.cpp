@@ -232,9 +232,3 @@ namespace vulkan {
 	}
 }
 
-template<>
-const char *vulkan::PrevPassMesh::Error::type_str(vulkan::PrevPassMesh::ErrorType t) {
-		return std::array{
-			"PrevPassMesh.MISC",
-		}[static_cast<int>(t)];
-}

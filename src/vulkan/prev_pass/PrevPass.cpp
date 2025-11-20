@@ -1346,11 +1346,15 @@ namespace vulkan {
 
 template<>
 	const char *vulkan::PrevPass::Error::type_str(vulkan::PrevPass::ErrorType t) {
-		return std::array{
-			"PrevPass.MISC"
-		}[static_cast<int>(t)];
+		switch (t) {
+			case vulkan::PrevPass::ErrorType::VULKAN:
+				return "PrevPass.VULKAN";
+			case vulkan::PrevPass::ErrorType::RESOURCE:
+				return "PrevPass.RESOURCE";
+		}
 	}
 
 std::ostream &operator<<(std::ostream &os, vulkan::PrevPass::ErrorType err) {
 	return os << vulkan::PrevPass::Error::type_str(err);
 }
+

@@ -11,11 +11,7 @@ namespace vulkan {
 
 	class PrevPassMesh {
 		public:
-			enum class ErrorType {
-				MISC
-			};
-
-			using Error = BaseError<ErrorType>;
+			using Error = BaseError;
 
 			PrevPassMesh();
 
@@ -57,9 +53,3 @@ namespace vulkan {
 
 }
 
-template<>
-	const char *vulkan::PrevPassMesh::Error::type_str(vulkan::PrevPassMesh::ErrorType t);
-
-inline std::ostream &operator<<(std::ostream &os, vulkan::PrevPassMesh::ErrorType type) {
-	return os << vulkan::PrevPassMesh::Error::type_str(type);
-}

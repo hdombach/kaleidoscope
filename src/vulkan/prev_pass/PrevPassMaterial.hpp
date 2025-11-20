@@ -22,7 +22,7 @@ namespace vulkan {
 
 			static const char *err_str(ErrorType type);
 
-			using Error = BaseError<ErrorType>;
+			using Error = TypedError<ErrorType>;
 
 			static Error vulkan_err(VkResult vk_error, const char *msg);
 

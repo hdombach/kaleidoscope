@@ -25,19 +25,11 @@ namespace vulkan {
 	class PrevPass {
 		public:
 			enum class ErrorType {
-				MISC,
+				VULKAN,
+				RESOURCE,
 			};
 
-			using Error = BaseError<ErrorType>;
-
-			template<typename T>
-				Error err_misc(
-					std::string const &msg,
-					BaseError<T> const &other,
-					Error::FLoc loc=Error::SLoc::current()
-				) {
-					return Error(ErrorType::MISC, msg, other, loc);
-				}
+			using Error = TypedError<ErrorType>;
 
 			using Ptr = std::unique_ptr<PrevPass>;
 
