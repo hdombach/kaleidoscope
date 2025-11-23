@@ -88,7 +88,7 @@ namespace vulkan {
 			uint32_t frame_count() const;
 
 			template<typename BufferObj>
-			util::Result<DescriptorSetBuilder &, KError> add_uniform(
+			util::Result<void, KError> add_uniform(
 				std::vector<MappedUniform<BufferObj>> &mapped_uniforms
 			) {
 				auto buffers = std::vector<VkBuffer>();
@@ -100,48 +100,48 @@ namespace vulkan {
 			}
 
 			template<typename BufferObj>
-			util::Result<DescriptorSetBuilder &, KError> add_uniform(
+			util::Result<void, KError> add_uniform(
 				MappedUniform<BufferObj> &mapped_uniform
 			) {
 				return add_uniform({mapped_uniform});
 			}
 
-			util::Result<DescriptorSetBuilder &, KError> add_uniform(
+			util::Result<void, KError> add_uniform(
 				Uniform &uniform
 			);
 
-			util::Result<DescriptorSetBuilder &, KError> add_uniform(
+			util::Result<void, KError> add_uniform(
 				std::vector<VkBuffer> const &buffers,
 				size_t buffer_size
 			);
 
-			util::Result<DescriptorSetBuilder &, KError> add_image(
+			util::Result<void, KError> add_image(
 				VkImageView image_view
 			);
 
-			util::Result<DescriptorSetBuilder &, KError> add_image(
+			util::Result<void, KError> add_image(
 				VkImageView image_view,
 				VkImageLayout image_layout
 			);
 
-			util::Result<DescriptorSetBuilder &, KError> add_image(
+			util::Result<void, KError> add_image(
 				std::vector<VkImageView> const &image_views
 			);
 
-			util::Result<DescriptorSetBuilder &, KError> add_image_target(
+			util::Result<void, KError> add_image_target(
 				VkImageView image_view
 			);
 
-			util::Result<DescriptorSetBuilder &, KError> add_storage_buffer(
+			util::Result<void, KError> add_storage_buffer(
 				VkBuffer buffer,
 				size_t range
 			);
 
-			util::Result<DescriptorSetBuilder &, KError> add_storage_buffer(
+			util::Result<void, KError> add_storage_buffer(
 				StaticBuffer &static_buffer
 			);
 
-			DescriptorSetBuilder &set_sampler(uint32_t binding, Sampler const &sampler);
+			void set_sampler(uint32_t binding, Sampler const &sampler);
 
 			uint32_t initialized_bindings() const;
 

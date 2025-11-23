@@ -211,13 +211,13 @@ namespace vulkan {
 		return _frame_count;
 	}
 
-	util::Result<DescriptorSetBuilder &, KError> DescriptorSetBuilder::add_uniform(
+	util::Result<void, KError> DescriptorSetBuilder::add_uniform(
 		Uniform &uniform
 	) {
 		return add_uniform({uniform.buffer()}, uniform.size());
 	}
 
-	util::Result<DescriptorSetBuilder &, KError> DescriptorSetBuilder::add_uniform(
+	util::Result<void, KError> DescriptorSetBuilder::add_uniform(
 		std::vector<VkBuffer> const &buffers,
 		size_t buffer_size
 	) {
@@ -246,16 +246,16 @@ namespace vulkan {
 		descriptor_write.descriptorCount = buffer_infos.size();
 
 		_cur_binding++;
-		return *this;
+		return {};
 	}
 
-	util::Result<DescriptorSetBuilder &, KError> DescriptorSetBuilder::add_image(
+	util::Result<void, KError> DescriptorSetBuilder::add_image(
 		VkImageView image_view
 	) {
 		return add_image(image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
-	util::Result<DescriptorSetBuilder &, KError> DescriptorSetBuilder::add_image(
+	util::Result<void, KError> DescriptorSetBuilder::add_image(
 		VkImageView image_view,
 		VkImageLayout image_layout
 	) {
@@ -284,10 +284,10 @@ namespace vulkan {
 		descriptor_write.descriptorCount = image_infos.size();
 
 		_cur_binding++;
-		return *this;
+		return {};
 	}
 
-	util::Result<DescriptorSetBuilder &, KError> DescriptorSetBuilder::add_image(
+	util::Result<void, KError> DescriptorSetBuilder::add_image(
 		std::vector<VkImageView> const &image_views
 	) {
 		auto &binding = _layout->bindings()[_cur_binding];
@@ -320,10 +320,10 @@ namespace vulkan {
 		descriptor_write.descriptorCount = image_infos.size();
 
 		_cur_binding++;
-		return *this;
+		return {};
 	}
 
-	util::Result<DescriptorSetBuilder &, KError> DescriptorSetBuilder::add_image_target(
+	util::Result<void, KError> DescriptorSetBuilder::add_image_target(
 		VkImageView image_view
 	) {
 		auto &binding = _layout->bindings()[_cur_binding];
@@ -351,10 +351,10 @@ namespace vulkan {
 		descriptor_write.descriptorCount = image_infos.size();
 
 		_cur_binding++;
-		return *this;
+		return {};
 	}
 
-	util::Result<DescriptorSetBuilder &, KError> DescriptorSetBuilder::add_storage_buffer(
+	util::Result<void, KError> DescriptorSetBuilder::add_storage_buffer(
 		VkBuffer buffer,
 		size_t range
 	) {
@@ -380,10 +380,10 @@ namespace vulkan {
 		descriptor_write.descriptorCount = buffer_infos.size();
 
 		_cur_binding++;
-		return *this;
+		return {};
 	}
 
-	util::Result<DescriptorSetBuilder &, KError> DescriptorSetBuilder::add_storage_buffer(
+	util::Result<void, KError> DescriptorSetBuilder::add_storage_buffer(
 		StaticBuffer &static_buffer
 	) {
 		return add_storage_buffer(
@@ -392,14 +392,13 @@ namespace vulkan {
 		);
 	}
 
-	DescriptorSetBuilder &DescriptorSetBuilder::set_sampler(
+	void DescriptorSetBuilder::set_sampler(
 		uint32_t binding,
 		Sampler const &sampler
 	) {
 		for (auto &image_info : _image_infos[binding]) {
 			image_info.sampler = sampler.get();
 		}
-		return *this;
 	}
 
 	uint32_t DescriptorSetBuilder::initialized_bindings() const {

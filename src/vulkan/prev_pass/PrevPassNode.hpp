@@ -35,10 +35,17 @@ namespace vulkan {
 				};
 			} __attribute__((packed));
 
+			enum class ErrorType {
+				RESOURCE,
+				VULKAN,
+				MISC,
+			};
+
+			using Error = TypedError<ErrorType>;
 
 			PrevPassNode() = default;
 
-			static util::Result<PrevPassNode, KError> create(
+			static util::Result<PrevPassNode, Error> create(
 					Scene &scene,
 					PrevPass &preview_pass,
 					const Node *node);
@@ -73,6 +80,11 @@ namespace vulkan {
 			PrevPass *_prev_pass;
 
 		private:
-			util::Result<void, KError> _create_descriptor_sets();
+			util::Result<void, Error> _create_descriptor_sets();
 	};
 }
+
+template<>
+	const char *vulkan::PrevPassNode::Error::type_str(vulkan::PrevPassNode::ErrorType t);
+
+std::ostream &operator<<(std::ostream &os, vulkan::PrevPassNode::ErrorType t);

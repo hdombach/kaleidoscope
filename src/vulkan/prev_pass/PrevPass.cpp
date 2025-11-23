@@ -411,7 +411,7 @@ namespace vulkan {
 		if (auto prev_node = PrevPassNode::create(*_scene, *this, node)) {
 			log_assert(_nodes.insert(std::move(prev_node.value())), "Duplicated node in PrevPass");
 		} else {
-			TRY_LOG(prev_node);
+			log_error() << prev_node.error();
 		}
 
 		_de_buf_dirty_bit = true;
