@@ -23,7 +23,7 @@ namespace vulkan {
 				*scene,
 				{300, 300});
 		if (!render_pass_res) {
-			return render_pass_res.error();
+			return KError::internal(render_pass_res.error().str()); //TODO
 		}
 		scene->_preview_render_pass = std::move(render_pass_res.value());
 		scene->_raytrace_render_pass = std::move(raytrace_render_pass.value());

@@ -15,7 +15,6 @@
 #include "vulkan/Fence.hpp"
 #include "vulkan/Semaphore.hpp"
 #include "util/result.hpp"
-#include "util/KError.hpp"
 #include "util/Observer.hpp"
 #include "util/UIDList.hpp"
 #include "types/Camera.hpp"
@@ -27,6 +26,7 @@ namespace vulkan {
 			enum class ErrorType {
 				VULKAN,
 				RESOURCE,
+				MISC,
 			};
 
 			using Error = TypedError<ErrorType>;
@@ -75,7 +75,7 @@ namespace vulkan {
 					PrevPass *_render_pass;
 			};
 
-			static util::Result<Ptr, KError> create(
+			static util::Result<Ptr, Error> create(
 					Scene &scene,
 					VkExtent2D size);
 			void destroy();
@@ -139,36 +139,36 @@ namespace vulkan {
 
 			PrevPass(Scene &scene, VkExtent2D size);
 
-			util::Result<void, KError> _create_prim_render_pass();
+			util::Result<void, Error> _create_prim_render_pass();
 			void _destroy_prim_render_pass();
 
-			util::Result<void, KError> _create_overlay_descriptor_set();
+			util::Result<void, Error> _create_overlay_descriptor_set();
 
-			util::Result<void, KError> _create_overlay_pipeline();
+			util::Result<void, Error> _create_overlay_pipeline();
 			void _destroy_overlay_pipeline();
 
-			util::Result<void, KError> _create_de_descriptor_set();
+			util::Result<void, Error> _create_de_descriptor_set();
 			void _destroy_de_descriptor_set();
 
-			util::Result<void, KError> _create_de_render_pass();
+			util::Result<void, Error> _create_de_render_pass();
 			void _destroy_de_render_pass();
 
-			util::Result<void, KError> _create_de_pipeline();
+			util::Result<void, Error> _create_de_pipeline();
 			void _destroy_de_pipeline(); 
 
-			util::Result<void, KError> _create_de_buffers();
+			util::Result<void, Error> _create_de_buffers();
 			void _destroy_de_buffers();
 
-			util::Result<void, KError> _create_images();
+			util::Result<void, Error> _create_images();
 			void _cleanup_images();
 
-			util::Result<void, KError> _create_shared_descriptor_set();
+			util::Result<void, Error> _create_shared_descriptor_set();
 			void _destroy_shared_descriptor_set();
 
-			util::Result<void, KError> _create_framebuffers();
+			util::Result<void, Error> _create_framebuffers();
 			void _destroy_framebuffers();
 
-			util::Result<void, KError> _create_sync_objects();
+			util::Result<void, Error> _create_sync_objects();
 			void _create_command_buffers();
 			static VkFormat _depth_format();
 

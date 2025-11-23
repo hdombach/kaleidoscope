@@ -77,24 +77,40 @@ namespace vulkan {
 
 	/************************ PreviewRenderPass *********************************/
 
-	util::Result<PrevPass::Ptr, KError> PrevPass::create(
+	util::Result<PrevPass::Ptr, PrevPass::Error> PrevPass::create(
 			Scene &scene,
 			VkExtent2D size)
 	{
 		auto result = std::unique_ptr<PrevPass>(
 				new PrevPass(scene, size));
-		TRY(result->_create_sync_objects());
+		if (auto err = result->_create_sync_objects().move_or()) {
+			return Error(ErrorType::VULKAN, "Could not create sync objects", err.value());
+		}
 		result->_create_command_buffers();
 		result->_descriptor_pool = DescriptorPool::create();
 
-		TRY(result->_create_images());
-		TRY(result->_create_shared_descriptor_set());
+		if (auto err = result->_create_images().move_or()) {
+			return Error(ErrorType::VULKAN, "Could not create images", err.value());
+		}
+		if (auto err = result->_create_shared_descriptor_set().move_or()) {
+			return Error(ErrorType::VULKAN, "Could not create shared descriptor set", err.value());
+		}
 
-		TRY(result->_create_prim_render_pass());
-		TRY(result->_create_de_render_pass());
-		TRY(result->_create_overlay_descriptor_set());
-		TRY(result->_create_overlay_pipeline());
-		TRY(result->_create_framebuffers());
+		if (auto err = result->_create_prim_render_pass().move_or()) {
+			return Error(ErrorType::VULKAN, "Could not create prim render pass", err.value());
+		}
+		if (auto err = result->_create_de_render_pass().move_or()) {
+			return Error(ErrorType::VULKAN, "Could not create de render pass", err.value());
+		}
+		if (auto err = result->_create_overlay_descriptor_set().move_or()) {
+			return Error(ErrorType::VULKAN, "Could not create overlay descriptor set", err.value());
+		}
+		if (auto err = result->_create_overlay_pipeline().move_or()) {
+			return Error(ErrorType::VULKAN, "Could not create overlay pipeline", err.value());
+		}
+		if (auto err = result->_create_framebuffers().move_or()) {
+			return Error(ErrorType::VULKAN, "Could not create framebuffers", err.value());
+		}
 
 		result->_de_buf_dirty_bit = true;
 		result->_de_pipe_dirty_bit = true;;
@@ -136,8 +152,12 @@ namespace vulkan {
 			VkSemaphore semaphore)
 	{
 		if (_de_buf_dirty_bit) {
-			TRY_LOG(_create_de_buffers());
-			TRY_LOG(_create_de_descriptor_set());
+			if (auto err = _create_de_buffers().move_or()) {
+				log_error() << err.value() << std::endl;
+			}
+			if (auto err = _create_de_descriptor_set().move_or()) {
+				log_error() << err.value() << std::endl;
+			}
 			_de_buf_dirty_bit = false;
 		}
 
@@ -342,13 +362,21 @@ namespace vulkan {
 		_destroy_framebuffers();
 		_size = size;
 
-		TRY_LOG(_create_images());
+		if (auto err = _create_images().move_or()) {
+			log_error() << err.value() << std::endl;
+		}
 
-		TRY_LOG(_create_framebuffers());
+		if (auto err = _create_framebuffers().move_or()) {
+			log_error() << err.value() << std::endl;
+		}
 
-		TRY_LOG(_create_overlay_descriptor_set());
+		if (auto err = _create_overlay_descriptor_set().move_or()) {
+			log_error() << err.value() << std::endl;
+		}
 
-		TRY_LOG(_create_de_descriptor_set());
+		if (auto err = _create_de_descriptor_set().move_or()) {
+			log_error() << err.value() << std::endl;
+		}
 	}
 
 	VkExtent2D PrevPass::size() const {
@@ -411,7 +439,7 @@ namespace vulkan {
 		if (auto prev_node = PrevPassNode::create(*_scene, *this, node)) {
 			log_assert(_nodes.insert(std::move(prev_node.value())), "Duplicated node in PrevPass");
 		} else {
-			log_error() << prev_node.error();
+			log_error() << prev_node.error() << std::endl;
 		}
 
 		_de_buf_dirty_bit = true;
@@ -439,7 +467,7 @@ namespace vulkan {
 	{
 	}
 
-	util::Result<void, KError> PrevPass::_create_prim_render_pass() {
+	util::Result<void, PrevPass::Error> PrevPass::_create_prim_render_pass() {
 		_destroy_de_render_pass();
 
 		/* Create render pass */
@@ -548,7 +576,7 @@ namespace vulkan {
 				&_prim_render_pass);
 
 		if (res != VK_SUCCESS) {
-			return {res};
+			return Error(ErrorType::VULKAN, "Could not create render pass", {res});
 		}
 
 		return {};
@@ -561,10 +589,10 @@ namespace vulkan {
 		}
 	}
 
-	util::Result<void, KError> PrevPass::_create_overlay_descriptor_set() {
-		auto buffer = MappedOverlayUniform::create();
-		TRY(buffer);
-		_mapped_overlay_uniform = std::move(buffer.value());
+	util::Result<void, PrevPass::Error> PrevPass::_create_overlay_descriptor_set() {
+		if (auto err = MappedOverlayUniform::create().move_or(_mapped_overlay_uniform)) {
+			return Error(ErrorType::VULKAN, "Could not create mapped overlay uniform", {err.value()});
+		}
 
 		auto bindings = std::vector<VkDescriptorSetLayoutBinding>();
 		bindings.push_back(descriptor_layout_image_target(VK_SHADER_STAGE_COMPUTE_BIT, 1));
@@ -574,17 +602,22 @@ namespace vulkan {
 		_overlay_descriptor_set_layout = DescriptorSetLayout::create(bindings).move_value();
 
 		auto builder = _overlay_descriptor_set_layout.builder();
-		TRY(builder.add_image_target(_color_image.image_view()));
-		TRY(builder.add_uniform(_mapped_overlay_uniform));
-		TRY(builder.add_image_target(_de_node_image.image_view()));
+		if (auto err = builder.add_image_target(_color_image.image_view()).move_or()) {
+			return Error(ErrorType::RESOURCE, "Could not add color image target", {err.value()});
+		}
+		if (auto err = builder.add_uniform(_mapped_overlay_uniform).move_or()) {
+			return Error(ErrorType::RESOURCE, "Could not add uniform to descriptor set", {err.value()});
+		}
+		if (auto err = builder.add_image_target(_de_node_image.image_view()).move_or()) {
+			return Error(ErrorType::RESOURCE, "Could not add de node image target", {err.value()});
+		}
 
 		_overlay_descriptor_set = DescriptorSets::create(builder, descriptor_pool()).move_value();
 
 		return {};
 	}
 
-	util::Result<void, KError> PrevPass::_create_overlay_pipeline() {
-		try {
+	util::Result<void, PrevPass::Error> PrevPass::_create_overlay_pipeline() {
 		_destroy_overlay_pipeline();
 
 		auto codegen_args = cg::TemplObj{
@@ -598,7 +631,7 @@ namespace vulkan {
 		log_debug() << "\n" << util::add_strnum(source_code) << std::endl;
 		if (!compute_shader) {
 			log_fatal_error() << "Overlay error " << compute_shader.error() << std::endl;
-			return compute_shader.error();
+			return Error(ErrorType::VULKAN, "Could not create preview_overlay shader", compute_shader.error());
 		}
 
 		auto compute_shader_stage_info = VkPipelineShaderStageCreateInfo{};
@@ -618,7 +651,7 @@ namespace vulkan {
 				nullptr,
 				&_overlay_pipeline_layout);
 		if (res != VK_SUCCESS) {
-			return {res};
+			return Error(ErrorType::VULKAN, "Could not create overlay pipeline layout", {res});
 		}
 
 		auto pipeline_info = VkComputePipelineCreateInfo{};
@@ -634,11 +667,10 @@ namespace vulkan {
 				nullptr,
 				&_overlay_pipeline);
 		if (res != VK_SUCCESS) {
-			return {res};
+			return Error(ErrorType::VULKAN, "Could not create overlay compute pipeline", {res});
 		}
 
 		return {};
-		} catch_kerror;
 	}
 
 	void PrevPass::_destroy_overlay_pipeline() {
@@ -675,7 +707,7 @@ namespace vulkan {
 		return result;
 	}
 
-	util::Result<void, KError> PrevPass::_create_de_descriptor_set() {
+	util::Result<void, PrevPass::Error> PrevPass::_create_de_descriptor_set() {
 		_destroy_de_descriptor_set();
 
 		auto textures = used_textures(_scene->resource_manager().textures());
@@ -692,12 +724,22 @@ namespace vulkan {
 		_de_descriptor_set_layout = DescriptorSetLayout::create(bindings).move_value();
 
 		auto builder = _de_descriptor_set_layout.builder();
-		TRY(builder.add_image(_depth_buf_image.image_view(), VK_IMAGE_LAYOUT_GENERAL));
-		TRY(builder.add_image(_node_image.image_view(), VK_IMAGE_LAYOUT_GENERAL));
-		TRY(builder.add_storage_buffer(_de_node_buffer));
-		TRY(builder.add_storage_buffer(_de_material_buffer));
+		if (auto err = builder.add_image(_depth_buf_image.image_view(), VK_IMAGE_LAYOUT_GENERAL).move_or()) {
+			return Error(ErrorType::RESOURCE, "Could not add depth image", err.value());
+		}
+		if (auto err = builder.add_image(_node_image.image_view(), VK_IMAGE_LAYOUT_GENERAL).move_or()) {
+			return Error(ErrorType::RESOURCE, "Could not add node image", err.value());
+		}
+		if (auto err = builder.add_storage_buffer(_de_node_buffer).move_or()) {
+			return Error(ErrorType::RESOURCE, "Could not add de node buffer", err.value());
+		}
+		if (auto err = builder.add_storage_buffer(_de_material_buffer).move_or()) {
+			return Error(ErrorType::RESOURCE, "Could not de material buffer", err.value());
+		}
 		if (textures.size() > 0) {
-			TRY(builder.add_image(textures));
+			if (auto err = builder.add_image(textures).move_or()) {
+				return Error(ErrorType::RESOURCE, "Could not add textures", err.value());
+			}
 		}
 
 		_de_descriptor_set = DescriptorSets::create(builder, descriptor_pool()).move_value();
@@ -705,7 +747,7 @@ namespace vulkan {
 		return {};
 	}
 
-	util::Result<void, KError> PrevPass::_create_de_render_pass() {
+	util::Result<void, PrevPass::Error> PrevPass::_create_de_render_pass() {
 		_destroy_de_render_pass();
 		auto color_attachment = VkAttachmentDescription{};
 		color_attachment.format = _RESULT_IMAGE_FORMAT;
@@ -780,7 +822,7 @@ namespace vulkan {
 				&_de_render_pass);
 
 		if (res != VK_SUCCESS) {
-			return {res};
+			return Error(ErrorType::VULKAN, "Could not create de render pass", {res});
 		}
 
 		log_debug() << "Created DE preview render pass: " << _de_render_pass << std::endl;
@@ -800,7 +842,7 @@ namespace vulkan {
 	}
 
 
-	util::Result<void, KError> PrevPass::_create_de_pipeline() {
+	util::Result<void, PrevPass::Error> PrevPass::_create_de_pipeline() {
 		_destroy_de_pipeline();
 
 		auto vert_source_code = util::readEnvFile("assets/shaders/unit_square.vert");
@@ -808,7 +850,7 @@ namespace vulkan {
 		if (!vert_shader) {
 			log_debug() << "\n" << util::add_strnum(vert_source_code) << std::endl;
 			log_error() << vert_shader.error() << std::endl;
-			return vert_shader.error();
+			return Error(ErrorType::VULKAN, "Could not create vert shader", vert_shader.error());
 		}
 
 		auto frag_source_code = _codegen_de();
@@ -816,7 +858,7 @@ namespace vulkan {
 		if (!frag_shader) {
 			log_debug() << "\n" << util::add_strnum(frag_source_code) << std::endl;
 			log_error() << frag_shader.error() << std::endl;
-			return frag_shader.error();
+			return Error(ErrorType::VULKAN, "Could not create frag shader", frag_shader.error());
 		}
 
 		auto shader_stage_infos = std::array<VkPipelineShaderStageCreateInfo, 2>();
@@ -961,7 +1003,7 @@ namespace vulkan {
 				nullptr,
 				&_de_pipeline_layout);
 		if (res != VK_SUCCESS) {
-			return {res};
+			return Error(ErrorType::VULKAN, "Could not create de pipeline layout", {res});
 		}
 
 		auto depth_stencil = VkPipelineDepthStencilStateCreateInfo{};
@@ -1004,7 +1046,7 @@ namespace vulkan {
 				&_de_pipeline);
 
 		if (res != VK_SUCCESS) {
-			return {res};
+			return Error(ErrorType::VULKAN, "Could not create de pipeline", {res});
 		}
 
 		log_debug() << "Create DE preview pipeline: " << _de_pipeline << std::endl;
@@ -1029,7 +1071,7 @@ namespace vulkan {
 		}
 	}
 
-	util::Result<void, KError> PrevPass::_create_de_buffers() {
+	util::Result<void, PrevPass::Error> PrevPass::_create_de_buffers() {
 		auto nodes = std::vector<PrevPassNode::VImpl>();
 		for (auto &node : _nodes.raw()) {
 			if (node && node.is_de()) {
@@ -1043,19 +1085,15 @@ namespace vulkan {
 			nodes.push_back(PrevPassNode::VImpl::create_empty());
 		}
 
-		if (auto buffer = StaticBuffer::create(nodes)) {
-			_de_node_buffer = std::move(buffer.value());
-		} else {
-			if (buffer.error().type() != KError::Type::EMPTY_BUFFER) {
-				log_error() << buffer.error() << std::endl;
+		if (auto err = StaticBuffer::create(nodes).move_or(_de_node_buffer)) {
+			if (err->type() != KError::Type::EMPTY_BUFFER) {
+				log_error() << err.value() << std::endl;
 			}
-			return buffer.error();
+			return Error(ErrorType::RESOURCE, "Could not create de node buffer", err.value());
 		}
 
-		if (auto material_buffer = create_material_buffer(*_scene)) {
-			_de_material_buffer = std::move(material_buffer.value());
-		} else {
-			return material_buffer.error();
+		if (auto err = create_material_buffer(*_scene).move_or(_de_material_buffer)) {
+			return Error(ErrorType::RESOURCE, "Could not create de material buffer", err.value());
 		}
 
 		return {};
@@ -1066,109 +1104,109 @@ namespace vulkan {
 		_de_material_buffer.destroy();
 	}
 
-	util::Result<void, KError> PrevPass::_create_images() {
+	util::Result<void, PrevPass::Error> PrevPass::_create_images() {
 		_cleanup_images();
 		/* create depth resources */
-		{
-			auto image = Image::create(
-					_size,
-					_depth_format(),
-					VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
-						| VK_IMAGE_USAGE_SAMPLED_BIT,
-					VK_IMAGE_ASPECT_DEPTH_BIT,
-					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-			TRY(image);
-			_depth_image = std::move(image.value());
-
-			Graphics::DEFAULT->transition_image_layout(
-					_depth_image.image(),
-					_depth_format(),
-					VK_IMAGE_LAYOUT_UNDEFINED,
-					VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-					1);
+		if (auto err = Image::create(
+			_size,
+			_depth_format(),
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+				| VK_IMAGE_USAGE_SAMPLED_BIT,
+			VK_IMAGE_ASPECT_DEPTH_BIT,
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT).move_or(_depth_image)
+		) {
+			return Error(ErrorType::VULKAN, "Could not create depth image", err.value());
 		}
+
+		Graphics::DEFAULT->transition_image_layout(
+			_depth_image.image(),
+			_depth_format(),
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+			1
+		);
 
 		/* Create main color resources */
-		{
-			auto image = Image::create(
-					_size,
-					_RESULT_IMAGE_FORMAT,
-					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-						| VK_IMAGE_USAGE_STORAGE_BIT
-						| VK_IMAGE_USAGE_SAMPLED_BIT);
-			TRY(image);
-			_color_image = std::move(image.value());
-
-			Graphics::DEFAULT->transition_image_layout(
-					_color_image.image(),
-					_RESULT_IMAGE_FORMAT,
-					VK_IMAGE_LAYOUT_UNDEFINED,
-					VK_IMAGE_LAYOUT_GENERAL,
-					1);
+		if (auto err = Image::create(
+			_size,
+			_RESULT_IMAGE_FORMAT,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+				| VK_IMAGE_USAGE_STORAGE_BIT
+				| VK_IMAGE_USAGE_SAMPLED_BIT).move_or(_color_image)
+		) {
+			return Error(ErrorType::VULKAN, "Could not create color image", err.value());
 		}
+
+		Graphics::DEFAULT->transition_image_layout(
+			_color_image.image(),
+			_RESULT_IMAGE_FORMAT,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_GENERAL,
+			1
+		);
 
 		/* Create node resources */
-		{
-			auto image = Image::create(
-					_size,
-					_NODE_IMAGE_FORMAT,
-					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-						| VK_IMAGE_USAGE_STORAGE_BIT
-						| VK_IMAGE_USAGE_SAMPLED_BIT);
-			TRY(image);
-			_node_image = std::move(image.value());
-
-			Graphics::DEFAULT->transition_image_layout(
-					_node_image.image(), 
-					_NODE_IMAGE_FORMAT, 
-					VK_IMAGE_LAYOUT_UNDEFINED, 
-					VK_IMAGE_LAYOUT_GENERAL, 
-					1);
+		if (auto err = Image::create(
+			_size,
+			_NODE_IMAGE_FORMAT,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+				| VK_IMAGE_USAGE_STORAGE_BIT
+				| VK_IMAGE_USAGE_SAMPLED_BIT).move_or(_node_image)
+		) {
+			return Error(ErrorType::VULKAN, "Could not create node image", err.value());
 		}
+
+		Graphics::DEFAULT->transition_image_layout(
+			_node_image.image(), 
+			_NODE_IMAGE_FORMAT, 
+			VK_IMAGE_LAYOUT_UNDEFINED, 
+			VK_IMAGE_LAYOUT_GENERAL, 
+			1
+		);
 
 		/* Create de node images */
-		{
-			auto image = Image::create(
-					_size,
-					_NODE_IMAGE_FORMAT,
-					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-						| VK_IMAGE_USAGE_STORAGE_BIT
-						| VK_IMAGE_USAGE_SAMPLED_BIT);
-			TRY(image);
-			_de_node_image = std::move(image.value());
-
-			Graphics::DEFAULT->transition_image_layout(
-					_de_node_image.image(), 
-					_NODE_IMAGE_FORMAT, 
-					VK_IMAGE_LAYOUT_UNDEFINED, 
-					VK_IMAGE_LAYOUT_GENERAL, 
-					1);
+		if (auto err = Image::create(
+			_size,
+			_NODE_IMAGE_FORMAT,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+				| VK_IMAGE_USAGE_STORAGE_BIT
+				| VK_IMAGE_USAGE_SAMPLED_BIT).move_or(_de_node_image)
+		) {
+			return Error(ErrorType::VULKAN, "Could not create de node image", err.value());
 		}
+
+		Graphics::DEFAULT->transition_image_layout(
+			_de_node_image.image(), 
+			_NODE_IMAGE_FORMAT, 
+			VK_IMAGE_LAYOUT_UNDEFINED, 
+			VK_IMAGE_LAYOUT_GENERAL, 
+			1
+		);
 
 		/* depth buf */
-		{
-			auto image = Image::create(
-					_size,
-					_DEPTH_BUF_IMAGE_FORMAT,
-					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-						| VK_IMAGE_USAGE_STORAGE_BIT
-						| VK_IMAGE_USAGE_SAMPLED_BIT);
-			TRY(image);
-			_depth_buf_image = std::move(image.value());
-
-			Graphics::DEFAULT->transition_image_layout(
-					_depth_buf_image.image(), 
-					_DEPTH_BUF_IMAGE_FORMAT, 
-					VK_IMAGE_LAYOUT_UNDEFINED, 
-					VK_IMAGE_LAYOUT_GENERAL, 
-					1);
+		if (auto err = Image::create(
+			_size,
+			_DEPTH_BUF_IMAGE_FORMAT,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+				| VK_IMAGE_USAGE_STORAGE_BIT
+				| VK_IMAGE_USAGE_SAMPLED_BIT).move_or(_depth_buf_image)
+		) {
+			return Error(ErrorType::VULKAN, "Could not create depth buf image", err.value());
 		}
 
-		_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
-				*Graphics::DEFAULT->main_texture_sampler(),
-				_color_image.image_view(),
-				VK_IMAGE_LAYOUT_GENERAL);
+		Graphics::DEFAULT->transition_image_layout(
+			_depth_buf_image.image(), 
+			_DEPTH_BUF_IMAGE_FORMAT, 
+			VK_IMAGE_LAYOUT_UNDEFINED, 
+			VK_IMAGE_LAYOUT_GENERAL, 
+			1
+		);
 
+		_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
+			*Graphics::DEFAULT->main_texture_sampler(),
+			_color_image.image_view(),
+			VK_IMAGE_LAYOUT_GENERAL
+		);
 
 		return {};
 	}
@@ -1183,11 +1221,11 @@ namespace vulkan {
 		_imgui_descriptor_set = nullptr;
 	}
 
-	util::Result<void, KError> PrevPass::_create_shared_descriptor_set() {
+	util::Result<void, PrevPass::Error> PrevPass::_create_shared_descriptor_set() {
 		{
-			auto buffer = MappedPrevPassUniform::create();
-			TRY(buffer);
-			_prim_uniform = std::move(buffer.value());
+			if (auto err = MappedPrevPassUniform::create().move_or(_prim_uniform)) {
+				return Error(ErrorType::VULKAN, "Could not create prim uniform", err.value());
+			}
 		}
 
 		auto descriptor_bindings = std::vector<VkDescriptorSetLayoutBinding>();
@@ -1196,11 +1234,13 @@ namespace vulkan {
 		_shared_descriptor_set_layout = std::move(DescriptorSetLayout::create(descriptor_bindings).value());
 
 		auto builder = _shared_descriptor_set_layout.builder();
-		TRY(builder.add_uniform(_prim_uniform));
+		if (auto err = builder.add_uniform(_prim_uniform).move_or()) {
+			return Error(ErrorType::VULKAN, "Could not add prim uniform", err.value());
+		}
 
-		auto descriptor_sets = DescriptorSets::create(builder, _descriptor_pool);
-		TRY(descriptor_sets);
-		_shared_descriptor_set = std::move(descriptor_sets.value());
+		if (auto err = DescriptorSets::create(builder, _descriptor_pool).move_or(_shared_descriptor_set)) {
+			return Error(ErrorType::VULKAN, "Could not create shared desriptor set", err.value());
+		}
 
 		return {};
 	}
@@ -1209,7 +1249,7 @@ namespace vulkan {
 		_shared_descriptor_set.destroy();
 	}
 
-	util::Result<void, KError> PrevPass::_create_framebuffers() {
+	util::Result<void, PrevPass::Error> PrevPass::_create_framebuffers() {
 		{
 			auto attachments = std::array<VkImageView, 4>{
 				_color_image.image_view(),
@@ -1228,13 +1268,14 @@ namespace vulkan {
 			framebuffer_info.layers = 1;
 
 			auto res = vkCreateFramebuffer(
-					Graphics::DEFAULT->device(),
-					&framebuffer_info,
-					nullptr,
-					&_prim_framebuffer);
+				Graphics::DEFAULT->device(),
+				&framebuffer_info,
+				nullptr,
+				&_prim_framebuffer
+			);
 
 			if (res != VK_SUCCESS) {
-				return {res};
+				return Error(ErrorType::VULKAN, "Could not create prim framebuffer", {res});
 			}
 		}
 
@@ -1254,13 +1295,14 @@ namespace vulkan {
 			framebuffer_info.layers = 1;
 
 			auto res = vkCreateFramebuffer(
-					Graphics::DEFAULT->device(),
-					&framebuffer_info,
-					nullptr,
-					&_de_framebuffer);
+				Graphics::DEFAULT->device(),
+				&framebuffer_info,
+				nullptr,
+				&_de_framebuffer
+			);
 
 			if (res != VK_SUCCESS) {
-				return {res};
+				return Error(ErrorType::VULKAN, "Could not create de framebuffer", {res});
 			}
 
 		}
@@ -1277,17 +1319,13 @@ namespace vulkan {
 
 	}
 
-	util::Result<void, KError> PrevPass::_create_sync_objects() {
-		if (auto semaphore = Semaphore::create()) {
-			_semaphore = std::move(semaphore.value());
-		} else {
-			return {semaphore.error()};
+	util::Result<void, PrevPass::Error> PrevPass::_create_sync_objects() {
+		if (auto err = Semaphore::create().move_or(_semaphore)) {
+			return Error(ErrorType::VULKAN, "Could not create seamphore for the prev pass", {err.value()});
 		}
 
-		if (auto fence = Fence::create()) {
-			_fence = std::move(fence.value());
-		} else {
-			return {fence.error()};
+		if (auto err = Fence::create().move_or(_fence)) {
+			return Error(ErrorType::VULKAN, "Could not create fence for the prev pass", {err.value()});
 		}
 
 		return {};
@@ -1351,6 +1389,8 @@ template<>
 				return "PrevPass.VULKAN";
 			case vulkan::PrevPass::ErrorType::RESOURCE:
 				return "PrevPass.RESOURCE";
+			case vulkan::PrevPass::ErrorType::MISC:
+				return "PrevPass.MISC";
 		}
 	}
 

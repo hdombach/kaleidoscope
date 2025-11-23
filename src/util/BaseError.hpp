@@ -78,6 +78,12 @@ class BaseError {
 			return os;
 		}
 
+		std::string str() const {
+			auto ss = std::stringstream();
+			print(ss);
+			return ss.str();
+		};
+
 	private:
 		std::vector<util::ErrorFrag> _frags;
 };
