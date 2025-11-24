@@ -16,6 +16,9 @@ namespace vulkan {
 		auto scene = Scene::Ptr(new Scene());
 		scene->_resource_manager = &resource_manager; // Needs to be initialized before prev pass
 
+		if (auto err = RayPass::create(*scene, {50, 500}).move_or(scene->_raytrace_render_pass)) {
+			return KError(err.value());
+		}
 		auto raytrace_render_pass = RayPass::create(*scene, {500, 500});
 		TRY(raytrace_render_pass);
 

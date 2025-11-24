@@ -2,7 +2,6 @@
 #include "RayPass.hpp"
 #include "types/Material.hpp"
 #include "util/Util.hpp"
-#include "util/KError.hpp"
 
 namespace vulkan {
 	RayPassMaterial::RayPassMaterial():
@@ -10,17 +9,17 @@ namespace vulkan {
 		_ray_pass(nullptr)
 	{}
 
-	util::Result<RayPassMaterial, KError> RayPassMaterial::create(
+	util::Result<RayPassMaterial, RayPassMaterial::Error> RayPassMaterial::create(
 			const types::Material *material,
 			const RayPass *ray_pass)
 	{
 		auto result = RayPassMaterial();
 
 		if (material == nullptr) {
-			return KError::invalid_arg("material is nullptr");
+			return Error(ErrorType::INVALID_ARG, "Material is nullptr");
 		}
 		if (ray_pass == nullptr) {
-			return KError::invalid_arg("material is nullptr");
+			return Error(ErrorType::INVALID_ARG, "Raypass is nullptr");
 		}
 
 		result._material = material;
@@ -30,4 +29,14 @@ namespace vulkan {
 	}
 
 	void RayPassMaterial::update() { }
+}
+
+template<>
+const char *vulkan::RayPassMaterial::Error::type_str(vulkan::RayPassMaterial::ErrorType t) {
+	switch (t) {
+		case vulkan::RayPassMaterial::ErrorType::MISC:
+			return "RayPassMaterial.MISC";
+		case vulkan::RayPassMaterial::ErrorType::INVALID_ARG:
+			return "RayPassMaterial.ARG";
+	}
 }

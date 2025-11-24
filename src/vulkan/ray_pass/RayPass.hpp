@@ -25,6 +25,14 @@ namespace vulkan {
 		public:
 			using Ptr = std::unique_ptr<RayPass>;
 
+			enum class ErrorType {
+				VULKAN,
+				MISC,
+				SHADER_RESOURCES,
+			};
+
+			using Error = TypedError<ErrorType>;
+
 			class MeshObserver: public util::Observer {
 				public:
 					MeshObserver() = default;
@@ -58,7 +66,7 @@ namespace vulkan {
 					RayPass *_ray_pass;
 			};
 
-			static util::Result<Ptr, KError> create(Scene &scene, VkExtent2D size);
+			static util::Result<Ptr, Error> create(Scene &scene, VkExtent2D size);
 
 			RayPass(const RayPass& other) = delete;
 			RayPass(RayPass &&other);
@@ -106,11 +114,11 @@ namespace vulkan {
 			void node_update(uint32_t id);
 			void node_remove(uint32_t id);
 
-			util::Result<void, KError> _create_descriptor_sets();
-			util::Result<void, KError> _create_pipeline();
+			util::Result<void, Error> _create_descriptor_sets();
+			util::Result<void, Error> _create_pipeline();
 
 			void _cleanup_images();
-			util::Result<void, KError> _create_images();
+			util::Result<void, Error> _create_images();
 			void _update_buffers();
 			void _create_mesh_buffers();
 			void _create_node_buffers();
@@ -156,3 +164,8 @@ namespace vulkan {
 			bool _clear_accumulator;
 	};
 }
+
+template<>
+const char *vulkan::RayPass::Error::type_str(vulkan::RayPass::ErrorType t);
+
+std::ostream &operator<<(std::ostream &os, vulkan::RayPass::ErrorType t);

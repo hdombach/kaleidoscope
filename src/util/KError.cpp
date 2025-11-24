@@ -2,6 +2,7 @@
 
 #include "KError.hpp"
 #include "util/format.hpp"
+#include "BaseError.hpp"
 
 KError::KError():
 	_type(Type::UNKNOWN)
@@ -24,6 +25,13 @@ KError::KError(VkResult result, FLoc loc):
 		"VKResult(", result, ")"
 	);
 }
+
+KError::KError(BaseError const &err, FLoc loc):
+	_type(BASE_ERROR),
+	_what(err.str()),
+	_vk_error(VK_ERROR_UNKNOWN),
+	_loc(loc)
+{ }
 
 KError KError::texture_exists(std::string texture_name, FLoc loc) {
 	return KError(

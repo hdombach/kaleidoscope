@@ -1,10 +1,9 @@
 #pragma once
 
 #include <string>
+#include "util/BaseError.hpp"
 #include "util/result.hpp"
-#include "util/KError.hpp"
 #include "types/Material.hpp"
-#include "codegen/TemplObj.hpp"
 
 namespace vulkan {
 	class RayPass;
@@ -12,8 +11,15 @@ namespace vulkan {
 
 	class RayPassMaterial {
 		public:
+			enum class ErrorType {
+				MISC,
+				INVALID_ARG,
+			};
+
+			using Error = TypedError<ErrorType>;
+
 			RayPassMaterial();
-			static util::Result<RayPassMaterial, KError> create(
+			static util::Result<RayPassMaterial, RayPassMaterial::Error> create(
 					const types::Material *material,
 					const RayPass *ray_pass);
 
@@ -37,3 +43,8 @@ namespace vulkan {
 			std::string _cg_frag_call;
 	};
 }
+
+template<>
+const char *vulkan::RayPassMaterial::Error::type_str(vulkan::RayPassMaterial::ErrorType t);
+
+std::ostream &operator<<(std::ostream &os, vulkan::RayPassMaterial::ErrorType t);

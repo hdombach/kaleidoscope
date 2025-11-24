@@ -69,7 +69,7 @@ namespace vulkan {
 		_ray_pass->node_remove(id);
 	}
 
-	util::Result<RayPass::Ptr, KError> RayPass::create(
+	util::Result<RayPass::Ptr, RayPass::Error> RayPass::create(
 			Scene &scene,
 			VkExtent2D size)
 	{
@@ -84,19 +84,19 @@ namespace vulkan {
 		result->_material_observer = MaterialObserver(*result);
 		result->_node_observer = NodeObserver(*result);
 
-		auto fence = Fence::create();
-		TRY(fence);
-		result->_pass_fence = std::move(fence.value());
+		if (auto err = Fence::create().move_or(result->_pass_fence)) {
+			return Error(ErrorType::VULKAN, "Could not create ray pass fence", {err.value()});
+		}
 
-		auto semaphore = Semaphore::create();
-		TRY(semaphore);
-		result->_semaphore = std::move(semaphore.value());
+		if (auto err = Semaphore::create().move_or(result->_semaphore)) {
+			return Error(ErrorType::VULKAN, "Could not create ray pass semaphore", {err.value()});
+		}
 
 		TRY(result->_create_images());
 
-		auto buffer_res = MappedComputeUniform::create();
-		TRY(buffer_res);
-		result->_mapped_uniform = std::move(buffer_res.value());
+		if (auto err = MappedComputeUniform::create().move_or(result->_mapped_uniform)) {
+			return Error(ErrorType::VULKAN, "Could not create mapped uniform", {err.value()});
+		}
 
 		auto command_info = VkCommandBufferAllocateInfo{};
 		command_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -110,7 +110,7 @@ namespace vulkan {
 				&result->_command_buffer);
 
 		if (res != VK_SUCCESS) {
-			return {res};
+			return Error(ErrorType::VULKAN, "Could not allocate command buffers", {res});
 		}
 
 		result->_vertex_dirty_bit = true;
@@ -426,7 +426,8 @@ namespace vulkan {
 		if (auto material = RayPassMaterial::create(_scene->resource_manager().get_material(id), this)) {
 			log_assert(_materials.insert(std::move(material.value())), "Duplicate material in RayPass");
 		} else {
-			TRY_LOG(material);
+			log_error() << "Could not create ray pass material: " << std::endl
+			<< material.error();
 		}
 		_material_dirty_bit = true;
 	}
@@ -435,7 +436,8 @@ namespace vulkan {
 		if (auto material = RayPassMaterial::create(_scene->resource_manager().get_material(id), this)) {
 			_materials[id] = std::move(material.value());
 		} else {
-			TRY_LOG(material);
+			log_error() << "Could not update ray pass material: " << std::endl
+			<< material.error();
 		}
 		_material_dirty_bit = true;
 	}
@@ -472,7 +474,7 @@ namespace vulkan {
 		_node_dirty_bit = true;
 	}
 
-	util::Result<void, KError> RayPass::_create_descriptor_sets() {
+	util::Result<void, RayPass::Error> RayPass::_create_descriptor_sets() {
 		auto textures = used_textures();
 		auto bindings = std::vector<VkDescriptorSetLayoutBinding>();
 
@@ -491,15 +493,31 @@ namespace vulkan {
 
 		auto builder = _descriptor_set_layout.builder();
 
-		TRY(builder.add_image_target(_result_image.image_view()));
-		TRY(builder.add_image_target(_accumulator_image.image_view()));
-		TRY(builder.add_uniform(_mapped_uniform));
-		TRY(builder.add_storage_buffer(_vertex_buffer));
-		TRY(builder.add_storage_buffer(_bvnode_buffer));
-		TRY(builder.add_storage_buffer(_node_buffer));
-		TRY(builder.add_storage_buffer(_material_buffer));
+		if (auto err = builder.add_image_target(_result_image.image_view()).move_or()) {
+			return Error(ErrorType::SHADER_RESOURCES, "Could not add result image", err.value());
+		}
+		if (auto err = builder.add_image_target(_accumulator_image.image_view()).move_or()) {
+			return Error(ErrorType::SHADER_RESOURCES, "Could not add accumulator image", err.value());
+		}
+		if (auto err = builder.add_uniform(_mapped_uniform).move_or()) {
+			return Error(ErrorType::SHADER_RESOURCES, "Could not add mapped uniform", err.value());
+		}
+		if (auto err = builder.add_storage_buffer(_vertex_buffer).move_or()) {
+			return Error(ErrorType::SHADER_RESOURCES, "Could not add vertex buffer", err.value());
+		}
+		if (auto err = builder.add_storage_buffer(_bvnode_buffer).move_or()) {
+			return Error(ErrorType::SHADER_RESOURCES, "Could not add bvnode buffer", err.value());
+		}
+		if (auto err = builder.add_storage_buffer(_node_buffer).move_or()) {
+			return Error(ErrorType::SHADER_RESOURCES, "Could not add node buffer", err.value());
+		}
+		if (auto err = builder.add_storage_buffer(_material_buffer).move_or()) {
+			return Error(ErrorType::SHADER_RESOURCES, "Could not add material buffer", err.value());
+		}
 		if (textures.size() > 0) {
-			TRY(builder.add_image(textures));
+			if (auto err = builder.add_image(textures).move_or()) {
+				return Error(ErrorType::SHADER_RESOURCES, "Could not add ray pass textures", err.value());
+			}
 		}
 
 		_descriptor_set = DescriptorSets::create(builder, _descriptor_pool).move_value();
@@ -507,9 +525,11 @@ namespace vulkan {
 		return {};
 	}
 
-	util::Result<void, KError> RayPass::_create_pipeline() {
+	util::Result<void, RayPass::Error> RayPass::_create_pipeline() {
 		auto compute_shader = Shader::from_source_code(_codegen(used_textures().size()), Shader::Type::Compute);
-		TRY(compute_shader);
+		if (!compute_shader) {
+			return Error(ErrorType::VULKAN, "Could not compile compute shader code", compute_shader.error());
+		}
 
 		auto compute_shader_stage_info = VkPipelineShaderStageCreateInfo{};
 		compute_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -524,7 +544,7 @@ namespace vulkan {
 
 		auto res = vkCreatePipelineLayout(Graphics::DEFAULT->device(), &pipeline_layout_info, nullptr, &_pipeline_layout);
 		if (res != VK_SUCCESS) {
-			return {res};
+			return Error(ErrorType::VULKAN, "Could not create pipeline layout for ray pass", {res});
 		}
 
 		auto pipeline_info = VkComputePipelineCreateInfo{};
@@ -533,14 +553,15 @@ namespace vulkan {
 		pipeline_info.stage = compute_shader_stage_info;
 
 		res = vkCreateComputePipelines(
-				Graphics::DEFAULT->device(),
-				VK_NULL_HANDLE,
-				1,
-				&pipeline_info,
-				nullptr,
-				&_pipeline);
+			Graphics::DEFAULT->device(),
+			VK_NULL_HANDLE,
+			1,
+			&pipeline_info,
+			nullptr,
+			&_pipeline
+		);
 		if (res != VK_SUCCESS) {
-			return {res};
+			return Error(ErrorType::VULKAN, "Could not create compute pipline for ray pass", {res});
 		}
 
 		log_debug() << "just created raypass pipeline " << _pipeline << std::endl;
@@ -555,48 +576,52 @@ namespace vulkan {
 		_accumulator_image.destroy();
 	}
 
-	util::Result<void, KError> RayPass::_create_images() {
-		{
-			auto image = Image::create(
-					_size,
-					VK_FORMAT_R8G8B8A8_SRGB,
-					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
-						| VK_IMAGE_USAGE_STORAGE_BIT
-						| VK_IMAGE_USAGE_SAMPLED_BIT);
-			TRY(image);
-			_result_image = std::move(image.value());
-
-			Graphics::DEFAULT->transition_image_layout(
-					_result_image.image(),
-					VK_FORMAT_R8G8B8A8_SRGB,
-					VK_IMAGE_LAYOUT_UNDEFINED,
-					VK_IMAGE_LAYOUT_GENERAL,
-					1);
-
-			_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
-					*Graphics::DEFAULT->main_texture_sampler(), 
-					_result_image.image_view(), 
-					VK_IMAGE_LAYOUT_GENERAL);
+	util::Result<void, RayPass::Error> RayPass::_create_images() {
+		// result image
+		if (auto err = Image::create(
+			_size,
+			VK_FORMAT_R8G8B8A8_SRGB,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+				| VK_IMAGE_USAGE_STORAGE_BIT
+				| VK_IMAGE_USAGE_SAMPLED_BIT
+			).move_or(_result_image)
+		) {
+			return Error(ErrorType::VULKAN, "Could not create result image", err.value());
 		}
+
+		Graphics::DEFAULT->transition_image_layout(
+			_result_image.image(),
+			VK_FORMAT_R8G8B8A8_SRGB,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_GENERAL,
+			1
+		);
+
+		_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
+			*Graphics::DEFAULT->main_texture_sampler(), 
+			_result_image.image_view(), 
+			VK_IMAGE_LAYOUT_GENERAL
+		);
+		log_assert(_imgui_descriptor_set, "imgui descriptor set must be initialized");
 
 		//Setup accumulator
-		{
-			auto image = Image::create(
-					_size,
-					VK_FORMAT_R16G16B16A16_SFLOAT,
-					VK_IMAGE_USAGE_STORAGE_BIT
-						| VK_IMAGE_USAGE_SAMPLED_BIT
-						| VK_IMAGE_USAGE_TRANSFER_DST_BIT);
-			TRY(image);
-			_accumulator_image = std::move(image.value());
-
-			Graphics::DEFAULT->transition_image_layout(
-					_accumulator_image.image(), 
-					VK_FORMAT_R16G16B16A16_SFLOAT, 
-					VK_IMAGE_LAYOUT_UNDEFINED, 
-					VK_IMAGE_LAYOUT_GENERAL, 
-					1);
+		if (auto err = Image::create(
+			_size,
+			VK_FORMAT_R16G16B16A16_SFLOAT,
+			VK_IMAGE_USAGE_STORAGE_BIT
+				| VK_IMAGE_USAGE_SAMPLED_BIT
+				| VK_IMAGE_USAGE_TRANSFER_DST_BIT) .move_or(_accumulator_image)
+		) {
+			return Error(ErrorType::VULKAN, "Could not create accumulator image", err.value());
 		}
+
+		Graphics::DEFAULT->transition_image_layout(
+			_accumulator_image.image(), 
+			VK_FORMAT_R16G16B16A16_SFLOAT, 
+			VK_IMAGE_LAYOUT_UNDEFINED, 
+			VK_IMAGE_LAYOUT_GENERAL, 
+			1
+		);
 
 		return {};
 	}
@@ -725,5 +750,17 @@ namespace vulkan {
 		log_debug() << "raytrace codegen: \n" << util::add_strnum(source) << std::endl;
 
 		return source;
+	}
+}
+
+template<>
+const char *vulkan::RayPass::Error::type_str(vulkan::RayPass::ErrorType t) {
+	switch (t) {
+		case vulkan::RayPass::ErrorType::VULKAN:
+			return "RayPass.VULKAN";
+		case vulkan::RayPass::ErrorType::SHADER_RESOURCES:
+			return "RayPass.SHADER_RESOURCES";
+		case vulkan::RayPass::ErrorType::MISC:
+			return "RayPass.MISC";
 	}
 }

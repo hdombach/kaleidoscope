@@ -10,6 +10,7 @@
 #include "util/log.hpp"
 #include "util/FileLocation.hpp"
 
+class BaseError;
 
 class KError: public std::exception {
 	private:
@@ -34,11 +35,13 @@ class KError: public std::exception {
 			INVALID_ARG,
 			INTERNAL,
 			CODEGEN,
+			BASE_ERROR
 		};
 
 		KError();
 		KError(Type type, std::string what, FLoc=SLoc::current());
 		KError(VkResult result, FLoc=SLoc::current());
+		KError(BaseError const &err, FLoc=SLoc::current());
 
 		const char* what() const noexcept override { return _what.c_str(); }
 
