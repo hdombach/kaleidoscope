@@ -6,8 +6,8 @@
 #include <list>
 #include <memory>
 
+#include "util/BaseError.hpp"
 #include "util/Util.hpp"
-#include "util/KError.hpp"
 #include "util/result.hpp"
 #include "util/Observer.hpp"
 #include "util/UIDList.hpp"
@@ -29,12 +29,21 @@ namespace types {
 			using MeshContainer = util::UIDList<Mesh::Ptr, util::has_value, util::id_deref_trait>;
 
 			using MaterialContainer = util::UIDList<Material::Ptr, util::has_value, util::id_deref_trait>;
+
+			enum class ErrorType {
+				VULKAN,
+				DUPLICATE_ENTRY,
+				MISSING_ENTRY,
+				MISC,
+			};
+
+			using Error = TypedError<ErrorType>;
 		public:
 			ResourceManager();
 			~ResourceManager();
 
 			/*=========================== Textures =================================*/
-			util::Result<uint32_t, KError> add_texture_from_file(
+			util::Result<uint32_t, ResourceManager::Error> add_texture_from_file(
 					std::string const &url);
 
 			vulkan::Texture *default_texture();
@@ -43,22 +52,22 @@ namespace types {
 			vulkan::Texture const *get_texture(std::string const &name) const;
 			vulkan::Texture *get_texture(uint32_t id);
 			vulkan::Texture const *get_texture(uint32_t id) const;
-			util::Result<void, KError> rename_texture(uint32_t id, std::string const &name);
+			util::Result<void, ResourceManager::Error> rename_texture(uint32_t id, std::string const &name);
 
 			TextureContainer &textures() { return _textures; }
 			TextureContainer const &textures() const { return _textures; }
 
 			/*========================= Meshes =====================================*/
-			util::Result<uint32_t, KError> add_mesh_from_file(
+			util::Result<uint32_t, ResourceManager::Error> add_mesh_from_file(
 					std::string const &url);
-			util::Result<uint32_t, KError> add_mesh_square(
+			util::Result<uint32_t, ResourceManager::Error> add_mesh_square(
 					std::string const &name);
-			util::Result<uint32_t, KError> add_mesh_from_vertices(
+			util::Result<uint32_t, ResourceManager::Error> add_mesh_from_vertices(
 					std::string const &name,
 					std::vector<vulkan::Vertex> const &vertices);
-			util::Result<uint32_t, KError> add_mesh_mandelbulb(
+			util::Result<uint32_t, ResourceManager::Error> add_mesh_mandelbulb(
 					std::string const &name);
-			util::Result<uint32_t, KError> add_mesh_mandelbox(
+			util::Result<uint32_t, ResourceManager::Error> add_mesh_mandelbox(
 					std::string const &name);
 
 			Mesh *default_mesh();
@@ -68,20 +77,20 @@ namespace types {
 			Mesh const *get_mesh(uint32_t id) const;
 			Mesh *get_mesh(uint32_t id);
 			bool has_mesh(std::string const &name) const;
-			util::Result<void, KError> rename_mesh(uint32_t id, std::string const &name);
+			util::Result<void, ResourceManager::Error> rename_mesh(uint32_t id, std::string const &name);
 
 			MeshContainer &meshes() { return _meshes; }
 			MeshContainer const &meshes() const { return _meshes; }
 
-			util::Result<void, KError> add_mesh_observer(util::Observer *observer);
-			util::Result<void, KError> rem_mesh_observer(util::Observer *observer);
+			util::Result<void, ResourceManager::Error> add_mesh_observer(util::Observer *observer);
+			util::Result<void, ResourceManager::Error> rem_mesh_observer(util::Observer *observer);
 
 			/*========================= Materials ==================================*/
-			util::Result<uint32_t, KError> add_texture_material(
+			util::Result<uint32_t, ResourceManager::Error> add_texture_material(
 					std::string const &name,
 					vulkan::Texture *texture);
-			util::Result<uint32_t, KError> add_color_material(std::string const &name, glm::vec3 color);
-			util::Result<uint32_t, KError> add_comb_texture_material(
+			util::Result<uint32_t, ResourceManager::Error> add_color_material(std::string const &name, glm::vec3 color);
+			util::Result<uint32_t, ResourceManager::Error> add_comb_texture_material(
 					std::string const &name,
 					vulkan::Texture *prim_texture,
 					vulkan::Texture *comb_texture);
@@ -93,18 +102,18 @@ namespace types {
 			types::Material const *get_material(uint32_t id) const;
 			types::Material *get_material(uint32_t id);
 			bool has_material(std::string const &name) const;
-			util::Result<void, KError> rename_material(uint32_t id, std::string const &name);
+			util::Result<void, ResourceManager::Error> rename_material(uint32_t id, std::string const &name);
 
 			MaterialContainer &materials() { return _materials; }
 			MaterialContainer const &materials() const { return _materials; }
 
-			util::Result<void, KError> add_material_observer(util::Observer *observer);
-			util::Result<void, KError> rem_material_observer(util::Observer *observer);
+			util::Result<void, ResourceManager::Error> add_material_observer(util::Observer *observer);
+			util::Result<void, ResourceManager::Error> rem_material_observer(util::Observer *observer);
 
 		private:
-			util::Result<uint32_t, KError> _add_mesh(
+			util::Result<uint32_t, ResourceManager::Error> _add_mesh(
 					std::unique_ptr<Mesh> &&mesh);
-			util::Result<uint32_t, KError> _add_material(
+			util::Result<uint32_t, ResourceManager::Error> _add_material(
 					std::string const &name,
 					std::unique_ptr<types::Material> &&material);
 
@@ -137,3 +146,8 @@ namespace types {
 			std::list<util::Observer *> _material_observers;
 	};
 }
+
+template<>
+const char *types::ResourceManager::Error::type_str(types::ResourceManager::ErrorType t);
+
+std::ostream &operator<<(std::ostream &os, types::ResourceManager::ErrorType t);

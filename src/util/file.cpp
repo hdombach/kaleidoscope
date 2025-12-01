@@ -75,3 +75,15 @@ namespace util {
 		return result;
 	}
 }
+
+template<>
+const char *util::FileError::type_str(util::FileErrorType t) {
+	switch (t) {
+		case util::FileErrorType::MISSING_FILE:
+			return "FileErrorType.MISSING_FILE";
+	}
+}
+
+std::ostream &operator<<(std::ostream &os, util::FileErrorType t) {
+	return os << util::FileError::type_str(t);
+}
