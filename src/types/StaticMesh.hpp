@@ -7,7 +7,7 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
-#include "util/KError.hpp"
+#include "util/BaseError.hpp"
 #include "util/result.hpp"
 #include "types/Mesh.hpp"
 #include "vulkan/Vertex.hpp"
@@ -18,7 +18,7 @@ namespace types {
 		public:
 			using Ptr = std::unique_ptr<StaticMesh>;
 
-			static util::Result<Ptr, KError> from_file(uint32_t id, std::string const &url);
+			static util::Result<Ptr, BaseError> from_file(uint32_t id, std::string const &url);
 			static Ptr create_square(std::string const &name, uint32_t id);
 			static Ptr from_vertices(std::string const &name, uint32_t id, std::vector<vulkan::Vertex> const &vertices);
 

@@ -9,7 +9,7 @@
 #include "imgui_impl_vulkan.h"
 
 namespace vulkan {
-	util::Result<StaticTexture::Ptr, KError> StaticTexture::from_file(
+	util::Result<StaticTexture::Ptr, BaseError> StaticTexture::from_file(
 			uint32_t id,
 			const std::string &url)
 	{
@@ -30,7 +30,7 @@ namespace vulkan {
 		result->_mip_levels = 1;
 
 		if (!pixels) {
-			return KError::invalid_image_file(url);
+			return BaseError(util::f("Problem loading image from file: ", url));
 		}
 
 		auto staging_buffer = VkBuffer{};

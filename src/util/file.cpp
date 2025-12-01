@@ -9,11 +9,10 @@
 #include "file.hpp"
 #include "result.hpp"
 #include "util/Env.hpp"
-#include "util/log.hpp"
 
 namespace util {
 
-	util::Result<std::string, KError> env_file_path(std::string filename) {
+	util::Result<std::string, BaseError> env_file_path(std::string filename) {
 		if (std::filesystem::exists(filename)) {
 			return filename;
 		}
@@ -39,7 +38,7 @@ namespace util {
 				return {full_path};
 			}
 		}
-		return KError::file_doesnt_exist(filename);
+		return BaseError(util::f("File ", filename, " doesn't exist"));
 	}
 
 	std::string readFile(std::ifstream &file) {
@@ -74,16 +73,4 @@ namespace util {
 
 		return result;
 	}
-}
-
-template<>
-const char *util::FileError::type_str(util::FileErrorType t) {
-	switch (t) {
-		case util::FileErrorType::MISSING_FILE:
-			return "FileErrorType.MISSING_FILE";
-	}
-}
-
-std::ostream &operator<<(std::ostream &os, util::FileErrorType t) {
-	return os << util::FileError::type_str(t);
 }

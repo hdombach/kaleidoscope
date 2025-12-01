@@ -16,7 +16,7 @@ namespace util {
 	 * @brief Rust style error handling
 	 */
 	template<typename Value, typename Error, bool = std::is_reference<Value>::value>
-		class Result: private std::variant<Value, Error> {
+		class [[nodiscard]] Result: private std::variant<Value, Error> {
 			public:
 				Result(Value value): parent_t(std::move(value)) {}
 				Result(Error error): parent_t(std::move(error)) {}
@@ -52,7 +52,7 @@ namespace util {
 					}
 				}
 
-				std::optional<Error> move_or(Value &dest) {
+				[[nodiscard]] std::optional<Error> move_or(Value &dest) {
 					if (has_value()) {
 						dest = move_value();
 						return {};
@@ -104,7 +104,7 @@ namespace util {
 		};
 
 	template<typename Error>
-		class Result<void, Error, false>: private std::optional<Error> {
+		class [[nodiscard]] Result<void, Error, false>: private std::optional<Error> {
 			public:
 				Result() = default;
 				Result(Error error): parent_t(error) {}
@@ -126,7 +126,7 @@ namespace util {
 					return parent_t::value();
 				}
 
-				std::optional<Error> move_or() {
+				[[nodiscard]] std::optional<Error> move_or() {
 					if (has_value()) {
 						return {};
 					} else {
@@ -141,7 +141,7 @@ namespace util {
 		};
 
 	template<typename Value>
-		class Result<Value, void, false>: private std::optional<Value> {
+		class [[nodiscard]] Result<Value, void, false>: private std::optional<Value> {
 			public:
 				Result() = default;
 				Result(Value value): parent_t(value) {}
@@ -178,7 +178,7 @@ namespace util {
 		};
 
 	template<typename Value, typename Error>
-		class Result<Value, Error, true> {
+		class [[nodiscard]] Result<Value, Error, true> {
 			public:
 				using BaseValue = typename std::remove_reference<Value>::type;
 				using PtrValue = BaseValue*;

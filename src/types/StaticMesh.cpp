@@ -7,11 +7,10 @@
 
 #include "StaticMesh.hpp"
 #include "util/result.hpp"
-#include "util/KError.hpp"
 #include "vulkan/Vertex.hpp"
 
 namespace types {
-	util::Result<StaticMesh::Ptr , KError> StaticMesh::from_file(
+	util::Result<StaticMesh::Ptr , BaseError> StaticMesh::from_file(
 			uint32_t id,
 			const std::string &url)
 	{
@@ -22,7 +21,7 @@ namespace types {
 		std::vector<vulkan::Vertex> vertices;
 
 		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, url.c_str())) {
-			return KError::invalid_mesh_file("Cannot load mesh " + url + ": " + warn + err);
+			return BaseError(util::f("Cannot load mesh ", url, ": ", warn, err));
 		}
 
 		std::unordered_map<vulkan::Vertex, uint32_t> uniqueVertices{};

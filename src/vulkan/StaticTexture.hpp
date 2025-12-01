@@ -3,7 +3,7 @@
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 
-#include "util/KError.hpp"
+#include "util/BaseError.hpp"
 #include "util/result.hpp"
 #include "Texture.hpp"
 #include "Image.hpp"
@@ -13,7 +13,7 @@ namespace vulkan {
 		public:
 			using Ptr = std::unique_ptr<StaticTexture>;
 
-			static util::Result<Ptr, KError> from_file(
+			static util::Result<Ptr, BaseError> from_file(
 					uint32_t id,
 					std::string const &url);
 			~StaticTexture();
