@@ -31,7 +31,7 @@ namespace cg {
 			 * @param[in] root_node Name of CfgRuleSet to generate with
 			 * @returns Generated abstract syntax tree
 			 */
-			util::Result<AstNode*, KError> parse(
+			util::Result<AstNode*, Error> parse(
 				util::StringRef const &str,
 				ParserContext &result
 			) override;
@@ -50,7 +50,7 @@ namespace cg {
 		public:
 			SParserInstance() = default;
 
-			static util::Result<AstNode*, KError> parse(
+			static util::Result<AstNode*, Error> parse(
 				util::StringRef const &str,
 				CfgContext const &cfg_ctx,
 				ParserContext &parser_ctx
@@ -61,7 +61,7 @@ namespace cg {
 			/**
 			 * @brief Most recent failure (even if it isn't officially error yet)
 			 */
-			KError _last_failure;
+			Error _last_failure;
 			ParserContext *_parser_ctx=nullptr;
 
 		private:
@@ -69,22 +69,22 @@ namespace cg {
 			 * @brief Updates last failure if it is newer
 			 * @returns the failure passed in
 			 */
-			KError _set_failure(KError const &failure);
+			Error _set_failure(Error const &failure);
 			/***********************************
 			 * Parser helper functions
 			 * *********************************/
-			util::Result<AstNode*, KError> _parse(
+			util::Result<AstNode*, Error> _parse(
 				std::vector<Token> const &tokens,
 				uint32_t i,
 				CfgRuleSet const &set
 			);
-			util::Result<AstNode*, KError> _parse(
+			util::Result<AstNode*, Error> _parse(
 				std::vector<Token> const &tokens,
 				uint32_t i,
 				CfgRule const &rule,
 				std::string const &set_name
 			);
-			util::Result<AstNode*, KError> _parse(
+			util::Result<AstNode*, Error> _parse(
 				std::vector<Token> const &tokens,
 				uint32_t i,
 				CfgLeaf const &leaf

@@ -1,11 +1,12 @@
 #include "TemplObj.hpp"
 
 #include <cctype>
-#include <memory>
+#include <variant>
 
-#include "util/log.hpp"
+#include "util/format.hpp"
 #include "util/result.hpp"
-#include "util/KError.hpp"
+
+using util::f;
 
 //https://en.cppreference.com/w/cpp/utility/variant/visit2
 template<class... Ts>
@@ -45,6 +46,11 @@ namespace cg {
 		_builtins = nullptr;
 	}
 
+	TemplObj::TemplObj(uint32_t val) {
+		_v = val;
+		_builtins = nullptr;
+	}
+
 	TemplObj::TemplObj(TemplFunc const &func) {
 		_v = func;
 		_builtins = nullptr;
@@ -78,269 +84,201 @@ namespace cg {
 	TemplObj::TemplObj(const char *str): _v(str), _builtins(_str_builtins()) {}
 
 	TemplFuncRes TemplObj::unary_plus(TemplFuncRes const &val) {
-		try {
-			auto type = val->type();
-			if (type == Type::Integer) {
-				return {+val->integer().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Invalid operation +",
-					val->type_str()
-				));
-			}
-		} catch_kerror;
+		auto type = val->type();
+		if (type == Type::Integer) {
+			return {+val->integer().value()};
+		} else {
+			return Error(ErrorType::RUNTIME_CG, f("Invalid operation + ", val->type_str()));
+		}
 	}
 
 	TemplFuncRes TemplObj::unary_min(TemplFuncRes const &val) {
-		try {
-			auto type = val->type();
-			if (type == Type::Integer) {
-				return {-val->integer().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Invalid operation -",
-					val->type_str()
-				));
-			}
-		} catch_kerror;
+		auto type = val->type();
+		if (type == Type::Integer) {
+			return {-val->integer().value()};
+		} else {
+			return Error(ErrorType::RUNTIME_CG, f("Invalid operationr - ", val->type_str()));
+		}
 	}
 
 	TemplFuncRes TemplObj::log_not(TemplFuncRes const &val) {
-		try {
-			auto type = val->type();
-			if (type == Type::Boolean) {
-				return {!val->boolean().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Invalid operation !",
-					val->type_str()
-				));
-			}
-		} catch_kerror;
+		auto type = val->type();
+		if (type == Type::Boolean) {
+			return {!val->boolean().value()};
+		} else {
+			return Error(ErrorType::RUNTIME_CG, f("Invalid operation !", val->type_str()));
+		}
 	}
 
 	TemplFuncRes TemplObj::mult(TemplFuncRes const &lhs, TemplFuncRes const &rhs) {
-		try {
-			auto type = lhs->type();
-			if (type == Type::Integer) {
-				return {lhs->integer().value() * rhs->integer().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Invalid operation ",
-					lhs->type_str(),
-					" * ",
-					rhs->type_str()
-				));
-			}
-		} catch_kerror;
+		auto ltype = lhs->type();
+		auto rtype = rhs->type();
+		if (ltype != rtype || ltype != Type::Integer) {
+			return Error(ErrorType::RUNTIME_CG, f("invalid operation ", lhs->type_str(), " * ", rhs->type_str()));
+		}
+		return {lhs->integer().value() * rhs->integer().value()};
 	}
 
 	TemplFuncRes TemplObj::div(TemplFuncRes const &lhs, TemplFuncRes const &rhs) {
-		try {
-			auto type = lhs->type();
-			if (type == Type::Integer) {
-				return {lhs->integer().value() / rhs->integer().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Invalid operation ",
-					lhs->type_str(),
-					" / ",
-					rhs->type_str()
-				));
-			}
-		} catch_kerror;
+		auto ltype = lhs->type();
+		auto rtype = rhs->type();
+		if (ltype != rtype || ltype != Type::Integer) {
+			return Error(ErrorType::RUNTIME_CG, f("Invalid operation ", lhs->type_str(), " / ", rhs->type_str()));
+		}
+		return {lhs->integer().value() / rhs->integer().value()};
 	}
 
 	TemplFuncRes TemplObj::mod(TemplFuncRes const &lhs, TemplFuncRes const &rhs) {
-		try {
-			auto type = lhs->type();
-			if (type == Type::Integer) {
-				return {lhs->integer().value() % rhs->integer().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Invalid operation ",
-					lhs->type_str(),
-					" % ",
-					rhs->type_str()
-				));
-			}
-		} catch_kerror;
+		auto ltype = lhs->type();
+		auto rtype = rhs->type();
+		if (ltype != rtype || ltype != Type::Integer) {
+			return Error(ErrorType::RUNTIME_CG, f("Invalid operationr ", lhs->type_str(), " % ", rhs->type_str()));
+		}
+		return {lhs->integer().value() % rhs->integer().value()};
 	}
 
 	TemplFuncRes TemplObj::add( TemplFuncRes const &lhs, TemplFuncRes const &rhs) {
-		try {
-			auto type = lhs->type();
-			if (type == Type::Integer) {
-				return {lhs->integer().value() + rhs->integer().value()};
-			} else if (type == Type::String) {
-				return {lhs->str().value() + rhs->str().value()};
-			} else {
-				//TODO: add string conantination
-				return KError::codegen(util::f(
-					"Invalid operation ",
-					lhs->type_str(),
-					" + ",
-					rhs->type_str()
-				));
-			}
-		} catch_kerror;
+		auto ltype = lhs->type();
+		auto rtype = rhs->type();
+		if (ltype != rtype) {
+			return Error(ErrorType::RUNTIME_CG, "Left and right hand side of the addition operator must match");
+		}
+		if (ltype == Type::Integer) {
+			return {lhs->integer().value() + rhs->integer().value()};
+		} else if (ltype == Type::String) {
+			return {lhs->str().value() + rhs->str().value()};
+		} else {
+			return Error(ErrorType::RUNTIME_CG, f("Invalid operation ", lhs->type_str(), " + ", rhs->type_str()));
+		}
 	}
 
 	TemplFuncRes TemplObj::sub( TemplFuncRes const &lhs, TemplFuncRes const &rhs) {
-		try {
-			auto type = lhs->type();
-			if (type == Type::Integer) {
-				return {lhs->integer().value() - rhs->integer().value()};
-			} else {
-				//TODO: add string conantination
-				return KError::codegen(util::f(
-					"Cannot do operator ",
-					lhs->type_str(),
-					" - ",
-					rhs->type_str()
-				));
-			}
-		} catch_kerror;
+		auto ltype = lhs->type();
+		auto rtype = rhs->type();
+		if (ltype != rtype) {
+			return Error(ErrorType::RUNTIME_CG, "Left and right hand side of the subtraction operator must match");
+		}
+		if (ltype == Type::Integer) {
+			return {lhs->integer().value() - rhs->integer().value()};
+		} else {
+			return Error(ErrorType::RUNTIME_CG, f("Cannot do operator ", lhs->type_str(), " - ", rhs->type_str()));
+		}
 	}
 
 	TemplFuncRes TemplObj::comp_g(TemplFuncRes const &l, TemplFuncRes const &r) {
-		try {
-			auto type = l->type();
-			if (type == Type::Integer) {
-				return {l->integer().value() > r->integer().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do operator ",
-					l->type_str(),
-					" > ",
-					r->type_str()
-				));
-			}
-		} catch_kerror;
+		auto ltype = l->type();
+		auto rtype = r->type();
+		if (ltype != rtype) {
+			return Error(ErrorType::RUNTIME_CG, "Left and right hand side of the greater than operator must match");
+		}
+		if (ltype == Type::Integer) {
+			return {l->integer().value() > r->integer().value()};
+		} else {
+			return Error(ErrorType::RUNTIME_CG, f("Canot do operator ", l->type_str(), " > ", r->type_str()));
+		}
 	}
 
 	TemplFuncRes TemplObj::comp_ge(TemplFuncRes const &l, TemplFuncRes const &r) {
-		try {
-			auto type = l->type();
-			if (type == Type::Integer) {
-				return {l->integer().value() >= r->integer().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do operator ",
-					l->type_str(),
-					" >= ",
-					r->type_str()
-				));
-			}
-		} catch_kerror;
+		auto ltype = l->type();
+		auto rtype = r->type();
+		if (ltype != rtype) {
+			return Error(ErrorType::RUNTIME_CG, "Left and right hand side of the greater than or equal operator must match");
+		}
+		if (ltype == Type::Integer) {
+			return {l->integer().value() >= r->integer().value()};
+		} else {
+			return Error(ErrorType::RUNTIME_CG, f("Cannot do operator ", l->type_str(), " >= ", r->type_str()));
+		}
 	}
 
 	TemplFuncRes TemplObj::comp_l(TemplFuncRes const &l, TemplFuncRes const &r) {
-		try {
-			auto type = l->type();
-			if (type == Type::Integer) {
-				return {l->integer().value() < r->integer().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do operator ",
-					l->type_str(),
-					" < ",
-					r->type_str()
-				));
-			}
-		} catch_kerror;
+		auto ltype = l->type();
+		auto rtype = r->type();
+		if (ltype != rtype) {
+			return Error(ErrorType::RUNTIME_CG, "Left and right hand side of the less than operator must match");
+		}
+		if (ltype == Type::Integer) {
+			return {l->integer().value() < r->integer().value()};
+		} else {
+			return Error(ErrorType::RUNTIME_CG, f("Cannot do operator ", l->type_str(), " < ", r->type_str()));
+		}
 	}
 
 	TemplFuncRes TemplObj::comp_le(TemplFuncRes const &l, TemplFuncRes const &r) {
-		try {
-			auto type = l->type();
-			if (type == Type::Integer) {
-				return {l->integer().value() <= r->integer().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do operator ",
-					l->type_str(),
-					" <= ",
-					r->type_str()
-				));
-			} 
-		} catch_kerror;
+		auto ltype = l->type();
+		auto rtype = r->type();
+		if (ltype != rtype) {
+			return Error(ErrorType::RUNTIME_CG, "Left and right hand side of the less than or equal operator must match");
+		}
+		if (ltype == Type::Integer) {
+			return {l->integer().value() <= r->integer().value()};
+		} else {
+			return Error(ErrorType::RUNTIME_CG, f("Cannot do operator ", l->type_str(), " <= ", r->type_str()));
+		}
 	}
 
 	TemplFuncRes TemplObj::comp_eq(TemplFuncRes const &l, TemplFuncRes const &r) {
-		try {
-			auto type = l->type();
-			if (type == Type::Integer) {
-				return {l->integer().value() == r->integer().value()};
-			} else if (type == Type::String) {
-				return {l->str(false).value() == r->str(false).value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do operator ",
-					l->type_str(),
-					" == ",
-					r->type_str()
-				));
-			}
-		} catch_kerror;
+		auto ltype = l->type();
+		auto rtype = r->type();
+		if (ltype != rtype) {
+			return Error(ErrorType::RUNTIME_CG, "Left and right hand side of the equality operator must match");
+		}
+		if (ltype == Type::Integer) {
+			return {l->integer().value() == r->integer().value()};
+		} else if (ltype == Type::String) {
+			return {l->str(false).value() == r->str(false).value()};
+		} else {
+			return Error(ErrorType::RUNTIME_CG, f("Cannot do operator ", l->type_str(), " == ", r->type_str()));
+		}
 	}
 
 	TemplFuncRes TemplObj::comp_neq(TemplFuncRes const &l, TemplFuncRes const &r) {
-		try {
-			auto type = l->type();
-			if (type == Type::Integer) {
-				return {l->integer().value() != r->integer().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do operator ",
-					l->type_str(),
-					" != ",
-					r->type_str()
-				));
-			}
-		} catch_kerror;
+		auto ltype = l->type();
+		auto rtype = r->type();
+		if (ltype != rtype) {
+			return Error(ErrorType::RUNTIME_CG, "Left and right hand side of the not equal operator must match");
+		}
+		if (ltype == Type::Integer) {
+			return {l->integer().value() != r->integer().value()};
+		} else {
+			return Error(ErrorType::RUNTIME_CG, f("Cannot do operator ", l->type_str(), " != ", r->type_str()));
+		}
 	}
 
 	TemplFuncRes TemplObj::log_and(TemplFuncRes const &l, TemplFuncRes const &r) {
-		try {
-			auto type = l->type();
-			if (type == Type::Boolean) {
-				return {l->boolean().value() && r->boolean().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do operator ",
-					l->type_str(),
-					" && ",
-					r->type_str()
-				));
-			}
-		} catch_kerror;
+		auto ltype = l->type();
+		auto rtype = r->type();
+		if (ltype != rtype) {
+			return Error(ErrorType::RUNTIME_CG, "Left and right hand side of the and operator must match");
+		}
+		if (ltype == Type::Boolean) {
+			return {l->boolean().value() && r->boolean().value()};
+		} else {
+			return Error(ErrorType::RUNTIME_CG, f("Cannot do operator ", l->type_str(), " && ", r->type_str()));
+		}
 	}
 
 	TemplFuncRes TemplObj::log_or(TemplFuncRes const &l, TemplFuncRes const &r) {
-		try {
-			auto type = l->type();
-			if (type == Type::Boolean) {
-				return {l->boolean().value() || r->boolean().value()};
-			} else {
-				return KError::codegen(util::f(
-					"Cannot do operator ",
-					l->type_str(),
-					" || ",
-					r->type_str()
-				));
-			}
-		} catch_kerror;
+		auto ltype = l->type();
+		auto rtype = r->type();
+		if (ltype != rtype) {
+			return Error(ErrorType::RUNTIME_CG, "Left and right hand side of the or operator must match");
+		}
+		if (ltype == Type::Boolean) {
+			return {l->boolean().value() || r->boolean().value()};
+		} else {
+			return Error(ErrorType::RUNTIME_CG, f("Cannot do operator ", l->type_str(), " || ", r->type_str()));
+		}
 	}
 
-	util::Result<std::string, KError> TemplObj::str(bool convert) const {
+	util::Result<std::string, Error> TemplObj::str(bool convert) const {
 		auto type = static_cast<Type>(_v.index());
 		if (type == Type::String) {
-			log_assert(std::holds_alternative<TemplStr>(_v), "Invalid internal state: expecting str");
+			CG_ASSERT(std::holds_alternative<TemplStr>(_v), "Invalid internal state: expecting str");
 			return std::get<TemplStr>(_v);
 		}
 		if (!convert) {
-			return KError::codegen("Unknown conversion to str");
+			return Error(ErrorType::RUNTIME_CG, "Unknown conversion to str");
 		}
 
 		switch (type) {
@@ -351,11 +289,11 @@ namespace cg {
 			case Type::Dict:
 				return {"<dict>"};
 			case Type::Boolean:
-				log_assert(std::holds_alternative<bool>(_v), "Invalid internal state: expecting bool");
-				return {std::get<bool>(_v) ? "<true>" : "<false>"};
+				CG_ASSERT(std::holds_alternative<TemplBool>(_v), "Invalid internal state: expecting bool");
+				return {std::get<TemplBool>(_v) ? "<true>" : "<false>"};
 			case Type::Integer:
-				log_assert(std::holds_alternative<int64_t>(_v), "Invalid internal state: exepcting int64");
-				return {std::to_string(std::get<int64_t>(_v))};
+				CG_ASSERT(std::holds_alternative<TemplInt>(_v), "Invalid internal state: expecting int64");
+				return {std::to_string(std::get<TemplInt>(_v))};
 			case Type::Func:
 				return {"<function>"};
 			case Type::None:
@@ -379,52 +317,52 @@ namespace cg {
 		}[static_cast<size_t>(type())];
 	}
 
-	util::Result<TemplList, KError> TemplObj::list() const {
+	util::Result<TemplList, Error> TemplObj::list() const {
 		if (type() == Type::List) {
-			log_assert(std::holds_alternative<TemplList>(_v), "Invalid internal state: expecting TemplList");
+			CG_ASSERT(std::holds_alternative<TemplList>(_v), "Invalid internal state: expecting TemplList");
 			return std::get<TemplList>(_v);
 		} else {
-			return KError::codegen("Object is not a list", util::FileLocation());
+			return Error(ErrorType::RUNTIME_CG, "Object is not a list", location({}));
 		}
 	}
 
-	util::Result<bool, KError> TemplObj::boolean() const {
+	util::Result<TemplBool, Error> TemplObj::boolean() const {
 		if (type() == Type::Boolean) {
-			log_assert(std::holds_alternative<bool>(_v), "Invalid internal state: expecting bool");
+			CG_ASSERT(std::holds_alternative<TemplBool>(_v), "Invalid internal state: expecting TemplBool");
 			return std::get<bool>(_v);
 		} else {
-			return KError::codegen("Object is not a boolean", util::FileLocation());
+			return Error(ErrorType::RUNTIME_CG, "Object is not a boolean", location({}));
 		}
 	}
 
-	util::Result<int64_t, KError> TemplObj::integer() const {
+	util::Result<TemplInt, Error> TemplObj::integer() const {
 		if (type() == Type::Integer) {
-			log_assert(std::holds_alternative<int64_t>(_v), "Invalid internal state: expecting int64");
-			return std::get<int64_t>(_v);
+			CG_ASSERT(std::holds_alternative<TemplInt>(_v), "Invalid internal state: expecting TemplInt");
+			return std::get<TemplInt>(_v);
 		} else {
-			return KError::codegen("Object is not an integer", location(util::FileLocation()));
+			return Error(ErrorType::RUNTIME_CG, "Object is not an integer", location({}));
 		}
 	}
 
-	util::Result<TemplDict, KError> TemplObj::dict() const {
+	util::Result<TemplDict, Error> TemplObj::dict() const {
 		if (type() == Type::Dict) {
-			log_assert(std::holds_alternative<TemplDict>(_v), "Invalid internal state: expecting dict");
+			CG_ASSERT(std::holds_alternative<TemplDict>(_v), "Invalid internal state: expecting dict");
 			return std::get<TemplDict>(_v);
 		} else {
-			return KError::codegen("Object is not a dict", location(util::FileLocation()));
+			return Error(ErrorType::RUNTIME_CG, "Object is not a dict", location({}));
 		}
 	}
 
-	util::Result<TemplFunc, KError> TemplObj::func() const {
+	util::Result<TemplFunc, Error> TemplObj::func() const {
 		if (type() == Type::Func) {
-			log_assert(std::holds_alternative<TemplFunc>(_v), "Invalid internal state: expecting func");
+			CG_ASSERT(std::holds_alternative<TemplFunc>(_v), "Invalid internal state: expecting func");
 			return std::get<TemplFunc>(_v);
 		} else {
-			return KError::codegen("Object is not a callable", location(util::FileLocation()));
+			return Error(ErrorType::RUNTIME_CG, "Object is not a callable", location({}));
 		}
 	}
 
-	util::Result<TemplObj, KError> TemplObj::get_attribute(std::string const &name) const {
+	util::Result<TemplObj, Error> TemplObj::get_attribute(std::string const &name) const {
 		if (_builtins && _builtins->contains(name)) {
 			auto builtin = _builtins->at(name);
 			if (builtin.type() == Type::Func) {
@@ -433,15 +371,15 @@ namespace cg {
 			return _builtins->at(name);
 		}
 		if (type() == Type::Dict) {
-			if (dict()->contains(name)) {
-				return dict()->at(name);
+			if (dict()->contains(name)) { return dict()->at(name);
 			} else {
-				return KError::codegen("Property " + name + " not found.");
+				return Error(ErrorType::RUNTIME_CG, f("Property ", name, " not found."));
 			}
 		} else {
-			return KError::internal(
-				"Default property " + name + " does not exist for type " + type_str(),
-				location(util::FileLocation())
+			return Error(
+				ErrorType::RUNTIME_CG,
+				f("Default property ", name, " does not exist for type ", type_str()),
+				location({})
 			);
 		}
 	}
@@ -476,7 +414,7 @@ namespace cg {
 			if ((e == element)->boolean().value()) return {i};
 			i++;
 		}
-		return KError::codegen(util::f("Element ", element.str().value(), " not found in list"));
+		return Error(ErrorType::RUNTIME_CG, f("Element ", element.str().value(), " not found in list"));
 	}
 
 	TemplDict *TemplObj::_list_builtins() {

@@ -1,3 +1,4 @@
+#include "Error.hpp"
 #include "tests/Test.hpp"
 #include "TemplGen.hpp"
 #include "TemplObj.hpp"
@@ -21,7 +22,7 @@ namespace cg {
 
 			static size_t variant_count() { return 1; }
 
-			util::Result<std::string, KError> gen(
+			util::Result<std::string, Error> gen(
 				std::string const &src,
 				TemplDict const &args)
 			{
@@ -29,7 +30,7 @@ namespace cg {
 				return TemplGen::codegen(src, args, _test.suite_name + "-" + _test.test_name + "-" + std::to_string(count));
 			}
 
-			util::Result<std::string, KError> gen(
+			util::Result<std::string, Error> gen(
 				std::string const &src,
 				TemplObj const &args)
 			{
@@ -283,7 +284,7 @@ namespace cg {
 		auto src = "Hello {{get_name()}}\n";
 
 		auto args = TemplObj{
-			{"get_name", [](TemplList args) { return TemplObj("Jared"); }}
+			{"get_name", TemplFunc([](TemplList args) { return TemplObj("Jared"); })}
 		};
 
 		EXPECT_CG(
@@ -307,7 +308,7 @@ namespace cg {
 					{"seconds", 57},
 					{"minutes", 13},
 					{"hours", 2},
-					{ "get_self", get_date }
+					{ "get_self", TemplFunc(get_date) }
 				}
 			}
 		};
@@ -315,7 +316,7 @@ namespace cg {
 
 		auto args = TemplObj{
 			{ "date", date_obj },
-			{ "get_date", get_date },
+			{ "get_date", TemplFunc(get_date) },
 		}.dict().value();
 
 		auto src =
@@ -350,27 +351,27 @@ namespace cg {
 		);
 
 		src = "User id is {{combine_str(name, name)}}\n";
-		EXPECT_KERROR(
+		EXPECT_TERROR(
 			f.gen(src, args),
-			KError::Type::CODEGEN
+			ErrorType::MISC
 		);
 
 		src = "User id is {{combine_str(id, id)}}\n";
-		EXPECT_KERROR(
+		EXPECT_TERROR(
 			f.gen(src, args),
-			KError::Type::CODEGEN
+			ErrorType::MISC
 		);
 
 		src = "User id is {{combine_str(name)}}\n";
-		EXPECT_KERROR(
+		EXPECT_TERROR(
 			f.gen(src, args),
-			KError::Type::CODEGEN
+			ErrorType::MISC
 		);
 
 		src = "User id is {{combine_str(name, id, id)}}\n";
-		EXPECT_KERROR(
+		EXPECT_TERROR(
 			f.gen(src, args),
-			KError::Type::CODEGEN
+			ErrorType::MISC
 		);
 	}
 
@@ -957,7 +958,7 @@ namespace cg {
 			{"my_list", TemplList()}
 		}.dict().value();
 
-		EXPECT_KERROR(f.gen(src, args), KError::CODEGEN);
+		EXPECT_TERROR(f.gen(src, args), ErrorType::MISC);
 	}
 
 	TEST_F(TemplGenTest, indent) {
@@ -1110,9 +1111,9 @@ namespace cg {
 			"{{hello(\"Alex\")}}\n"
 			"";
 
-		EXPECT_KERROR(
+		EXPECT_TERROR(
 			f.gen(src, args),
-			KError::CODEGEN
+			ErrorType::MISC
 		);
 
 		src =
@@ -1123,9 +1124,9 @@ namespace cg {
 			"{{hello(\"Alex\", 142, \"Extra\")}}\n"
 			"";
 
-		EXPECT_KERROR(
+		EXPECT_TERROR(
 			f.gen(src, args),
-			KError::CODEGEN
+			ErrorType::MISC
 		);
 
 		src =
@@ -1169,9 +1170,9 @@ namespace cg {
 			"{{hello(\"Alex\")}}\n"
 			"";
 
-		EXPECT_KERROR(
+		EXPECT_TERROR(
 			f.gen(src, args),
-			KError::CODEGEN
+			ErrorType::MISC
 		);
 	}
 

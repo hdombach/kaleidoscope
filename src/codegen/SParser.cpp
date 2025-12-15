@@ -1,6 +1,5 @@
 #include "SParser.hpp"
 
-#include "util/KError.hpp"
 #include "util/StringRef.hpp"
 #include "util/log.hpp"
 #include "util/log.hpp"
@@ -24,7 +23,7 @@ namespace cg {
 		return *this;
 	}
 
-	util::Result<AstNode*, KError> SParser::parse(
+	util::Result<AstNode*, Error> SParser::parse(
 		util::StringRef const &str,
 		ParserContext &parser_ctx
 	) {
@@ -39,38 +38,37 @@ namespace cg {
 		return *_ctx;
 	}
 
-	util::Result<AstNode*, KError> SParserInstance::parse(
+	util::Result<AstNode*, Error> SParserInstance::parse(
 		util::StringRef const &str,
 		CfgContext const &cfg_ctx,
 		ParserContext &parser_ctx
 	) {
-		try {
-			auto instance = SParserInstance();
-			instance._cfg_ctx = &cfg_ctx;
-			instance._parser_ctx = &parser_ctx;
+		auto instance = SParserInstance();
+		instance._cfg_ctx = &cfg_ctx;
+		instance._parser_ctx = &parser_ctx;
 
-			auto &tokens = instance._parser_ctx->get_tokens(str);
-			log_assert(static_cast<bool>(instance._cfg_ctx), "SParser is not initialized");
-			// _last_failure is a value specific to this function but it is easier to
-			// pass it around everywhere as a property.
-			// Should be fine since can't call multiple parses at same time.
-			instance._last_failure = KError();
-			//TODO: error handling for root
-			auto node = instance._parse(tokens, 0, *instance._cfg_ctx->get_root()).value();
-			if (node->leaf_count() < tokens.size()) {
-				if (instance._last_failure.type() == KError::Type::UNKNOWN) {
-					return KError::codegen("Not all characters were consumed");
-				} else {
-					return instance._last_failure;
-				}
+		auto &tokens = instance._parser_ctx->get_tokens(str);
+		log_assert(static_cast<bool>(instance._cfg_ctx), "SParser is not initialized");
+		// _last_failure is a value specific to this function but it is easier to
+		// pass it around everywhere as a property.
+		// Should be fine since can't call multiple parses at same time.
+		instance._last_failure = Error(ErrorType::UNKNOWN);
+		//TODO: error handling for root
+		auto node = instance._parse(tokens, 0, *instance._cfg_ctx->get_root());
+		if (!node.has_value()) return node;
+		if (node.value()->leaf_count() < tokens.size()) {
+			if (instance._last_failure.type() == ErrorType::UNKNOWN) {
+				return Error(ErrorType::MISC, "Not all characters were consumed");
 			} else {
-				return node;
+				return instance._last_failure;
 			}
-		} catch_kerror;
+		} else {
+			return node;
+		}
 	}
 
-	KError SParserInstance::_set_failure(KError const &failure) {
-		if (_last_failure.type() == KError::Type::UNKNOWN) {
+	Error SParserInstance::_set_failure(Error const &failure) {
+		if (_last_failure.type() == ErrorType::UNKNOWN) {
 			_last_failure = failure;
 		} else if (failure.loc() > _last_failure.loc()) {
 			_last_failure = failure;
@@ -82,7 +80,7 @@ namespace cg {
 	 * Parser helper functions
 	 * *********************************/
 
-	util::Result<AstNode*, KError> SParserInstance::_parse(
+	util::Result<AstNode*, Error> SParserInstance::_parse(
 		std::vector<Token> const &tokens,
 		uint32_t i,
 		CfgRuleSet const &set
@@ -97,7 +95,7 @@ namespace cg {
 		return _last_failure;
 	}
 
-	util::Result<AstNode*, KError> SParserInstance::_parse(
+	util::Result<AstNode*, Error> SParserInstance::_parse(
 		std::vector<Token> const &tokens,
 		uint32_t i,
 		CfgRule const &rule,
@@ -117,7 +115,7 @@ namespace cg {
 		return &node;
 	}
 
-	util::Result<AstNode*, KError> SParserInstance::_parse(
+	util::Result<AstNode*, Error> SParserInstance::_parse(
 		std::vector<Token> const &tokens,
 		uint32_t i,
 		CfgLeaf const &leaf
@@ -130,7 +128,7 @@ namespace cg {
 					leaf.var_name(),
 					" used in grammar but not defined"
 				);
-				return _set_failure(KError::codegen(msg));
+				return _set_failure(Error(ErrorType::INVALID_GRAMMAR, msg));
 			}
 			return _parse(tokens, i, *set);
 		} else if (leaf.type() == CfgLeaf::Type::empty) {
@@ -152,7 +150,7 @@ namespace cg {
 				" but got ",
 				token
 			);
-			return _set_failure(KError::codegen(msg));
+			return _set_failure(Error(ErrorType::INVALID_GRAMMAR, msg));
 		}
 	}
 }

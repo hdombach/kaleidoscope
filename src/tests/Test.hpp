@@ -6,6 +6,7 @@
 #include <map>
 #include <iostream>
 
+#include "util/BaseError.hpp"
 #include "util/Env.hpp"
 #include "util/log.hpp"
 #include "util/KError.hpp"
@@ -173,6 +174,52 @@ inline void expect_kerror(
 	}
 }
 
+template<typename ErrorType>
+inline void expect_terror(
+	Test &test,
+	TypedError<ErrorType> error,
+	ErrorType type,
+	const char *lhs_string,
+	const char *rhs_string,
+	std::source_location loc=std::source_location::current()
+) {
+	if (error.type() == type) {
+		test.passed_test_count++;
+	} else {
+		auto &os = fail_head(test, loc) << std::endl;
+		os << "\tEXPECT_TERROR(" << lhs_string << ", " << rhs_string << ");" << std::endl;
+		os << std::endl;
+		os << "Mismatching error types. " << error.type() << " != " << type << std::endl;
+		os << std::endl;
+	}
+}
+
+template<typename Val, typename ErrorType>
+inline void expect_terror(
+	Test &test,
+	util::Result<Val, TypedError<ErrorType>> result,
+	ErrorType type,
+	const char *lhs_string,
+	const char *rhs_string,
+	std::source_location loc=std::source_location::current()
+) {
+	if (result.has_value()) {
+		auto &os = fail_head(test, loc) << std::endl;
+		os << "\tEXPECT_TERROR(" << lhs_string << ", " << rhs_string << ");" << std::endl;
+		os << std::endl;
+		os << lhs_string << " Did not return or throw an error." << std::endl;
+		os << std::endl;
+	} else if (result.error().type() == type) {
+		test.passed_test_count++;
+	} else {
+		auto &os = fail_head(test, loc) << std::endl;
+		os << "EXPECT_TERROR(" << lhs_string << ", " << rhs_string << ");" << std::endl;
+		os << std::endl;
+		os << "Mismatching error types. " << result.error().type() << " != " << type << std::endl;
+		os << std::endl;
+	}
+}
+
 
 #define EXPECT_EQ(lhs, rhs) {\
 	_test.total_test_count++;\
@@ -190,6 +237,12 @@ inline void expect_kerror(
 		os << std::endl; \
 		os << "\t"; \
 		log_error() << "Exception thrown " << e.what() << std::endl; \
+	} catch (BaseError const &e) { \
+		auto &os = fail_head(_test) << std::endl; \
+		os << "\tEXPECT_EQ(" #lhs ", " #rhs ");" << std::endl; \
+		os << std::endl; \
+		os << "\t"; \
+		log_error() << "Exception thrown " << e << std::endl; \
 	} catch (...) { \
 		auto &os = fail_head(_test) << std::endl; \
 		os << "\tEXPECT_EQ(" #lhs ", " #rhs ");" << std::endl; \
@@ -215,6 +268,12 @@ inline void expect_kerror(
 		os << std::endl; \
 		os << "\t"; \
 		log_error() << "Exception thrown " << e.what() << std::endl; \
+	} catch (BaseError const &e) { \
+		auto &os = fail_head(_test) << std::endl; \
+		os << "\tEXPECT(" #value ");" << std::endl; \
+		os << std::endl; \
+		os << "\t"; \
+		log_error() << "Exception thrown " << e << std::endl; \
 	} catch (...) { \
 		auto &os = fail_head(_test) << std::endl; \
 		os << "\tEXPECT(" #value ");" << std::endl; \
@@ -236,6 +295,12 @@ inline void expect_kerror(
 		os << std::endl; \
 		os << "\t"; \
 		log_error() << "Exception thrown " << e.what() << std::endl; \
+	} catch (BaseError const &e) { \
+		auto &os = fail_head(_test) << std::endl; \
+		os << "\tEXPECT_KERROR(" #value ", " #kerror_type ");" << std::endl; \
+		os << std::endl; \
+		os << "\t"; \
+		log_error() << "Exception thrown " << e << std::endl; \
 	} catch (...) { \
 		auto &os = fail_head(_test) << std::endl; \
 		os << "\ttEXPECT_KERROR(" #value ", " #kerror_type ");" << std::endl; \
@@ -245,5 +310,30 @@ inline void expect_kerror(
 	}\
 }
 
+
+#define EXPECT_TERROR(value, error_type) {\
+	try { \
+		_test.total_test_count++;\
+		expect_terror(_test, value, error_type, #value, #error_type); \
+	} catch (std::exception const &e) { \
+		auto &os = fail_head(_test) << std::endl; \
+		os << "\tEXPECT_KERROR(" #value ", " #error_type ");" << std::endl; \
+		os << std::endl; \
+		os << "\t"; \
+		log_error() << "Exception thrown " << e.what() << std::endl; \
+	} catch (BaseError const &e) { \
+		auto &os = fail_head(_test) << std::endl; \
+		os << "\tEXPECT_KERROR(" #value ", " #error_type ");" << std::endl; \
+		os << std::endl; \
+		os << "\t"; \
+		log_error() << "Exception thrown " << e << std::endl; \
+	} catch (...) { \
+		auto &os = fail_head(_test) << std::endl; \
+		os << "\tEXPECT_TERROR(" #value ", " #error_type ");" << std::endl; \
+		os << std::endl; \
+		os << "\t"; \
+		log_error() << "Unknown exception was thrown" << std::endl; \
+	} \
+}
 
 int test_main(std::vector<std::string> const &filters);

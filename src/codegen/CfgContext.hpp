@@ -6,9 +6,9 @@
 #include <memory>
 
 #include "util/result.hpp"
-#include "util/KError.hpp"
 #include "codegen/CfgNode.hpp"
 #include "Tokenizer.hpp"
+#include "Error.hpp"
 
 namespace cg {
 	/**
@@ -76,7 +76,7 @@ namespace cg {
 			 * - Make sure variables are valid
 			 * - Seperate all string leaf nodes
 			 */
-			util::Result<void, KError> prep();
+			util::Result<void, Error> prep();
 
 			/**
 			 * @brief Reduces the Context Free Grammar to only use basic operations

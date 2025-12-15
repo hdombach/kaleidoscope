@@ -10,7 +10,6 @@
 #include "Tokenizer.hpp"
 
 
-#include "util/KError.hpp"
 #include "util/log.hpp"
 #include "util/PrintTools.hpp"
 
@@ -75,7 +74,7 @@ namespace cg::abs {
 		}
 	}
 
-	util::Result<AbsoluteSolver::Ptr, KError> AbsoluteSolver::create(
+	util::Result<AbsoluteSolver::Ptr, Error> AbsoluteSolver::create(
 		CfgContext::Ptr &&context
 	) {
 		auto r = std::make_unique<AbsoluteSolver>();
@@ -110,62 +109,60 @@ namespace cg::abs {
 		return _table.print(os);
 	}
 
-	util::Result<AstNode*, KError> AbsoluteSolver::parse(
+	util::Result<AstNode*, Error> AbsoluteSolver::parse(
 		util::StringRef const &str,
 		ParserContext &parser_ctx
 	) {
-		try {
-			auto &tokens = parser_ctx.get_tokens(str);
-			uint32_t node_id=0;
-			// uint32_t is the current state
-			auto stack = std::vector<StackElement>();
-			stack.push_back(0);
-			auto t = tokens.begin();
-			while (1) {
-				log_assert(stack.back().is_table_state(), "Stack must end with a state");
-				uint32_t cur_state_id = stack.back().table_state();
-				auto cur_t = t->type();
-				log_trace() << "state is " << cur_state_id << std::endl;
-				log_trace() << "Looking up \"" << Token::type_str(cur_t) << "\"" << std::endl;
-				uint32_t action = _table.lookup_tok(cur_state_id, cur_t);
-				if (action == 0) {
-					return KError::codegen(util::f("Unexpected token: ", *t, " at ", t->loc()));
-				}
-				log_trace() << "action: " << _table.action_str(action) << std::endl;
+		auto &tokens = parser_ctx.get_tokens(str);
+		uint32_t node_id=0;
+		// uint32_t is the current state
+		auto stack = std::vector<StackElement>();
+		stack.push_back(0);
+		auto t = tokens.begin();
+		while (1) {
+			log_assert(stack.back().is_table_state(), "Stack must end with a state");
+			uint32_t cur_state_id = stack.back().table_state();
+			auto cur_t = t->type();
+			log_trace() << "state is " << cur_state_id << std::endl;
+			log_trace() << "Looking up \"" << Token::type_str(cur_t) << "\"" << std::endl;
+			uint32_t action = _table.lookup_tok(cur_state_id, cur_t);
+			if (action == 0) {
+				return Error(ErrorType::UNEXPECTED_TOKEN, util::f("Unexpected token: ", *t, " at ", t->loc()));
+			}
+			log_trace() << "action: " << _table.action_str(action) << std::endl;
 
-				if (action == AbsoluteTable::ACCEPT_ACTION) {
-					log_trace() << "Accepting" << std::endl;
-					break;
-				} else if (action & AbsoluteTable::REDUCE_MASK) {
-					uint32_t production_rule_id = action & ~AbsoluteTable::REDUCE_MASK;
-					_reduce(
-						stack,
-						production_rule_id,
-						node_id,
-						parser_ctx
-					);
-				} else {
-					if (cur_t == Token::Type::Eof) {
-						return KError::codegen("Reached EOF unexpectedly");
-					}
-					//TODO: update source location
-					stack.push_back(StackElement(
-							parser_ctx.create_tok_node(*t)
-					));
-					log_trace() << "shifted token: " << *t << std::endl;
-					stack.push_back(StackElement(action)); // push back the next state
-					t++;
+			if (action == AbsoluteTable::ACCEPT_ACTION) {
+				log_trace() << "Accepting" << std::endl;
+				break;
+			} else if (action & AbsoluteTable::REDUCE_MASK) {
+				uint32_t production_rule_id = action & ~AbsoluteTable::REDUCE_MASK;
+				_reduce(
+					stack,
+					production_rule_id,
+					node_id,
+					parser_ctx
+				);
+			} else {
+				if (cur_t == Token::Type::Eof) {
+					return Error(ErrorType::UNEXPECTED_TOKEN, util::f("Reached EOF unexpectedly"));
 				}
+				//TODO: update source location
+				stack.push_back(StackElement(
+						parser_ctx.create_tok_node(*t)
+				));
+				log_trace() << "shifted token: " << *t << std::endl;
+				stack.push_back(StackElement(action)); // push back the next state
+				t++;
 			}
-			if (stack.size() != 3) {
-				log_debug() << "stack is " << util::plist(stack) << std::endl;
-				return KError::codegen("Stack must contain 3 elements");
-			}
-			if (!stack[1].is_node()) {
-				return KError::codegen("The second element must be a node");
-			}
-			return &stack[1].node();
-		} catch_kerror;
+		}
+		if (stack.size() != 3) {
+			log_debug() << "stack is " << util::plist(stack) << std::endl;
+			return Error(ErrorType::INVALID_ABS_STACK, "Stack must contain 3 elements");
+		}
+		if (!stack[1].is_node()) {
+			return Error(ErrorType::INVALID_ABS_STACK, "The second element must be a node");
+		}
+		return &stack[1].node();
 	}
 
 	CfgContext const &AbsoluteSolver::cfg() const {

@@ -4,10 +4,9 @@
 #include <set>
 
 #include "util/FileLocation.hpp"
-#include "util/KError.hpp"
 #include "util/result.hpp"
-#include "util/StringRef.hpp"
 #include "Tokenizer.hpp"
+#include "Error.hpp"
 
 namespace cg {
 	/**
@@ -62,11 +61,11 @@ namespace cg {
 
 			void add_child(AstNode &node);
 
-			util::Result<AstNode*, KError> child_with_cfg(std::string const &name) const;
+			util::Result<AstNode*, Error> child_with_cfg(std::string const &name) const;
 
 			std::vector<AstNode*> children_with_cfg(std::string const &name) const;
 
-			util::Result<AstNode*, KError> child_with_tok(Token::Type type) const;
+			util::Result<AstNode*, Error> child_with_tok(Token::Type type) const;
 
 			/**
 			 * @brief The rule that was used to generate this node
@@ -102,9 +101,11 @@ namespace cg {
 
 			std::ostream &print_debug(std::ostream &os) const;
 			std::ostream &print_pre_order(std::ostream &os) const;
+			std::ostream &print_src(std::ostream &os) const;
 			std::ostream &print_dot(std::ostream &os, std::string const &name) const;
 
 			std::string str() const;
+			std::string str_src() const;
 			std::string str_pre_order() const;
 
 		private:

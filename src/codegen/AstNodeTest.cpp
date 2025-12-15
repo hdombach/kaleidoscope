@@ -1,4 +1,4 @@
-
+#include "Error.hpp"
 #include "codegen/CfgContext.hpp"
 #include "tests/Test.hpp"
 #include "SParser.hpp"
@@ -56,7 +56,7 @@ namespace cg {
 		c.prep().value();
 
 		EXPECT_EQ(f.match("Hello").value(), 5);
-		EXPECT_KERROR(f.match("{\% %}"), KError::Type::CODEGEN);
+		EXPECT_TERROR(f.match("{\% %}"), cg::ErrorType::INVALID_PARSE);
 	}
 
 	TEST_F(AstNodeTest, match_number) {
@@ -71,11 +71,11 @@ namespace cg {
 
 		EXPECT(c.prep());
 
-		EXPECT_KERROR(f.match("{{491f}}"), KError::Type::CODEGEN);
-		EXPECT_KERROR(f.match("{{hello}}"), KError::Type::CODEGEN);
+		EXPECT_TERROR(f.match("{{491f}}"), ErrorType::INVALID_PARSE);
+		EXPECT_TERROR(f.match("{{hello}}"), ErrorType::INVALID_PARSE);
 		EXPECT_EQ(f.match("{{192.}}").value(), 8);
 		EXPECT_EQ(f.match("{{.89141}}").value(), 10);
-		EXPECT_KERROR(f.match("{{..123}}"), KError::Type::CODEGEN);
+		EXPECT_TERROR(f.match("{{..123}}"), ErrorType::INVALID_PARSE);
 		EXPECT_EQ(f.match("{{.}}").value(), 5);
 		EXPECT_EQ(f.match("{{15.9}}").value(), 8);
 	}

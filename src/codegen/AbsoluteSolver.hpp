@@ -12,6 +12,7 @@
 #include "AstNode.hpp"
 #include "AbsoluteTable.hpp"
 #include "Parser.hpp"
+#include "Error.hpp"
 
 namespace cg::abs {
 	/**
@@ -63,7 +64,7 @@ namespace cg::abs {
 			AbsoluteSolver() = default;
 			~AbsoluteSolver() {}
 
-			static util::Result<AbsoluteSolver::Ptr, KError> create(
+			static util::Result<AbsoluteSolver::Ptr, Error> create(
 				CfgContext::Ptr &&ctx
 			);
 
@@ -72,7 +73,7 @@ namespace cg::abs {
 			using Parser::match;
 			using Parser::parse;
 
-			util::Result<AstNode*, KError> parse(
+			util::Result<AstNode*, Error> parse(
 				util::StringRef const &str,
 				ParserContext &parser_ctx
 			) override;

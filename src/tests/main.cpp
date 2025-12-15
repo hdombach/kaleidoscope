@@ -2,6 +2,7 @@
 
 #include "Test.hpp"
 #include "util/log.hpp"
+#include "util/ThreadPool.hpp"
 
 std::vector<std::string> g_filters;
 
@@ -29,5 +30,9 @@ int main(int argc, char **argv) {
 	}
 	log_event() << "flags is " << std::bitset<8>(util::g_log_flags) << std::endl;
 
-	return test_main(g_filters);
+	auto r = test_main(g_filters);
+
+	ThreadPool::DEFAULT.shutdown();
+
+	return r;
 }

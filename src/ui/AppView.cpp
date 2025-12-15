@@ -506,7 +506,7 @@ namespace ui {
 		if (resource.type() != types::ShaderResource::Type::Texture) {
 			return;
 		}
-		auto &texture = resource.as_texture().value();
+		auto texture = resource.as_texture().value();
 		if (ImGui::BeginCombo(name.data(), texture->name().data())) {
 			for (auto &t : resource_manager.textures()) {
 				if (ImGui::Selectable(t->name().data(), texture->id() == t->id())) {

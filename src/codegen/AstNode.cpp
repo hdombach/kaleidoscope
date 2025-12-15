@@ -133,13 +133,13 @@ namespace cg {
 		}
 	}
 
-	util::Result<AstNode*, KError> AstNode::child_with_cfg(std::string const &name) const {
+	util::Result<AstNode*, Error> AstNode::child_with_cfg(std::string const &name) const {
 		for (auto &child : *this) {
 			if (child._cfg_rule == name) {
 				return &child;
 			}
 		}
-		return KError::codegen(util::f("AstNode ", str(), " does not contain child with name ", name));
+		return Error(ErrorType::MISSING_AST_NODE, util::f("AstNode ", str(), " does not contain child with name \"", name, "\""));
 	}
 
 	std::vector<AstNode*> AstNode::children_with_cfg(std::string const &name) const {
@@ -152,13 +152,13 @@ namespace cg {
 		return result;
 	}
 
-	util::Result<AstNode*, KError> AstNode::child_with_tok(Token::Type type) const {
+	util::Result<AstNode*, Error> AstNode::child_with_tok(Token::Type type) const {
 		for (auto &child : *this) {
 			if (child.tok().type() == type) {
 				return &child;
 			}
 		}
-		return KError::codegen(util::f("AstNode ", str(), " does not contain child with type ", type));
+		return Error(ErrorType::MISSING_AST_NODE, util::f("AstNode ", str(), " does not contain child with type ", type));
 	}
 
 	Token const &AstNode::tok() const {
@@ -285,6 +285,17 @@ namespace cg {
 		return os;
 	}
 
+	std::ostream &AstNode::print_src(std::ostream &os) const {
+		if (_type == Type::Leaf) {
+			os << tok().content();
+		} else {
+			for (auto &child : *this) {
+				child.print_src(os);
+			}
+		}
+		return os;
+	}
+
 	std::ostream &AstNode::print_dot(
 		std::ostream &os,
 		std::string const &name
@@ -302,6 +313,12 @@ namespace cg {
 	std::string AstNode::str() const {
 		auto ss = std::stringstream();
 		print_debug(ss);
+		return ss.str();
+	}
+
+	std::string AstNode::str_src() const {
+		auto ss = std::stringstream();
+		print_src(ss);
 		return ss.str();
 	}
 

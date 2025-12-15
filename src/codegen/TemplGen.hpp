@@ -3,13 +3,13 @@
 #include <string>
 #include <vector>
 
+#include "Error.hpp"
 #include "CfgContext.hpp"
 #include "TemplObj.hpp"
 #include "AstNode.hpp"
 #include "Parser.hpp"
 #include "AbsoluteSolver.hpp"
 #include "util/result.hpp"
-#include "util/KError.hpp"
 
 namespace cg {
 	/**
@@ -25,13 +25,13 @@ namespace cg {
 			TemplGen &operator=(TemplGen const &other) = delete;
 			TemplGen &operator=(TemplGen &&other);
 
-			static util::Result<std::string, KError> codegen(
+			static util::Result<std::string, Error> codegen(
 				std::string const &str,
 				TemplObj const &args,
 				std::string const &filename = "codegen"
 			);
 
-			static util::Result<std::string, KError> codegen(
+			static util::Result<std::string, Error> codegen(
 				std::string const &str,
 				TemplDict const &args,
 				std::string const &filename = "codegen"
@@ -40,13 +40,13 @@ namespace cg {
 			CfgContext const &cfg() const { return _parser->cfg(); }
 			CfgContext &cfg() { return _parser->cfg(); }
 		private:
-			static util::Result<void, KError> _setup_parser();
+			static util::Result<void, Error> _setup_parser();
 			static Parser::Ptr _parser;
 			ParserContext _parser_result;
 
 		private:
-			using CodegenRes = util::Result<std::string, KError>;
-			using EvalRes = util::Result<TemplObj, KError>;
+			using CodegenRes = util::Result<std::string, Error>;
+			using EvalRes = util::Result<TemplObj, Error>;
 
 			CodegenRes _codegen(AstNode const &node, TemplDict &args);
 
@@ -65,10 +65,10 @@ namespace cg {
 			CodegenRes _cg_statement(AstNode const &node, TemplDict &args);
 			CodegenRes _cg_sif(AstNode const &node, TemplDict &args);
 			CodegenRes _cg_sfor(AstNode const &node, TemplDict &args);
-			util::Result<void, KError> _cg_smacro(AstNode const &node, TemplDict &args);
+			util::Result<void, Error> _cg_smacro(AstNode const &node, TemplDict &args);
 			CodegenRes _cg_sinclude(AstNode const &node, TemplDict &args);
 
-			EvalRes _eval(util::Result<AstNode, KError> const &node, TemplDict const &args);
+			EvalRes _eval(util::Result<AstNode, Error> const &node, TemplDict const &args);
 			EvalRes _eval(AstNode const &node, TemplDict const &args);
 
 			EvalRes _eval_exp_sing(AstNode const &node, TemplDict const &args);
@@ -102,13 +102,13 @@ namespace cg {
 			);
 			EvalRes _eval_filter(AstNode const &node, TemplDict const &args);
 
-			util::Result<bool, KError> _tag_keep_padding(AstNode const &node, bool def);
+			util::Result<bool, Error> _tag_keep_padding(AstNode const &node, bool def);
 
-			util::Result<void, KError> _add_builtin_identifier(
+			util::Result<void, Error> _add_builtin_identifier(
 				std::string const &name,
 				TemplObj const &func,
 				TemplDict &args
 			);
-			util::Result<void, KError> _add_builtin_identifiers(TemplDict &args);
+			util::Result<void, Error> _add_builtin_identifiers(TemplDict &args);
 	};
 }

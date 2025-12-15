@@ -66,6 +66,7 @@ class BaseError {
 
 		std::string const &msg() { return _frags.back().msg; }
 		std::vector<util::ErrorFrag> const &frags() const { return _frags; }
+		util::FileLocation loc() const { return _frags.back().location; }
 
 		std::ostream &print(std::ostream &os) const {
 			for (auto &f : util::reverse(_frags)) {
@@ -99,7 +100,8 @@ template<typename ErrorT>
 				BaseError const &other,
 				FLoc loc=SLoc::current()
 			):
-				BaseError(type_str(type), msg, other, loc)
+				BaseError(type_str(type), msg, other, loc),
+				_type(type)
 			{ }
 
 			TypedError(
@@ -107,14 +109,16 @@ template<typename ErrorT>
 				std::string const &msg,
 				FLoc loc=SLoc::current()
 			):
-				BaseError(type_str(type), msg, loc)
+				BaseError(type_str(type), msg, loc),
+				_type(type)
 			{ }
 
 			TypedError(
 				ErrorT type,
 				FLoc loc=SLoc::current()
 			):
-				BaseError(type_str(type), "", loc)
+				BaseError(type_str(type), "", loc),
+				_type(type)
 			{ }
 
 			static const char *type_str(ErrorT t);

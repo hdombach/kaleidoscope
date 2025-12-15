@@ -6,9 +6,8 @@
 #include <string>
 #include <functional>
 
-#include "util/log.hpp"
 #include "util/result.hpp"
-#include "util/KError.hpp"
+#include "Error.hpp"
 
 namespace cg {
 	class TemplObj;
@@ -20,7 +19,7 @@ namespace cg {
 	using TemplBool = bool;
 	using TemplInt = int64_t;
 
-	using TemplFuncRes = util::Result<TemplObj, KError>;
+	using TemplFuncRes = util::Result<TemplObj, Error>;
 	using TemplFunc = std::function<TemplFuncRes(TemplList)>;
 
 	class TemplObj {
@@ -45,9 +44,11 @@ namespace cg {
 			TemplObj(bool val);
 			TemplObj(int64_t val);
 			TemplObj(int val);
+			TemplObj(uint32_t val);
 			TemplObj(TemplFunc const &func);
 			/** @brief Catchall prob very dangerous so we'll see*/
-			template<typename T> TemplObj(T const &v): _v(v) {}
+			//template<typename T> TemplObj(T const &v): _v(v) {}
+			//TODO: potentially remove the catchall
 
 			/**
 			 * @brief Creates object or list depending on input
@@ -84,21 +85,21 @@ namespace cg {
 			 * @brief Gets string representation
 			 * @param[in] convert Whether type is automatically converted
 			 */
-			util::Result<std::string, KError> str(bool convert=true) const;
+			util::Result<std::string, Error> str(bool convert=true) const;
 
 			Type type() const;
 
 			const char *type_str() const;
 
-			util::Result<TemplList, KError> list() const;
+			util::Result<TemplList, Error> list() const;
 
-			util::Result<TemplBool, KError> boolean() const;
+			util::Result<TemplBool, Error> boolean() const;
 
-			util::Result<TemplInt, KError> integer() const;
+			util::Result<TemplInt, Error> integer() const;
 
-			util::Result<TemplDict, KError> dict() const;
+			util::Result<TemplDict, Error> dict() const;
 
-			util::Result<TemplFunc, KError> func() const;
+			util::Result<TemplFunc, Error> func() const;
 
 			TemplFuncRes get_attribute(std::string const &name) const;
 
@@ -173,10 +174,13 @@ namespace cg {
 
 	inline TemplFunc mk_templfuncs() {
 		return [](TemplList) -> TemplFuncRes {
-			return KError::codegen("Unknown ");
+			return Error(ErrorType::INTERNAL, "A function was not passed to mk_templfuncs");
 		};
 	}
 
+	/**
+	 * @brief Used for when making a function that is overloaded
+	 */
 	template<typename T, typename ... Rest>
 	inline TemplFunc mk_templfuncs(T first, Rest...rest) {
 		auto first_func = mk_templfunc(first);
@@ -201,7 +205,7 @@ namespace cg {
 	) {
 		return [func, arg_index](TemplList l) -> TemplFuncRes {
 			if (l.size() != 0) {
-				return KError::codegen(util::f("Expects ", arg_index, " arguments"));
+				return Error(ErrorType::RUNTIME_CG, util::f("Function expects ", arg_index, "arguments"));
 			}
 			return func();
 		};
@@ -214,10 +218,10 @@ namespace cg {
 	) {
 		return [func, arg_index](TemplList l) -> TemplFuncRes {
 			if (l.size() == 0) {
-				return KError::codegen(util::f("Requires more than ", arg_index, " args"));
+				return Error(ErrorType::RUNTIME_CG, util::f("Function requires more than ", arg_index, " args"));
 			}
 			if (l[0].type() != TemplObj::Type::String) {
-				return KError::codegen(util::f("Function expects arg at index ", arg_index, " to be string"));
+				return Error(ErrorType::RUNTIME_CG, util::f("Functino expects arg at index ", arg_index, " to be a string"));
 			}
 
 			auto small_l = TemplList(l.begin()+1, l.end());
@@ -233,10 +237,10 @@ namespace cg {
 	) {
 		return [func, arg_index](TemplList l) -> TemplFuncRes {
 			if (l.size() == 0) {
-				return KError::codegen(util::f("Requires more than ", arg_index, " args"));
+				return Error(ErrorType::RUNTIME_CG, util::f("Function requires more than ", arg_index, " args"));
 			}
 			if (l[0].type() != TemplObj::Type::List) {
-				return KError::codegen(util::f("Function expects arg at index ", arg_index, " to be list"));
+				return Error(ErrorType::RUNTIME_CG, util::f("Function expects arg at index ", arg_index, " to be a list"));
 			}
 
 			auto small_l = TemplList(l.begin()+1, l.end());
@@ -252,10 +256,10 @@ namespace cg {
 	) {
 		return [func, arg_index](TemplList l) -> TemplFuncRes {
 			if (l.size() == 0) {
-				return KError::codegen(util::f("Requires more than ", arg_index, " args"));
+				return Error(ErrorType::RUNTIME_CG, util::f("Function requires more than ", arg_index, " args"));
 			}
 			if (l[0].type() != TemplObj::Type::Dict) {
-				return KError::codegen(util::f("Function expects arg at index ", arg_index, " to be string"));
+				return Error(ErrorType::RUNTIME_CG, util::f("Function expects arg at index ", arg_index, " to be a dictionary"));
 			}
 
 			auto small_l = TemplList(l.begin()+1, l.end());
@@ -272,10 +276,10 @@ namespace cg {
 	) {
 		return [func, arg_index](TemplList l) -> TemplFuncRes {
 			if (l.size() == 0) {
-				return KError::codegen(util::f("Requires more than ", arg_index, " args"));
+				return Error(ErrorType::RUNTIME_CG, util::f("Function requires more than ", arg_index, " args"));
 			}
 			if (l[0].type() != TemplObj::Type::Boolean) {
-				return KError::codegen(util::f("Function expects arg at index ", arg_index, " to be bool"));
+				return Error(ErrorType::RUNTIME_CG, util::f("Function expects arg at index ", arg_index, " to be a bool"));
 			}
 
 			auto small_l = TemplList(l.begin()+1, l.end());
@@ -291,10 +295,10 @@ namespace cg {
 	) {
 		return [func, arg_index](TemplList l) -> TemplFuncRes {
 			if (l.size() == 0) {
-				return KError::codegen(util::f("Requires more than ", arg_index, " args"));
+				return Error(ErrorType::RUNTIME_CG, util::f("Requires more than ", arg_index, " args"));
 			}
 			if (l[0].type() != TemplObj::Type::Integer) {
-				return KError::codegen(util::f("Function expects arg at index ", arg_index, " to be int"));
+				return Error(ErrorType::RUNTIME_CG, util::f("Function expects arg at index ", arg_index, " to be int"));
 			}
 
 			auto small_l = TemplList(l.begin()+1, l.end());
@@ -310,10 +314,10 @@ namespace cg {
 	) {
 		return [func, arg_index](TemplList l) -> TemplFuncRes {
 			if (l.size() == 0) {
-				return KError::codegen(util::f("Requires more than ", arg_index, " args"));
+				return Error(ErrorType::RUNTIME_CG, util::f("Function requires more than ", arg_index, " args"));
 			}
 			if (l[0].type() != TemplObj::Type::Func) {
-				return KError::codegen(util::f("Function expects arg at index ", arg_index, " to be function"));
+				return Error(ErrorType::RUNTIME_CG, util::f("Function expects arg at index ", arg_index, " to be a function"));
 			}
 
 			auto small_l = TemplList(l.begin()+1, l.end());
@@ -329,7 +333,7 @@ namespace cg {
 	) {
 		return [func, arg_index](TemplList l) -> TemplFuncRes {
 			if (l.size() == 0) {
-				return KError::codegen(util::f("Requires more than ", arg_index, "args"));
+				return Error(ErrorType::RUNTIME_CG, util::f("Function requires more than ", arg_index, " args"));
 			}
 			auto small_l = TemplList(l.begin()+1, l.end());
 			auto small_func = [func, l](Rest...rest){ return func(l[0], rest...); };

@@ -8,6 +8,7 @@
 #include "CfgContext.hpp"
 #include "Tokenizer.hpp"
 #include "ParserContext.hpp"
+#include "Error.hpp"
 
 namespace cg {
 	class Parser {
@@ -15,16 +16,18 @@ namespace cg {
 			using Ptr = std::unique_ptr<Parser>;
 			virtual ~Parser() {}
 
-			inline virtual util::Result<size_t, KError> match(
+			inline virtual util::Result<size_t, Error> match(
 				util::StringRef const &str
 			) {
-				try {
-					auto r = ParserContext();
-					return parse(str, r).value()->consumed_all().size();
-				} catch_kerror;
+				auto r = ParserContext();
+				if (auto consumed = parse(str, r)) {
+					return consumed.value()->consumed_all().size();
+				} else {
+					return Error(ErrorType::INVALID_PARSE, "Could not match", consumed.error());
+				}
 			}
 
-			virtual util::Result<AstNode*, KError> parse(
+			virtual util::Result<AstNode*, Error> parse(
 				util::StringRef const &str,
 				ParserContext &result
 			) = 0;

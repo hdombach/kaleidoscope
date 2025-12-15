@@ -1,7 +1,7 @@
 #include "CfgContext.hpp"
 #include "tests/Test.hpp"
-#include "util/KError.hpp"
 #include "util/log.hpp"
+#include "Error.hpp"
 
 
 namespace cg {
@@ -72,10 +72,10 @@ namespace cg {
 		}
 	}
 
-	util::Result<void, KError> CfgContext::prep() { 
+	util::Result<void, Error> CfgContext::prep() { 
 		if (_root_name.empty()) {
 			log_debug() << "root name is empty" << std::endl;
-			return KError::codegen("CfgContext must contain a root");
+			return Error(ErrorType::INTERNAL, "CfgContext must contain a root");
 		}
 		for (auto &[key, i] : _cfg_map) {
 			auto &set = _cfg_rule_sets[i];
@@ -83,18 +83,11 @@ namespace cg {
 				for (auto &leaf : rule.leaves()) {
 					if (leaf.type() == CfgLeaf::Type::var) {
 						if (!_cfg_map.contains(leaf.var_name())) {
-							return KError::codegen(util::f(
-								"Variable name ",
-								leaf.var_name(),
-								" does not exist."
-							));
+							return Error(ErrorType::INTERNAL, util::f("Variable name ", leaf.var_name(), " does not exist."));
 						}
 					} else if (leaf.type() == CfgLeaf::Type::empty) {
 						if (rule.leaves().size() != 1) {
-							return KError::codegen(util::f(
-								"The empty leaf must be in it's own rule:\n",
-								set.str(true)
-							));
+							return Error(ErrorType::INTERNAL, util::f("The empty leaf must be in it's own rule:\n", set.str(true)));
 						}
 					}
 				}
@@ -105,23 +98,23 @@ namespace cg {
 		{
 			auto root = *get_root();
 			if (root.rules().size() != 1) {
-				return KError::codegen(util::f("Root rule set must consist of one rule."));
+				return Error(ErrorType::INTERNAL, "Root rule set must consist of one rule.");
 			}
 
 			auto rule = root.rules().front();
 			auto msg = "Rot rule must have the structure \"<var_name> eof\"";
 
 			if (rule.leaves().size() != 2) {
-				return KError::codegen(msg);
+				return Error(ErrorType::INTERNAL, msg);
 			}
 			if (rule.leaves().front().type() != CfgLeaf::Type::var) {
-				return KError::codegen(msg);
+				return Error(ErrorType::INTERNAL, msg);
 			}
 			if (rule.leaves().back().type() != CfgLeaf::Type::token) {
-				return KError::codegen(msg);
+				return Error(ErrorType::INTERNAL, msg);
 			}
 			if (rule.leaves().back().token_type() != Token::Type::Eof) {
-				return KError::codegen(msg);
+				return Error(ErrorType::INTERNAL, msg);
 			}
 		}
 
