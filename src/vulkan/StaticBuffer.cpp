@@ -37,7 +37,7 @@ namespace vulkan {
 				0,
 				&mapped_data);
 		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Cannot map memory", {res});
+			return Error(ErrorType::VULKAN, "Cannot map memory", VkError(res));
 		}
 
 		memcpy(mapped_data, data, range);

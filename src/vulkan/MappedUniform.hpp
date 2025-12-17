@@ -40,7 +40,7 @@ namespace vulkan {
 				if (res == VK_SUCCESS) {
 					return {std::move(result)};
 				} else {
-					return Error(ErrorType::VULKAN, "Could not map memory", {res});
+					return Error(ErrorType::VULKAN, "Could not map memory", VkError(res));
 				}
 			}
 

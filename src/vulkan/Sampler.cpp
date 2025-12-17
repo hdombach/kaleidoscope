@@ -15,7 +15,7 @@ namespace vulkan {
 
 		auto err = vkCreateSampler(Graphics::DEFAULT->device(), &sampler_info, nullptr, &result._sampler);
 		if (err != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create linear sampler", {err});
+			return Error(ErrorType::VULKAN, "Could not create linear sampler", VkError(err));
 		}
 
 		return result;
@@ -32,7 +32,7 @@ namespace vulkan {
 
 		auto err = vkCreateSampler(Graphics::DEFAULT->device(), &sampler_info, nullptr, &result._sampler);
 		if (err != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create nearest sampler", {err});
+			return Error(ErrorType::VULKAN, "Could not create nearest sampler", VkError(err));
 		}
 
 		return result;

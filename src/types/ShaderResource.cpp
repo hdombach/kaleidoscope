@@ -10,7 +10,6 @@
 #include "vulkan/MappedUniform.hpp"
 #include "vulkan/Texture.hpp"
 #include "util/format.hpp"
-#include "util/KError.hpp"
 
 namespace types {
 	ShaderResource ShaderResource::create_primitive(
@@ -109,7 +108,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		};
 	}
 
-	util::Result<void, KError> ShaderResource::set_texture(const vulkan::Texture *texture) {
+	util::Result<void, BaseError> ShaderResource::set_texture(const vulkan::Texture *texture) {
 		if (type() == Type::Texture) {
 			if (texture != _as_texture) {
 				_set_dirty_bit();
@@ -117,7 +116,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 			}
 			return {};
 		} else {
-			return KError::invalid_arg("ShaderResource is not a texture");
+			return BaseError("Invalid arg: ShaderResource is not a texture");
 		}
 	}
 
@@ -129,7 +128,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		}
 	}
 
-	util::Result<void, KError> ShaderResource::set_mat4(glm::mat4 const &val) {
+	util::Result<void, BaseError> ShaderResource::set_mat4(glm::mat4 const &val) {
 		if (type() == Type::Mat4) {
 			if (val != _as_mat4) {
 				_set_dirty_bit();
@@ -137,7 +136,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 			}
 			return {};
 		} else {
-			return KError::invalid_arg("ShaderResource is not a mat4");
+			return BaseError("Invalid arg: ShaderResource is not a mat4");
 		}
 	}
 	util::Result<glm::mat4, void> ShaderResource::as_mat4() const {
@@ -148,7 +147,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		}
 	}
 
-	util::Result<void, KError> ShaderResource::set_vec3(glm::vec3 const &val) {
+	util::Result<void, BaseError> ShaderResource::set_vec3(glm::vec3 const &val) {
 		if (type() == Type::Vec3) {
 			if (val != _as_vec3) {
 				_set_dirty_bit();
@@ -157,7 +156,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 			}
 			return {};
 		} else {
-			return KError::invalid_arg("ShaderResource is not a vec3");
+			return BaseError("Invalid arg: ShaderResource is not a vec3");
 		}
 	}
 
@@ -169,7 +168,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		}
 	}
 
-	util::Result<void, KError> ShaderResource::set_color3(const glm::vec3 &val) {
+	util::Result<void, BaseError> ShaderResource::set_color3(const glm::vec3 &val) {
 		if (type() == Type::Color3) {
 			if (val != _as_vec3) {
 				_set_dirty_bit();
@@ -178,7 +177,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 			}
 			return {};
 		} else {
-			return KError::invalid_arg("Shader Resource is not a color");
+			return BaseError("Invalid arg: ShaderResource is not a color");
 		}
 	}
 
@@ -191,7 +190,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		}
 	}
 
-	util::Result<void, KError> ShaderResource::set_float(float val) {
+	util::Result<void, BaseError> ShaderResource::set_float(float val) {
 		if (type() == Type::Float) {
 			if (val != _as_float) {
 				_set_dirty_bit();
@@ -199,7 +198,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 			}
 			return {};
 		} else {
-			return KError::invalid_arg("ShaderResource is not a float");
+			return BaseError("Invalid arg: ShaderResource is not a float");
 		}
 	}
 
@@ -211,7 +210,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		}
 	}
 
-	util::Result<void, KError> ShaderResource::set_uint32(uint32_t val) {
+	util::Result<void, BaseError> ShaderResource::set_uint32(uint32_t val) {
 		if (type() == Type::Uint) {
 			if (val != _as_uint32) {
 				_set_dirty_bit();
@@ -219,7 +218,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 			}
 			return {};
 		} else {
-			return KError::invalid_arg("ShaderResource is not a float");
+			return BaseError("Invalid arg: ShaderResource is not an int");
 		}
 	}
 
@@ -319,7 +318,9 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		for (auto &resource : _resources) {
 			if (resource.name() == name) {
 				log_trace() << "set texture2 " << texture->id() << std::endl;
-				resource.set_texture(texture);
+				if (auto err = resource.set_texture(texture).move_or()) {
+					log_error() << "Could not set texture: " << err.value() << std::endl;
+				}
 				return;
 			}
 		}
@@ -330,7 +331,9 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	void ShaderResources::set_mat4(const std::string &name, const glm::mat4 &val) {
 		for (auto &resource : _resources) {
 			if (resource.name() == name) {
-				resource.set_mat4(val);
+				if (auto err = resource.set_mat4(val).move_or()) {
+					log_error() << "Could not set mat4: " << err.value() << std::endl;
+				}
 				return;
 			}
 		}
@@ -340,7 +343,9 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	void ShaderResources::set_vec3(std::string const &name, glm::vec3 const &val) {
 		for (auto &resource : _resources) {
 			if (resource.name() == name) {
-				resource.set_vec3(val);
+				if (auto err = resource.set_vec3(val).move_or()) {
+					log_error() << "Could not set vec3: " << err.value() << std::endl;
+				}
 				return;
 			}
 		}
@@ -350,7 +355,9 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	void ShaderResources::set_color3(const std::string &name, const glm::vec3 &val) {
 		for (auto &resource : _resources) {
 			if (resource.name() == name) {
-				resource.set_color3(val);
+				if (auto err = resource.set_color3(val).move_or()) {
+					log_error() << "Could not set color3: " << err.value() << std::endl;
+				}
 				return;
 			}
 		}
@@ -360,7 +367,9 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	void ShaderResources::set_float(const std::string &name, float &val) {
 		for (auto &resource : _resources) {
 			if (resource.name() == name) {
-				resource.set_float(val);
+				if (auto err = resource.set_float(val).move_or()) {
+					log_error() << "Could not set float: " << err.value() << std::endl;
+				}
 				return;
 			}
 		}
@@ -370,14 +379,16 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	void ShaderResources::set_uint32(const std::string &name, uint32_t &val) {
 		for (auto &resource : _resources) {
 			if (resource.name() == name) {
-				resource.set_uint32(val);
+				if (auto err = resource.set_uint32(val).move_or()) {
+					log_error() << "Could not set uint32_t: " << err.value() << std::endl;
+				}
 				return;
 			}
 		}
 		add_resource(ShaderResource::create_primitive(name, val));
 	}
 
-	util::Result<vulkan::Uniform, KError> ShaderResources::create_prim_uniform() const {
+	util::Result<vulkan::Uniform, BaseError> ShaderResources::create_prim_uniform() const {
 		size_t uniform_s = 0;
 		for (auto resource : get()) {
 			uniform_s += _calc_alignment(resource->alignment(), uniform_s);

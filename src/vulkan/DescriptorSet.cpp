@@ -97,7 +97,7 @@ namespace vulkan {
 		);
 
 		if (r != VK_SUCCESS) {
-			return Error(ErrorType::INVALID_ARG, "Could not create descriptor set layout", {r});
+			return Error(ErrorType::INVALID_ARG, "Could not create descriptor set layout", VkError(r));
 		}
 
 		return layout;
@@ -304,7 +304,7 @@ namespace vulkan {
 		
 		for (auto &image_view : image_views) {
 			if (image_view == VK_NULL_HANDLE) {
-				//return KError::invalid_arg("image_views cannot contain VK_NULL_HANDLE");
+				//return Error(ErrorType::INVALID_ARG, "image_views cannot contain VK_NULL_HANDLE");
 			}
 			auto image_info = VkDescriptorImageInfo{};
 			image_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -436,7 +436,7 @@ namespace vulkan {
 			result._descriptor_sets.data()
 		);
 		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Cannot allocate descriptor sets", {res});
+			return Error(ErrorType::VULKAN, "Cannot allocate descriptor sets", VkError(res));
 		}
 
 		for (size_t frame = 0; frame < builder.frame_count(); frame++) {

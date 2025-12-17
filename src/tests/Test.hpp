@@ -9,7 +9,6 @@
 #include "util/BaseError.hpp"
 #include "util/Env.hpp"
 #include "util/log.hpp"
-#include "util/KError.hpp"
 #include "util/result.hpp"
 
 struct Test;
@@ -126,54 +125,6 @@ inline void expect(
 	}
 }
 
-inline void expect_kerror(
-	Test &test,
-	KError error,
-	KError::Type type,
-	const char *lhs_string,
-	const char *rhs_string,
-	std::source_location loc=std::source_location::current()
-) {
-	if (error.type() == type) {
-		test.passed_test_count++;
-	} else {
-		auto &os = fail_head(test, loc) << std::endl;
-
-		os << "\tEXPECT_KERROR(" << lhs_string << ", " << rhs_string << ");" << std::endl;
-		os << std::endl;
-		os << "Mismatching error types. " << error.type() << " != " << type << std::endl;
-		os << std::endl;
-	}
-}
-
-template<typename Val>
-inline void expect_kerror(
-	Test &test,
-	util::Result<Val, KError> result,
-	KError::Type type,
-	const char *lhs_string,
-	const char *rhs_string,
-	std::source_location loc=std::source_location::current()
-) {
-	if (result.has_value()) {
-		auto &os = fail_head(test, loc) << std::endl;
-
-		os << "\tEXPECT_KERROR(" << lhs_string << ", " << rhs_string << ");" << std::endl;
-		os << std::endl;
-		os << "lhs_string Did not return or throw an error" << std::endl;
-		os << std::endl;
-	} else if (result.error().type() == type) {
-		test.passed_test_count++;
-	} else {
-		auto &os = fail_head(test, loc) << std::endl;
-
-		os << "\tEXPECT_KERROR(" << lhs_string << ", " << rhs_string << ");" << std::endl;
-		os << std::endl;
-		os << "Mismatching error types. " << result.error().type() << " != " << type << std::endl;
-		os << std::endl;
-	}
-}
-
 template<typename ErrorType>
 inline void expect_terror(
 	Test &test,
@@ -225,12 +176,6 @@ inline void expect_terror(
 	_test.total_test_count++;\
 	try { \
 		expect_eq(_test, lhs, rhs, #lhs, #rhs); \
-	} catch (KError const &e) { \
-		auto &os = fail_head(_test) << std::endl; \
-		os << "\tEXPECT_EQ(" #lhs ", " #rhs ");" << std::endl; \
-		os << std::endl; \
-		os << "\tException was thrown:" << std::endl << "\t"; \
-		log_error(e) << std::endl; \
 	} catch (std::exception const &e) { \
 		auto &os = fail_head(_test) << std::endl; \
 		os << "\tEXPECT_EQ(" #lhs ", " #rhs ");" << std::endl; \
@@ -256,12 +201,6 @@ inline void expect_terror(
 	_test.total_test_count++;\
 	try { \
 		expect(_test, static_cast<bool>(value), #value); \
-	} catch (KError const &e) { \
-		auto &os = fail_head(_test) << std::endl; \
-		os << "\tEXPECT(" #value ");" << std::endl; \
-		os << std::endl; \
-		os << "\tException was thrown:" << std::endl << "\t"; \
-		log_error(e) << std::endl; \
 	} catch (std::exception const &e) { \
 		auto &os = fail_head(_test) << std::endl; \
 		os << "\tEXPECT(" #value ");" << std::endl; \
@@ -282,34 +221,6 @@ inline void expect_terror(
 		log_error() << "Unknown exception was thrown" << std::endl; \
 	}\
 }
-
-#define EXPECT_KERROR(value, kerror_type) {\
-	_test.total_test_count++;\
-	try { \
-		expect_kerror(_test, value, kerror_type, #value, #kerror_type); \
-	} catch (KError const &e) { \
-		expect_kerror(_test, e, kerror_type, #value, #kerror_type); \
-	} catch (std::exception const &e) { \
-		auto &os = fail_head(_test) << std::endl; \
-		os << "\tEXPECT_KERROR(" #value ", " #kerror_type ");" << std::endl; \
-		os << std::endl; \
-		os << "\t"; \
-		log_error() << "Exception thrown " << e.what() << std::endl; \
-	} catch (BaseError const &e) { \
-		auto &os = fail_head(_test) << std::endl; \
-		os << "\tEXPECT_KERROR(" #value ", " #kerror_type ");" << std::endl; \
-		os << std::endl; \
-		os << "\t"; \
-		log_error() << "Exception thrown " << e << std::endl; \
-	} catch (...) { \
-		auto &os = fail_head(_test) << std::endl; \
-		os << "\ttEXPECT_KERROR(" #value ", " #kerror_type ");" << std::endl; \
-		os << std::endl; \
-		os << "\t"; \
-		log_error() << "Unknown exception was thrown" << std::endl; \
-	}\
-}
-
 
 #define EXPECT_TERROR(value, error_type) {\
 	try { \

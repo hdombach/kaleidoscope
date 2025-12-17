@@ -6,10 +6,10 @@
 #include <glm/glm.hpp>
 
 #include "codegen/TemplObj.hpp"
+#include "util/BaseError.hpp"
 #include "vulkan/MappedUniform.hpp"
 #include "vulkan/Texture.hpp"
 #include "util/result.hpp"
-#include "util/KError.hpp"
 
 namespace types {
 	class ShaderResource {
@@ -48,17 +48,17 @@ namespace types {
 			 */
 			cg::TemplObj templ_declaration() const;
 
-			util::Result<void, KError> set_texture(const vulkan::Texture *texture);
+			util::Result<void, BaseError> set_texture(const vulkan::Texture *texture);
 			util::Result<vulkan::Texture const *, void> as_texture() const;
-			util::Result<void, KError> set_mat4(glm::mat4 const &val);
+			util::Result<void, BaseError> set_mat4(glm::mat4 const &val);
 			util::Result<glm::mat4, void> as_mat4() const;
-			util::Result<void, KError> set_vec3(glm::vec3 const &val);
+			util::Result<void, BaseError> set_vec3(glm::vec3 const &val);
 			util::Result<glm::vec3, void> as_vec3() const;
-			util::Result<void, KError> set_color3(glm::vec3 const &vale);
+			util::Result<void, BaseError> set_color3(glm::vec3 const &vale);
 			util::Result<glm::vec3, void> as_color3() const;
-			util::Result<void, KError> set_float(float val);
+			util::Result<void, BaseError> set_float(float val);
 			util::Result<float, void> as_float() const;
-			util::Result<void, KError> set_uint32(uint32_t val);
+			util::Result<void, BaseError> set_uint32(uint32_t val);
 			util::Result<uint32_t, void> as_uint32() const;
 
 			bool const dirty_bit() const { return _dirty_bit; }
@@ -120,7 +120,7 @@ namespace types {
 			/* Size (with padding) of vulkan object */
 			size_t range() const { return _range; }
 
-			util::Result<vulkan::Uniform, KError> create_prim_uniform() const;
+			util::Result<vulkan::Uniform, BaseError> create_prim_uniform() const;
 			size_t update_prim_uniform(vulkan::Uniform &uniform) const;
 			size_t update_prim_uniform(void *data) const;
 

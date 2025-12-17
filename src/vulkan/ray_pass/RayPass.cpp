@@ -85,11 +85,11 @@ namespace vulkan {
 		result->_node_observer = NodeObserver(*result);
 
 		if (auto err = Fence::create().move_or(result->_pass_fence)) {
-			return Error(ErrorType::VULKAN, "Could not create ray pass fence", {err.value()});
+			return Error(ErrorType::VULKAN, "Could not create ray pass fence", VkError(err.value()));
 		}
 
 		if (auto err = Semaphore::create().move_or(result->_semaphore)) {
-			return Error(ErrorType::VULKAN, "Could not create ray pass semaphore", {err.value()});
+			return Error(ErrorType::VULKAN, "Could not create ray pass semaphore", VkError(err.value()));
 		}
 
 		TRY(result->_create_images());
@@ -110,7 +110,7 @@ namespace vulkan {
 				&result->_command_buffer);
 
 		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not allocate command buffers", {res});
+			return Error(ErrorType::VULKAN, "Could not allocate command buffers", VkError(res));
 		}
 
 		result->_vertex_dirty_bit = true;
@@ -546,7 +546,7 @@ namespace vulkan {
 
 		auto res = vkCreatePipelineLayout(Graphics::DEFAULT->device(), &pipeline_layout_info, nullptr, &_pipeline_layout);
 		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create pipeline layout for ray pass", {res});
+			return Error(ErrorType::VULKAN, "Could not create pipeline layout for ray pass", VkError(res));
 		}
 
 		auto pipeline_info = VkComputePipelineCreateInfo{};
@@ -563,7 +563,7 @@ namespace vulkan {
 			&_pipeline
 		);
 		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create compute pipline for ray pass", {res});
+			return Error(ErrorType::VULKAN, "Could not create compute pipline for ray pass", VkError(res));
 		}
 
 		log_debug() << "just created raypass pipeline " << _pipeline << std::endl;

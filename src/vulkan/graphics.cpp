@@ -11,6 +11,7 @@
 #include "graphics.hpp"
 #include "defs.hpp"
 #include "util/log.hpp"
+#include "util/BaseError.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -197,11 +198,17 @@ namespace vulkan {
 	}
 
 	void Graphics::_init_vulkan() {
-		_create_instance();
-		_setup_debug_messenger();
+		if (auto err = _create_instance().move_or()) {
+			log_fatal_error(err.value());
+		}
+		if (auto err = _setup_debug_messenger().move_or()) {
+			log_fatal_error(err.value());
+		}
 		_create_surface();
 		_pick_physical_device();
-		_create_logical_device();
+		if (auto err = _create_logical_device().move_or()) {
+			log_fatal_error(err.value());
+		}
 		_create_command_pool();
 		_main_sampler = std::move(Sampler::create_linear().value());
 		_near_sampler = std::move(Sampler::create_nearest().value());
@@ -250,7 +257,7 @@ namespace vulkan {
 
 		VkResult result = vkCreateInstance(&createInfo, nullptr, &_instance);
 		if (result != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create vulkan instance", {result});
+			return Error(ErrorType::VULKAN, "Could not create vulkan instance", VkError(result));
 		}
 		log_memory() << "Create instance " << _instance << std::endl;
 
@@ -331,7 +338,7 @@ namespace vulkan {
 		_populate_debug_messenger_create_info(createInfo);
 		auto result = _create_debug_utils_messenger_EXT(_instance, &createInfo, nullptr, &_debug_messenger);
 		if (result != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create debut utils", {result});
+			return Error(ErrorType::VULKAN, "Could not create debut utils", VkError(result));
 		}
 		return {};
 	}
@@ -435,7 +442,7 @@ namespace vulkan {
 		}
 		auto result = vkCreateDevice(_physical_device, &createInfo, nullptr, &_device);
 		if (result != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create device", {result});
+			return Error(ErrorType::VULKAN, "Could not create device", VkError(result));
 		}
 		log_memory() << "Created device " << _device << std::endl;
 		//TODO: the pipeline objects should probably own graphics queue

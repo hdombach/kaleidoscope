@@ -6,7 +6,6 @@
 #include "vulkan/DescriptorSet.hpp"
 #include "vulkan/MappedUniform.hpp"
 #include "util/result.hpp"
-#include "util/KError.hpp"
 #include "types/Node.hpp"
 #include "vulkan/TemplUtils.hpp"
 #include "util/BaseError.hpp"

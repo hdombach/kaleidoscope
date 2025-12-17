@@ -4,7 +4,6 @@
 #include <string>
 
 #include "result.hpp"
-#include "KError.hpp"
 #include "BaseError.hpp"
 
 namespace util {

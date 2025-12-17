@@ -576,7 +576,7 @@ namespace vulkan {
 				&_prim_render_pass);
 
 		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create render pass", {res});
+			return Error(ErrorType::VULKAN, "Could not create render pass", VkError(res));
 		}
 
 		return {};
@@ -651,7 +651,7 @@ namespace vulkan {
 				nullptr,
 				&_overlay_pipeline_layout);
 		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create overlay pipeline layout", {res});
+			return Error(ErrorType::VULKAN, "Could not create overlay pipeline layout", VkError(res));
 		}
 
 		auto pipeline_info = VkComputePipelineCreateInfo{};
@@ -667,7 +667,7 @@ namespace vulkan {
 				nullptr,
 				&_overlay_pipeline);
 		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create overlay compute pipeline", {res});
+			return Error(ErrorType::VULKAN, "Could not create overlay compute pipeline", VkError(res));
 		}
 
 		return {};
@@ -822,7 +822,7 @@ namespace vulkan {
 				&_de_render_pass);
 
 		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create de render pass", {res});
+			return Error(ErrorType::VULKAN, "Could not create de render pass", VkError(res));
 		}
 
 		log_debug() << "Created DE preview render pass: " << _de_render_pass << std::endl;
@@ -1003,7 +1003,7 @@ namespace vulkan {
 				nullptr,
 				&_de_pipeline_layout);
 		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create de pipeline layout", {res});
+			return Error(ErrorType::VULKAN, "Could not create de pipeline layout", VkError(res));
 		}
 
 		auto depth_stencil = VkPipelineDepthStencilStateCreateInfo{};
@@ -1046,7 +1046,7 @@ namespace vulkan {
 				&_de_pipeline);
 
 		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create de pipeline", {res});
+			return Error(ErrorType::VULKAN, "Could not create de pipeline", VkError(res));
 		}
 
 		log_debug() << "Create DE preview pipeline: " << _de_pipeline << std::endl;
@@ -1275,7 +1275,7 @@ namespace vulkan {
 			);
 
 			if (res != VK_SUCCESS) {
-				return Error(ErrorType::VULKAN, "Could not create prim framebuffer", {res});
+				return Error(ErrorType::VULKAN, "Could not create prim framebuffer", VkError(res));
 			}
 		}
 
@@ -1302,7 +1302,7 @@ namespace vulkan {
 			);
 
 			if (res != VK_SUCCESS) {
-				return Error(ErrorType::VULKAN, "Could not create de framebuffer", {res});
+				return Error(ErrorType::VULKAN, "Could not create de framebuffer", VkError(res));
 			}
 
 		}
@@ -1321,11 +1321,11 @@ namespace vulkan {
 
 	util::Result<void, PrevPass::Error> PrevPass::_create_sync_objects() {
 		if (auto err = Semaphore::create().move_or(_semaphore)) {
-			return Error(ErrorType::VULKAN, "Could not create seamphore for the prev pass", {err.value()});
+			return Error(ErrorType::VULKAN, "Could not create seamphore for the prev pass", VkError(err.value()));
 		}
 
 		if (auto err = Fence::create().move_or(_fence)) {
-			return Error(ErrorType::VULKAN, "Could not create fence for the prev pass", {err.value()});
+			return Error(ErrorType::VULKAN, "Could not create fence for the prev pass", VkError(err.value()));
 		}
 
 		return {};

@@ -39,12 +39,6 @@ int test_main(std::vector<std::string> const &filters) {
 					suite_passed += test_passed;
 					suite_total += test_total;
 				}
-			} catch (KError const &e) {
-				suite_total++;
-				auto &os = fail_head(test.second) << std::endl;
-				os << std::endl;
-				os << "\tException was thrown:" << std::endl << "\t";
-				log_error(e) << std::endl;
 			} catch (std::exception const &e) {
 				suite_total++;
 				auto &os = fail_head(test.second) << std::endl;

@@ -22,14 +22,14 @@ namespace vulkan {
 			<< "\"object_transformation\":" << object_transformation
 			<< "}";
 	}
-	util::Result<RayPassNode, KError> RayPassNode::create(const Node *node, const RayPass *ray_pass) {
+	util::Result<RayPassNode, vulkan::Error> RayPassNode::create(const Node *node, const RayPass *ray_pass) {
 		auto result = RayPassNode();
 
 		if (node == nullptr) {
-			return KError::invalid_arg("node is nullptr");
+			return Error(ErrorType::INVALID_ARG, "node is nullptr");
 		}
 		if (ray_pass == nullptr) {
-			return KError::invalid_arg("ray_pass is nullptr");
+			return Error(ErrorType::INVALID_ARG, "ray_pass is nullptr");
 		}
 
 		result._node = node;

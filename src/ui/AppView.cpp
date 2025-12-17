@@ -12,7 +12,6 @@
 #include "Misc.hpp"
 #include "State.hpp"
 #include "ui/TextureView.hpp"
-#include "util/KError.hpp"
 #include "util/Util.hpp"
 #include "types/ResourceManager.hpp"
 #include "types/Material.hpp"

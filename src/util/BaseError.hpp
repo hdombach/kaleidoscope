@@ -8,8 +8,7 @@
 
 #include "util/FileLocation.hpp"
 #include "util/IterAdapter.hpp"
-#include "util/format.hpp"
-#include "util/KError.hpp"
+#include "util/log.hpp"
 
 namespace util {
 	struct ErrorFrag {
@@ -56,12 +55,6 @@ class BaseError {
 			FLoc loc=SLoc::current()
 		) {
 			_frags.push_back({"", msg, loc});
-		}
-
-		BaseError(
-			KError const &err
-		) {
-			_frags.push_back({"KError", err.what(), err.loc()});
 		}
 
 		std::string const &msg() { return _frags.back().msg; }
@@ -142,4 +135,12 @@ inline std::ostream &operator<<(std::ostream &os, VkResult vk_result) {
 
 inline std::ostream &operator<<(std::ostream &os, BaseError const &e) {
 	return e.print(os);
+}
+
+inline std::ostream &log_fatal_error(BaseError const &err) {
+	return log_fatal_error(err.loc()) << err;
+}
+
+inline std::ostream &log_error(BaseError const &err) {
+	return log_error(err.loc()) << err;
 }

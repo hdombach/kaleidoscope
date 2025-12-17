@@ -33,8 +33,6 @@ int main(int argc, char **argv) {
 		auto app = App::create("Kaleidoscope");
 
 		app->main_loop();
-	} catch (const KError &e) {
-		log_fatal_error(e) << std::endl;
 	} catch (const std::exception& e) {
 		std::cerr << e.what() << std::endl;
 		ThreadPool::DEFAULT.shutdown();

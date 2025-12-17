@@ -49,7 +49,7 @@ namespace vulkan {
 			} __attribute__((packed));
 
 			RayPassNode();
-			static util::Result<RayPassNode, KError> create(const Node *node, const RayPass *ray_pass);
+			static util::Result<RayPassNode, vulkan::Error> create(const Node *node, const RayPass *ray_pass);
 
 			void destroy();
 
