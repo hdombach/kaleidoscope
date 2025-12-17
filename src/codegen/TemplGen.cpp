@@ -251,18 +251,18 @@ namespace cg {
 
 		c.prim("statement") = c["sfor"] | c["sif"] | c["smacro"] | c["sinclude"];
 
+		if (auto err = c.prep().move_or()) {
+			return Error(ErrorType::MISC, "Could not prepare parser", err.value());
+		}
+		c.simplify();
+
 		if (true) {
-			TRY(c.prep());
-			c.simplify();
 			//std::ofstream file("gen/nothing-table.txt");
 			if (auto err = AbsoluteSolver::create(std::move(context)).move_or(_parser)) {
 				return Error(ErrorType::INTERNAL, "Could not initialize the AbsoluteSolver", *err);
 			}
 			//parser->print_table(file);
 		} else {
-			TRY(c.prep());
-			c.simplify();
-
 			auto parser = SParser::create(std::move(context));
 			_parser = std::move(parser);
 		}
@@ -314,7 +314,9 @@ namespace cg {
 		file.close();
 
 		auto l_args = args;
-		TRY(t._add_builtin_identifiers(l_args));
+		if (auto err = t._add_builtin_identifiers(l_args).move_or()) {
+			return Error(ErrorType::MISC, "Could not add builtin identifiers", err.value());
+		}
 		return t._codegen(*node, l_args);
 	}
 
@@ -385,7 +387,9 @@ namespace cg {
 		} else if (node.cfg_rule() == "sfor") {
 			return _cg_sfor(node, args);
 		} else if (node.cfg_rule() == "smacro") {
-			TRY(_cg_smacro(node, args));
+			if (auto err = _cg_smacro(node, args).move_or()) {
+				log_error(err.value());
+			}
 			return {""};
 		} else if (node.cfg_rule() == "sinclude") {
 			return _cg_sinclude(node, args);

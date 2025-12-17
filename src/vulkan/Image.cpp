@@ -59,15 +59,18 @@ namespace vulkan {
 				result._image,
 				&mem_requirements);
 
-		auto memory_type = Graphics::DEFAULT->find_memory_type(
-				mem_requirements.memoryTypeBits, 
-				memory_properties);
-		TRY(memory_type);
+		uint32_t memory_type;
+		if (auto err = Graphics::DEFAULT->find_memory_type(
+			mem_requirements.memoryTypeBits,
+			memory_properties
+		).move_or(memory_type)) {
+			return Error(ErrorType::VULKAN, "Could not find memory type when allocating image", err.value());
+		}
 
 		auto alloc_info_res = VkMemoryAllocateInfo{};
 		alloc_info_res.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 		alloc_info_res.allocationSize = mem_requirements.size;
-		alloc_info_res.memoryTypeIndex = memory_type.value();
+		alloc_info_res.memoryTypeIndex = memory_type;
 
 		res = vkAllocateMemory(
 				Graphics::DEFAULT->device(), 

@@ -397,10 +397,12 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		// Structs need to be aligned to 16 bytes
 		uniform_s += _calc_alignment(16, uniform_s);
 
-		auto uniform = vulkan::Uniform::create(uniform_s);
-		TRY(uniform);
-		update_prim_uniform(uniform.value());
-		return {std::move(uniform.value())};
+		if (auto uniform = vulkan::Uniform::create(uniform_s)) {
+			update_prim_uniform(uniform.value());
+			return uniform.move_value();
+		} else {
+			return uniform.error();
+		}
 	}
 
 	size_t ShaderResources::update_prim_uniform(vulkan::Uniform &uniform) const {

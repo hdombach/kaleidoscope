@@ -1,6 +1,5 @@
 #include <imgui.h>
 #include <memory>
-#include <filesystem>
 #include <string>
 #include <chrono>
 
@@ -16,34 +15,61 @@
 #include "util/log.hpp"
 #include "types/ResourceManager.hpp"
 #include "ui/AppView.hpp"
+#include "util/log.hpp"
 
 float comb_ratio_value = 0.0f;
 
 App::Ptr App::create(std::string const &name) {
+	uint32_t r;
 	auto result = new App();
 	vulkan::Graphics::init_default("Kaleidoscope");
 	result->_ui_render_pipeline = std::make_unique<vulkan::UIRenderPipeline>();
 	result->_resource_manager = std::make_unique<types::ResourceManager>();
 
-	TRY_LOG(result->_resource_manager->add_texture_from_file("assets/viking_room.png"));
-	TRY_LOG(result->_resource_manager->add_texture_from_file("assets/grunge.png"));
+	if (auto err = result->_resource_manager->add_texture_from_file("assets/viking_room.png").move_or(r)) {
+		log_error(err.value()) << "Could not add viking room texture" << std::endl;
+	}
+	if (auto err = result->_resource_manager->add_texture_from_file("assets/grunge.png").move_or(r)) {
+		log_error(err.value()) << "Could not add grunge texture" << std::endl;
+	}
 
-	TRY_LOG(result->_resource_manager->add_mesh_from_file("assets/viking_room.obj"));
-	TRY_LOG(result->_resource_manager->add_mesh_square("square"));
-	TRY_LOG(result->_resource_manager->add_mesh_mandelbulb("mandelbulb"));
-	TRY_LOG(result->_resource_manager->add_mesh_mandelbox("mandelbox"));
+	if (auto err = result->_resource_manager->add_mesh_from_file("assets/viking_room.obj").move_or(r)) {
+		log_error(err.value()) << "Could not add viking room mesh" << std::endl;
+	}
+	if (auto err = result->_resource_manager->add_mesh_square("square").move_or(r)) {
+		log_error(err.value()) << "Could not add square mesh" << std::endl;
+	}
+	if (auto err = result->_resource_manager->add_mesh_mandelbulb("mandelbulb").move_or(r)) {
+		log_error(err.value()) << "Could not add mandelbulb mesh" << std::endl;
+	}
+	if (auto err = result->_resource_manager->add_mesh_mandelbox("mandelbox").move_or(r)) {
+		log_error(err.value()) << "Could not add mandelbox mesh" << std::endl;
+	}
 
-	TRY_LOG(result->_resource_manager->add_texture_material(
+	if (auto err = result->_resource_manager->add_texture_material(
 			"viking_room",
-			result->_resource_manager->get_texture("viking_room")));
-	TRY_LOG(result->_resource_manager->add_texture_material(
+			result->_resource_manager->get_texture("viking_room")).move_or(r)
+	) {
+		log_error(err.value()) << "Could not add viking room texture material" << std::endl;
+	}
+	if (auto err = result->_resource_manager->add_texture_material(
 			"grunge",
-			result->_resource_manager->get_texture("grunge")));
-	TRY_LOG(result->_resource_manager->add_comb_texture_material(
+			result->_resource_manager->get_texture("grunge")).move_or(r)
+	) {
+		log_error(err.value()) << "Could not add grunge texture material" << std::endl;
+	}
+	if (auto err = result->_resource_manager->add_comb_texture_material(
 				"grunge_comb", 
 				result->_resource_manager->get_texture("viking_room"), 
-				result->_resource_manager->get_texture("grunge")));
-	TRY_LOG(result->_resource_manager->add_color_material("color", glm::vec3(0.5, 0.1, 0.2)));
+				result->_resource_manager->get_texture("grunge")).move_or(r)) {
+		log_error(err.value()) << "Could not add grungy viking room material" << std::endl;
+	}
+	if (auto err = result->_resource_manager->add_color_material(
+			"color",
+			glm::vec3(0.5, 0.1, 0.2)).move_or(r)
+	) {
+		log_error(err.value()) << "Could not add color material" << std::endl;
+	}
 
 	if (auto scene = vulkan::Scene::create(*(result->_resource_manager))) {
 		result->_scene = std::move(scene.value());

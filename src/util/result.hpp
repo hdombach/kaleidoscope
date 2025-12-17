@@ -242,15 +242,4 @@ namespace util {
 	}
 }
 
-#define TRY(result) try { return {(result).error()}; } catch (...) {}
 
-#define TRY_LOG(result) try { \
-	auto error = result.error(); \
-	log_error(error) << std::endl; \
-} catch (std::bad_variant_access) { \
-} catch (std::bad_optional_access) { \
-} catch (std::exception const &e) { \
-	log_error() << "Error: " << e.what() << std::endl; \
-} catch (...) { \
-	log_error() << "Uncaught error" << std::endl; \
-}

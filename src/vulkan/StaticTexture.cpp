@@ -53,17 +53,17 @@ namespace vulkan {
 				static_cast<uint32_t>(tex_width),
 					static_cast<uint32_t>(texHeight)
 			};
-			auto image = Image::create(
-					size,
-					VK_FORMAT_R8G8B8A8_UNORM,
-					VK_IMAGE_USAGE_TRANSFER_SRC_BIT
-					| VK_IMAGE_USAGE_TRANSFER_DST_BIT
-					| VK_IMAGE_USAGE_SAMPLED_BIT,
-					VK_IMAGE_ASPECT_COLOR_BIT,
-					VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-			TRY(image);
-			result->_image = std::move(image.value());
-
+			if (auto err = Image::create(
+				size,
+				VK_FORMAT_R8G8B8A8_UNORM,
+				VK_IMAGE_USAGE_TRANSFER_SRC_BIT
+				| VK_IMAGE_USAGE_TRANSFER_DST_BIT
+				| VK_IMAGE_USAGE_SAMPLED_BIT,
+				VK_IMAGE_ASPECT_COLOR_BIT,
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT).move_or(result->_image)
+			) {
+				return Error(ErrorType::MISC, "Could not create image", err.value());
+			}
 		}
 
 		Graphics::DEFAULT->transition_image_layout(

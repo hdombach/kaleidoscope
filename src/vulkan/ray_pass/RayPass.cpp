@@ -91,8 +91,9 @@ namespace vulkan {
 		if (auto err = Semaphore::create().move_or(result->_semaphore)) {
 			return Error(ErrorType::VULKAN, "Could not create ray pass semaphore", VkError(err.value()));
 		}
-
-		TRY(result->_create_images());
+		if (auto err = result->_create_images().move_or()) {
+			return Error(ErrorType::MISC, "Could not create images", err.value());
+		}
 
 		if (auto err = MappedComputeUniform::create().move_or(result->_mapped_uniform)) {
 			return Error(ErrorType::VULKAN, "Could not create mapped uniform", {err.value()});
@@ -454,7 +455,7 @@ namespace vulkan {
 		if (auto rt_node = RayPassNode::create(node, this)) {
 			log_assert(_nodes.insert(std::move(rt_node.value())), "Duplicate node in RayPass");
 		} else {
-			TRY_LOG(rt_node);
+			log_error(rt_node.error());
 		}
 		_node_dirty_bit = true;
 	}
@@ -466,7 +467,7 @@ namespace vulkan {
 		if (auto rt_node = RayPassNode::create(node, this)) {
 			_nodes[id] = std::move(rt_node.value());
 		} else {
-			TRY_LOG(rt_node);
+			log_error(rt_node.error());
 		}
 		_node_dirty_bit = true;
 	}
