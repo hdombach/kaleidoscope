@@ -3,6 +3,8 @@
 #include <vulkan/vulkan_core.h>
 
 namespace vulkan {
+	using util::f;
+
 	VkDescriptorSetLayoutBinding descriptor_layout_uniform(
 		VkShaderStageFlags stage_flags
 	) {
@@ -66,7 +68,7 @@ namespace vulkan {
 		return binding;
 	}
 	
-	util::Result<DescriptorSetLayout, KError> DescriptorSetLayout::create(
+	util::Result<DescriptorSetLayout, Error> DescriptorSetLayout::create(
 		std::vector<VkDescriptorSetLayoutBinding> const &bindings
 	) {
 		auto layout = DescriptorSetLayout();
@@ -77,7 +79,7 @@ namespace vulkan {
 			if (b.binding == DESCRIPTOR_BINDING_UNUSED) {
 				b.binding = i;
 			} else if (b.binding != i) {
-				return KError::invalid_arg("Invalid binding order");
+				return Error(ErrorType::INVALID_ARG, "Invalid binding order");
 			}
 			i++;
 		}
@@ -95,7 +97,7 @@ namespace vulkan {
 		);
 
 		if (r != VK_SUCCESS) {
-			return {r};
+			return Error(ErrorType::INVALID_ARG, "Could not create descriptor set layout", {r});
 		}
 
 		return layout;
@@ -211,19 +213,19 @@ namespace vulkan {
 		return _frame_count;
 	}
 
-	util::Result<void, KError> DescriptorSetBuilder::add_uniform(
+	util::Result<void, Error> DescriptorSetBuilder::add_uniform(
 		Uniform &uniform
 	) {
 		return add_uniform({uniform.buffer()}, uniform.size());
 	}
 
-	util::Result<void, KError> DescriptorSetBuilder::add_uniform(
+	util::Result<void, Error> DescriptorSetBuilder::add_uniform(
 		std::vector<VkBuffer> const &buffers,
 		size_t buffer_size
 	) {
 		auto &binding = _layout->bindings()[_cur_binding];
 		if (binding.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-			return KError::invalid_arg(util::f("Binding ", _cur_binding, " is not a uniform buffer"));
+			return Error(ErrorType::INVALID_ARG, f("Binding ", _cur_binding, " is not a uniform buffer"));
 		}
 
 		auto &buffer_infos = _buffer_infos[_cur_binding];
@@ -249,23 +251,23 @@ namespace vulkan {
 		return {};
 	}
 
-	util::Result<void, KError> DescriptorSetBuilder::add_image(
+	util::Result<void, Error> DescriptorSetBuilder::add_image(
 		VkImageView image_view
 	) {
 		return add_image(image_view, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 	}
 
-	util::Result<void, KError> DescriptorSetBuilder::add_image(
+	util::Result<void, Error> DescriptorSetBuilder::add_image(
 		VkImageView image_view,
 		VkImageLayout image_layout
 	) {
 		auto &binding = _layout->bindings()[_cur_binding];
 		if (binding.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-			return KError::invalid_arg(util::f("Binding ", _cur_binding, " is not an image sampler"));
+			return Error(ErrorType::INVALID_ARG, f("Binding ", _cur_binding, " is not an image sampler"));
 		}
 
 		if (image_view == VK_NULL_HANDLE) {
-			return KError::invalid_arg("image_view cannot be VK_NULL_HANDLE");
+			return Error(ErrorType::INVALID_ARG, "image_view cannot be VK_NULL_HANDLE");
 		}
 
 		auto &image_infos = _image_infos[_cur_binding];
@@ -287,15 +289,15 @@ namespace vulkan {
 		return {};
 	}
 
-	util::Result<void, KError> DescriptorSetBuilder::add_image(
+	util::Result<void, Error> DescriptorSetBuilder::add_image(
 		std::vector<VkImageView> const &image_views
 	) {
 		auto &binding = _layout->bindings()[_cur_binding];
 		if (binding.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-			return KError::invalid_arg(util::f("Binding ", _cur_binding, " is not an image sampler"));
+			return Error(ErrorType::INVALID_ARG, f("Binding ", _cur_binding, " is not an image sampler"));
 		}
 		if (image_views.size() == 0) {
-			return KError::invalid_arg("Cannot use 0 images");
+			return Error(ErrorType::INVALID_ARG, "Cannot use 0 images");
 		}
 
 		auto &image_infos = _image_infos[_cur_binding];
@@ -323,16 +325,16 @@ namespace vulkan {
 		return {};
 	}
 
-	util::Result<void, KError> DescriptorSetBuilder::add_image_target(
+	util::Result<void, Error> DescriptorSetBuilder::add_image_target(
 		VkImageView image_view
 	) {
 		auto &binding = _layout->bindings()[_cur_binding];
 		if (binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
-			return KError::invalid_arg(util::f("Binding ", _cur_binding, " is not an image target"));
+			return Error(ErrorType::INVALID_ARG, f("Binding ", _cur_binding, " is not an image target"));
 		}
 
 		if (image_view == VK_NULL_HANDLE) {
-			return KError::invalid_arg("image_view cannot be VK_NULL_HANDLE");
+			return Error(ErrorType::INVALID_ARG, "image_view cannot be VK_NULL_HANDLE");
 		}
 
 		auto &image_infos = _image_infos[_cur_binding];
@@ -354,13 +356,13 @@ namespace vulkan {
 		return {};
 	}
 
-	util::Result<void, KError> DescriptorSetBuilder::add_storage_buffer(
+	util::Result<void, Error> DescriptorSetBuilder::add_storage_buffer(
 		VkBuffer buffer,
 		size_t range
 	) {
 		auto &binding = _layout->bindings()[_cur_binding];
 		if (binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-			return KError::invalid_arg(util::f("Binding ", _cur_binding, " is not a storage buffer"));
+			return Error(ErrorType::INVALID_ARG, f("Binding ", _cur_binding, " is not a storage buffer"));
 		}
 
 
@@ -383,7 +385,7 @@ namespace vulkan {
 		return {};
 	}
 
-	util::Result<void, KError> DescriptorSetBuilder::add_storage_buffer(
+	util::Result<void, Error> DescriptorSetBuilder::add_storage_buffer(
 		StaticBuffer &static_buffer
 	) {
 		return add_storage_buffer(
@@ -405,7 +407,7 @@ namespace vulkan {
 		return _cur_binding;
 	}
 
-	util::Result<DescriptorSets, KError> DescriptorSets::create(
+	util::Result<DescriptorSets, Error> DescriptorSets::create(
 		DescriptorSetBuilder &builder,
 		DescriptorPool &pool
 	) {
@@ -413,7 +415,7 @@ namespace vulkan {
 		result._descriptor_pool = &pool;
 
 		if (builder.initialized_bindings() != builder.layout().bindings().size()) {
-			return KError::invalid_arg("Not all bindings in the builder are initialized.");
+			return Error(ErrorType::INVALID_ARG, "Not all bindings in the builder are initialized");
 		}
 		
 		auto layout_vec = std::vector<VkDescriptorSetLayout>(
@@ -434,7 +436,7 @@ namespace vulkan {
 			result._descriptor_sets.data()
 		);
 		if (res != VK_SUCCESS) {
-			return {res};
+			return Error(ErrorType::VULKAN, "Cannot allocate descriptor sets", {res});
 		}
 
 		for (size_t frame = 0; frame < builder.frame_count(); frame++) {

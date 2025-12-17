@@ -6,7 +6,6 @@
 #include <vulkan/vulkan_core.h>
 
 #include "util/result.hpp"
-#include "util/KError.hpp"
 #include "util/Observer.hpp"
 #include "util/Util.hpp"
 #include "util/map_iterator.hpp"
@@ -16,6 +15,7 @@
 #include "prev_pass/PrevPass.hpp"
 #include "ray_pass/RayPass.hpp"
 #include "types/Node.hpp"
+#include "Error.hpp"
 
 namespace vulkan {
 	/**
@@ -38,7 +38,7 @@ namespace vulkan {
 			Scene& operator=(const Scene& other) = delete;
 			Scene& operator=(Scene&& other) = default;
 
-			static util::Result<Ptr, KError> create(types::ResourceManager &resource_manager);
+			static util::Result<Ptr, Error> create(types::ResourceManager &resource_manager);
 
 			VkDescriptorSet imgui_descriptor_set();
 			VkImageView image_view();
@@ -68,21 +68,21 @@ namespace vulkan {
 				}
 			}
 
-			util::Result<Node *, KError> create_node(
+			util::Result<Node *, Error> create_node(
 				types::Mesh const *mesh,
 				types::Material const *material
 			);
-			util::Result<Node *, KError> create_virtual_node();
-			util::Result<types::Camera *, KError> create_camera();
-			util::Result<void, KError> remove_node(uint32_t id);
+			util::Result<Node *, Error> create_virtual_node();
+			util::Result<types::Camera *, Error> create_camera();
+			util::Result<void, Error> remove_node(uint32_t id);
 			//TODO: removing, identifiying node
 			types::ResourceManager &resource_manager();
 
 			Node *root();
 			Node const *root() const;
 
-			util::Result<void, KError> add_node_observer(util::Observer *observer);
-			util::Result<void, KError> rem_node_observer(util::Observer *observer);
+			util::Result<void, Error> add_node_observer(util::Observer *observer);
+			util::Result<void, Error> rem_node_observer(util::Observer *observer);
 
 			Container const &nodes() const;
 			Container &nodes();

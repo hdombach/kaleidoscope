@@ -20,7 +20,7 @@ namespace vulkan {
 		return Shader(util::readEnvFile(file_name));
 	}
 
-	util::Result<Shader, KError> Shader::from_source_code(
+	util::Result<Shader, Error> Shader::from_source_code(
 			const std::string &code,
 			Type type)
 	{
@@ -37,14 +37,14 @@ namespace vulkan {
 		} else if (type == Type::Compute) {
 			kind = shaderc_glsl_compute_shader;
 		} else {
-			return KError::internal("Unknown shader type");
+			return Error(ErrorType::INTERNAL, "Unknown shader type");
 		}
 		
 		//TODO: not just fragment shader
 		auto module = compiler.CompileGlslToSpv(code, kind, "codegen", options);
 
 		if (module.GetCompilationStatus() != shaderc_compilation_status_success) {
-			return KError::shader_compile_error(module.GetErrorMessage());
+			return Error(ErrorType::VULKAN, util::f("Shader compile error ", module.GetErrorMessage()));
 		}
 
 		auto srv_code = std::vector<uint32_t>{module.begin(), module.end()};

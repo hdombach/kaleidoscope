@@ -5,7 +5,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "util/result.hpp"
-#include "util/KError.hpp"
+#include "Error.hpp"
 
 namespace vulkan {
 	/**
@@ -13,12 +13,12 @@ namespace vulkan {
 	 */
 	class Image {
 		public:
-			static util::Result<Image, KError> create(
+			static util::Result<Image, Error> create(
 					VkExtent2D size,
 					VkFormat format,
 					VkImageUsageFlags usage);
 
-			static util::Result<Image, KError> create(
+			static util::Result<Image, Error> create(
 					VkExtent2D size,
 					VkFormat format,
 					VkImageUsageFlags usage,

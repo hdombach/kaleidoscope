@@ -86,7 +86,7 @@ namespace vulkan {
 	Graphics::SwapchainSupportDetails const &Graphics::swapchain_support_details() const {
 		return _swapchain_support_details;
 	}
-	util::Result<uint32_t, KError> Graphics::find_memory_type(
+	util::Result<uint32_t, Error> Graphics::find_memory_type(
 			uint32_t type_filter,
 			VkMemoryPropertyFlags properties)
 	{
@@ -101,7 +101,7 @@ namespace vulkan {
 			}
 		}
 
-		return KError::invalid_mem_property();
+		return Error(ErrorType::VULKAN, "Invalid memory property");
 	}
 
 	VkFormat Graphics::find_supported_format(
@@ -208,12 +208,12 @@ namespace vulkan {
 		_create_descriptor_pool();
 	}
 
-	util::Result<void, KError> Graphics::_create_instance() {
+	util::Result<void, Error> Graphics::_create_instance() {
 		if (ENABLE_VALIDATION_LAYERS) {
 			if (_check_validation_layer_support()) {
 				std::cout << "Validation layer enabled" << std::endl;
 			} else {
-				throw std::runtime_error("validation layers requrested but not available!");
+				return Error(ErrorType::VULKAN, "Validation layers requested but no available!");
 			}
 		}
 
@@ -250,7 +250,7 @@ namespace vulkan {
 
 		VkResult result = vkCreateInstance(&createInfo, nullptr, &_instance);
 		if (result != VK_SUCCESS) {
-			return KError(result);
+			return Error(ErrorType::VULKAN, "Could not create vulkan instance", {result});
 		}
 		log_memory() << "Create instance " << _instance << std::endl;
 
@@ -325,13 +325,13 @@ namespace vulkan {
 		extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 		return extensions;
 	}
-	util::Result<void, KError> Graphics::_setup_debug_messenger() {
+	util::Result<void, Error> Graphics::_setup_debug_messenger() {
 		if (!ENABLE_VALIDATION_LAYERS) return {};
 		auto createInfo = VkDebugUtilsMessengerCreateInfoEXT{};
 		_populate_debug_messenger_create_info(createInfo);
 		auto result = _create_debug_utils_messenger_EXT(_instance, &createInfo, nullptr, &_debug_messenger);
 		if (result != VK_SUCCESS) {
-			return KError(result);
+			return Error(ErrorType::VULKAN, "Could not create debut utils", {result});
 		}
 		return {};
 	}
@@ -397,7 +397,7 @@ namespace vulkan {
 		}
 		return requiredExtensions.empty();
 	}
-	util::Result<void, KError> Graphics::_create_logical_device() {
+	util::Result<void, Error> Graphics::_create_logical_device() {
 		auto indices = _find_queue_families(_physical_device);
 		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 		auto uniqueQueueFamilies = std::set<uint32_t>{indices.graphics_family.value(), indices.present_family.value()};
@@ -435,7 +435,7 @@ namespace vulkan {
 		}
 		auto result = vkCreateDevice(_physical_device, &createInfo, nullptr, &_device);
 		if (result != VK_SUCCESS) {
-			throw KError(result);
+			return Error(ErrorType::VULKAN, "Could not create device", {result});
 		}
 		log_memory() << "Created device " << _device << std::endl;
 		//TODO: the pipeline objects should probably own graphics queue

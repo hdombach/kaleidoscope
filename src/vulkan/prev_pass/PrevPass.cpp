@@ -12,11 +12,9 @@
 #include "PrevPassMaterial.hpp"
 #include "PrevPassNode.hpp"
 #include "util/BaseError.hpp"
-#include "util/format.hpp"
 #include "vulkan/DescriptorSet.hpp"
 #include "vulkan/Scene.hpp"
 #include "vulkan/Uniforms.hpp"
-#include "util/KError.hpp"
 #include "vulkan/graphics.hpp"
 #include "util/Util.hpp"
 #include "util/log.hpp"
@@ -162,7 +160,9 @@ namespace vulkan {
 		}
 
 		if (_de_pipe_dirty_bit) {
-			_create_de_pipeline();
+			if (auto err = _create_de_pipeline().move_or()) {
+				log_error() << err.value() << std::endl;
+			}
 			_de_pipe_dirty_bit = false;
 		}
 
@@ -1086,7 +1086,7 @@ namespace vulkan {
 		}
 
 		if (auto err = StaticBuffer::create(nodes).move_or(_de_node_buffer)) {
-			if (err->type() != KError::Type::EMPTY_BUFFER) {
+			if (err->type() != vulkan::ErrorType::EMPTY_BUFFER) {
 				log_error() << err.value() << std::endl;
 			}
 			return Error(ErrorType::RESOURCE, "Could not create de node buffer", err.value());

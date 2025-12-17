@@ -2,15 +2,14 @@
 
 #include <cstdint>
 #include <limits>
-#include <variant>
 
 #include <vulkan/vulkan_core.h>
 
 #include "util/result.hpp"
-#include "util/KError.hpp"
 #include "DescriptorPool.hpp"
 #include "MappedUniform.hpp"
 #include "StaticBuffer.hpp"
+#include "Error.hpp"
 
 namespace vulkan {
 	static const uint32_t DESCRIPTOR_BINDING_UNUSED = std::numeric_limits<uint32_t>::max();
@@ -40,7 +39,7 @@ namespace vulkan {
 		public:
 			DescriptorSetLayout() = default;
 
-			static util::Result<DescriptorSetLayout, KError> create(
+			static util::Result<DescriptorSetLayout, Error> create(
 				std::vector<VkDescriptorSetLayoutBinding> const &bindings
 			);
 
@@ -88,7 +87,7 @@ namespace vulkan {
 			uint32_t frame_count() const;
 
 			template<typename BufferObj>
-			util::Result<void, KError> add_uniform(
+			util::Result<void, Error> add_uniform(
 				std::vector<MappedUniform<BufferObj>> &mapped_uniforms
 			) {
 				auto buffers = std::vector<VkBuffer>();
@@ -100,44 +99,44 @@ namespace vulkan {
 			}
 
 			template<typename BufferObj>
-			util::Result<void, KError> add_uniform(
+			util::Result<void, Error> add_uniform(
 				MappedUniform<BufferObj> &mapped_uniform
 			) {
 				return add_uniform({mapped_uniform});
 			}
 
-			util::Result<void, KError> add_uniform(
+			util::Result<void, Error> add_uniform(
 				Uniform &uniform
 			);
 
-			util::Result<void, KError> add_uniform(
+			util::Result<void, Error> add_uniform(
 				std::vector<VkBuffer> const &buffers,
 				size_t buffer_size
 			);
 
-			util::Result<void, KError> add_image(
+			util::Result<void, Error> add_image(
 				VkImageView image_view
 			);
 
-			util::Result<void, KError> add_image(
+			util::Result<void, Error> add_image(
 				VkImageView image_view,
 				VkImageLayout image_layout
 			);
 
-			util::Result<void, KError> add_image(
+			util::Result<void, Error> add_image(
 				std::vector<VkImageView> const &image_views
 			);
 
-			util::Result<void, KError> add_image_target(
+			util::Result<void, Error> add_image_target(
 				VkImageView image_view
 			);
 
-			util::Result<void, KError> add_storage_buffer(
+			util::Result<void, Error> add_storage_buffer(
 				VkBuffer buffer,
 				size_t range
 			);
 
-			util::Result<void, KError> add_storage_buffer(
+			util::Result<void, Error> add_storage_buffer(
 				StaticBuffer &static_buffer
 			);
 
@@ -164,7 +163,7 @@ namespace vulkan {
 	class DescriptorSets {
 		public:
 			DescriptorSets() = default;
-			static util::Result<DescriptorSets, KError> create(
+			static util::Result<DescriptorSets, Error> create(
 				DescriptorSetBuilder &builder,
 				DescriptorPool &pool
 			);

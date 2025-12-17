@@ -8,8 +8,8 @@
 #include <vulkan/vulkan_core.h>
 #include <GLFW/glfw3.h>
 
-#include "util/KError.hpp"
 #include "vulkan/Sampler.hpp"
+#include "Error.hpp"
 
 namespace vulkan {
 	class Semaphore;
@@ -48,7 +48,7 @@ namespace vulkan {
 			VkQueue present_queue() const;
 			VkQueue compute_queue() const;
 			SwapchainSupportDetails const &swapchain_support_details() const;
-			util::Result<uint32_t, KError> find_memory_type(
+			util::Result<uint32_t, Error> find_memory_type(
 					uint32_t type_filter,
 					VkMemoryPropertyFlags properties);
 
@@ -97,12 +97,12 @@ namespace vulkan {
 			Graphics();
 			void _init_window();
 			void _init_vulkan();
-			util::Result<void, KError> _create_instance();
-			util::Result<void, KError> _setup_debug_messenger();
+			util::Result<void, Error> _create_instance();
+			util::Result<void, Error> _setup_debug_messenger();
 			void _pick_physical_device();
 			bool _is_device_suitable(VkPhysicalDevice device);
 			bool _check_device_extension_support(VkPhysicalDevice device);
-			util::Result<void, KError> _create_logical_device();
+			util::Result<void, Error> _create_logical_device();
 			void _create_command_pool();
 			void _create_descriptor_pool();
 			void _create_surface();

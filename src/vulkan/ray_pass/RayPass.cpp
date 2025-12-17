@@ -274,7 +274,9 @@ namespace vulkan {
 
 		_update_buffers();
 		if (_descriptor_set.has_value()) {
-			_create_descriptor_sets();
+			if (auto err = _create_descriptor_sets().move_or()) {
+				log_error() << err.value() << std::endl;
+			}
 		}
 		if (!_pipeline) {
 			auto res = _create_pipeline();
@@ -652,15 +654,21 @@ namespace vulkan {
 
 		if (_size_dirty_bit) {
 			_cleanup_images();
-			_create_images();
+			if (auto err = _create_images().move_or()) {
+				log_error() << "Could not create images: " << err.value() << std::endl;
+			}
 			_size_dirty_bit = false;
 			update = true;
 		}
 
 		if (update) {
-			_create_descriptor_sets();
-			//TODO: Very slow as it doesn't need to be done every time
-			_create_pipeline();
+			if (auto err = _create_descriptor_sets().move_or()) {
+				log_error() << "Could not create descriptor set: " << err.value() << std::endl;
+			}
+			//TODO: Slow as it doesn't need to be done every time
+			if (auto err = _create_pipeline().move_or()) {
+				log_error() << "Could not create pipeline: " << err.value() << std::endl;
+			}
 		}
 	}
 
@@ -684,7 +692,7 @@ namespace vulkan {
 		if (auto buffer = StaticBuffer::create(vertices)) {
 			_vertex_buffer = std::move(buffer.value());
 		} else {
-			if (buffer.error().type() != KError::Type::EMPTY_BUFFER) {
+			if (buffer.error().type() != vulkan::ErrorType::EMPTY_BUFFER) {
 				log_error() << buffer.error() << std::endl;
 			}
 		}
@@ -692,7 +700,7 @@ namespace vulkan {
 		if (auto buffer = StaticBuffer::create(bvnodes)) {
 			_bvnode_buffer = std::move(buffer.value());
 		} else {
-			if (buffer.error().type() != KError::Type::EMPTY_BUFFER) {
+			if (buffer.error().type() != vulkan::ErrorType::EMPTY_BUFFER) {
 				log_error() << buffer.error() << std::endl;
 			}
 		}
@@ -711,7 +719,7 @@ namespace vulkan {
 		if (auto buffer = StaticBuffer::create(nodes)) {
 			_node_buffer = std::move(buffer.value());
 		} else {
-			if (buffer.error().type() != KError::Type::EMPTY_BUFFER) {
+			if (buffer.error().type() != vulkan::ErrorType::EMPTY_BUFFER) {
 				log_error() << buffer.error() << std::endl;
 			}
 		}

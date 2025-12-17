@@ -1,14 +1,15 @@
 #pragma once
 
 #include <vulkan/vulkan_core.h>
-#include <util/result.hpp>
-#include <util/KError.hpp>
+
+#include "util/result.hpp"
+#include "Error.hpp"
 
 namespace vulkan {
 	class Sampler {
 		public:
-			static util::Result<Sampler, KError> create_linear();
-			static util::Result<Sampler, KError> create_nearest();
+			static util::Result<Sampler, Error> create_linear();
+			static util::Result<Sampler, Error> create_nearest();
 
 			Sampler();
 

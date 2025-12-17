@@ -5,6 +5,7 @@
 
 #include "graphics.hpp"
 #include "util/result.hpp"
+#include "Error.hpp"
 
 namespace vulkan {
 	class Uniform {
@@ -16,7 +17,7 @@ namespace vulkan {
 				_buffer_s(0)
 			{}
 
-			static util::Result<Uniform, KError> create(size_t buffer_s) {
+			static util::Result<Uniform, Error> create(size_t buffer_s) {
 				auto result = Uniform();
 				
 				result._buffer_s = buffer_s;
@@ -39,7 +40,7 @@ namespace vulkan {
 				if (res == VK_SUCCESS) {
 					return {std::move(result)};
 				} else {
-					return {res};
+					return Error(ErrorType::VULKAN, "Could not map memory", {res});
 				}
 			}
 
@@ -125,7 +126,7 @@ namespace vulkan {
 				Uniform(std::move(uniform))
 			{ }
 
-			static util::Result<MappedUniform<T>, KError> create() {
+			static util::Result<MappedUniform<T>, Error> create() {
 				if (auto res = Uniform::create(sizeof(T))) 
 					return {std::move(res.value())};
 				else

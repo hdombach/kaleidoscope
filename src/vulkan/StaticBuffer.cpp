@@ -6,7 +6,7 @@
 #include "graphics.hpp"
 
 namespace vulkan {
-	util::Result<StaticBuffer, KError> StaticBuffer::create(
+	util::Result<StaticBuffer, Error> StaticBuffer::create(
 			void *data,
 			VkDeviceSize range)
 	{
@@ -18,7 +18,7 @@ namespace vulkan {
 		VkDeviceMemory staging_buffer_memory;
 		
 		if (range == 0) {
-			return KError::empty_buffer();
+			return Error(ErrorType::EMPTY_BUFFER, "Cannot create empty static buffer");
 		}
 
 		Graphics::DEFAULT->create_buffer(
@@ -37,7 +37,7 @@ namespace vulkan {
 				0,
 				&mapped_data);
 		if (res != VK_SUCCESS) {
-			return {res};
+			return Error(ErrorType::VULKAN, "Cannot map memory", {res});
 		}
 
 		memcpy(mapped_data, data, range);

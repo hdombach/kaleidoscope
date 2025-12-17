@@ -5,7 +5,7 @@
 
 namespace vulkan {
 
-	util::Result<Image, KError> Image::create(
+	util::Result<Image, Error> Image::create(
 			VkExtent2D size,
 			VkFormat format,
 			VkImageUsageFlags usage)
@@ -18,7 +18,7 @@ namespace vulkan {
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	}
 
-	util::Result<Image, KError> Image::create(
+	util::Result<Image, Error> Image::create(
 			VkExtent2D size,
 			VkFormat format,
 			VkImageUsageFlags usage,
@@ -50,7 +50,7 @@ namespace vulkan {
 				&result._image);
 
 		if (res != VK_SUCCESS) {
-			return {res};
+			return Error(ErrorType::VULKAN, "Could not create image. ", {res});
 		}
 
 		auto mem_requirements = VkMemoryRequirements{};
@@ -75,7 +75,7 @@ namespace vulkan {
 				nullptr, 
 				&result._image_memory);
 		if (res != VK_SUCCESS) {
-			return {res};
+			return Error(ErrorType::VULKAN, "Could not allocate memory.", {res});
 		}
 
 		vkBindImageMemory(
@@ -103,7 +103,7 @@ namespace vulkan {
 				nullptr,
 				&result._image_view);
 		if (res != VK_SUCCESS) {
-			return {res};
+			return Error(ErrorType::VULKAN, "Could not create image view.", {res});
 		}
 
 		result._size = size;

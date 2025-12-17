@@ -1,4 +1,5 @@
 #include "PassUtil.hpp"
+#include "Error.hpp"
 
 namespace vulkan {
 	size_t max_material_range(const MaterialContainer &materials) {
@@ -34,7 +35,7 @@ namespace vulkan {
 		};
 	}
 
-	util::Result<StaticBuffer, KError> create_material_buffer(Scene &scene) {
+	util::Result<StaticBuffer, Error> create_material_buffer(Scene &scene) {
 		auto material_range = max_material_range(scene.resource_manager().materials());
 		auto buffer_range = material_range * scene.nodes().size();
 		if (buffer_range == 0) {
@@ -51,6 +52,10 @@ namespace vulkan {
 			i++;
 		}
 
-		return StaticBuffer::create(buf.data(), buffer_range);
+		if (auto buffer = StaticBuffer::create(buf.data(), buffer_range)) {
+			return buffer.move_value();
+		} else {
+			return Error(ErrorType::MISC, "Could not create material buffer", buffer.error());
+		}
 	}
 }

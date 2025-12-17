@@ -4,15 +4,15 @@
 #include <vulkan/vulkan_core.h>
 
 #include "util/result.hpp"
-#include "util/KError.hpp"
+#include "Error.hpp"
 
 namespace vulkan {
 	class StaticBuffer {
 		public:
-			static util::Result<StaticBuffer, KError> create(void *data, VkDeviceSize range);
+			static util::Result<StaticBuffer, Error> create(void *data, VkDeviceSize range);
 
 			template<typename T>
-				static util::Result<StaticBuffer, KError> create(std::vector<T> &buf) {
+				static util::Result<StaticBuffer, Error> create(std::vector<T> &buf) {
 					return create(buf.data(), buf.size() * sizeof(T));
 				}
 

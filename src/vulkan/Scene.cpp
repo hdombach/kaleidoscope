@@ -6,38 +6,45 @@
 #include "Scene.hpp"
 #include "prev_pass/PrevPass.hpp"
 #include "Uniforms.hpp"
-#include "util/log.hpp"
 #include "util/map_iterator.hpp"
 
 namespace vulkan {
-	util::Result<Scene::Ptr, KError> Scene::create(
+	using util::f;
+
+	util::Result<Scene::Ptr, Error> Scene::create(
 			types::ResourceManager &resource_manager)
 	{
 		auto scene = Scene::Ptr(new Scene());
 		scene->_resource_manager = &resource_manager; // Needs to be initialized before prev pass
 
 		if (auto err = RayPass::create(*scene, {50, 500}).move_or(scene->_raytrace_render_pass)) {
-			return KError(err.value());
+			return Error(ErrorType::MISC, "Could not create raytrace render pass", err.value());
 		}
-		auto raytrace_render_pass = RayPass::create(*scene, {500, 500});
-		TRY(raytrace_render_pass);
 
-		auto render_pass_res = PrevPass::create(
-				*scene,
-				{300, 300});
-		if (!render_pass_res) {
-			return KError::internal(render_pass_res.error().str()); //TODO
+		if (auto err = PrevPass::create(*scene, {300, 300}).move_or(scene->_preview_render_pass)) {
+			return Error(ErrorType::MISC, "Could not create preview render pass", err.value());
 		}
-		scene->_preview_render_pass = std::move(render_pass_res.value());
-		scene->_raytrace_render_pass = std::move(raytrace_render_pass.value());
+
 		scene->_is_preview = true;
-		scene->add_node_observer(&scene->_preview_render_pass->node_observer());
-		resource_manager.add_mesh_observer(&scene->_preview_render_pass->mesh_observer());
-		resource_manager.add_material_observer(&scene->_preview_render_pass->material_observer());
+		if (auto err = scene->add_node_observer(&scene->_preview_render_pass->node_observer()).move_or()) {
+			return Error(ErrorType::MISC, "Could not add preview render pass node observer", err.value());
+		}
+		if (auto err = resource_manager.add_mesh_observer(&scene->_preview_render_pass->mesh_observer()).move_or()) {
+			return Error(ErrorType::MISC, "Could not add preview render pass mesh observer", err.value());
+		}
+		if (auto err = resource_manager.add_material_observer(&scene->_preview_render_pass->material_observer()).move_or()) {
+			return Error(ErrorType::MISC, "Could not add preview render pass material observer", err.value());
+		}
 
-		scene->add_node_observer(&scene->_raytrace_render_pass->node_observer());
-		resource_manager.add_mesh_observer(&scene->_raytrace_render_pass->mesh_observer());
-		resource_manager.add_material_observer(&scene->_raytrace_render_pass->material_observer());
+		if (auto err = scene->add_node_observer(&scene->_raytrace_render_pass->node_observer()).move_or()) {
+			return Error(ErrorType::MISC, "Could not add raytrace pass node observer", err.value());
+		}
+		if (auto err = resource_manager.add_mesh_observer(&scene->_raytrace_render_pass->mesh_observer()).move_or()) {
+			return Error(ErrorType::MISC, "Could not add raytrace pass mesh observer", err.value());
+		}
+		if (auto err = resource_manager.add_material_observer(&scene->_raytrace_render_pass->material_observer()).move_or()) {
+			return Error(ErrorType::MISC, "Could not add raytrace pass material observer", err.value());
+		}
 
 		scene->_root = scene->create_virtual_node().value();
 		scene->_root->name() = "root";
@@ -157,15 +164,15 @@ namespace vulkan {
 		}
 	}
 
-	util::Result<Node *, KError> Scene::create_node(
+	util::Result<Node *, Error> Scene::create_node(
 			types::Mesh const *mesh,
 			types::Material const *material)
 	{
 		if (!mesh) {
-			return KError::invalid_arg("Mesh is null");
+			return Error(ErrorType::INVALID_ARG, "Mesh is null");
 		}
 		if (!material) {
-			return KError::invalid_arg("Material is null");
+			return Error(ErrorType::INVALID_ARG, "Material is null");
 		}
 		auto id = _nodes.get_id();
 		_nodes.insert(Node::create(id, *mesh, *material));
@@ -177,7 +184,7 @@ namespace vulkan {
 		return node;
 	}
 
-	util::Result<Node *, KError> Scene::create_virtual_node() {
+	util::Result<Node *, Error> Scene::create_virtual_node() {
 		auto id = _nodes.get_id();
 		_nodes.insert(Node::create_virtual(id));
 		for (auto &observer : _node_observers) {
@@ -188,7 +195,7 @@ namespace vulkan {
 		return node;
 	}
 
-	util::Result<types::Camera *, KError> Scene::create_camera() {
+	util::Result<types::Camera *, Error> Scene::create_camera() {
 		auto id = _nodes.get_id();
 		_nodes.insert(types::Camera::create(id));
 		for (auto &observer : _node_observers) {
@@ -199,17 +206,19 @@ namespace vulkan {
 		return static_cast<types::Camera *>(node);
 	}
 
-	util::Result<void, KError> Scene::remove_node(uint32_t id) {
+	util::Result<void, Error> Scene::remove_node(uint32_t id) {
 		if (!_nodes.contains(id)) {
-			return KError::invalid_node(id);
+			return Error(ErrorType::INVALID_ARG, f("Invalid node id ", id));
 		}
 
 		if (id == _root->id()) {
-			return KError::invalid_arg("Cannot delete root");
+			return Error(ErrorType::INVALID_ARG, "Cannot remove root node");
 		}
 
 		for (auto child : *_nodes[id].get()) {
-			remove_node(child->id());
+			if (auto err = remove_node(child->id()).move_or()) {
+				return Error(ErrorType::MISC, f("Cannot remove node ", id), err.value());
+			}
 		}
 
 		for (auto &observer : _node_observers) {
@@ -233,9 +242,9 @@ namespace vulkan {
 		return _root;
 	}
 
-	util::Result<void, KError> Scene::add_node_observer(util::Observer *observer) {
+	util::Result<void, Error> Scene::add_node_observer(util::Observer *observer) {
 		if (util::contains(_node_observers, observer)) {
-			return KError::internal("Node observer already exists");
+			return Error(ErrorType::INVALID_ARG, "Node observer already exists");
 		}
 		_node_observers.push_back(observer);
 		for (auto &node : _nodes) {
@@ -244,9 +253,9 @@ namespace vulkan {
 		return {};
 	}
 
-	util::Result<void, KError> Scene::rem_node_observer(util::Observer *observer) {
+	util::Result<void, Error> Scene::rem_node_observer(util::Observer *observer) {
 		if (util::contains(_node_observers, observer)) {
-			return KError::internal("Node observer does not exist");
+			return Error(ErrorType::INVALID_ARG, "Node observer does not exist");
 		}
 		std::ignore = std::remove(
 				_node_observers.begin(),

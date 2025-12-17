@@ -8,6 +8,7 @@
 #include "codegen/TemplObj.hpp"
 #include "vulkan/Scene.hpp"
 #include "vulkan/StaticBuffer.hpp"
+#include "Error.hpp"
 
 /**
  * @file
@@ -24,5 +25,5 @@ namespace vulkan {
 		MaterialContainer const &materials
 	);
 
-	util::Result<StaticBuffer, KError> create_material_buffer(Scene &scene);
+	util::Result<StaticBuffer, Error> create_material_buffer(Scene &scene);
 }

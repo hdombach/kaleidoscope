@@ -4,7 +4,7 @@
 #include "graphics.hpp"
 
 namespace vulkan {
-	util::Result<Sampler, KError> Sampler::create_linear() {
+	util::Result<Sampler, Error> Sampler::create_linear() {
 		auto result = Sampler();
 
 		auto sampler_info = _default_template();
@@ -15,13 +15,13 @@ namespace vulkan {
 
 		auto err = vkCreateSampler(Graphics::DEFAULT->device(), &sampler_info, nullptr, &result._sampler);
 		if (err != VK_SUCCESS) {
-			return {err};
+			return Error(ErrorType::VULKAN, "Could not create linear sampler", {err});
 		}
 
 		return result;
 	}
 
-	util::Result<Sampler, KError> Sampler::create_nearest() {
+	util::Result<Sampler, Error> Sampler::create_nearest() {
 		auto result = Sampler();
 
 		auto sampler_info = _default_template();
@@ -32,7 +32,7 @@ namespace vulkan {
 
 		auto err = vkCreateSampler(Graphics::DEFAULT->device(), &sampler_info, nullptr, &result._sampler);
 		if (err != VK_SUCCESS) {
-			return {err};
+			return Error(ErrorType::VULKAN, "Could not create nearest sampler", {err});
 		}
 
 		return result;
