@@ -30,26 +30,18 @@ namespace util {
 				}
 
 				Value &value() {
-					try {
-						return std::get<Value>(*this);
-					} catch (std::bad_variant_access) {
-						throw std::get<Error>(*this);
-					}
+					log_assert(std::holds_alternative<Value>(*this), "Check has_value() before accessing has_value()");
+					return std::get<Value>(*this);
 				}
+
 				Value const &value() const {
-					try {
-						return std::get<Value>(*this);
-					} catch (std::bad_variant_access) {
-						throw std::get<Error>(*this);
-					}
+					log_assert(std::holds_alternative<Value>(*this), "Check has_value() before accessing has_value()");
+					return std::get<Value>(*this);
 				}
 
 				Value &&move_value() {
-					try {
-						return std::move(std::get<Value>(*this));
-					} catch (std::bad_variant_access) {
-						throw std::get<Error>(*this);
-					}
+					log_assert(std::holds_alternative<Value>(*this), "Check has_value() before accessing has_value()");
+					return std::move(std::get<Value>(*this));
 				}
 
 				template<typename Target>
@@ -71,33 +63,30 @@ namespace util {
 
 
 				Value &value(Value &default_value) {
-					try {
+					if (std::holds_alternative<Value>(*this)) {
 						return std::get<Value>(*this);
-					} catch (std::bad_variant_access) {
+					} else {
 						return default_value;
 					}
 				}
 				Value const &value(Value const &default_value) const {
-					try {
+					if (std::holds_alternative<Value>(*this)) {
 						return std::get<Value>(*this);
-					} catch (std::bad_variant_access) {
+					} else {
 						return default_value;
 					}
 				}
 				Value value(Value default_value) {
-					try {
+					if (std::holds_alternative<Value>(*this)) {
 						return std::get<Value>(*this);
-					} catch (std::bad_variant_access) {
+					} else {
 						return default_value;
 					}
 				}
 
 				Error const &error() const {
-					try {
-						return std::get<Error>(*this);
-					} catch (std::bad_variant_access) {
-						throw std::get<Error>(*this);
-					}
+					log_assert(std::holds_alternative<Error>(*this), "Check has_value() before accessing error");
+					return std::get<Error>(*this);
 				}
 
 			private:
@@ -119,11 +108,10 @@ namespace util {
 				}
 
 				void value() const {
-					if (parent_t::has_value()) {
-						throw std::runtime_error("Cannot get value from a Result object");
-					}
+					log_assert(!parent_t::has_value(), "Check has_value() before accessing value()");
 				}
 				Error const &error() const {
+					log_assert(parent_t::has_value(), "Check has_value() before acessing error()");
 					return parent_t::value();
 				}
 
@@ -156,13 +144,16 @@ namespace util {
 				}
 
 				Value value() {
+					log_assert(has_value(), "Check has_value() before accessing value()");
 					return parent_t::value();
 				}
 				Value const value() const {
+					log_assert(has_value(), "Check has_value() before accessing value()");
 					return parent_t::value();
 				}
 
 				void const error() const {
+					log_assert(!has_value(), "Check has_value before accessing error()");
 					return;
 				}
 
@@ -230,9 +221,7 @@ namespace util {
 
 	template<typename Value, typename Error>
 		void require(Result<Value, Error> &result) {
-			if (!result.has_value()) {
-					throw std::get<Error>(result.error());
-			}
+			log_assert(result.has_value(), util::f("Expecting value. got error, ", result.error()));
 		}
 
 	inline void require(VkResult result) {
