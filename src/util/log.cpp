@@ -5,7 +5,7 @@
 #include "NullStream.hpp"
 
 namespace util {
-	uint8_t g_log_flags = EVENT | WARNING | ERROR | FATAL_ERROR;
+	uint8_t g_log_flags = DEBUG | WARNING | ERROR | FATAL_ERROR;
 
 	std::ostream& log(Importance importance, util::FileLocation location) {
 		if (!(importance & g_log_flags)) {
@@ -14,7 +14,7 @@ namespace util {
 
 		std::cout << "[";
 
-		if (importance & EVENT) {
+		if (importance & INFO) {
 			std::cout << "EVENT ";
 		} else if (importance & WARNING) {
 			std::cout << color::YELLOW << "WARNING ";

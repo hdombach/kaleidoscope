@@ -840,7 +840,6 @@ namespace cg {
 	) {
 		auto name = node.tok().content();
 		if (args.count(name) == 0) {
-			log_debug() << "unknown identifier " << node << std::endl;
 			return Error(ErrorType::SEMANTIC, util::f("Unknown identifier \"", name, "\" ", node.location()));
 		}
 		return args.at(name).dup().set_location(node.location());

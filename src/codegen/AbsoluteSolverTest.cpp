@@ -45,9 +45,7 @@ namespace cg {
 		c.prim("message") = c["opening"] + T::Ident + c["closing"] + T::Eof;
 
 		c.prep().value();
-		log_debug() << "before simplifying:\n" << c << std::endl;
 		c.simplify();
-		log_debug() << "after simplifying:\n" << c << std::endl;
 
 		auto solver = std::move(AbsoluteSolver::create(std::move(ctx)).value());
 		//auto node = solver->parse(util::StringRef"")

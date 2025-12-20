@@ -336,7 +336,7 @@ namespace vulkan {
 		};
 		auto start = log_start_timer();
 		vert_source = cg::TemplGen::codegen(vert_source, vert_args.dict().value(), "preview_material.vert.cg").value();
-		log_debug() << "codegenerating preview_material.vert.cg took " << start << std::endl;
+		log_info() << "codegenerating preview_material.vert.cg took " << start << std::endl;
 
 		auto templ_textures = cg::TemplList();
 		for (auto &t : textures) {
@@ -351,10 +351,10 @@ namespace vulkan {
 		};
 		start = log_start_timer();
 		frag_source = cg::TemplGen::codegen(frag_source, frag_args.dict().value(), "preview_material.frag.cg").value();
-		log_debug() << "codegenerating preview_material.frag.cg took " << start << std::endl;
+		log_info() << "codegenerating preview_material.frag.cg took " << start << std::endl;
 
-		log_debug() << "vert codegen:\n" << util::add_strnum(vert_source) << std::endl;
-		log_debug() << "frag codegen:\n" << util::add_strnum(frag_source) << std::endl;
+		log_trace() << "vert codegen:\n" << util::add_strnum(vert_source) << std::endl;
+		log_trace() << "frag codegen:\n" << util::add_strnum(frag_source) << std::endl;
 	}
 
 	util::Result<void, PrevPassMaterial::Error> PrevPassMaterial::_create() {

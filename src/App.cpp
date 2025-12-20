@@ -138,18 +138,6 @@ void App::main_loop() {
 		auto time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 		comb_ratio_value = 0.5 + 0.4 * sin(time * 1);
 
-		if (!(*_scene->begin()).get()) {
-			log_debug() << "bool: " << (_scene->begin() == _scene->end()) << std::endl;
-			log_debug() << "empty" << std::endl;
-		}
-
-		for (auto &node : *_scene) {
-			if (auto comb_ratio = node->resources().get("comb_ratio")) {
-				//LOG_DEBUG << "comb_ratio: " << comb_ratio.value().as_float() << std::endl;
-				//comb_ratio.value().set_float(comb_ratio_value);
-			}
-		}
-
 		VkSemaphore semaphore;
 		_scene->update();
 		_scene->set_selected_node(_view_state->selected_node());

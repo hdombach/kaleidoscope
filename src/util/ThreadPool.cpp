@@ -63,7 +63,7 @@ de_start:
 				t = &_tasks.front();
 				_cur_task = t->name().c_str();
 			}
-			log_event() << "Starting task: " << _cur_task << std::endl;
+			log_trace() << "Starting task: " << _cur_task << std::endl;
 			t->run();
 			{
 				std::lock_guard l(_tasks_lock);

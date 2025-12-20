@@ -7,7 +7,7 @@
 
 #include "FileLocation.hpp"
 
-#define DEFAULT_LOG_EVENT true
+#define DEFAULT_LOG_INFO true
 #define DEFAULT_LOG_WARNING true
 #define DEFAULT_LOG_ERROR true
 #define DEFAULT_LOG_FATAL_ERROR true
@@ -15,7 +15,7 @@
 
 namespace util {
 	enum Importance: uint8_t {
-		EVENT        = 0b10000000,
+		INFO        = 0b10000000,
 		WARNING      = 0b01000000,
 		ERROR        = 0b00100000,
 		FATAL_ERROR  = 0b00010000,
@@ -56,27 +56,51 @@ void log_assert(
 	util::FileLocation=std::source_location::current()
 );
 
-inline std::ostream& log_event(util::FileLocation loc=std::source_location::current()) {
-	return log(util::Importance::EVENT, loc);
+/**
+ * @brief General information that appears in verbose mode
+ */
+inline std::ostream& log_info(util::FileLocation loc=std::source_location::current()) {
+	return log(util::Importance::INFO, loc);
 }
+/**
+ * @brief Information about potentially incorrect state
+ */
 inline std::ostream& log_warning(util::FileLocation loc=std::source_location::current()) {
 	return log(util::Importance::WARNING, loc);
 }
+/**
+ * @brief When there is an error
+ */
 inline std::ostream& log_error(util::FileLocation loc=std::source_location::current()) {
 	return log(util::Importance::ERROR, loc);
 }
+/**
+ * @brief An error that cannot be recovered from
+ */
 inline std::ostream& log_fatal_error(util::FileLocation loc=std::source_location::current()) {
 	return log(util::Importance::FATAL_ERROR, loc);
 }
+/**
+ * @brief Used for debugging memory related issues
+ */
 inline std::ostream& log_memory(util::FileLocation loc=std::source_location::current()) {
 	return log(util::Importance::MEMORY, loc);
 }
+/**
+ * @brief Only used for debugging. Should be removed when problem is fixed.
+ */
 inline std::ostream& log_debug(util::FileLocation loc=std::source_location::current()) {
 	return log(util::Importance::DEBUG, loc);
 }
+/**
+ * @brief The most verbse level of logging.
+ */
 inline std::ostream& log_trace(util::FileLocation loc=std::source_location::current()) {
 	return log(util::Importance::TRACE, loc);
 }
+/**
+ * @brief Start a timer that can be used when logging
+ */
 inline util::TimePoint log_start_timer() {
 	return {std::chrono::steady_clock::now()};
 }

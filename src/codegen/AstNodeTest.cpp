@@ -48,10 +48,8 @@ namespace cg {
 		auto &c = f.cfg();
 		using T = Token::Type;
 
-		log_debug() << "size: " << c.cfg_rule_sets().size() << std::endl;
 		c.root("root") = c["hello"] + T::Eof;
 		c.prim("hello") = T::Unmatched;
-		log_debug() << "size: " << c.cfg_rule_sets().size() << std::endl;
 
 		c.prep().value();
 

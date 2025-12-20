@@ -629,9 +629,9 @@ namespace vulkan {
 		auto source_code = util::readEnvFile("assets/shaders/preview_overlay.comp.cg");
 		auto start = log_start_timer();
 		source_code = cg::TemplGen::codegen(source_code, codegen_args, "preview_overlay.comp.cg").value();
-		log_debug() << "preview_overlay codegen took " << start << std::endl;
+		log_info() << "preview_overlay codegen took " << start << std::endl;
 		auto compute_shader = Shader::from_source_code(source_code, Shader::Type::Compute);
-		log_debug() << "\n" << util::add_strnum(source_code) << std::endl;
+		log_info() << "\n" << util::add_strnum(source_code) << std::endl;
 		if (!compute_shader) {
 			log_fatal_error() << "Overlay error " << compute_shader.error() << std::endl;
 			return Error(ErrorType::VULKAN, "Could not create preview_overlay shader", compute_shader.error());
@@ -831,8 +831,6 @@ namespace vulkan {
 			return Error(ErrorType::VULKAN, "Could not create de render pass", VkError(res));
 		}
 
-		log_debug() << "Created DE preview render pass: " << _de_render_pass << std::endl;
-
 		return {};
 	}
 
@@ -854,7 +852,7 @@ namespace vulkan {
 		auto vert_source_code = util::readEnvFile("assets/shaders/unit_square.vert");
 		auto vert_shader = Shader::from_source_code(vert_source_code, Shader::Type::Vertex);
 		if (!vert_shader) {
-			log_debug() << "\n" << util::add_strnum(vert_source_code) << std::endl;
+			log_info() << "\n" << util::add_strnum(vert_source_code) << std::endl;
 			log_error() << vert_shader.error() << std::endl;
 			return Error(ErrorType::VULKAN, "Could not create vert shader", vert_shader.error());
 		}
@@ -862,7 +860,7 @@ namespace vulkan {
 		auto frag_source_code = _codegen_de();
 		auto frag_shader = Shader::from_source_code(frag_source_code, Shader::Type::Fragment);
 		if (!frag_shader) {
-			log_debug() << "\n" << util::add_strnum(frag_source_code) << std::endl;
+			log_info() << "\n" << util::add_strnum(frag_source_code) << std::endl;
 			log_error() << frag_shader.error() << std::endl;
 			return Error(ErrorType::VULKAN, "Could not create frag shader", frag_shader.error());
 		}
@@ -1054,8 +1052,6 @@ namespace vulkan {
 		if (res != VK_SUCCESS) {
 			return Error(ErrorType::VULKAN, "Could not create de pipeline", VkError(res));
 		}
-
-		log_debug() << "Create DE preview pipeline: " << _de_pipeline << std::endl;
 
 		return {};
 	}
@@ -1371,8 +1367,6 @@ namespace vulkan {
 			materials.push_back(material_templobj(material->id(), _scene->resource_manager().materials()));
 		}
 
-		log_event() << "materials size is " << materials.size() << std::endl;
-
 		auto args = cg::TemplObj{
 			{"global_declarations", GlobalPrevPassUniform::declaration_content},
 			{"node_declarations", PrevPassNode::VImpl::declaration},
@@ -1382,7 +1376,7 @@ namespace vulkan {
 		};
 		source_code = cg::TemplGen::codegen(source_code, args, "preview_de.frag.cg").value();
 
-		log_debug() << "Prev pass de code: " << util::add_strnum(source_code) << std::endl;
+		log_info() << "Prev pass de code: " << util::add_strnum(source_code) << std::endl;
 
 		return source_code;
 	}

@@ -156,7 +156,6 @@ namespace cg::abs {
 			}
 		}
 		if (stack.size() != 3) {
-			log_debug() << "stack is " << util::plist(stack) << std::endl;
 			return Error(ErrorType::INVALID_ABS_STACK, "Stack must contain 3 elements");
 		}
 		if (!stack[1].is_node()) {
@@ -203,7 +202,6 @@ namespace cg::abs {
 	}
 
 	uint32_t AbsoluteSolver::_add_state(TableState const &state_rule) {
-		log_debug() << "Adding state: " << util::trim(state_rule.str()) << std::endl;
 		if (_table.contains_row(state_rule)) return _table.row_id(state_rule);
 
 		auto new_state = _table.row(state_rule);
@@ -215,7 +213,6 @@ namespace cg::abs {
 		//Right now, can only reduce if it is the only rule in a group
 		auto end_rules = unsorted_rules.find_ends();
 		if (end_rules.size() == 1) {
-			log_debug() << "Adding reduction for " << end_rules.front().str() << std::endl;
 			for (auto &s : new_state) {
 				s = _get_rule_id(end_rules.front()) | AbsoluteTable::REDUCE_MASK;
 			}

@@ -170,7 +170,7 @@ namespace ui {
 		if (ImGui::Button("New node", ImVec2(width, 0))) {
 			if (auto node = scene.create_node(scene.resource_manager().default_mesh(), scene.resource_manager().default_material())) {
 				state.selected_item = node.value()->id();
-				log_event() << "Created node " << state.selected_item << std::endl;
+				log_trace() << "Created node " << state.selected_item << std::endl;
 			} else {
 				log_error() << node.error() << std::endl;
 			}
@@ -180,7 +180,7 @@ namespace ui {
 			if (ImGui::Selectable("New virtual node")) {
 				if (auto n = scene.create_virtual_node()) {
 					state.selected_item = n.value()->id();
-					log_event() << "Created virtual node " << state.selected_item << std::endl;
+					log_trace() << "Created virtual node " << state.selected_item << std::endl;
 				} else {
 					log_error() << n.error() << std::endl;
 				}
@@ -188,7 +188,7 @@ namespace ui {
 			if (ImGui::Selectable("New camera")) {
 				if (auto n = scene.create_camera()) {
 					state.selected_item = n.value()->id();
-					log_event() << "Created camera " << state.selected_item << std::endl;
+					log_trace() << "Created camera " << state.selected_item << std::endl;
 				} else {
 					log_error() << n.error() << std::endl;
 				}

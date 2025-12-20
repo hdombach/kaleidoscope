@@ -74,7 +74,6 @@ namespace cg {
 
 	util::Result<void, Error> CfgContext::prep() { 
 		if (_root_name.empty()) {
-			log_debug() << "root name is empty" << std::endl;
 			return Error(ErrorType::INTERNAL, "CfgContext must contain a root");
 		}
 		for (auto &[key, i] : _cfg_map) {
@@ -124,11 +123,7 @@ namespace cg {
 	}
 
 	void CfgContext::simplify() {
-		log_debug() << "Before removing empty sets" << std::endl;
-		log_debug() << *this;
 		_remove_empty();
-		log_debug() << "After removing empty sets" << std::endl;
-		log_debug() << *this;
 	}
 
 	std::set<std::string> get_empty_sets(CfgContext &ctx) {

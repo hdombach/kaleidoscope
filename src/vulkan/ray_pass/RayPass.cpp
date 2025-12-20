@@ -331,7 +331,6 @@ namespace vulkan {
 			range.layerCount = 1;
 			range.levelCount = 1;
 			vkCmdClearColorImage(_command_buffer, _accumulator_image.image(), VK_IMAGE_LAYOUT_GENERAL, &clear_color, 1, &range);
-			log_debug() << "Cleared accumulator" << std::endl;
 		}
 		vkCmdBindPipeline(_command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, _pipeline);
 		auto descriptor_set = _descriptor_set.descriptor_set(0);
@@ -567,8 +566,6 @@ namespace vulkan {
 			return Error(ErrorType::VULKAN, "Could not create compute pipline for ray pass", VkError(res));
 		}
 
-		log_debug() << "just created raypass pipeline " << _pipeline << std::endl;
-
 		return {};
 	}
 
@@ -639,7 +636,6 @@ namespace vulkan {
 		}
 
 		if (_node_dirty_bit) {
-			log_debug() << "update node buffers " << std::endl;
 			_create_node_buffers();
 			_node_dirty_bit = false;
 			_material_dirty_bit = true;
@@ -754,9 +750,9 @@ namespace vulkan {
 
 		auto start = log_start_timer();
 		source = cg::TemplGen::codegen(source, args, "raytrace.comp.cg").value();
-		log_debug() << "raypass codegen took " << start << std::endl;
+		log_info() << "raypass codegen took " << start << std::endl;
 
-		log_debug() << "raytrace codegen: \n" << util::add_strnum(source) << std::endl;
+		log_info() << "raytrace codegen: \n" << util::add_strnum(source) << std::endl;
 
 		return source;
 	}
