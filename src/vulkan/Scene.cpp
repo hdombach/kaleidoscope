@@ -25,6 +25,10 @@ namespace vulkan {
 			return Error(ErrorType::MISC, "Could not create preview render pass", err.value());
 		}
 
+		if (auto err = InstancedPass::create({300, 300}).move_or(scene->_instanced_pass)) {
+			return Error(ErrorType::MISC, "Could not create instanced pass", err.value());
+		}
+
 		scene->_is_preview = true;
 		if (auto err = scene->add_node_observer(&scene->_preview_render_pass->node_observer()).move_or()) {
 			return Error(ErrorType::MISC, "Could not add preview render pass node observer", err.value());
@@ -56,7 +60,8 @@ namespace vulkan {
 
 	VkDescriptorSet Scene::imgui_descriptor_set() {
 		if (_is_preview) {
-			return _preview_render_pass->imgui_descriptor_set();
+			return _instanced_pass->imgui_descriptor_set();
+			//return _preview_render_pass->imgui_descriptor_set();
 		} else {
 			return _raytrace_render_pass->imgui_descriptor_set();
 		}
@@ -64,18 +69,20 @@ namespace vulkan {
 
 	VkImageView Scene::image_view() {
 		if (_is_preview) {
-			return _preview_render_pass->image_view();
+			return _instanced_pass->image_view();
+			//return _preview_render_pass->image_view();
 		} else {
 			return _raytrace_render_pass->image_view();
 		}
 	}
 
 	VkExtent2D Scene::size() const {
-		return _preview_render_pass->size();
+		return {300, 300};
+		//return _preview_render_pass->size();
 	}
 
 	void Scene::resize(VkExtent2D new_size) {
-		_preview_render_pass->resize(new_size);
+		//_preview_render_pass->resize(new_size);
 		_raytrace_render_pass->resize(new_size);
 	}
 
@@ -98,7 +105,8 @@ namespace vulkan {
 	}
 
 	VkSemaphore Scene::render_preview(VkSemaphore semaphore) {
-		return _preview_render_pass->render(_nodes.raw(), camera(), semaphore);
+		return _instanced_pass->render(semaphore);
+		//return _preview_render_pass->render(_nodes.raw(), camera(), semaphore);
 	}
 
 	VkSemaphore Scene::render_raytrace(VkSemaphore semaphore) {

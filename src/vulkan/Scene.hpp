@@ -16,6 +16,7 @@
 #include "ray_pass/RayPass.hpp"
 #include "types/Node.hpp"
 #include "Error.hpp"
+#include "prev_pass/InstancedPass.hpp"
 
 namespace vulkan {
 	/**
@@ -104,6 +105,7 @@ namespace vulkan {
 		private:
 			PrevPass::Ptr _preview_render_pass;
 			RayPass::Ptr _raytrace_render_pass;
+			InstancedPass::Ptr _instanced_pass;
 
 			/**
 			 * @brief List of abstract nodes
