@@ -33,6 +33,8 @@ namespace vulkan {
 		VkShaderStageFlags stage_flags
 	);
 
+	const char *descriptor_type_str(VkDescriptorType const &t);
+
 	class DescriptorSetBuilder;
 
 	class DescriptorSetLayout {

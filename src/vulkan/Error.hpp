@@ -9,6 +9,7 @@ namespace vulkan {
 		MISC,
 		INTERNAL,
 		EMPTY_BUFFER,
+		SHADER_RESOURCE,
 	};
 
 	using Error = TypedError<ErrorType>;

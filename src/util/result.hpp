@@ -223,12 +223,6 @@ namespace util {
 		void require(Result<Value, Error> &result) {
 			log_assert(result.has_value(), util::f("Expecting value. got error, ", result.error()));
 		}
-
-	inline void require(VkResult result) {
-		if (result != VK_SUCCESS) {
-			throw std::runtime_error(std::to_string(result));
-		}
-	}
 }
 
 

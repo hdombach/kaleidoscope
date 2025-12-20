@@ -13,6 +13,8 @@ const char *vulkan::Error::type_str(vulkan::ErrorType t) {
 			return "VulkanError.INTERNAL";
 		case vulkan::ErrorType::EMPTY_BUFFER:
 			return "VulkanError.EMPTY_BUFFER";
+		case vulkan::ErrorType::SHADER_RESOURCE:
+			return "VulkanError.SHADER_RESOURCE";
 	}
 }
 

@@ -20,6 +20,7 @@ set(VULKAN_SRC
 	${CMAKE_CURRENT_SOURCE_DIR}/prev_pass/PrevPassMaterial.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/prev_pass/PrevPassMesh.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/prev_pass/PrevPassNode.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/prev_pass/InstancedPass.cpp
 
 	${CMAKE_CURRENT_SOURCE_DIR}/ray_pass/RayPass.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/ray_pass/RayPassMaterial.cpp

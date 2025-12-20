@@ -67,6 +67,47 @@ namespace vulkan {
 		binding.pImmutableSamplers = nullptr;
 		return binding;
 	}
+
+	const char *descriptor_type_str(VkDescriptorType const &t) {
+		switch (t) {
+			case VK_DESCRIPTOR_TYPE_SAMPLER:
+				return "VK_DESCRIPTOR_TYPE_SAMPLER";
+			case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+				return "VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER";
+			case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
+				return "VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE";
+			case VK_DESCRIPTOR_TYPE_STORAGE_IMAGE:
+				return "VK_DESCRIPTOR_TYPE_STORAGE_IMAGE";
+			case VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER:
+				return "VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER";
+			case VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER:
+				return "VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER";
+			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+				return "VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER";
+			case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+				return "VK_DESCRIPTOR_TYPE_STORAGE_BUFFER";
+			case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC:
+				return "VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC";
+			case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC:
+				return "VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC";
+			case VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT:
+				return "VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT";
+			case VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK:
+				return "VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK";
+			case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR:
+				return "VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR";
+			case VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV:
+				return "VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_NV";
+			case VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM:
+				return "VK_DESCRIPTOR_TYPE_SAMPLE_WEIGHT_IMAGE_QCOM";
+			case VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM:
+				return "VK_DESCRIPTOR_TYPE_BLOCK_MATCH_IMAGE_QCOM";
+			case VK_DESCRIPTOR_TYPE_MUTABLE_EXT:
+				return "VK_DESCRIPTOR_TYPE_MUTABLE_EXT";
+			case VK_DESCRIPTOR_TYPE_MAX_ENUM:
+				return "VK_DESCRIPTOR_TYPE_MAX_ENUM";
+		}
+	}
 	
 	util::Result<DescriptorSetLayout, Error> DescriptorSetLayout::create(
 		std::vector<VkDescriptorSetLayoutBinding> const &bindings
@@ -225,7 +266,11 @@ namespace vulkan {
 	) {
 		auto &binding = _layout->bindings()[_cur_binding];
 		if (binding.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-			return Error(ErrorType::INVALID_ARG, f("Binding ", _cur_binding, " is not a uniform buffer"));
+			auto msg = f(
+				"Binding ", _cur_binding, " is not a uniform buffer. (expecting ",
+				descriptor_type_str(binding.descriptorType), ")"
+			);
+			return Error(ErrorType::INVALID_ARG, msg);
 		}
 
 		auto &buffer_infos = _buffer_infos[_cur_binding];
@@ -263,7 +308,11 @@ namespace vulkan {
 	) {
 		auto &binding = _layout->bindings()[_cur_binding];
 		if (binding.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-			return Error(ErrorType::INVALID_ARG, f("Binding ", _cur_binding, " is not an image sampler"));
+			auto msg = f(
+				"Binding ", _cur_binding, " is not an image sampler. (expecting ",
+				descriptor_type_str(binding.descriptorType), ")"
+			);
+			return Error(ErrorType::INVALID_ARG, msg);
 		}
 
 		if (image_view == VK_NULL_HANDLE) {
@@ -294,7 +343,11 @@ namespace vulkan {
 	) {
 		auto &binding = _layout->bindings()[_cur_binding];
 		if (binding.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-			return Error(ErrorType::INVALID_ARG, f("Binding ", _cur_binding, " is not an image sampler"));
+			auto msg = f(
+				"Binding ", _cur_binding, " is not an image sampler. (epxecting ",
+				descriptor_type_str(binding.descriptorType), ")"
+			);
+			return Error(ErrorType::INVALID_ARG, msg);
 		}
 		if (image_views.size() == 0) {
 			return Error(ErrorType::INVALID_ARG, "Cannot use 0 images");
@@ -330,7 +383,11 @@ namespace vulkan {
 	) {
 		auto &binding = _layout->bindings()[_cur_binding];
 		if (binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) {
-			return Error(ErrorType::INVALID_ARG, f("Binding ", _cur_binding, " is not an image target"));
+			auto msg = f(
+				"Binding ", _cur_binding, " is not an image target. (expecting ",
+				descriptor_type_str(binding.descriptorType), ")"
+			);
+			return Error(ErrorType::INVALID_ARG, msg);
 		}
 
 		if (image_view == VK_NULL_HANDLE) {
@@ -362,7 +419,11 @@ namespace vulkan {
 	) {
 		auto &binding = _layout->bindings()[_cur_binding];
 		if (binding.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
-			return Error(ErrorType::INVALID_ARG, f("Binding ", _cur_binding, " is not a storage buffer"));
+			auto msg = f(
+				"Binding ", _cur_binding, " is not a storage buffer. (epxecting ",
+				descriptor_type_str(binding.descriptorType), ")"
+			);
+			return Error(ErrorType::INVALID_ARG, msg);
 		}
 
 

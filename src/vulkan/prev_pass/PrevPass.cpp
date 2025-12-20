@@ -599,7 +599,9 @@ namespace vulkan {
 		bindings.push_back(descriptor_layout_uniform(VK_SHADER_STAGE_COMPUTE_BIT));
 		bindings.push_back(descriptor_layout_image_target(VK_SHADER_STAGE_COMPUTE_BIT, 1));
 
-		_overlay_descriptor_set_layout = DescriptorSetLayout::create(bindings).move_value();
+		if (auto err = DescriptorSetLayout::create(bindings).move_or(_overlay_descriptor_set_layout)) {
+			return Error(ErrorType::RESOURCE, "Could not create overlay descriptor set layout", err.value());
+		}
 
 		auto builder = _overlay_descriptor_set_layout.builder();
 		if (auto err = builder.add_image_target(_color_image.image_view()).move_or()) {
@@ -611,8 +613,9 @@ namespace vulkan {
 		if (auto err = builder.add_image_target(_de_node_image.image_view()).move_or()) {
 			return Error(ErrorType::RESOURCE, "Could not add de node image target", {err.value()});
 		}
-
-		_overlay_descriptor_set = DescriptorSets::create(builder, descriptor_pool()).move_value();
+		if (auto err = DescriptorSets::create(builder, descriptor_pool()).move_or(_overlay_descriptor_set)) {
+			return Error(ErrorType::RESOURCE, "Could not create DescriptorSet", err.value());
+		}
 
 		return {};
 	}
@@ -721,7 +724,9 @@ namespace vulkan {
 			bindings.push_back(descriptor_layout_images(VK_SHADER_STAGE_FRAGMENT_BIT, textures.size()));
 		}
 
-		_de_descriptor_set_layout = DescriptorSetLayout::create(bindings).move_value();
+		if (auto err = DescriptorSetLayout::create(bindings).move_or(_de_descriptor_set_layout)) {
+			return Error(ErrorType::RESOURCE, "Could not create descriptor set layout", err.value());
+		}
 
 		auto builder = _de_descriptor_set_layout.builder();
 		if (auto err = builder.add_image(_depth_buf_image.image_view(), VK_IMAGE_LAYOUT_GENERAL).move_or()) {
@@ -741,8 +746,9 @@ namespace vulkan {
 				return Error(ErrorType::RESOURCE, "Could not add textures", err.value());
 			}
 		}
-
-		_de_descriptor_set = DescriptorSets::create(builder, descriptor_pool()).move_value();
+		if (auto err = DescriptorSets::create(builder, descriptor_pool()).move_or(_de_descriptor_set)) {
+			return Error(ErrorType::RESOURCE, "Could not create de descriptor set", err.value());
+		}
 
 		return {};
 	}
@@ -766,7 +772,7 @@ namespace vulkan {
 		node_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		node_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		node_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		node_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		node_attachment.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
 		node_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
 
 		auto color_attachment_ref = VkAttachmentReference{};
