@@ -83,6 +83,25 @@ namespace util {
 			 */
 			bool insert(Element const &element) {
 				uint32_t id = IdTrait()(element);
+				return insert(element, id);
+			}
+
+			/**
+			 * @brief Inserts element
+			 *
+			 * @returns false if duplicate
+			 */
+			bool insert(Element &&element) {
+				uint32_t id = IdTrait()(element);
+				return insert(std::move(element), id);
+			}
+
+			/**
+			 * @brief Inserts element
+			 *
+			 * @returns false if duplicate
+			 */
+			bool insert(Element const &element, uint32_t id) {
 				if (contains(id)) {
 					return false;
 				}
@@ -100,8 +119,7 @@ namespace util {
 			 *
 			 * @returns false if duplicate
 			 */
-			bool insert(Element &&element) {
-				uint32_t id = IdTrait()(element);
+			bool insert(Element &&element, uint32_t id) {
 				if (contains(id)) {
 					return false;
 				}

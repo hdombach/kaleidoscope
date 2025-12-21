@@ -25,7 +25,7 @@ namespace vulkan {
 			return Error(ErrorType::MISC, "Could not create preview render pass", err.value());
 		}
 
-		if (auto err = InstancedPass::create({300, 300}).move_or(scene->_instanced_pass)) {
+		if (auto err = InstancedPass::create({300, 300}, *scene).move_or(scene->_instanced_pass)) {
 			return Error(ErrorType::MISC, "Could not create instanced pass", err.value());
 		}
 

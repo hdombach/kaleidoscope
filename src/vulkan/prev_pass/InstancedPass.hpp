@@ -2,20 +2,55 @@
 
 #include <memory>
 
+#include "util/Observer.hpp"
 #include "util/result.hpp"
 #include "vulkan/DescriptorSet.hpp"
 #include "vulkan/Fence.hpp"
 #include "vulkan/Semaphore.hpp"
 #include "vulkan/Image.hpp"
 #include "vulkan/Error.hpp"
+#include "util/UIDList.hpp"
+
+#include "InstancedPassMesh.hpp"
 
 namespace vulkan {
+	class Scene;
 	/**
 	 * @brief Render pass for the instanced preview render pass.
 	 */
 	class InstancedPass {
 		public:
 			using Ptr = std::unique_ptr<InstancedPass>;
+
+			/**
+			 * @brief Watch when the meshes list is modified in the resource manager
+			 */
+			class MeshObserver: public util::Observer {
+				public:
+					MeshObserver() = default;
+					MeshObserver(InstancedPass &instanced_pass);
+					void obs_create(uint32_t id) override;
+					void obs_update(uint32_t id) override;
+					void obs_remove(uint32_t id) override;
+				private:
+					InstancedPass *_instanced_pass;
+			};
+
+			/**
+			 * @brief Watch when the node list is modified in the resource manager
+			 */
+			class NodeObserver: public util::Observer {
+				public:
+					NodeObserver() = default;
+					NodeObserver(InstancedPass &instanced_pass);
+					void obs_create(uint32_t id) override;
+					void obs_update(uint32_t id) override;
+					void obs_remove(uint32_t id) override;
+				private:
+					InstancedPass *_instanced_pass;
+			};
+
+		public:
 
 			/*
 			 * @brief Create an uninitialized InstancedPass
@@ -26,7 +61,7 @@ namespace vulkan {
 			 * @brief Creates a new Instanced pass
 			 * @param[in] size Initial size of the render view
 			 */
-			static util::Result<Ptr, Error> create(VkExtent2D size);
+			static util::Result<Ptr, Error> create(VkExtent2D size, Scene &scene);
 
 			/**
 			 * @bief Copy constructor
@@ -83,7 +118,22 @@ namespace vulkan {
 			 */
 			VkImageView image_view();
 
+			/**
+			 * @brief InstancedPass handlers to changes in the mesh list
+			 */
+			MeshObserver &mesh_observer();
+
+			/**
+			 * @brief InstancedPass handlers to changes in the node list
+			 */
+			NodeObserver &node_observer();
+
 		private:
+			util::UIDList<InstancedPassMesh> _meshes;
+			MeshObserver _mesh_observer;
+			NodeObserver _node_observer;
+		
+			Scene *_scene;
 			VkRenderPass _render_pass;
 			VkPipeline _pipeline;
 			VkPipelineLayout _pipeline_layout;
@@ -98,7 +148,16 @@ namespace vulkan {
 			Image _depth_image;
 			Image _material_image;
 			VkDescriptorSet _imgui_descriptor_set;
-			
+
+		private:
+			void mesh_create(uint32_t id);
+			void mesh_update(uint32_t id);
+			void mesh_remove(uint32_t id);
+
+			void node_create(uint32_t id);
+			void node_update(uint32_t id);
+			void node_remove(uint32_t id);
+
 		private:
 			const static VkFormat _MATERIAL_IMAGE_FORMAT = VK_FORMAT_R16_UINT;
 

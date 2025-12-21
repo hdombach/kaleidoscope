@@ -1,19 +1,41 @@
 #include "InstancedPass.hpp"
+#include "InstancedPassMesh.hpp"
 #include "util/file.hpp"
 #include "util/log.hpp"
 #include "util/Util.hpp"
 #include "vulkan/Error.hpp"
 #include "vulkan/Shader.hpp"
 #include "vulkan/Vertex.hpp"
+#include "vulkan/Scene.hpp"
 
 #include <imgui_impl_vulkan.h>
 #include <vulkan/vulkan_core.h>
 
 namespace vulkan {
-	util::Result<InstancedPass::Ptr, Error> InstancedPass::create(VkExtent2D size) {
+	using MeshObserver = InstancedPass::MeshObserver;
+	using NodeObserver = InstancedPass::NodeObserver;
+
+	MeshObserver::MeshObserver(InstancedPass &instanced_pass):
+		_instanced_pass(&instanced_pass)
+	{ }
+
+	void MeshObserver::obs_create(uint32_t id) { _instanced_pass->mesh_create(id); }
+	void MeshObserver::obs_update(uint32_t id) { _instanced_pass->mesh_update(id); }
+	void MeshObserver::obs_remove(uint32_t id) { _instanced_pass->mesh_remove(id); }
+
+	NodeObserver::NodeObserver(InstancedPass &instanced_pass):
+		_instanced_pass(&instanced_pass)
+	{}
+
+	void NodeObserver::obs_create(uint32_t id) { _instanced_pass->node_create(id); }
+	void NodeObserver::obs_update(uint32_t id) { _instanced_pass->node_update(id); }
+	void NodeObserver::obs_remove(uint32_t id) { _instanced_pass->node_remove(id); }
+
+	util::Result<InstancedPass::Ptr, Error> InstancedPass::create(VkExtent2D size, Scene &scene) {
 		auto p = Ptr(new InstancedPass());
 
 		p->_size = size;
+		p->_scene = &scene;
 
 		p->_descriptor_pool = DescriptorPool::create();
 
@@ -44,8 +66,6 @@ namespace vulkan {
 		if (auto err = p->_create_pipeline(p->_pipeline, p->_pipeline_layout).move_or()) {
 			return Error(ErrorType::MISC, "Could not create pipeline", err.value());
 		}
-
-		log_debug() << "Just set layout to " << p->_pipeline_layout << std::endl;
 
 		if (auto err = p->_create_framebuffers().move_or(p->_framebuffer)) {
 			return Error(ErrorType::MISC, "Could not create framebuffers", err.value());
@@ -157,8 +177,6 @@ namespace vulkan {
 			_descriptor_set.descriptor_set()
 		};
 
-		log_debug() << "layout: " << _pipeline_layout << std::endl;
-
 		vkCmdBindDescriptorSets(
 			_command_buffer,
 			VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -210,6 +228,58 @@ namespace vulkan {
 
 	VkImageView InstancedPass::image_view() {
 		return _material_image.image_view();
+	}
+
+	MeshObserver &InstancedPass::mesh_observer() {
+		return _mesh_observer;
+	}
+
+	NodeObserver &InstancedPass::node_observer() {
+		return _node_observer;
+	}
+
+	void InstancedPass::mesh_create(uint32_t id) {
+		if (auto mesh = InstancedPassMesh::create(_scene->resource_manager().meshes()[id].get())) {
+			_meshes.insert(std::move(mesh.value()));
+		} else {
+			log_error()
+				<< "Couldn't create a mesh for the InstancedPass: "
+				<< mesh.error()
+				<< std::endl;
+		}
+	}
+
+	void InstancedPass::mesh_update(uint32_t id) {
+		mesh_create(id);
+	}
+
+	void InstancedPass::mesh_remove(uint32_t id) {
+		_meshes[id].destroy();
+	}
+
+	void InstancedPass::node_create(uint32_t id) {
+		auto &node = *_scene->nodes()[id];
+		auto &mesh = _meshes[node.mesh().id()];
+		log_assert(mesh.has_value(), util::f(
+			"Mesh ", node.mesh().id(), " must exist before node ",
+			id, " tries to reference it"
+		));
+
+		mesh.add_node(node);
+	}
+
+	void InstancedPass::node_update(uint32_t id) {
+		node_create(id);
+	}
+
+	void InstancedPass::node_remove(uint32_t id) {
+		auto &node = *_scene->nodes()[id];
+		auto &mesh = _meshes[node.mesh().id()];
+		log_assert(mesh.has_value(), util::f(
+			"Node ", id, " does not have a valid mesh ", node.mesh().id()
+		));
+
+		mesh.remove_node(id);
 	}
 
 	util::Result<VkRenderPass, Error> InstancedPass::_create_render_pass() {
@@ -451,7 +521,7 @@ namespace vulkan {
 			nullptr,
 			&pipeline_layout
 		);
-		log_debug() << "Just called vkCreatePipelineLayout: " << pipeline_layout << std::endl;
+
 		if (res != VK_SUCCESS) {
 			return Error(ErrorType::VULKAN, "Could not create pipeline layout", VkError(res));
 		}
@@ -626,7 +696,6 @@ namespace vulkan {
 		if (auto err = DescriptorSets::create(builder, _descriptor_pool).move_or(_descriptor_set)) {
 			return Error(ErrorType::SHADER_RESOURCE, "Could not create descriptor sets", err.value());
 		}
-
 
 		return {};
 	}
