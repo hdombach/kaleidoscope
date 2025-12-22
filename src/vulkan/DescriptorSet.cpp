@@ -177,11 +177,11 @@ namespace vulkan {
 
 	DescriptorSetLayout::operator bool() const { return has_value(); }
 
-	DescriptorSetBuilder DescriptorSetLayout::builder(uint32_t frame_count) {
+	DescriptorSetBuilder DescriptorSetLayout::builder(uint32_t frame_count) const {
 		return DescriptorSetBuilder(*this, frame_count);
 	}
 
-	VkDescriptorSetLayout &DescriptorSetLayout::layout() {
+	VkDescriptorSetLayout const &DescriptorSetLayout::layout() const {
 		return _layout;
 	}
 
@@ -190,7 +190,7 @@ namespace vulkan {
 	}
 
 	DescriptorSetBuilder::DescriptorSetBuilder(
-		DescriptorSetLayout &layout,
+		DescriptorSetLayout const &layout,
 		uint32_t frame_count
 	):
 		_layout(&layout),
@@ -238,15 +238,15 @@ namespace vulkan {
 
 	DescriptorSetBuilder::operator bool() const { return has_value(); }
 
-	DescriptorSetLayout &DescriptorSetBuilder::layout() {
+	DescriptorSetLayout const &DescriptorSetBuilder::layout() const {
 		return *_layout;
 	}
 
-	VkDescriptorSetLayout *DescriptorSetBuilder::vk_layout() {
+	VkDescriptorSetLayout const *DescriptorSetBuilder::vk_layout() const {
 		return &_layout->layout();
 	}
 
-	std::vector<VkWriteDescriptorSet> &DescriptorSetBuilder::writes() {
+	std::vector<VkWriteDescriptorSet> const &DescriptorSetBuilder::writes() const {
 		return _descriptor_writes;
 	}
 
@@ -470,7 +470,7 @@ namespace vulkan {
 
 	util::Result<DescriptorSets, Error> DescriptorSets::create(
 		DescriptorSetBuilder &builder,
-		DescriptorPool &pool
+		DescriptorPool const &pool
 	) {
 		auto result = DescriptorSets();
 		result._descriptor_pool = &pool;
@@ -501,7 +501,8 @@ namespace vulkan {
 		}
 
 		for (size_t frame = 0; frame < builder.frame_count(); frame++) {
-			for (auto &write : builder.writes()) {
+			auto writes = builder.writes();
+			for (auto &write : writes) {
 				//Feels wrong as I am modifying a parameter passed in
 				//However, builder is so specialzied rn that I don't
 				//think there will be side effects
@@ -509,8 +510,8 @@ namespace vulkan {
 			}
 			vkUpdateDescriptorSets(
 				Graphics::DEFAULT->device(),
-				static_cast<uint32_t>(builder.writes().size()),
-				builder.writes().data(),
+				static_cast<uint32_t>(writes.size()),
+				writes.data(),
 				0,
 				nullptr	
 			);
@@ -559,7 +560,7 @@ namespace vulkan {
 		return has_value();
 	}
 
-	VkDescriptorSet DescriptorSets::descriptor_set(uint32_t frame_index) {
+	VkDescriptorSet const DescriptorSets::descriptor_set(uint32_t frame_index) const {
 		return _descriptor_sets[frame_index];
 	}
 }
