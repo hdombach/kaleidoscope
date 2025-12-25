@@ -42,7 +42,8 @@ namespace util {
 
 	std::ostream& log(
 		Importance importance,
-		util::FileLocation loc=std::source_location::current()
+		util::FileLocation loc=std::source_location::current(),
+		std::string const &tag_postfix=""
 	);
 
 	struct TimePoint {
@@ -59,44 +60,65 @@ void log_assert(
 /**
  * @brief General information that appears in verbose mode
  */
-inline std::ostream& log_info(util::FileLocation loc=std::source_location::current()) {
+inline std::ostream& log_info(
+	util::FileLocation loc=std::source_location::current(),
+	std::string const &tag_postfix=""
+) {
 	return log(util::Importance::INFO, loc);
 }
 /**
  * @brief Information about potentially incorrect state
  */
-inline std::ostream& log_warning(util::FileLocation loc=std::source_location::current()) {
+inline std::ostream& log_warning(
+	util::FileLocation loc=std::source_location::current(),
+	std::string const &tag_postfix=""
+) {
 	return log(util::Importance::WARNING, loc);
 }
 /**
  * @brief When there is an error
  */
-inline std::ostream& log_error(util::FileLocation loc=std::source_location::current()) {
+inline std::ostream& log_error(
+	util::FileLocation loc=std::source_location::current(),
+	std::string const &tag_postfix=""
+) {
 	return log(util::Importance::ERROR, loc);
 }
 /**
  * @brief An error that cannot be recovered from
  */
-inline std::ostream& log_fatal_error(util::FileLocation loc=std::source_location::current()) {
+inline std::ostream& log_fatal_error(
+	util::FileLocation loc=std::source_location::current(),
+	std::string const &tag_postfix=""
+) {
 	return log(util::Importance::FATAL_ERROR, loc);
 }
 /**
  * @brief Used for debugging memory related issues
  */
-inline std::ostream& log_memory(util::FileLocation loc=std::source_location::current()) {
+inline std::ostream& log_memory(
+	util::FileLocation loc=std::source_location::current(),
+	std::string const &tag_postfix=""
+) {
 	return log(util::Importance::MEMORY, loc);
 }
 /**
  * @brief Only used for debugging. Should be removed when problem is fixed.
  */
-inline std::ostream& log_debug(util::FileLocation loc=std::source_location::current()) {
+inline std::ostream& log_debug(
+	util::FileLocation loc=std::source_location::current(),
+	std::string const &tag_postfix=""
+) {
 	return log(util::Importance::DEBUG, loc);
 }
 /**
  * @brief The most verbse level of logging.
  */
-inline std::ostream& log_trace(util::FileLocation loc=std::source_location::current()) {
-	return log(util::Importance::TRACE, loc);
+inline std::ostream& log_trace(
+	util::FileLocation loc=std::source_location::current(),
+	std::string const &tag_postfix=""
+) {
+	return log(util::Importance::TRACE, loc, tag_postfix);
 }
 /**
  * @brief Start a timer that can be used when logging

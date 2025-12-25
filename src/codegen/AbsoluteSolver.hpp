@@ -3,7 +3,6 @@
 #include <ostream>
 #include <variant>
 #include <vector>
-#include <set>
 
 #include "util/FileLocation.hpp" // Needed for operator resolution
 #include "codegen/CfgContext.hpp"
@@ -15,6 +14,13 @@
 #include "Error.hpp"
 
 namespace cg::abs {
+	//TODO: read in from args
+	static constexpr bool g_log_abs = false;
+	/**
+	 * @brief Trace logs for the AbsoluteSolver
+	 */
+	std::ostream &log_abs(util::FileLocation const &loc=std::source_location::current());
+
 	/**
 	 * Can either be a node being consructed or a state in the AbsoluteTable
 	 */

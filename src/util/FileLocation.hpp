@@ -36,7 +36,7 @@ namespace util {
 
 		void debug(std::ostream &os) const {
 			os
-				<< std::filesystem::relative(file_name, util::g_env.working_dir).c_str()
+				<< std::filesystem::path(file_name).filename().c_str()
 				<< "(" << line << ":" << column << ")";
 		}
 	};

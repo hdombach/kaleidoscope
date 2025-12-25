@@ -12,9 +12,18 @@
 
 #include "util/log.hpp"
 #include "util/PrintTools.hpp"
+#include "util/NullStream.hpp"
 
 
 namespace cg::abs {
+	std::ostream &log_abs(util::FileLocation const &loc) {
+		if (g_log_abs) {
+			return log_trace(loc, "_ABS");
+		} else {
+			return util::null_stream;
+		}
+	}
+
 	StackElement::StackElement() = default;
 
 	StackElement::StackElement(StackElement const &other): _value(other._value) {}
@@ -123,16 +132,14 @@ namespace cg::abs {
 			log_assert(stack.back().is_table_state(), "Stack must end with a state");
 			uint32_t cur_state_id = stack.back().table_state();
 			auto cur_t = t->type();
-			log_trace() << "state is " << cur_state_id << std::endl;
-			log_trace() << "Looking up \"" << Token::type_str(cur_t) << "\"" << std::endl;
 			uint32_t action = _table.lookup_tok(cur_state_id, cur_t);
 			if (action == 0) {
 				return Error(ErrorType::UNEXPECTED_TOKEN, util::f("Unexpected token: ", *t, " at ", t->loc()));
 			}
-			log_trace() << "action: " << _table.action_str(action) << std::endl;
+			log_abs() << "state_" << cur_state_id << "[" << Token::type_str(cur_t) << "] == " << _table.action_str(action) << std::endl;
 
 			if (action == AbsoluteTable::ACCEPT_ACTION) {
-				log_trace() << "Accepting" << std::endl;
+				log_abs() << "Accepting" << std::endl;
 				break;
 			} else if (action & AbsoluteTable::REDUCE_MASK) {
 				uint32_t production_rule_id = action & ~AbsoluteTable::REDUCE_MASK;
@@ -150,7 +157,7 @@ namespace cg::abs {
 				stack.push_back(StackElement(
 						parser_ctx.create_tok_node(*t)
 				));
-				log_trace() << "shifted token: " << *t << std::endl;
+				log_abs() << "Added " << *t << " to stack. " << std::endl;
 				stack.push_back(StackElement(action)); // push back the next state
 				t++;
 			}
@@ -179,7 +186,6 @@ namespace cg::abs {
 		ParserContext &parser_ctx
 	){
 		auto &rule = _get_rule(rule_id);
-		log_trace() << "Reducing rule " << rule_id << std::endl;
 		log_assert(rule.leaves().size() <= stack.size() * 2 + 1, "Stack must contain enough elements for the rule");
 		auto &new_node = parser_ctx.create_rule_node(_ctx->cfg_rule_sets()[rule.set_id()].name());
 		for (uint32_t i = stack.size() - rule.leaves().size() * 2; i < stack.size(); i += 2) {
@@ -194,8 +200,7 @@ namespace cg::abs {
 		auto cur_rule_set = rule.set_id();
 		auto next_state_id = _table.lookup_ruleset(cur_state_id, cur_rule_set);
 
-		log_trace() << "state is " << cur_state_id << std::endl;
-		log_trace() << "Looking up <" << _ctx->cfg_rule_sets()[cur_rule_set].name() << ">" << std::endl;
+		log_abs() << "Reducing using rule <" << new_node.cfg_rule() << "> <- " << rule << std::endl;
 
 		stack.push_back(StackElement(new_node));
 		stack.push_back(StackElement(next_state_id));
