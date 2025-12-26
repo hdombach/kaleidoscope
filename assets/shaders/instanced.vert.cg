@@ -14,7 +14,10 @@ layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inColor;
 layout(location = 2) in vec2 inTexCoord;
 
+layout(location = 0) out uint outInstance;
+
 void main() {
+	outInstance = gl_InstanceIndex;
 	gl_Position = global_uniform.camera_transformation *
 		//material_uniform.object_transformation *
 		vec4(inPosition, 1.0);
