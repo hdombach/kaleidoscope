@@ -1,7 +1,9 @@
 #version 450
 
-layout(location = 0) out uint outMaterial;
+layout(location = 0) out vec4 outColor;
+layout(location = 1) out uint outMaterial;
 
 void main() {
 	outMaterial = 1;
+	outColor = vec4(outMaterial * 10, 255.0, 0.0, 1.0);
 }

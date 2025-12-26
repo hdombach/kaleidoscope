@@ -12,6 +12,7 @@
 #include "util/UIDList.hpp"
 
 #include "InstancedPassMesh.hpp"
+#include "vulkan/Uniforms.hpp"
 
 namespace vulkan {
 	class Scene;
@@ -100,7 +101,7 @@ namespace vulkan {
 			 * @param[in] semaphore The semaphore to wait on before starting
 			 * @returns The semaphore marking when the InstancedPass is done
 			 */
-			VkSemaphore render(VkSemaphore semaphore);
+			VkSemaphore render(VkSemaphore semaphore, types::Camera const &camera);
 
 			/**
 			 * @brief The render pass for the rasterization stage
@@ -112,6 +113,11 @@ namespace vulkan {
 			 * @brief Handle for the preview in imgui
 			 */
 			VkDescriptorSet imgui_descriptor_set();
+
+			/**
+			 * @brief The layout for descriptor set used by the meshes
+			 */
+			DescriptorSetLayout const &mesh_descriptor_set_layout() const;
 
 			/**
 			 * @brief The primary viewport
@@ -128,6 +134,8 @@ namespace vulkan {
 			 */
 			NodeObserver &node_observer();
 
+			DescriptorPool const &descriptor_pool() const;
+
 		private:
 			util::UIDList<InstancedPassMesh> _meshes;
 			MeshObserver _mesh_observer;
@@ -138,8 +146,9 @@ namespace vulkan {
 			VkPipeline _pipeline;
 			VkPipelineLayout _pipeline_layout;
 			DescriptorPool _descriptor_pool;
-			DescriptorSets _descriptor_set;
-			DescriptorSetLayout _descriptor_set_layout;
+			DescriptorSets _shared_descriptor_set;
+			DescriptorSetLayout _shared_descriptor_set_layout;
+			DescriptorSetLayout _mesh_descriptor_set_layout;
 			Fence _fence;
 			Semaphore _semaphore;
 			VkCommandBuffer _command_buffer;
@@ -147,6 +156,8 @@ namespace vulkan {
 			VkExtent2D _size;
 			Image _depth_image;
 			Image _material_image;
+			Image _result_image;
+			MappedPrevPassUniform _prim_uniform;
 			VkDescriptorSet _imgui_descriptor_set;
 
 		private:
@@ -160,6 +171,7 @@ namespace vulkan {
 
 		private:
 			const static VkFormat _MATERIAL_IMAGE_FORMAT = VK_FORMAT_R16_UINT;
+			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
 
 			/**
 			 * @brief Sets up the render pass
@@ -208,5 +220,7 @@ namespace vulkan {
 			 * Depends on the images to be initialized.
 			 */
 			util::Result<void, Error> _create_descriptor_set();
+
+			util::Result<void, Error> _create_uniform();
 	};
 }

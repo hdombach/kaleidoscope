@@ -1,7 +1,21 @@
 #version 450
 
+{% macro declaration(decl) %}
+{{decl.uniform_type}} {{decl.name}};
+{% endmacro %}
+
+layout(set = 0, binding = 3) uniform GlobalUniformBuffer {
+	{% for decl in global_declarations %}
+	{{declaration(decl)}}
+	{% endfor %}
+} global_uniform;
+
 layout(location = 0) in vec3 inPosition;
+layout(location = 1) in vec3 inColor;
+layout(location = 2) in vec2 inTexCoord;
 
 void main() {
-	gl_Position = inPosition.xy;
+	gl_Position = global_uniform.camera_transformation *
+		//material_uniform.object_transformation *
+		vec4(inPosition, 1.0);
 }

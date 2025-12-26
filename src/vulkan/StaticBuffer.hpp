@@ -27,7 +27,8 @@ namespace vulkan {
 			~StaticBuffer();
 
 			VkBuffer buffer() { return _buffer; }
-			VkDeviceSize range() { return _range; }
+			const VkBuffer buffer() const { return _buffer; }
+			VkDeviceSize range() const { return _range; }
 
 			operator bool() const {
 				return _buffer != nullptr;

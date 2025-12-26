@@ -1,8 +1,10 @@
 #include "InstancedPass.hpp"
 #include "InstancedPassMesh.hpp"
+#include "codegen/TemplGen.hpp"
 #include "util/file.hpp"
 #include "util/log.hpp"
 #include "util/Util.hpp"
+#include "vulkan/DescriptorSet.hpp"
 #include "vulkan/Error.hpp"
 #include "vulkan/Shader.hpp"
 #include "vulkan/Vertex.hpp"
@@ -39,6 +41,9 @@ namespace vulkan {
 
 		p->_descriptor_pool = DescriptorPool::create();
 
+		p->_node_observer = NodeObserver(*p);
+		p->_mesh_observer = MeshObserver(*p);
+
 		if (auto err = Fence::create().move_or(p->_fence)) {
 			return Error(ErrorType::VULKAN, "Could not create fence", VkError(err.value()));
 		}
@@ -53,6 +58,10 @@ namespace vulkan {
 
 		if (auto err = p->_create_images().move_or()) {
 			return Error(ErrorType::MISC, "Could not create images", err.value());
+		}
+
+		if (auto err = p->_create_uniform().move_or()) {
+			return Error(ErrorType::MISC, "Could not create uniform", err.value());
 		}
 
 		if (auto err = p->_create_descriptor_set().move_or()) {
@@ -75,35 +84,59 @@ namespace vulkan {
 	}
 
 	InstancedPass::InstancedPass(InstancedPass &&other) {
+		_meshes = std::move(other._meshes);
+		_mesh_observer = std::move(other._mesh_observer);
+		_node_observer = std::move(other._node_observer);
+
+		_scene = util::move_ptr(_scene);
 		_render_pass = util::move_ptr(other._render_pass);
 		_pipeline = util::move_ptr(other._pipeline);
 		_pipeline_layout = util::move_ptr(other._pipeline_layout);
-
-		_descriptor_set = std::move(other._descriptor_set);
-
+		_descriptor_pool = std::move(other._descriptor_pool);
+		_shared_descriptor_set = std::move(other._shared_descriptor_set);
+		_shared_descriptor_set_layout = std::move(other._shared_descriptor_set_layout);
+		_mesh_descriptor_set_layout = std::move(other._mesh_descriptor_set_layout);
 		_fence = std::move(other._fence);
+		_semaphore = std::move(other._semaphore);
 		_command_buffer = util::move_ptr(other._command_buffer);
 		_framebuffer = util::move_ptr(other._framebuffer);
 		_size = other._size;
+		_depth_image = std::move(other._depth_image);
+		_material_image = std::move(other._material_image);
+		_result_image = std::move(other._result_image);
+		_prim_uniform = std::move(other._prim_uniform);
+		_imgui_descriptor_set = std::move(other._imgui_descriptor_set);
 	}
 
 	InstancedPass &InstancedPass::operator=(InstancedPass &&other) {
+		_meshes = std::move(other._meshes);
+		_mesh_observer = std::move(other._mesh_observer);
+		_node_observer = std::move(other._node_observer);
+
+		_scene = util::move_ptr(_scene);
 		_render_pass = util::move_ptr(other._render_pass);
 		_pipeline = util::move_ptr(other._pipeline);
 		_pipeline_layout = util::move_ptr(other._pipeline_layout);
-
-		_descriptor_set = std::move(other._descriptor_set);
-
+		_descriptor_pool = std::move(other._descriptor_pool);
+		_shared_descriptor_set = std::move(other._shared_descriptor_set);
+		_shared_descriptor_set_layout = std::move(other._shared_descriptor_set_layout);
+		_mesh_descriptor_set_layout = std::move(other._mesh_descriptor_set_layout);
 		_fence = std::move(other._fence);
+		_semaphore = std::move(other._semaphore);
 		_command_buffer = util::move_ptr(other._command_buffer);
 		_framebuffer = util::move_ptr(other._framebuffer);
 		_size = other._size;
+		_depth_image = std::move(other._depth_image);
+		_material_image = std::move(other._material_image);
+		_result_image = std::move(other._result_image);
+		_prim_uniform = std::move(other._prim_uniform);
+		_imgui_descriptor_set = std::move(other._imgui_descriptor_set);
 
 		return *this;
 	}
 
 	void InstancedPass::destroy() {
-		_descriptor_set.destroy();
+		_shared_descriptor_set.destroy();
 		_destroy_render_pass();
 		_destroy_pipeline();
 		_destroy_command_buffer();
@@ -121,7 +154,7 @@ namespace vulkan {
 		return has_value();
 	}
 
-	VkSemaphore InstancedPass::render(VkSemaphore semaphore) {
+	VkSemaphore InstancedPass::render(VkSemaphore semaphore, types::Camera const &camera) {
 		VkResult r;
 
 		if ((r = _fence.wait()) != VK_SUCCESS) {
@@ -161,6 +194,7 @@ namespace vulkan {
 		render_pass_info.renderArea.extent = _size;
 
 		auto clear_values = std::array{
+			VkClearValue{0.0f, 0.0f, 0.0f, 1.0f},
 			VkClearValue{{0}},
 			VkClearValue{1.0f, 0}
 		};
@@ -173,22 +207,37 @@ namespace vulkan {
 		log_assert(_pipeline, "Instanced pipeline does not exist");
 		vkCmdBindPipeline(_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
 
-		auto descriptor_sets = std::array{
-			_descriptor_set.descriptor_set()
-		};
+		_prim_uniform.set_value(GlobalPrevPassUniform::create(camera));
 
-		vkCmdBindDescriptorSets(
-			_command_buffer,
-			VK_PIPELINE_BIND_POINT_GRAPHICS,
-			_pipeline_layout,
-			0,
-			descriptor_sets.size(),
-			descriptor_sets.data(),
-			0,
-			nullptr
-		);
+		for (auto &mesh : _meshes) {
+			if (mesh.is_de()) continue;
+			if (mesh.instance_count() == 0) continue;
 
-		vkCmdDraw(_command_buffer, 6, 1, 0, 0);
+			auto descriptor_sets = std::array{
+				_shared_descriptor_set.descriptor_set(),
+				mesh.descriptor_set().descriptor_set()
+			};
+
+			vkCmdBindDescriptorSets(
+				_command_buffer,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				_pipeline_layout,
+				0,
+				descriptor_sets.size(),
+				descriptor_sets.data(),
+				0,
+				nullptr
+			);
+
+			VkBuffer vertex_buffers[] = {mesh.vertex_buffer().buffer()};
+			VkDeviceSize offsets[] = {0};
+			vkCmdBindVertexBuffers(_command_buffer, 0, 1, vertex_buffers, offsets);
+			vkCmdBindIndexBuffer(_command_buffer, mesh.index_buffer().buffer(), 0, VK_INDEX_TYPE_UINT32);
+
+			vkCmdDrawIndexed(_command_buffer, mesh.index_count(), mesh.instance_count(), 0, 0, 0);
+
+			log_debug() << "Drawing " << mesh.index_count() << " x " << mesh.instance_count() << " triangles." << std::endl;
+		}
 
 		vkCmdEndRenderPass(_command_buffer);
 
@@ -226,6 +275,10 @@ namespace vulkan {
 		return _imgui_descriptor_set;
 	}
 
+	DescriptorSetLayout const &InstancedPass::mesh_descriptor_set_layout() const {
+		return _mesh_descriptor_set_layout;
+	}
+
 	VkImageView InstancedPass::image_view() {
 		return _material_image.image_view();
 	}
@@ -238,12 +291,19 @@ namespace vulkan {
 		return _node_observer;
 	}
 
+	DescriptorPool const &InstancedPass::descriptor_pool() const {
+		return _descriptor_pool;
+	}
+
 	void InstancedPass::mesh_create(uint32_t id) {
-		if (auto mesh = InstancedPassMesh::create(_scene->resource_manager().meshes()[id].get())) {
+		auto &raw_mesh = _scene->resource_manager().meshes()[id];
+		log_assert(raw_mesh != nullptr, util::f("Mesh ", id, " does not exist"));
+		if (auto mesh = InstancedPassMesh::create(raw_mesh.get(), *this)) {
+			log_trace() << "Adding/updating instance pass mesh handler " << mesh->id() << std::endl;
 			_meshes.insert(std::move(mesh.value()));
 		} else {
 			log_error()
-				<< "Couldn't create a mesh for the InstancedPass: "
+				<< "Couldn't create a mesh " << id << " for the InstancedPass " << std::endl
 				<< mesh.error()
 				<< std::endl;
 		}
@@ -254,16 +314,19 @@ namespace vulkan {
 	}
 
 	void InstancedPass::mesh_remove(uint32_t id) {
+		log_trace() << "Removing instance pass mesh handler " << id << std::endl;
 		_meshes[id].destroy();
 	}
 
 	void InstancedPass::node_create(uint32_t id) {
 		auto &node = *_scene->nodes()[id];
+		if (node.type() != Node::Type::Object) return;
+
+		log_trace() << "Adding/update instance pass node handler " << node.id() << std::endl;
 		auto &mesh = _meshes[node.mesh().id()];
-		log_assert(mesh.has_value(), util::f(
-			"Mesh ", node.mesh().id(), " must exist before node ",
-			id, " tries to reference it"
-		));
+		if (!mesh.has_value()) {
+			mesh_create(node.mesh().id());
+		}
 
 		mesh.add_node(node);
 	}
@@ -273,7 +336,10 @@ namespace vulkan {
 	}
 
 	void InstancedPass::node_remove(uint32_t id) {
+		log_trace() << "Removing instance pass node handler " << std::endl;
 		auto &node = *_scene->nodes()[id];
+		if (node.type() != Node::Type::Object) return;
+
 		auto &mesh = _meshes[node.mesh().id()];
 		log_assert(mesh.has_value(), util::f(
 			"Node ", id, " does not have a valid mesh ", node.mesh().id()
@@ -283,6 +349,20 @@ namespace vulkan {
 	}
 
 	util::Result<VkRenderPass, Error> InstancedPass::_create_render_pass() {
+		auto result_attachment = VkAttachmentDescription{};
+		result_attachment.format = _RESULT_IMAGE_FORMAT;
+		result_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		result_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		result_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		result_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		result_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		result_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		result_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		auto result_attachment_ref = VkAttachmentReference{};
+		result_attachment_ref.attachment = 0;
+		result_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
 		auto material_attachment = VkAttachmentDescription{};
 		material_attachment.format = _MATERIAL_IMAGE_FORMAT;
 		material_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -294,7 +374,7 @@ namespace vulkan {
 		material_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
 
 		auto material_attachment_ref = VkAttachmentReference{};
-		material_attachment_ref.attachment = 0;
+		material_attachment_ref.attachment = 1;
 		material_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
 		auto depth_attachment = VkAttachmentDescription{};
@@ -308,10 +388,11 @@ namespace vulkan {
 		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		auto depth_attachment_ref = VkAttachmentReference{};
-		depth_attachment_ref.attachment = 1;
+		depth_attachment_ref.attachment = 2;
 		depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 		auto color_attachment_refs = std::array{
+			result_attachment_ref,
 			material_attachment_ref
 		};
 
@@ -322,6 +403,7 @@ namespace vulkan {
 		subpass.pDepthStencilAttachment = &depth_attachment_ref;
 
 		auto attachments = std::array{
+			result_attachment,
 			material_attachment,
 			depth_attachment
 		};
@@ -378,17 +460,44 @@ namespace vulkan {
 
 		Shader vert_shader, frag_shader;
 
-		if (auto err = Shader::from_source_code(
-			util::readEnvFile("assets/shaders/unit_square.vert"),
-			Shader::Type::Vertex
-		).move_or(vert_shader)) {
-			return Error(ErrorType::VULKAN, "Could not load unit square shader", err.value());
+		{
+			auto start = log_start_timer();
+
+			auto source_code = util::readEnvFile("assets/shaders/instanced.vert.cg");
+			auto args = cg::TemplObj{
+				{"global_declarations", GlobalPrevPassUniform::declaration_content}
+			};
+			if (auto err = cg::TemplGen::codegen(source_code, args, "instanced.vert.cg").move_or(source_code)) {
+				return Error(ErrorType::MISC, "Problem codegenerating instanced vert shader", err.value());
+			}
+			log_info() << "Instance shader took " << start << std::endl;
+			log_info() << "Generated instanced.vert.cg:" << std::endl
+				<< util::add_strnum(source_code) << std::endl;
+
+			if (auto err = Shader::from_source_code(
+				source_code, Shader::Type::Vertex
+			).move_or(vert_shader)) {
+				return Error(ErrorType::MISC, "Problem parsing instanced vert shader", err.value());
+			}
 		}
-		if (auto err = Shader::from_source_code(
-			util::readEnvFile("assets/shaders/instanced.frag.cg"),
-			Shader::Type::Fragment).move_or(frag_shader)
-		) {
-			return Error(ErrorType::VULKAN, "Could not load instanced frag shader", err.value());
+
+		{
+			auto start = log_start_timer();
+			auto args = cg::TemplDict{};
+
+			auto source_code = util::readEnvFile("assets/shaders/instanced.frag.cg");
+			if (auto err = cg::TemplGen::codegen(source_code, args, "instanced.frag.cg").move_or(source_code)) {
+				return Error(ErrorType::MISC, "Problem parsing instanced frag shader", err.value());
+			}
+			log_info() << "Instanced shader took " << start << std::endl;
+			log_info() << "Generated instanced.frag.cg:" << std::endl
+				<< util::add_strnum(source_code) << std::endl;
+
+			if (auto err = Shader::from_source_code(
+					source_code, Shader::Type::Fragment
+			).move_or(frag_shader)) {
+				return Error(ErrorType::MISC, "Problem parsing instanced frag shader", err.value());
+			}
 		}
 
 		auto shader_stages = std::array<VkPipelineShaderStageCreateInfo, 2>();
@@ -459,6 +568,20 @@ namespace vulkan {
 		multisampling.alphaToCoverageEnable = VK_FALSE;
 		multisampling.alphaToOneEnable = VK_FALSE;
 
+		auto result_blend_attachment = VkPipelineColorBlendAttachmentState{};
+		result_blend_attachment.colorWriteMask =
+			VK_COLOR_COMPONENT_R_BIT |
+			VK_COLOR_COMPONENT_G_BIT |
+			VK_COLOR_COMPONENT_B_BIT |
+			VK_COLOR_COMPONENT_A_BIT;
+		result_blend_attachment.blendEnable = VK_TRUE;
+		result_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+		result_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		result_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
+		result_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+		result_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+		result_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+
 		auto material_blend_attachment = VkPipelineColorBlendAttachmentState{};
 		material_blend_attachment.colorWriteMask =
 			VK_COLOR_COMPONENT_R_BIT |
@@ -484,6 +607,7 @@ namespace vulkan {
 		depth_buf_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
 
 		auto color_attachments = std::array{
+			result_blend_attachment,
 			material_blend_attachment,
 		};
 
@@ -508,10 +632,15 @@ namespace vulkan {
 		dynamic_state.dynamicStateCount = static_cast<uint32_t>(dynamic_states.size());
 		dynamic_state.pDynamicStates = dynamic_states.data();
 
+		auto layouts = std::array{
+			_shared_descriptor_set_layout.layout(),
+			_mesh_descriptor_set_layout.layout()
+		};
+
 		auto pipeline_layout_info = VkPipelineLayoutCreateInfo{};
 		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipeline_layout_info.setLayoutCount = 1;
-		pipeline_layout_info.pSetLayouts = &_descriptor_set_layout.layout();
+		pipeline_layout_info.pSetLayouts = layouts.data();
+		pipeline_layout_info.setLayoutCount = layouts.size();
 		pipeline_layout_info.pushConstantRangeCount = 0;
 		pipeline_layout_info.pPushConstantRanges = nullptr;
 
@@ -607,9 +736,19 @@ namespace vulkan {
 			return Error(ErrorType::VULKAN, "Could not create material image", err.value());
 		}
 
+		if (auto err = Image::create(
+			_size,
+			_RESULT_IMAGE_FORMAT,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+			| VK_IMAGE_USAGE_STORAGE_BIT
+			| VK_IMAGE_USAGE_SAMPLED_BIT
+		).move_or(_result_image)) {
+			return Error(ErrorType::VULKAN, "Could not create result image", err.value());
+		}
+
 		_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
 			*Graphics::DEFAULT->main_texture_sampler(),
-			_material_image.image_view(),
+			_result_image.image_view(),
 			VK_IMAGE_LAYOUT_GENERAL
 		);
 
@@ -636,6 +775,7 @@ namespace vulkan {
 
 	util::Result<VkFramebuffer, Error> InstancedPass::_create_framebuffers() {
 		auto attachments = std::array{
+			_result_image.image_view(),
 			_material_image.image_view(),
 			_depth_image.image_view()
 		};
@@ -677,24 +817,54 @@ namespace vulkan {
 	}
 
 	util::Result<void, Error> InstancedPass::_create_descriptor_set() {
-		auto bindings = std::vector<VkDescriptorSetLayoutBinding>();
-		bindings.push_back(descriptor_layout_image(VK_SHADER_STAGE_FRAGMENT_BIT));
-		bindings.push_back(descriptor_layout_image(VK_SHADER_STAGE_FRAGMENT_BIT));
+		//Shared descriptor set layout
+		{
+			auto bindings = std::vector<VkDescriptorSetLayoutBinding>();
+			bindings.push_back(descriptor_layout_image(VK_SHADER_STAGE_FRAGMENT_BIT));
+			bindings.push_back(descriptor_layout_image(VK_SHADER_STAGE_FRAGMENT_BIT));
+			bindings.push_back(descriptor_layout_image(VK_SHADER_STAGE_FRAGMENT_BIT));
+			bindings.push_back(descriptor_layout_uniform(VK_SHADER_STAGE_VERTEX_BIT));
 
-		if (auto err = DescriptorSetLayout::create(bindings).move_or(_descriptor_set_layout)) {
-			return Error(ErrorType::SHADER_RESOURCE, "Could not create descriptor set layout", err.value());
+			if (auto err = DescriptorSetLayout::create(bindings).move_or(_shared_descriptor_set_layout)) {
+				return Error(ErrorType::SHADER_RESOURCE, "Could not create descriptor set layout", err.value());
+			}
+
+			auto builder = _shared_descriptor_set_layout.builder();
+			if (auto err = builder.add_image(_result_image.image_view(), VK_IMAGE_LAYOUT_GENERAL).move_or()) {
+				return Error(ErrorType::SHADER_RESOURCE, "Could not add result image", err.value());
+			}
+			if (auto err = builder.add_image(_material_image.image_view(), VK_IMAGE_LAYOUT_GENERAL).move_or()) {
+				return Error(ErrorType::SHADER_RESOURCE, "Could not add material image", err.value());
+			}
+			if (auto err = builder.add_image(_depth_image.image_view(), VK_IMAGE_LAYOUT_GENERAL).move_or()) {
+				return Error(ErrorType::SHADER_RESOURCE, "Could not add depth image", err.value());
+			}
+			if (auto err = builder.add_uniform(_prim_uniform).move_or()) {
+				return Error(ErrorType::SHADER_RESOURCE, "Could not add prim uniform", err.value());
+			}
+
+			if (auto err = DescriptorSets::create(builder, _descriptor_pool).move_or(_shared_descriptor_set)) {
+				return Error(ErrorType::SHADER_RESOURCE, "Could not create descriptor sets", err.value());
+			}
 		}
 
-		auto builder = _descriptor_set_layout.builder();
-		if (auto err = builder.add_image(_material_image.image_view()).move_or()) {
-			return Error(ErrorType::SHADER_RESOURCE, "Could not add material image", err.value());
-		}
-		if (auto err = builder.add_image(_depth_image.image_view()).move_or()) {
-			return Error(ErrorType::SHADER_RESOURCE, "Could not add depth image", err.value());
+		//Mesh descriptor set layout
+		{
+			auto bindings = std::vector<VkDescriptorSetLayoutBinding>();
+			//For node buffer
+			bindings.push_back(descriptor_layout_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT));
+
+			if (auto err = DescriptorSetLayout::create(bindings).move_or(_mesh_descriptor_set_layout)) {
+				return Error(ErrorType::SHADER_RESOURCE, "Could not create mesh descriptor set layout", err.value());
+			}
 		}
 
-		if (auto err = DescriptorSets::create(builder, _descriptor_pool).move_or(_descriptor_set)) {
-			return Error(ErrorType::SHADER_RESOURCE, "Could not create descriptor sets", err.value());
+		return {};
+	}
+
+	util::Result<void, Error> InstancedPass::_create_uniform() {
+		if (auto err = MappedPrevPassUniform::create().move_or(_prim_uniform)) {
+			return Error(ErrorType::SHADER_RESOURCE, "Could not create uniform", err.value());
 		}
 
 		return {};

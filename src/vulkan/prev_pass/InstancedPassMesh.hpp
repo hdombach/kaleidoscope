@@ -1,5 +1,6 @@
 #pragma once
 
+#include "vulkan/DescriptorSet.hpp"
 #include "vulkan/Error.hpp"
 #include "vulkan/StaticBuffer.hpp"
 #include "util/result.hpp"
@@ -10,6 +11,7 @@
 
 namespace vulkan {
 	class Scene;
+	class InstancedPass;
 
 	/**
 	 * @brief Handles mesh related data for the InstancedPass
@@ -25,7 +27,7 @@ namespace vulkan {
 			 * The node_id is assumed based off where the node is in the buffer
 			 */
 			struct NodeVImpl {
-				alignas(4) uint32_t mesh_id;
+				alignas(4) uint32_t node_id;
 				alignas(4) uint32_t material_id;
 				alignas(16) glm::vec3 position;
 				alignas(16) glm::mat4 transformation;
@@ -34,14 +36,11 @@ namespace vulkan {
 				NodeVImpl();
 				NodeVImpl(vulkan::Node const &node);
 
-				bool has_value() const;
-				operator bool() const;
-
 				/**
 				 * @brief Information for codegenerating glsl struct
 				 */
 				inline const static auto delcaration = std::vector{
-					templ_property("uint", "mesh_id"),
+					templ_property("uint", "node_id"),
 					templ_property("uint", "material_id"),
 					templ_property("vec3", "position"),
 					templ_property("mat4", "transformation"),
@@ -52,7 +51,10 @@ namespace vulkan {
 		public:
 			InstancedPassMesh() = default;
 
-			static util::Result<InstancedPassMesh, Error> create(const types::Mesh *mesh);
+			static util::Result<InstancedPassMesh, Error> create(
+				const types::Mesh *mesh,
+				InstancedPass const &instanced_pass
+			);
 
 			InstancedPassMesh(InstancedPassMesh const &other) = delete;
 			InstancedPassMesh(InstancedPassMesh &&other);
@@ -87,6 +89,16 @@ namespace vulkan {
 			StaticBuffer const &node_buffer() const;
 
 			/**
+			 * @brief The number of indices to be rendered
+			 */
+			uint32_t index_count() const;
+
+			/**
+			 * @brief The number of instances to be rendered
+			 */
+			uint32_t instance_count() const;
+
+			/**
 			 * @brief Allows this object to keep track of another node that uses the
 			 * underlying mesh.
 			 */
@@ -96,6 +108,11 @@ namespace vulkan {
 			 * underlying mesh.
 			 */
 			void remove_node(uint32_t node_id);
+
+			/**
+			 * @brief Descriptor set that is used per mesh
+			 */
+			DescriptorSets &descriptor_set();
 
 			void destroy();
 			~InstancedPassMesh();
@@ -112,13 +129,17 @@ namespace vulkan {
 			 */
 			const types::Mesh *_mesh;
 
+			InstancedPass const *_instanced_pass;
+
 			/**
 			 * @brief The per instance data that will be sent to the shader.
 			 */
-			util::UIDList<NodeVImpl> _nodes;
+			std::vector<NodeVImpl> _nodes;
 
 			StaticBuffer _vertex_buffer;
 			StaticBuffer _index_buffer;
 			StaticBuffer _node_buffer;
+			DescriptorSets _descriptor_set;
+			uint32_t _index_count;
 	};
 }

@@ -3,15 +3,17 @@
 #include <unordered_map>
 
 #include "util/UIDList.hpp"
+#include "util/Util.hpp"
 #include "util/log.hpp"
 #include "vulkan/StaticBuffer.hpp"
+#include "InstancedPass.hpp"
 
 
 namespace vulkan {
 	using NodeVImpl = InstancedPassMesh::NodeVImpl;
 
 	NodeVImpl::NodeVImpl():
-		mesh_id(0),
+		node_id(0),
 		material_id(0),
 		position(),
 		transformation(),
@@ -19,29 +21,21 @@ namespace vulkan {
 	{ }
 
 	NodeVImpl::NodeVImpl(vulkan::Node const &node):
-		mesh_id(node.mesh().id()),
+		node_id(node.id()),
 		material_id(node.material().id()),
 		position(node.position()),
 		transformation(node.get_matrix()),
 		inverse_transformation(node.get_matrix_inverse())
 	{ }
 
-	bool NodeVImpl::has_value() const {
-		log_assert((mesh_id == 0) == (material_id == 0), "If one id is 0, the other must be 0");
-		return mesh_id != 0;
-	}
-
-	NodeVImpl::operator bool() const {
-		return has_value();
-	}
-
-	util::Result<InstancedPassMesh, Error> InstancedPassMesh::create(const types::Mesh *mesh) {
-		auto l = util::UIDList<NodeVImpl>();
-		l.insert(NodeVImpl(), 0);
-
+	util::Result<InstancedPassMesh, Error> InstancedPassMesh::create(
+		const types::Mesh *mesh,
+		InstancedPass const &instanced_pass
+	) {
 		InstancedPassMesh m;
 
 		m._mesh = mesh;
+		m._instanced_pass = &instanced_pass;
 
 		auto vertices = std::vector<vulkan::Vertex>();
 		auto indices = std::vector<uint32_t>();
@@ -53,32 +47,40 @@ namespace vulkan {
 			}
 			indices.push_back(unique_vertices[vertex]);
 		}
+		m._index_count = indices.size();
 
-		if (auto err = StaticBuffer::create(vertices).move_or(m._vertex_buffer)) {
-			return Error(ErrorType::MISC, "Could not create vertex buffer for InstancedPassMesh", err.value());
-		}
-
-		if (auto err = StaticBuffer::create(indices).move_or(m._index_buffer)) {
-			return Error(ErrorType::MISC, "Could not create index buffer for InstancedPassMesh", err.value());
+		if (!vertices.empty()) {
+			if (auto err = StaticBuffer::create(vertices).move_or(m._vertex_buffer)) {
+				return Error(ErrorType::MISC, "Could not create vertex buffer for InstancedPassMesh", err.value());
+			}
+			if (auto err = StaticBuffer::create(indices).move_or(m._index_buffer)) {
+				return Error(ErrorType::MISC, "Could not create index buffer for InstancedPassMesh", err.value());
+			}
 		}
 
 		return {std::move(m)};
 	}
 
 	InstancedPassMesh::InstancedPassMesh(InstancedPassMesh &&other) {
-		_mesh = other._mesh;
-		other._mesh = nullptr;
-
+		_mesh = util::move_ptr(other._mesh);
+		_instanced_pass = util::move_ptr(other._instanced_pass);
+		_nodes = std::move(other._nodes);
 		_vertex_buffer = std::move(other._vertex_buffer);
 		_index_buffer = std::move(other._index_buffer);
+		_node_buffer = std::move(other._node_buffer);
+		_descriptor_set = std::move(other._descriptor_set);
+		_index_count = other._index_count;
 	}
 
 	InstancedPassMesh &InstancedPassMesh::operator=(InstancedPassMesh &&other) {
-		_mesh = other._mesh;
-		other._mesh = nullptr;
-
+		_mesh = util::move_ptr(other._mesh);
+		_instanced_pass = util::move_ptr(other._instanced_pass);
+		_nodes = std::move(other._nodes);
 		_vertex_buffer = std::move(other._vertex_buffer);
 		_index_buffer = std::move(other._index_buffer);
+		_node_buffer = std::move(other._node_buffer);
+		_descriptor_set = std::move(other._descriptor_set);
+		_index_count = other._index_count;
 
 		return *this;
 	}
@@ -111,15 +113,28 @@ namespace vulkan {
 		return _node_buffer;
 	}
 
+	uint32_t InstancedPassMesh::index_count() const {
+		return _index_count;
+	}
+
+	uint32_t InstancedPassMesh::instance_count() const {
+		return _nodes.size();
+	}
+
 	void InstancedPassMesh::add_node(vulkan::Node const &node) {
-		log_assert(_nodes.insert(NodeVImpl(node), node.id()), "Couldn't insert node");
+		_nodes.push_back(NodeVImpl(node));
 		if (auto err = _create_node_buffer().move_or()) {
 			log_error() << "Couldn't create internal node buffer for instanced pass" << std::endl;
 		}
 	}
 
+	DescriptorSets &InstancedPassMesh::descriptor_set() {
+		return _descriptor_set;
+	}
+
 	void InstancedPassMesh::remove_node(uint32_t id) {
-		log_assert(_nodes.contains(id), "Trying to remove node that doesn't exist");
+		auto count = std::erase_if(_nodes, [id](NodeVImpl &n) {return n.node_id == id;});
+		log_assert(count == 1, util::f("Only 1 node with id ", id, " should exist"));
 		if (auto err = _create_node_buffer().move_or()) {
 			log_error() << "Couldn't create internal node buffer after remove a node for the instanced pass" << std::endl;
 		}
@@ -134,8 +149,30 @@ namespace vulkan {
 	InstancedPassMesh::~InstancedPassMesh() { destroy(); }
 
 	util::Result<void, Error> InstancedPassMesh::_create_node_buffer() {
-		if (auto err = StaticBuffer::create(_nodes.raw()).move_or(_node_buffer)) {
+		if (auto err = StaticBuffer::create(_nodes).move_or(_node_buffer)) {
 			return Error(ErrorType::MISC, "Could not allocate node buffer for InstancedPassMesh", err.value());
+		}
+
+		// update descriptor set
+		auto builder = _instanced_pass->mesh_descriptor_set_layout().builder();
+
+		if (auto err = builder.add_storage_buffer(_node_buffer).move_or()) {
+			return Error(
+				ErrorType::SHADER_RESOURCE,
+				"Could not add node buffer to DescriptorSetBuilder",
+				err.value()
+			);
+		}
+
+		if (auto err = DescriptorSets::create(
+			builder,
+			_instanced_pass->descriptor_pool()
+		).move_or(_descriptor_set)) {
+			return Error(
+				ErrorType::SHADER_RESOURCE,
+				"Could not create InstancedPassMesh descriptor set",
+				err.value()
+			);
 		}
 
 		return {};

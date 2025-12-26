@@ -9,6 +9,7 @@
 #include "file.hpp"
 #include "result.hpp"
 #include "util/Env.hpp"
+#include "util/log.hpp"
 
 namespace util {
 
@@ -55,7 +56,12 @@ namespace util {
 
 	std::string readEnvFile(std::string filename) {
 		//TODO: propagate error
-		return readFile(env_file_path(filename).value());
+		if (auto path = env_file_path(filename)) {
+			return readFile(path.value());
+		} else {
+			log_error() << "Problem opening file " << filename << ":\n" << path.error();
+			return "";
+		}
 	}
 
 	std::string readFile(std::filesystem::path path) {
