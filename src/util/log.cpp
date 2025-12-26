@@ -52,3 +52,35 @@ void log_assert(
 		log(util::Importance::FATAL_ERROR, loc) << desc << std::endl;
 	}
 }
+
+std::ostream &_log_every_n(
+	uint32_t &_counter,
+	Importance importance,
+	uint32_t n,
+	util::FileLocation loc,
+	std::string const &tag_postfix
+) {
+	uint32_t orig = _counter;
+	_counter = (_counter + 1) % n;
+	if (orig == 0) {
+		return log(importance, loc, tag_postfix);
+	} else {
+		return util::null_stream;
+	}
+}
+
+std::ostream &_log_every_t(
+	util::TimePoint &time,
+	Importance importance,
+	std::chrono::milliseconds t,
+	util::FileLocation loc,
+	std::string const &tag_postfix
+) {
+	auto now = std::chrono::steady_clock::now();
+	if (t < (now.time_since_epoch() - time.value.time_since_epoch())) {
+		time.value = now;
+		return log(importance, loc, tag_postfix);
+	} else {
+		return util::null_stream;
+	}
+}

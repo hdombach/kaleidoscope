@@ -148,11 +148,13 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	}
 
 	util::Result<void, BaseError> ShaderResource::set_vec3(glm::vec3 const &val) {
+		using namespace std::chrono_literals;
+
 		if (type() == Type::Vec3) {
 			if (val != _as_vec3) {
 				_set_dirty_bit();
 				_as_vec3 = val;
-				log_trace() << "vec3 = " << _as_vec3 << std::endl;
+				log_every_t(util::TRACE, 1s) << "vec3 = " << _as_vec3 << std::endl; 
 			}
 			return {};
 		} else {

@@ -39,6 +39,13 @@ namespace util {
 				<< std::filesystem::path(file_name).filename().c_str()
 				<< "(" << line << ":" << column << ")";
 		}
+
+		bool operator==(const FileLocation &other) const {
+			return line == other.line && column == other.column && file_name == other.file_name;
+		}
+		bool operator!=(const FileLocation &other) const {
+			return !(*this == other);
+		}
 	};
 }
 

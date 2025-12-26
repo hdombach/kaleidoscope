@@ -51,10 +51,38 @@ namespace util {
 	};
 }
 
+using util::Importance;
+
 void log_assert(
 	bool test,
 	std::string const &desc,
 	util::FileLocation=std::source_location::current()
+);
+
+#define log_every_n(...) \
+	static uint32_t __counter = 0; \
+	_log_every_n(__counter, __VA_ARGS__)\
+
+
+std::ostream &_log_every_n(
+	uint32_t &counter,
+	Importance importance,
+	uint32_t n,
+	util::FileLocation loc=std::source_location::current(),
+	std::string const &tag_postfix=""
+);
+
+#define log_every_t(...) \
+	static util::TimePoint __time = {std::chrono::steady_clock::now()}; \
+	_log_every_t(__time, __VA_ARGS__)\
+
+
+std::ostream &_log_every_t(
+	util::TimePoint &time,
+	Importance importance,
+	std::chrono::milliseconds t,
+	util::FileLocation loc=std::source_location::current(),
+	std::string const &tag_postfix=""
 );
 
 /**
