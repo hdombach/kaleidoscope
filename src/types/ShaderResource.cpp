@@ -58,7 +58,6 @@ namespace types {
 	{
 		auto result = ShaderResource(name, Type::Vec3);
 		result._as_vec3 = vec;
-		log_trace() << "vec3 = " << result._as_vec3 << std::endl;
 		result._primitive_size = sizeof(vec);
 		result._declaration = util::f("vec3 ", name);
 		result._uniform_declaration = result._glsl_declaration = "vec3";
@@ -154,7 +153,6 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 			if (val != _as_vec3) {
 				_set_dirty_bit();
 				_as_vec3 = val;
-				log_every_t(util::TRACE, 1s) << "vec3 = " << _as_vec3 << std::endl; 
 			}
 			return {};
 		} else {
@@ -175,7 +173,6 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 			if (val != _as_vec3) {
 				_set_dirty_bit();
 				_as_vec3 = val;
-				log_trace() << "vec3 = " << _as_vec3 << std::endl;
 			}
 			return {};
 		} else {
@@ -185,7 +182,6 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 
 	util::Result<glm::vec3, void> ShaderResource::as_color3() const {
 		if (type() == Type::Color3) {
-			log_trace() << "&_as_vec3 = " << &_as_vec3 << std::endl;
 			return _as_vec3;
 		} else {
 			return {};
@@ -316,17 +312,16 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 			const std::string &name,
 			const vulkan::Texture *texture)
 	{
-		log_trace() << "updating " << name << std::endl;
 		for (auto &resource : _resources) {
 			if (resource.name() == name) {
-				log_trace() << "set texture2 " << texture->id() << std::endl;
+				log_trace() << "Updating texture resource " << name << " = "  << texture->name() << std::endl;
 				if (auto err = resource.set_texture(texture).move_or()) {
-					log_error() << "Could not set texture: " << err.value() << std::endl;
+					log_error() << "Could not set texture: \n" << err.value() << std::endl;
 				}
 				return;
 			}
 		}
-		log_trace() << "Added resource " << name << std::endl;
+		log_trace() << "Adding texture resource: " << name << " = " << texture->name() << std::endl;
 		add_resource(ShaderResource::create_texture(name, texture));
 	}
 
@@ -343,50 +338,62 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	}
 
 	void ShaderResources::set_vec3(std::string const &name, glm::vec3 const &val) {
+		using namespace std::chrono_literals;
 		for (auto &resource : _resources) {
 			if (resource.name() == name) {
+				log_every_t(util::TRACE, 1s) << "Updating vec3 resource " << name << " = " << val << std::endl;
 				if (auto err = resource.set_vec3(val).move_or()) {
 					log_error() << "Could not set vec3: " << err.value() << std::endl;
 				}
 				return;
 			}
 		}
+		log_trace() << "Adding vec3 resouce " << name << " = " << val << std::endl;
 		add_resource(ShaderResource::create_primitive(name, val));
 	}
 
 	void ShaderResources::set_color3(const std::string &name, const glm::vec3 &val) {
+		using namespace std::chrono_literals;
 		for (auto &resource : _resources) {
 			if (resource.name() == name) {
+				log_every_t(util::TRACE, 1s) << "Update color resource " << name << " = " << val << std::endl;
 				if (auto err = resource.set_color3(val).move_or()) {
 					log_error() << "Could not set color3: " << err.value() << std::endl;
 				}
 				return;
 			}
 		}
+		log_trace() << "Adding color3 resource " << name << " = " << val << std::endl;
 		add_resource(ShaderResource::create_color(name, val));
 	}
 
 	void ShaderResources::set_float(const std::string &name, float &val) {
+		using namespace std::chrono_literals;
 		for (auto &resource : _resources) {
 			if (resource.name() == name) {
+				log_every_t(util::TRACE, 1s) << "Update float resource " << name << " = " << val << std::endl;
 				if (auto err = resource.set_float(val).move_or()) {
 					log_error() << "Could not set float: " << err.value() << std::endl;
 				}
 				return;
 			}
 		}
+		log_trace() << "Adding float resource " << name << " = " << val << std::endl;
 		add_resource(ShaderResource::create_primitive(name, val));
 	}
 
 	void ShaderResources::set_uint32(const std::string &name, uint32_t &val) {
+		using namespace std::chrono_literals;
 		for (auto &resource : _resources) {
 			if (resource.name() == name) {
+				log_every_t(util::TRACE, 1s) << "Updating uint32_t resource " << name << " = " << val << std::endl;
 				if (auto err = resource.set_uint32(val).move_or()) {
 					log_error() << "Could not set uint32_t: " << err.value() << std::endl;
 				}
 				return;
 			}
 		}
+		log_trace() << "Adding uint32_t resource " << name << " = " << val << std::endl;
 		add_resource(ShaderResource::create_primitive(name, val));
 	}
 
