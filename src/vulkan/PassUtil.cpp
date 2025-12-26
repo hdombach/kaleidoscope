@@ -52,7 +52,10 @@ namespace vulkan {
 			i++;
 		}
 
-		if (auto buffer = StaticBuffer::create(buf.data(), buffer_range)) {
+		if (auto buffer = StaticBuffer::create(
+				buf.data(), buffer_range,
+				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
+		)) {
 			return buffer.move_value();
 		} else {
 			return Error(ErrorType::MISC, "Could not create material buffer", buffer.error());

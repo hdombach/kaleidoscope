@@ -7,9 +7,10 @@
 
 namespace vulkan {
 	util::Result<StaticBuffer, Error> StaticBuffer::create(
-			void *data,
-			VkDeviceSize range)
-	{
+		void *data,
+		VkDeviceSize range,
+		VkBufferUsageFlags usage
+	) {
 		auto result = StaticBuffer();
 
 		result._range = range;
@@ -45,10 +46,8 @@ namespace vulkan {
 		vkUnmapMemory(Graphics::DEFAULT->device(), staging_buffer_memory);
 
 		Graphics::DEFAULT->create_buffer(
-				range, 
-				VK_BUFFER_USAGE_TRANSFER_DST_BIT
-				| VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
-				| VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+				range,
+				usage,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 				result._buffer,
 				result._buffer_memory);

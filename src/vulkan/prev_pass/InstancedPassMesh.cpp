@@ -50,10 +50,10 @@ namespace vulkan {
 		m._index_count = indices.size();
 
 		if (!vertices.empty()) {
-			if (auto err = StaticBuffer::create(vertices).move_or(m._vertex_buffer)) {
+			if (auto err = StaticBuffer::create_vertices(vertices).move_or(m._vertex_buffer)) {
 				return Error(ErrorType::MISC, "Could not create vertex buffer for InstancedPassMesh", err.value());
 			}
-			if (auto err = StaticBuffer::create(indices).move_or(m._index_buffer)) {
+			if (auto err = StaticBuffer::create_indices(indices).move_or(m._index_buffer)) {
 				return Error(ErrorType::MISC, "Could not create index buffer for InstancedPassMesh", err.value());
 			}
 		}

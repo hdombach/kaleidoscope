@@ -235,8 +235,6 @@ namespace vulkan {
 			vkCmdBindIndexBuffer(_command_buffer, mesh.index_buffer().buffer(), 0, VK_INDEX_TYPE_UINT32);
 
 			vkCmdDrawIndexed(_command_buffer, mesh.index_count(), mesh.instance_count(), 0, 0, 0);
-
-			log_debug() << "Drawing " << mesh.index_count() << " x " << mesh.instance_count() << " triangles." << std::endl;
 		}
 
 		vkCmdEndRenderPass(_command_buffer);
