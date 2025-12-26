@@ -12,6 +12,7 @@
 #include "util/UIDList.hpp"
 
 #include "InstancedPassMesh.hpp"
+#include "InstancedPassNode.hpp"
 #include "vulkan/Uniforms.hpp"
 
 namespace vulkan {
@@ -138,6 +139,7 @@ namespace vulkan {
 
 		private:
 			util::UIDList<InstancedPassMesh> _meshes;
+			util::UIDList<InstancedPassNode> _nodes;
 			MeshObserver _mesh_observer;
 			NodeObserver _node_observer;
 		

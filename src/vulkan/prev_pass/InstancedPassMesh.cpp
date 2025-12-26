@@ -122,6 +122,7 @@ namespace vulkan {
 	}
 
 	void InstancedPassMesh::add_node(vulkan::Node const &node) {
+		log_trace() << "Adding instace of mesh " << node.mesh().id() << std::endl;
 		_nodes.push_back(NodeVImpl(node));
 		if (auto err = _create_node_buffer().move_or()) {
 			log_error() << "Couldn't create internal node buffer for instanced pass" << std::endl;
@@ -136,7 +137,7 @@ namespace vulkan {
 		auto count = std::erase_if(_nodes, [id](NodeVImpl &n) {return n.node_id == id;});
 		log_assert(count == 1, util::f("Only 1 node with id ", id, " should exist"));
 		if (auto err = _create_node_buffer().move_or()) {
-			log_error() << "Couldn't create internal node buffer after remove a node for the instanced pass" << std::endl;
+			log_error() << "Couldn't create internal node buffer after remove a node for the instanced pass.\n" << err.value() << std::endl;
 		}
 	}
 
@@ -149,8 +150,13 @@ namespace vulkan {
 	InstancedPassMesh::~InstancedPassMesh() { destroy(); }
 
 	util::Result<void, Error> InstancedPassMesh::_create_node_buffer() {
+		if (_nodes.size() == 0) {
+			_node_buffer.destroy();
+			return {};
+		}
+
 		if (auto err = StaticBuffer::create(_nodes).move_or(_node_buffer)) {
-			return Error(ErrorType::MISC, "Could not allocate node buffer for InstancedPassMesh", err.value());
+			return Error(ErrorType::MISC, "Could not allocate node buffer for InstancedPassMesh.", err.value());
 		}
 
 		// update descriptor set

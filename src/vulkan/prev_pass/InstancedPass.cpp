@@ -9,6 +9,7 @@
 #include "vulkan/Shader.hpp"
 #include "vulkan/Vertex.hpp"
 #include "vulkan/Scene.hpp"
+#include "vulkan/prev_pass/InstancedPassNode.hpp"
 
 #include <imgui_impl_vulkan.h>
 #include <vulkan/vulkan_core.h>
@@ -33,7 +34,10 @@ namespace vulkan {
 	void NodeObserver::obs_update(uint32_t id) { _instanced_pass->node_update(id); }
 	void NodeObserver::obs_remove(uint32_t id) { _instanced_pass->node_remove(id); }
 
-	util::Result<InstancedPass::Ptr, Error> InstancedPass::create(VkExtent2D size, Scene &scene) {
+	util::Result<InstancedPass::Ptr, Error> InstancedPass::create(
+		VkExtent2D size,
+		Scene &scene
+	) {
 		auto p = Ptr(new InstancedPass());
 
 		p->_size = size;
@@ -154,7 +158,10 @@ namespace vulkan {
 		return has_value();
 	}
 
-	VkSemaphore InstancedPass::render(VkSemaphore semaphore, types::Camera const &camera) {
+	VkSemaphore InstancedPass::render(
+		VkSemaphore semaphore,
+		types::Camera const &camera
+	) {
 		VkResult r;
 
 		if ((r = _fence.wait()) != VK_SUCCESS) {
@@ -232,9 +239,19 @@ namespace vulkan {
 			VkBuffer vertex_buffers[] = {mesh.vertex_buffer().buffer()};
 			VkDeviceSize offsets[] = {0};
 			vkCmdBindVertexBuffers(_command_buffer, 0, 1, vertex_buffers, offsets);
-			vkCmdBindIndexBuffer(_command_buffer, mesh.index_buffer().buffer(), 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindIndexBuffer(
+				_command_buffer,
+				mesh.index_buffer().buffer(),
+				0,
+				VK_INDEX_TYPE_UINT32
+			);
 
-			vkCmdDrawIndexed(_command_buffer, mesh.index_count(), mesh.instance_count(), 0, 0, 0);
+			vkCmdDrawIndexed(
+				_command_buffer,
+				mesh.index_count(),
+				mesh.instance_count(),
+				0, 0, 0
+			);
 		}
 
 		vkCmdEndRenderPass(_command_buffer);
@@ -260,7 +277,10 @@ namespace vulkan {
 		submit_info.signalSemaphoreCount = 1;
 		submit_info.pSignalSemaphores = &finish_semaphore;
 
-		util::require(vkQueueSubmit(Graphics::DEFAULT->graphics_queue(), 1, &submit_info, _fence.get()), "Problem submitting queue: ");
+		util::require(
+			vkQueueSubmit(Graphics::DEFAULT->graphics_queue(), 1, &submit_info, _fence.get()),
+			"Problem submitting queue: "
+		);
 
 		return finish_semaphore;
 	}
@@ -317,20 +337,44 @@ namespace vulkan {
 	}
 
 	void InstancedPass::node_create(uint32_t id) {
-		auto &node = *_scene->nodes()[id];
-		if (node.type() != Node::Type::Object) return;
+		auto &raw_node = _scene->nodes()[id];
+		log_assert(raw_node != nullptr, util::f("Node ", id, " does not exist"));
+		auto node = InstancedPassNode::create(*raw_node);
+		log_trace() << "Adding instanced pass node handler " << node.id() << std::endl;
+		_nodes.insert(std::move(node));
 
-		log_trace() << "Adding/update instance pass node handler " << node.id() << std::endl;
-		auto &mesh = _meshes[node.mesh().id()];
-		if (!mesh.has_value()) {
-			mesh_create(node.mesh().id());
-		}
+		if (raw_node->type() != Node::Type::Object) return;
 
-		mesh.add_node(node);
+		auto &mesh = _meshes[raw_node->mesh().id()];
+		mesh.add_node(*raw_node);
+		_nodes[id].registered_mesh = mesh.id();
 	}
 
 	void InstancedPass::node_update(uint32_t id) {
-		node_create(id);
+		log_trace() << "Updating instanced pass node handler " << id << std::endl;
+
+		auto &node = _nodes[id];
+		auto &raw_node = _scene->nodes()[id];
+
+		if (raw_node->type() != Node::Type::Object) return;
+		if (raw_node->mesh().id() == node.registered_mesh) return;
+
+		auto &old_mesh = _meshes[node.registered_mesh];
+		if (!old_mesh.has_value()) {
+			log_error() << "Old mesh " << old_mesh.id()
+				<< " is not known in the InstancedPass" << std::endl;
+		}
+
+		auto &new_mesh = _meshes[raw_node->mesh().id()];
+		log_assert(
+			new_mesh.has_value(),
+			util::f("Mesh ", raw_node->mesh().id(), " is not known in the InstancedPass")
+		);
+
+		old_mesh.remove_node(id);
+		new_mesh.add_node(*raw_node);
+
+		node.registered_mesh = raw_node->mesh().id();
 	}
 
 	void InstancedPass::node_remove(uint32_t id) {
@@ -465,8 +509,12 @@ namespace vulkan {
 			auto args = cg::TemplObj{
 				{"global_declarations", GlobalPrevPassUniform::declaration_content}
 			};
-			if (auto err = cg::TemplGen::codegen(source_code, args, "instanced.vert.cg").move_or(source_code)) {
-				return Error(ErrorType::MISC, "Problem codegenerating instanced vert shader", err.value());
+			if (auto err = cg::TemplGen::codegen( source_code, args, "instanced.vert.cg").move_or(source_code)) {
+				return Error(
+					ErrorType::MISC,
+					"Problem codegenerating instanced vert shader",
+					err.value()
+				);
 			}
 			log_info() << "Instance shader took " << start << std::endl;
 			log_info() << "Generated instanced.vert.cg:" << std::endl
@@ -761,7 +809,11 @@ namespace vulkan {
 		alloc_info.commandBufferCount = 1;
 
 		VkCommandBuffer command_buffer;
-		auto res = vkAllocateCommandBuffers(Graphics::DEFAULT->device(), &alloc_info, &command_buffer);
+		auto res = vkAllocateCommandBuffers(
+			Graphics::DEFAULT->device(),
+			&alloc_info,
+			&command_buffer
+		);
 		if (res == VK_SUCCESS) {
 			return command_buffer;
 		} else {
