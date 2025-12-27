@@ -161,8 +161,14 @@ namespace vulkan {
 
 	void InstancedPassMesh::destroy() {
 		_mesh = nullptr;
+		_instanced_pass = nullptr;
+
+		_nodes.clear();
+
 		_vertex_buffer.destroy();
 		_index_buffer.destroy();
+		_node_buffer.destroy();
+		_descriptor_set.destroy();
 	}
 
 	InstancedPassMesh::~InstancedPassMesh() { destroy(); }

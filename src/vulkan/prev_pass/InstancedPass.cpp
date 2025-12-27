@@ -141,10 +141,22 @@ namespace vulkan {
 	}
 
 	void InstancedPass::destroy() {
+		_meshes.clear();
+		_nodes.clear();
+		_shared_descriptor_set_layout.destroy();
+		_mesh_descriptor_set_layout.destroy();
 		_shared_descriptor_set.destroy();
+		_descriptor_pool.destroy();
 		_destroy_render_pass();
 		_destroy_pipeline();
+		_destroy_framebuffers();
 		_destroy_command_buffer();
+		_fence.destroy();
+		_semaphore.destroy();
+		_depth_image.destroy();
+		_material_image.destroy();
+		_result_image.destroy();
+		_prim_uniform.destroy();
 	}
 
 	InstancedPass::~InstancedPass() {
