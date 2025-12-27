@@ -4,11 +4,21 @@
 {{decl.uniform_type}} {{decl.name}};
 {% endmacro %}
 
+struct Node {
+	{% for decl in node_declaration %}
+	{{declaration(decl)}}
+	{% endfor %}
+};
+
 layout(set = 0, binding = 3) uniform GlobalUniformBuffer {
 	{% for decl in global_declarations %}
 	{{declaration(decl)}}
 	{% endfor %}
 } global_uniform;
+
+layout(set = 1, binding = 0) readonly buffer node_buffer {
+	Node nodes[];
+};
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inColor;
@@ -19,6 +29,6 @@ layout(location = 0) out uint outInstance;
 void main() {
 	outInstance = gl_InstanceIndex;
 	gl_Position = global_uniform.camera_transformation *
-		//material_uniform.object_transformation *
+		nodes[gl_InstanceIndex].transformation *
 		vec4(inPosition, 1.0);
 }

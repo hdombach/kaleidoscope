@@ -141,6 +141,24 @@ namespace vulkan {
 		}
 	}
 
+	util::Result<void, Error> InstancedPassMesh::update_node(vulkan::Node const &node) {
+		NodeVImpl *vnode = nullptr;
+		for (auto &n : _nodes) {
+			if (n.node_id == node.id()) {
+				vnode = &n;
+			}
+		}
+		log_assert(vnode, util::f("NodeVImpl ", node.id(), " does not exist"));
+
+		*vnode = NodeVImpl(node);
+
+		if (auto err = _create_node_buffer().move_or()) {
+			return Error(ErrorType::MISC, "Could recreate node buffer", err.value());
+		}
+
+		return {};
+	}
+
 	void InstancedPassMesh::destroy() {
 		_mesh = nullptr;
 		_vertex_buffer.destroy();

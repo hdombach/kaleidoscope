@@ -10,6 +10,7 @@
 #include "vulkan/Vertex.hpp"
 #include "vulkan/Scene.hpp"
 #include "vulkan/prev_pass/InstancedPassNode.hpp"
+#include "vulkan/prev_pass/InstancedPassMesh.hpp"
 
 #include <imgui_impl_vulkan.h>
 #include <vulkan/vulkan_core.h>
@@ -357,13 +358,6 @@ namespace vulkan {
 		auto &raw_node = _scene->nodes()[id];
 
 		if (raw_node->type() != Node::Type::Object) return;
-		if (raw_node->mesh().id() == node.registered_mesh) return;
-
-		auto &old_mesh = _meshes[node.registered_mesh];
-		if (!old_mesh.has_value()) {
-			log_error() << "Old mesh " << old_mesh.id()
-				<< " is not known in the InstancedPass" << std::endl;
-		}
 
 		auto &new_mesh = _meshes[raw_node->mesh().id()];
 		log_assert(
@@ -371,10 +365,22 @@ namespace vulkan {
 			util::f("Mesh ", raw_node->mesh().id(), " is not known in the InstancedPass")
 		);
 
-		old_mesh.remove_node(id);
-		new_mesh.add_node(*raw_node);
+		if (raw_node->mesh().id() != node.registered_mesh) {
+			auto &old_mesh = _meshes[node.registered_mesh];
+			if (!old_mesh.has_value()) {
+				log_error() << "Old mesh " << old_mesh.id()
+					<< " is not known in the InstancedPass" << std::endl;
+			}
 
-		node.registered_mesh = raw_node->mesh().id();
+			old_mesh.remove_node(id);
+			new_mesh.add_node(*raw_node);
+
+			node.registered_mesh = raw_node->mesh().id();
+		}
+
+		if (auto err = new_mesh.update_node(*raw_node).move_or()) {
+			log_error() << "Could not update node.\n" << err.value();
+		}
 	}
 
 	void InstancedPass::node_remove(uint32_t id) {
@@ -507,7 +513,8 @@ namespace vulkan {
 
 			auto source_code = util::readEnvFile("assets/shaders/instanced.vert.cg");
 			auto args = cg::TemplObj{
-				{"global_declarations", GlobalPrevPassUniform::declaration_content}
+				{"global_declarations", GlobalPrevPassUniform::declaration_content},
+				{"node_declaration", InstancedPassMesh::NodeVImpl::declaration}
 			};
 			if (auto err = cg::TemplGen::codegen( source_code, args, "instanced.vert.cg").move_or(source_code)) {
 				return Error(
@@ -902,7 +909,7 @@ namespace vulkan {
 		{
 			auto bindings = std::vector<VkDescriptorSetLayoutBinding>();
 			//For node buffer
-			bindings.push_back(descriptor_layout_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT));
+			bindings.push_back(descriptor_layout_storage_buffer(VK_SHADER_STAGE_VERTEX_BIT));
 
 			if (auto err = DescriptorSetLayout::create(bindings).move_or(_mesh_descriptor_set_layout)) {
 				return Error(ErrorType::SHADER_RESOURCE, "Could not create mesh descriptor set layout", err.value());

@@ -39,7 +39,7 @@ namespace vulkan {
 				/**
 				 * @brief Information for codegenerating glsl struct
 				 */
-				inline const static auto delcaration = std::vector{
+				inline const static auto declaration = std::vector{
 					templ_property("uint", "node_id"),
 					templ_property("uint", "material_id"),
 					templ_property("vec3", "position"),
@@ -108,6 +108,11 @@ namespace vulkan {
 			 * underlying mesh.
 			 */
 			void remove_node(uint32_t node_id);
+
+			/**
+			 * @brief One of the properites of the node was changed
+			 */
+			util::Result<void, Error> update_node(vulkan::Node const &node);
 
 			/**
 			 * @brief Descriptor set that is used per mesh
