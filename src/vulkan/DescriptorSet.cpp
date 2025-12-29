@@ -144,6 +144,47 @@ namespace vulkan {
 		return layout;
 	}
 
+	util::Result<DescriptorSetLayout, Error> DescriptorSetLayout::create(
+		std::vector<Attachment> &attachments
+	) {
+		auto layout = DescriptorSetLayout();
+
+		uint32_t i = 0;
+		auto bindings = std::vector<VkDescriptorSetLayoutBinding>();
+
+		for (auto &attachment : attachments) {
+			VkDescriptorSetLayoutBinding binding;
+			if (auto err = attachment.descriptor_binding().move_or(binding)) {
+				return Error(
+					ErrorType::SHADER_RESOURCE,
+					util::f("Could not resolve descriptor set layout for binding ", i),
+					err.value()
+				);
+			}
+			binding.binding = i;
+			bindings.push_back(binding);
+			i++;
+		}
+
+		auto layout_info = VkDescriptorSetLayoutCreateInfo{};
+		layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layout_info.pBindings = bindings.data();
+		layout_info.bindingCount = static_cast<uint32_t>(bindings.size());
+
+		auto r= vkCreateDescriptorSetLayout(
+			Graphics::DEFAULT->device(),
+			&layout_info,
+			nullptr,
+			&layout._layout
+		);
+
+		if (r != VK_SUCCESS) {
+			return Error(ErrorType::INVALID_ARG, "Could not create desriptor set layout", VkError(r));
+		}
+
+		return layout;
+	}
+
 	DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout &&other) {
 		_bindings = std::move(other._bindings);
 		_layout = other._layout;
@@ -518,6 +559,61 @@ namespace vulkan {
 		}
 
 		return result;
+	}
+
+	util::Result<DescriptorSets, Error> DescriptorSets::create(
+		std::vector<Attachment> &attachments,
+		DescriptorSetLayout const &layout,
+		DescriptorPool const &pool
+	) {
+		auto set = DescriptorSets();
+		set._descriptor_pool = &pool;
+
+		auto alloc_info = VkDescriptorSetAllocateInfo{};
+		alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+		alloc_info.descriptorPool = pool.descriptor_pool();
+		alloc_info.descriptorSetCount = 1;
+		alloc_info.pSetLayouts = &layout.layout();
+
+		set._descriptor_sets.resize(1);
+		auto res = vkAllocateDescriptorSets(
+			Graphics::DEFAULT->device(),
+			&alloc_info,
+			set._descriptor_sets.data()
+		);
+		if (res != VK_SUCCESS) {
+			return Error(
+				ErrorType::VULKAN,
+				"Cannot allocate descriptor sets",
+				VkError(res)
+			);
+		}
+
+		auto writes = std::vector<VkWriteDescriptorSet>();
+		int i = 0;
+		for (auto &attachment : attachments) {
+			auto write = VkWriteDescriptorSet{};
+			if (auto err = attachment.descriptor_write().move_or(write)) {
+				return Error(
+					ErrorType::SHADER_RESOURCE,
+					util::f("Could not resolve descriptor write for binding ", i),
+					err.value()
+				);
+			}
+			write.dstBinding = i;
+			write.dstSet = set._descriptor_sets[0];
+			writes.push_back(write);
+			i++;
+		}
+		vkUpdateDescriptorSets(
+			Graphics::DEFAULT->device(),
+			static_cast<uint32_t>(writes.size()),
+			writes.data(),
+			0,
+			nullptr
+		);
+
+		return set;
 	}
 
 	DescriptorSets::DescriptorSets(DescriptorSets &&other) {

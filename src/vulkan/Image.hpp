@@ -13,6 +13,8 @@ namespace vulkan {
 	 */
 	class Image {
 		public:
+			static const std::string format_str(VkFormat format);
+
 			static util::Result<Image, Error> create(
 					VkExtent2D size,
 					VkFormat format,
@@ -39,6 +41,7 @@ namespace vulkan {
 
 			VkImage image() const;
 			VkImageView image_view() const;
+			VkFormat format() const;
 
 			uint32_t width() const { return _size.width; }
 			uint32_t height() const { return _size.height; }
@@ -48,6 +51,8 @@ namespace vulkan {
 			VkImageView _image_view;
 			VkDeviceMemory _image_memory;
 			VkExtent2D _size;
+			VkFormat _format;
 	};
-
 }
+
+std::ostream &operator<<(std::ostream &os, VkFormat const &format);

@@ -2,8 +2,35 @@
 
 #include "Image.hpp"
 #include "graphics.hpp"
+#include "util/log.hpp"
 
 namespace vulkan {
+	const std::string Image::format_str(VkFormat format) {
+		switch (format) {
+			case VK_FORMAT_UNDEFINED:
+				return "VK_FORMAT_UNDEFINED";
+			case VK_FORMAT_R32G32_SFLOAT:
+				return "VK_FORMAT_R32G32_SFLOAT";
+			case VK_FORMAT_R32G32B32_SFLOAT:
+				return "VK_FORMAT_R32G32B32_SFLOAT";
+			case VK_FORMAT_R32G32B32A32_SFLOAT:
+				return "VK_FORMAT_R32G32B32A32_SFLOAT";
+			case VK_FORMAT_R8G8B8A8_UNORM:
+				return "VK_FORMAT_R8G8B8A8_UNORM";
+			case VK_FORMAT_D32_SFLOAT:
+				return "VK_FORMAT_D32_SFLOAT";
+			case VK_FORMAT_D32_SFLOAT_S8_UINT:
+				return "VK_FORMAT_D32_SFLOAT_S8_UINT";
+			case VK_FORMAT_D24_UNORM_S8_UINT:
+				return "VK_FORMAT_D24_UNORM_S8_UINT";
+			case VK_FORMAT_R16_UINT:
+				return "VK_FORMAT_R16_UINT";
+			case VK_FORMAT_R8_SRGB:
+				return "VK_FORMAT_R8_SRGB";
+			default:
+				return util::f("UNKNOWN(", format, ")");
+		}
+	}
 
 	util::Result<Image, Error> Image::create(
 			VkExtent2D size,
@@ -110,6 +137,7 @@ namespace vulkan {
 		}
 
 		result._size = size;
+		result._format = format;
 
 		return std::move(result);
 	}
@@ -131,6 +159,7 @@ namespace vulkan {
 		other._image_memory = nullptr;
 
 		_size = other._size;
+		_format = other._format;
 	}
 
 	Image& Image::operator=(Image &&other) {
@@ -145,6 +174,7 @@ namespace vulkan {
 		other._image_memory = nullptr;
 
 		_size = other._size;
+		_format = other._format;
 
 		return *this;
 	}
@@ -177,4 +207,12 @@ namespace vulkan {
 	VkImageView Image::image_view() const {
 		return _image_view;
 	}
+
+	VkFormat Image::format() const {
+		return _format;
+	}
+}
+
+std::ostream &operator<<(std::ostream &os, VkFormat const &format) {
+	return os << vulkan::Image::format_str(format);
 }

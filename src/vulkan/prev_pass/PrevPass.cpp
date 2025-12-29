@@ -12,6 +12,7 @@
 #include "PrevPassMaterial.hpp"
 #include "PrevPassNode.hpp"
 #include "util/BaseError.hpp"
+#include "util/PrintTools.hpp"
 #include "vulkan/DescriptorSet.hpp"
 #include "vulkan/Scene.hpp"
 #include "vulkan/Uniforms.hpp"
@@ -22,6 +23,7 @@
 #include "types/Mesh.hpp"
 #include "../PassUtil.hpp"
 #include "vulkan/Texture.hpp"
+#include "vulkan/Attachment.hpp"
 
 namespace vulkan {
 	/************************ Observers *********************************/
@@ -149,6 +151,12 @@ namespace vulkan {
 			types::Camera const &camera,
 			VkSemaphore semaphore)
 	{
+		static uint32_t count = 0;
+		if (count < 2) {
+			count++;
+		} else {
+			//exit(0);
+		}
 		if (_de_buf_dirty_bit) {
 			if (auto err = _create_de_buffers().move_or()) {
 				log_error() << err.value() << std::endl;
@@ -714,39 +722,31 @@ namespace vulkan {
 		_destroy_de_descriptor_set();
 
 		auto textures = used_textures(_scene->resource_manager().textures());
-
-		auto bindings = std::vector<VkDescriptorSetLayoutBinding>();
-		bindings.push_back(descriptor_layout_image(VK_SHADER_STAGE_FRAGMENT_BIT));
-		bindings.push_back(descriptor_layout_image(VK_SHADER_STAGE_FRAGMENT_BIT));
-		bindings.push_back(descriptor_layout_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT));
-		bindings.push_back(descriptor_layout_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT));
+		auto attachments = std::vector<Attachment>();
+		attachments.push_back(Attachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT));
+		attachments.push_back(Attachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT));
+		attachments.push_back(Attachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT));
+		attachments.push_back(Attachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT));
 		if (textures.size() > 0) {
-			bindings.push_back(descriptor_layout_images(VK_SHADER_STAGE_FRAGMENT_BIT, textures.size()));
+			attachments.push_back(Attachment::create_images(VK_SHADER_STAGE_FRAGMENT_BIT, textures.size()));
+			attachments[4].set_image_layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		}
 
-		if (auto err = DescriptorSetLayout::create(bindings).move_or(_de_descriptor_set_layout)) {
+		if (auto err = DescriptorSetLayout::create(attachments).move_or(_de_descriptor_set_layout)) {
 			return Error(ErrorType::RESOURCE, "Could not create descriptor set layout", err.value());
 		}
 
-		auto builder = _de_descriptor_set_layout.builder();
-		if (auto err = builder.add_image(_depth_buf_image.image_view(), VK_IMAGE_LAYOUT_GENERAL).move_or()) {
-			return Error(ErrorType::RESOURCE, "Could not add depth image", err.value());
-		}
-		if (auto err = builder.add_image(_node_image.image_view(), VK_IMAGE_LAYOUT_GENERAL).move_or()) {
-			return Error(ErrorType::RESOURCE, "Could not add node image", err.value());
-		}
-		if (auto err = builder.add_storage_buffer(_de_node_buffer).move_or()) {
-			return Error(ErrorType::RESOURCE, "Could not add de node buffer", err.value());
-		}
-		if (auto err = builder.add_storage_buffer(_de_material_buffer).move_or()) {
-			return Error(ErrorType::RESOURCE, "Could not de material buffer", err.value());
-		}
+		attachments[0].add_image(_depth_buf_image);
+		attachments[1].add_image(_node_image);
+		attachments[2].add_buffer(_de_node_buffer);
+		attachments[3].add_buffer(_de_material_buffer);
 		if (textures.size() > 0) {
-			if (auto err = builder.add_image(textures).move_or()) {
-				return Error(ErrorType::RESOURCE, "Could not add textures", err.value());
-			}
+			attachments[4].add_images(textures);
 		}
-		if (auto err = DescriptorSets::create(builder, descriptor_pool()).move_or(_de_descriptor_set)) {
+
+		attachments[1].set_sampler(Graphics::DEFAULT->near_texture_sampler());
+
+		if (auto err = DescriptorSets::create(attachments, _de_descriptor_set_layout, descriptor_pool()).move_or(_de_descriptor_set)) {
 			return Error(ErrorType::RESOURCE, "Could not create de descriptor set", err.value());
 		}
 

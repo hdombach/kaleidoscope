@@ -10,6 +10,8 @@
 #include "MappedUniform.hpp"
 #include "StaticBuffer.hpp"
 #include "Error.hpp"
+#include "Image.hpp"
+#include "Attachment.hpp"
 
 /**
  * @file Tools for building and storing descriptor sets
@@ -79,6 +81,16 @@ namespace vulkan {
 			 */
 			static util::Result<DescriptorSetLayout, Error> create(
 				std::vector<VkDescriptorSetLayoutBinding> const &bindings
+			);
+
+			/**
+			 * @brief Creates a new descriptor set layout based off the list of attachments
+			 *
+			 * Techincally, the internal state of attachments is modified. This is becuase
+			 * attachments stores internal structs used for construction structs.
+			 */
+			static util::Result<DescriptorSetLayout, Error> create(
+				std::vector<Attachment> &attachments
 			);
 
 			DescriptorSetLayout(DescriptorSetLayout const &other) = delete;
@@ -311,6 +323,12 @@ namespace vulkan {
 			 */
 			static util::Result<DescriptorSets, Error> create(
 				DescriptorSetBuilder &builder,
+				DescriptorPool const &pool
+			);
+
+			static util::Result<DescriptorSets, Error> create(
+				std::vector<Attachment> &attachments,
+				DescriptorSetLayout const &layout,
 				DescriptorPool const &pool
 			);
 
