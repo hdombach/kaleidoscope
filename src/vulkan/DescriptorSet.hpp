@@ -11,7 +11,7 @@
 #include "StaticBuffer.hpp"
 #include "Error.hpp"
 #include "Image.hpp"
-#include "Attachment.hpp"
+#include "DescAttachment.hpp"
 
 /**
  * @file Tools for building and storing descriptor sets
@@ -90,7 +90,7 @@ namespace vulkan {
 			 * attachments stores internal structs used for construction structs.
 			 */
 			static util::Result<DescriptorSetLayout, Error> create(
-				std::vector<Attachment> &attachments
+				std::vector<DescAttachment> &attachments
 			);
 
 			DescriptorSetLayout(DescriptorSetLayout const &other) = delete;
@@ -327,7 +327,7 @@ namespace vulkan {
 			);
 
 			static util::Result<DescriptorSets, Error> create(
-				std::vector<Attachment> &attachments,
+				std::vector<DescAttachment> &attachments,
 				DescriptorSetLayout const &layout,
 				DescriptorPool const &pool
 			);

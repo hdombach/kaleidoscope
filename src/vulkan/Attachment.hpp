@@ -203,7 +203,7 @@ namespace vulkan {
 
 			VkFormat _image_format = VK_FORMAT_UNDEFINED;
 			bool _framebuffer = false;
-			VkShaderStageFlagBits _shader_stage;
+			VkShaderStageFlagBits _shader_stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 			uint32_t _descriptor_count = 1; //currently used for multiple images
 
 			//  values
@@ -217,13 +217,8 @@ namespace vulkan {
 			size_t _buffer_size = 0;
 
 			// Constructor classes
-			VkDescriptorSetLayoutBinding _descriptor_binding;
-			VkWriteDescriptorSet _descriptor_write;
 			VkDescriptorBufferInfo _buffer_info;
 			std::vector<VkDescriptorImageInfo> _image_infos;
-
-			VkAttachmentDescription _attachment_description;
-			VkPipelineColorBlendAttachmentState _blend_attachment_state;
 	};
 
 }

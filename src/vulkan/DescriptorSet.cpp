@@ -145,7 +145,7 @@ namespace vulkan {
 	}
 
 	util::Result<DescriptorSetLayout, Error> DescriptorSetLayout::create(
-		std::vector<Attachment> &attachments
+		std::vector<DescAttachment> &attachments
 	) {
 		auto layout = DescriptorSetLayout();
 
@@ -562,7 +562,7 @@ namespace vulkan {
 	}
 
 	util::Result<DescriptorSets, Error> DescriptorSets::create(
-		std::vector<Attachment> &attachments,
+		std::vector<DescAttachment> &attachments,
 		DescriptorSetLayout const &layout,
 		DescriptorPool const &pool
 	) {

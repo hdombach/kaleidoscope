@@ -23,7 +23,6 @@
 #include "types/Mesh.hpp"
 #include "../PassUtil.hpp"
 #include "vulkan/Texture.hpp"
-#include "vulkan/Attachment.hpp"
 
 namespace vulkan {
 	/************************ Observers *********************************/
@@ -722,13 +721,13 @@ namespace vulkan {
 		_destroy_de_descriptor_set();
 
 		auto textures = used_textures(_scene->resource_manager().textures());
-		auto attachments = std::vector<Attachment>();
-		attachments.push_back(Attachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT));
-		attachments.push_back(Attachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT));
-		attachments.push_back(Attachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT));
-		attachments.push_back(Attachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT));
+		auto attachments = std::vector<DescAttachment>();
+		attachments.push_back(DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT));
+		attachments.push_back(DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT));
+		attachments.push_back(DescAttachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT));
+		attachments.push_back(DescAttachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT));
 		if (textures.size() > 0) {
-			attachments.push_back(Attachment::create_images(VK_SHADER_STAGE_FRAGMENT_BIT, textures.size()));
+			attachments.push_back(DescAttachment::create_images(VK_SHADER_STAGE_FRAGMENT_BIT, textures.size()));
 			attachments[4].set_image_layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		}
 

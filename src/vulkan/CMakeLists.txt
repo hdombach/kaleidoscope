@@ -15,6 +15,7 @@ set(VULKAN_SRC
 	${CMAKE_CURRENT_SOURCE_DIR}/PassUtil.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/Error.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/Attachment.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/DescAttachment.cpp
 
 	${CMAKE_CURRENT_SOURCE_DIR}/prev_pass/PrevPass.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/prev_pass/PrevPassCodegen.cpp

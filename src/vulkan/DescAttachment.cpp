@@ -1,87 +1,54 @@
-#include "Attachment.hpp"
+#include "DescAttachment.hpp"
 
-#include <vulkan/vulkan_core.h>
-
-#include "vulkan/DescriptorSet.hpp"
-#include "util/log.hpp"
-#include "util/format.hpp"
+#include "Image.hpp"
+#include "DescriptorSet.hpp"
 
 namespace vulkan {
-	const char *Attachment::type_str(Type type) {
-		switch (type) {
+	const char *DescAttachment::type_str(Type type) {
+		switch(type) {
 			case Type::UNKNOWN:
 				return "Unknown";
 			case Type::UNIFORM:
 				return "Uniform";
 			case Type::STORAGE_BUFFER:
-				return "Storage buffer";
+				return "storage buffer";
 			case Type::IMAGE:
-				return "Image";
+				return "image";
 			case Type::IMAGE_TARGET:
-					return "Image target";
+				return "image target";
 		}
 	}
 
-	Attachment Attachment::create_uniform(VkShaderStageFlagBits shader_stage) {
-		auto a = Attachment();
-
-		a._type = Type::UNIFORM;
-		a._shader_stage = shader_stage;
-
-		return a;
+	DescAttachment DescAttachment::create_uniform(VkShaderStageFlagBits shader_stage) {
+		return DescAttachment(Type::UNIFORM, shader_stage);
 	}
 
-	Attachment Attachment::create_storage_buffer(
-		VkShaderStageFlagBits shader_stage
-	) {
-		auto a = Attachment();
-
-		a._type = Type::STORAGE_BUFFER;
-		a._shader_stage = shader_stage;
-
-		return a;
+	DescAttachment DescAttachment::create_storage_buffer(VkShaderStageFlagBits shader_stage) {
+		return DescAttachment(Type::STORAGE_BUFFER, shader_stage);
 	}
 
-	Attachment Attachment::create_image(
-		VkShaderStageFlagBits shader_stage
-	) {
-		auto a = Attachment();
-
-		a._type = Type::IMAGE;
-		a._shader_stage = shader_stage;
-
-		return a;
+	DescAttachment DescAttachment::create_image(VkShaderStageFlagBits shader_stage) {
+		return DescAttachment(Type::IMAGE, shader_stage);
 	}
 
-	Attachment Attachment::create_images(
+	DescAttachment DescAttachment::create_images(
 		VkShaderStageFlagBits shader_stage,
 		size_t count
 	) {
-		auto a = Attachment();
-
-		a._type = Type::IMAGE;
-		a._shader_stage = shader_stage;
+		auto a = DescAttachment(Type::IMAGE, shader_stage);
 		a._descriptor_count = count;
-
 		return a;
 	}
 
-	Attachment Attachment::create_image_target(
-		VkShaderStageFlagBits shader_stage
-	) {
-		auto a = Attachment();
-
-		a._type = Type::IMAGE_TARGET;
-		a._shader_stage = shader_stage;
-
-		return a;
+	DescAttachment DescAttachment::create_image_target(VkShaderStageFlagBits shader_stage) {
+		return DescAttachment(Type::IMAGE_TARGET, shader_stage);
 	}
 
-	Attachment &Attachment::add_uniform(Uniform &uniform) {
+	DescAttachment &DescAttachment::add_uniform(Uniform &uniform) {
 		return add_uniform(uniform.buffer(), uniform.size());
 	}
 
-	Attachment &Attachment::add_uniform(VkBuffer buffer, size_t buffer_size) {
+	DescAttachment &DescAttachment::add_uniform(VkBuffer buffer, size_t buffer_size) {
 		if (_error) return *this;
 		if (_type != Type::UNIFORM) {
 			_error = Error(
@@ -97,11 +64,11 @@ namespace vulkan {
 		return *this;
 	}
 
-	Attachment &Attachment::add_buffer(StaticBuffer &static_buffer) {
+	DescAttachment &DescAttachment::add_buffer(StaticBuffer &static_buffer) {
 		return add_buffer(static_buffer.buffer(), static_buffer.range());
 	}
 
-	Attachment &Attachment::add_buffer(VkBuffer buffer, size_t range) {
+	DescAttachment &DescAttachment::add_buffer(VkBuffer buffer, size_t range) {
 		if (_error) return *this;
 		if (_type != Type::STORAGE_BUFFER) {
 			_error = Error(
@@ -116,56 +83,11 @@ namespace vulkan {
 		return *this;
 	}
 
-	Attachment &Attachment::add_image(Image const &image) {
-		if (_error) return *this;
-		if (_type != Type::IMAGE) {
-			_error = Error(
-				ErrorType::SHADER_RESOURCE,
-				util::f("Cannot add image to attachment of type ", type_str(_type))
-			);
-			return *this;
-		}
-		_image_format = image.format();
-		_image_views = {image.image_view()};
-		_image_layout = VK_IMAGE_LAYOUT_GENERAL;
-
-		//clear color used by framebuffer
-		switch (_image_format) {
-			case VK_FORMAT_D32_SFLOAT:
-			case VK_FORMAT_D32_SFLOAT_S8_UINT:
-			case VK_FORMAT_D24_UNORM_S8_UINT:
-				_is_depth = true;
-				_clear_color = {1.0f, 0};
-				break;
-			case VK_FORMAT_R16_UINT:
-				_clear_color = {0};
-				break;
-			case VK_FORMAT_R8_SRGB:
-				_clear_color = {0};
-				break;
-			case VK_FORMAT_R32G32_SFLOAT:
-				_clear_color = {0.0, 0.0};
-				break;
-			case VK_FORMAT_R32G32B32_SFLOAT:
-				_clear_color = {0.0, 0.0, 0.0};
-				break;
-			case VK_FORMAT_R32G32B32A32_SFLOAT:
-				_clear_color = {0.0, 0.0, 0.0, 1.0};
-				break;
-			case VK_FORMAT_R8G8B8A8_UNORM:
-				_clear_color = {0, 0, 0, 1};
-				break;
-			default:
-				log_error() << "Unimplimented image format: " << _image_format << std::endl;
-				break;
-		}
-
-		_sampler = *Graphics::DEFAULT->main_texture_sampler();
-
-		return *this;
+	DescAttachment &DescAttachment::add_image(Image const &image) {
+		return add_images({image.image_view()});
 	}
 
-	Attachment &Attachment::add_images(std::vector<VkImageView> const &image_views) {
+	DescAttachment &DescAttachment::add_images(std::vector<VkImageView> const &image_views) {
 		if (_error) return *this;
 		if (_type != Type::IMAGE) {
 			_error = Error(
@@ -183,20 +105,15 @@ namespace vulkan {
 			return *this;
 		}
 
-		//Image format not set
-
 		_image_views = image_views;
-		_image_layout  = VK_IMAGE_LAYOUT_GENERAL;
-		_is_depth = false;
-
-		//clear color not set
+		_image_layout = VK_IMAGE_LAYOUT_GENERAL;
 
 		_sampler = *Graphics::DEFAULT->main_texture_sampler();
 
 		return *this;
 	}
 
-	Attachment &Attachment::add_image_target(VkImageView image_view) {
+	DescAttachment &DescAttachment::add_image_target(VkImageView image_view) {
 		if (_error) return *this;
 		if (_type != Type::IMAGE_TARGET) {
 			_error = Error(
@@ -212,21 +129,7 @@ namespace vulkan {
 		return *this;
 	}
 
-	Attachment &Attachment::set_clear_value(VkClearValue const &clear_value) {
-		if (_error) return *this;
-		if (_type != Type::IMAGE) {
-			_error = Error(
-				ErrorType::SHADER_RESOURCE,
-				util::f("Cannot assign a clear value to attachment of type ", type_str(_type))
-			);
-			return *this;
-		}
-
-		_clear_color = clear_value;
-		return *this;
-	}
-
-	Attachment &Attachment::set_sampler(Sampler const &sampler) {
+	DescAttachment &DescAttachment::set_sampler(Sampler const &sampler) {
 		if (_error) return *this;
 		if (_type != Type::IMAGE) {
 			_error = Error(
@@ -240,12 +143,12 @@ namespace vulkan {
 		return *this;
 	}
 
-	Attachment &Attachment::set_image_layout(VkImageLayout layout) {
+	DescAttachment &DescAttachment::set_image_layout(VkImageLayout layout) {
 		if (_error) return *this;
 		if (_type != Type::IMAGE) {
 			_error = Error(
 				ErrorType::SHADER_RESOURCE,
-				util::f("Cannot assigne image layout to attachment of type ", type_str(_type))
+				util::f("Cannot assign image layout to attachment of type ", type_str(_type))
 			);
 			return *this;
 		}
@@ -254,7 +157,7 @@ namespace vulkan {
 		return *this;
 	}
 
-	util::Result<VkDescriptorSetLayoutBinding, Error> Attachment::descriptor_binding() {
+	util::Result<VkDescriptorSetLayoutBinding, Error> DescAttachment::descriptor_binding() {
 		if (_error) return _error.value();
 
 		auto binding = VkDescriptorSetLayoutBinding{};
@@ -295,7 +198,7 @@ namespace vulkan {
 		return binding;
 	}
 
-	util::Result<VkWriteDescriptorSet, Error> Attachment::descriptor_write() {
+	util::Result<VkWriteDescriptorSet, Error> DescAttachment::descriptor_write() {
 		if (_error) return _error.value();
 
 		auto descriptor_write = VkWriteDescriptorSet{};
@@ -396,70 +299,12 @@ namespace vulkan {
 		return descriptor_write;
 	}
 
-	util::Result<VkAttachmentDescription, Error> Attachment::attachment_description() {
-		if (_error) return _error.value();
-		if (_type != Type::IMAGE) {
-			return Error(
-				ErrorType::SHADER_RESOURCE,
-				util::f("Cannot get description from attachment of type ", type_str(_type))
-			);
-		}
-
-		auto description = VkAttachmentDescription{};
-		description.format = _image_format;
-		description.samples = VK_SAMPLE_COUNT_1_BIT;
-		description.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-		description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		description.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
-		description.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-		return description;
-	}
-
-	util::Result<VkPipelineColorBlendAttachmentState, Error> Attachment::blend_attachment_state() {
-		if (_error) return _error.value();
-		if (_type != Type::IMAGE) {
-			return Error(
-				ErrorType::SHADER_RESOURCE,
-				util::f("Cannot get blend state from attachment of type ", type_str(_type))
-			);
-		}
-
-		auto blend_attachment = VkPipelineColorBlendAttachmentState{};
-		switch (_image_format) {
-			case VK_FORMAT_R8G8B8A8_SRGB:
-				blend_attachment.colorWriteMask =
-					VK_COLOR_COMPONENT_R_BIT |
-					VK_COLOR_COMPONENT_G_BIT |
-					VK_COLOR_COMPONENT_B_BIT |
-					VK_COLOR_COMPONENT_A_BIT;
-				blend_attachment.blendEnable = VK_TRUE;
-				blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-				blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-				blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-				blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-				blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-				blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
-				break;
-			case VK_FORMAT_R16_UINT:
-				blend_attachment.colorWriteMask =
-					VK_COLOR_COMPONENT_R_BIT |
-					VK_COLOR_COMPONENT_A_BIT;
-				blend_attachment.blendEnable = VK_FALSE;
-				break;
-			default:
-				return Error(
-					ErrorType::SHADER_RESOURCE,
-					util::f("Color blend attachment state is not known for image format ", _image_format)
-				);
-		}
-
-		return blend_attachment;
-	}
+	DescAttachment::DescAttachment(Type type, VkShaderStageFlagBits shader_stage):
+		_type(type),
+		_shader_stage(shader_stage)
+	{ }
 }
 
-std::ostream &operator <<(std::ostream &os, vulkan::Attachment::Type const &type) {
-	return os << vulkan::Attachment::type_str(type);
+std::ostream &operator<<(std::ostream &os, vulkan::DescAttachment::Type const &type) {
+	return os << vulkan::DescAttachment::type_str(type);
 }
