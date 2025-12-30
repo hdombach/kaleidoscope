@@ -12,6 +12,7 @@
 #include "vulkan/DescriptorSet.hpp"
 #include "vulkan/FrameAttachment.hpp"
 #include "vulkan/Image.hpp"
+#include "vulkan/RenderPass.hpp"
 #include "vulkan/Uniforms.hpp"
 #include "vulkan/Fence.hpp"
 #include "vulkan/Semaphore.hpp"
@@ -202,7 +203,7 @@ namespace vulkan {
 			std::vector<FrameAttachment> _de_frame_attachments;
 			VkPipelineLayout _de_pipeline_layout;
 			VkPipeline _de_pipeline;
-			VkRenderPass _de_render_pass;
+			RenderPass _de_render_pass;
 			VkFramebuffer _de_framebuffer;
 			DescriptorSetLayout _de_descriptor_set_layout;
 			DescriptorSets _de_descriptor_set;

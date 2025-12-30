@@ -18,6 +18,7 @@
 #include "vulkan/Scene.hpp"
 #include "vulkan/Uniforms.hpp"
 #include "vulkan/graphics.hpp"
+#include "vulkan/RenderPass.hpp"
 #include "util/Util.hpp"
 #include "util/log.hpp"
 #include "util/file.hpp"
@@ -280,7 +281,7 @@ namespace vulkan {
 
 			auto render_pass_info = VkRenderPassBeginInfo{};
 			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			render_pass_info.renderPass = _de_render_pass;
+			render_pass_info.renderPass = _de_render_pass.render_pass();
 			render_pass_info.framebuffer = _de_framebuffer;
 			render_pass_info.renderArea.offset = {0, 0};
 			render_pass_info.renderArea.extent = _size;
@@ -759,79 +760,18 @@ namespace vulkan {
 
 	util::Result<void, PrevPass::Error> PrevPass::_create_de_render_pass() {
 		_destroy_de_render_pass();
-		
-		auto color_attachment = VkAttachmentDescription{};
-		if (auto err = _de_frame_attachments[0].attachment_description().move_or(color_attachment)) {
-			return Error(
-				ErrorType::RESOURCE,
-				"Could not get attachment descriptor for color attachment",
-				err.value()
-			);
-		}
 
-		auto node_attachment = VkAttachmentDescription{};
-		if (auto err = _de_frame_attachments[1].attachment_description().move_or(node_attachment)) {
-			return Error(
-				ErrorType::RESOURCE,
-				"Could not get attachment descriptor for node attachment",
-				err.value()
-			);
-		}
-
-		auto color_attachment_ref = VkAttachmentReference{};
-		color_attachment_ref.attachment = 0;
-		color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		auto node_attachment_ref = VkAttachmentReference{};
-		node_attachment_ref.attachment = 1;
-		node_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		auto attachment_refs = std::array<VkAttachmentReference, 2>{
-			color_attachment_ref,
-			node_attachment_ref,
+		auto attachments = std::vector{
+			FrameAttachment::create(_color_image),
+			FrameAttachment::create(_de_node_image)
 		};
 
-		auto subpass = VkSubpassDescription{};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = attachment_refs.size();
-		subpass.pColorAttachments = attachment_refs.data();
-		subpass.pDepthStencilAttachment = nullptr;
-
-		auto attachments = std::array<VkAttachmentDescription, 2>{
-			color_attachment,
-			node_attachment,
-		};
-
-		auto render_pass_info = VkRenderPassCreateInfo{};
-		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		render_pass_info.attachmentCount = static_cast<uint32_t>(attachments.size());
-		render_pass_info.pAttachments = attachments.data();
-		render_pass_info.subpassCount = 1;
-		render_pass_info.pSubpasses = &subpass;
-
-		auto dependency = VkSubpassDependency{};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
-			VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
-			VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-		render_pass_info.dependencyCount = 1;
-		render_pass_info.pDependencies = &dependency;
-
-		auto res = vkCreateRenderPass(
-				Graphics::DEFAULT->device(),
-				&render_pass_info,
-				nullptr,
-				&_de_render_pass);
-
-		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create de render pass", VkError(res));
+		if (auto err = RenderPass::create(std::move(attachments)).move_or(_de_render_pass)) {
+			return Error(
+				ErrorType::MISC,
+				"Could not create de render pass",
+				err.value()
+			);
 		}
 
 		return {};
@@ -842,12 +782,8 @@ namespace vulkan {
 	}
 
 	void PrevPass::_destroy_de_render_pass() {
-		if (_de_render_pass) {
-			vkDestroyRenderPass(Graphics::DEFAULT->device(), _de_render_pass, nullptr);
-			_de_render_pass = nullptr;
-		}
+		_de_render_pass.destroy();
 	}
-
 
 	util::Result<void, PrevPass::Error> PrevPass::_create_de_pipeline() {
 		_destroy_de_pipeline();
@@ -1036,7 +972,7 @@ namespace vulkan {
 		pipeline_info.pColorBlendState = &color_blending;
 		pipeline_info.pDynamicState = &dynamic_state;
 		pipeline_info.layout = _de_pipeline_layout;
-		pipeline_info.renderPass = _de_render_pass;
+		pipeline_info.renderPass = _de_render_pass.render_pass();
 		pipeline_info.subpass = 0;
 		pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
 		pipeline_info.basePipelineIndex = -1;
@@ -1295,7 +1231,7 @@ namespace vulkan {
 
 			auto framebuffer_info = VkFramebufferCreateInfo{};
 			framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebuffer_info.renderPass = _de_render_pass;
+			framebuffer_info.renderPass = _de_render_pass.render_pass();
 			framebuffer_info.attachmentCount = attachments.size();
 			framebuffer_info.pAttachments = attachments.data();
 			framebuffer_info.width = _size.width;
