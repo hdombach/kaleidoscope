@@ -10,6 +10,7 @@
 #include "PrevPassNode.hpp"
 #include "vulkan/DescriptorPool.hpp"
 #include "vulkan/DescriptorSet.hpp"
+#include "vulkan/FrameAttachment.hpp"
 #include "vulkan/Image.hpp"
 #include "vulkan/Uniforms.hpp"
 #include "vulkan/Fence.hpp"
@@ -198,7 +199,7 @@ namespace vulkan {
 			VkFramebuffer _prim_framebuffer;
 			MappedPrevPassUniform _prim_uniform;
 
-			std::vector<DescAttachment> _de_framebuffer_attachments;
+			std::vector<FrameAttachment> _de_frame_attachments;
 			VkPipelineLayout _de_pipeline_layout;
 			VkPipeline _de_pipeline;
 			VkRenderPass _de_render_pass;

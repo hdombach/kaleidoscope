@@ -28,7 +28,7 @@ namespace vulkan {
 			case VK_FORMAT_R8_SRGB:
 				return "VK_FORMAT_R8_SRGB";
 			default:
-				return util::f("UNKNOWN(", format, ")");
+				return util::f("UNKNOWN(", static_cast<uint32_t>(format), ")");
 		}
 	}
 

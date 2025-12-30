@@ -14,6 +14,7 @@
 #include "util/BaseError.hpp"
 #include "util/PrintTools.hpp"
 #include "vulkan/DescriptorSet.hpp"
+#include "vulkan/FrameAttachment.hpp"
 #include "vulkan/Scene.hpp"
 #include "vulkan/Uniforms.hpp"
 #include "vulkan/graphics.hpp"
@@ -275,6 +276,8 @@ namespace vulkan {
 
 		// de render pass
 		if (1) {
+			int i;
+
 			auto render_pass_info = VkRenderPassBeginInfo{};
 			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			render_pass_info.renderPass = _de_render_pass;
@@ -282,10 +285,12 @@ namespace vulkan {
 			render_pass_info.renderArea.offset = {0, 0};
 			render_pass_info.renderArea.extent = _size;
 
-			auto clear_values = std::array<VkClearValue, 3>{};
-			clear_values[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-			clear_values[1].depthStencil = {1.0f, 0};
-			clear_values[2].color = {{0}};
+			i = 0;
+			auto clear_values = std::vector<VkClearValue>(_de_frame_attachments.size());
+			for (auto &clear_value : clear_values) {
+				clear_value = _de_frame_attachments[i].clear_color();
+				i++;
+			}
 
 			render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
 			render_pass_info.pClearValues = clear_values.data();
@@ -754,25 +759,24 @@ namespace vulkan {
 
 	util::Result<void, PrevPass::Error> PrevPass::_create_de_render_pass() {
 		_destroy_de_render_pass();
+		
 		auto color_attachment = VkAttachmentDescription{};
-		color_attachment.format = _RESULT_IMAGE_FORMAT;
-		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-		color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		color_attachment.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
-		color_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+		if (auto err = _de_frame_attachments[0].attachment_description().move_or(color_attachment)) {
+			return Error(
+				ErrorType::RESOURCE,
+				"Could not get attachment descriptor for color attachment",
+				err.value()
+			);
+		}
 
 		auto node_attachment = VkAttachmentDescription{};
-		node_attachment.format = _NODE_IMAGE_FORMAT;
-		node_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		node_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-		node_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		node_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		node_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		node_attachment.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
-		node_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+		if (auto err = _de_frame_attachments[1].attachment_description().move_or(node_attachment)) {
+			return Error(
+				ErrorType::RESOURCE,
+				"Could not get attachment descriptor for node attachment",
+				err.value()
+			);
+		}
 
 		auto color_attachment_ref = VkAttachmentReference{};
 		color_attachment_ref.attachment = 0;
@@ -941,25 +945,22 @@ namespace vulkan {
 		multisampling.alphaToOneEnable = VK_FALSE;
 
 		auto color_blend_attachment = VkPipelineColorBlendAttachmentState{};
-		color_blend_attachment.colorWriteMask = 
-			VK_COLOR_COMPONENT_R_BIT |
-			VK_COLOR_COMPONENT_G_BIT |
-			VK_COLOR_COMPONENT_B_BIT |
-			VK_COLOR_COMPONENT_A_BIT;
-		color_blend_attachment.blendEnable = VK_TRUE;
-		color_blend_attachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-		color_blend_attachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		color_blend_attachment.colorBlendOp = VK_BLEND_OP_ADD;
-		color_blend_attachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-		color_blend_attachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-		color_blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
+		if (auto err = _de_frame_attachments[0].blend_attachment_state().move_or(color_blend_attachment)) {
+			return Error(
+				ErrorType::RESOURCE,
+				"Could not get blend attachment state of the color attachment",
+				err.value()
+			);
+		}
 
 		auto node_blend_attachment = VkPipelineColorBlendAttachmentState{};
-		node_blend_attachment.colorWriteMask = 
-			VK_COLOR_COMPONENT_R_BIT |
-			VK_COLOR_COMPONENT_A_BIT;
-		node_blend_attachment.blendEnable = VK_FALSE;
-
+		if (auto err = _de_frame_attachments[1].blend_attachment_state().move_or(node_blend_attachment)) {
+			return Error(
+				ErrorType::RESOURCE,
+				"Could not get blend attachment state of the node attachment",
+				err.value()
+			);
+		}
 
 		auto color_attachments = std::array<VkPipelineColorBlendAttachmentState, 2>{
 			color_blend_attachment,
@@ -1208,6 +1209,12 @@ namespace vulkan {
 			_color_image.image_view(),
 			VK_IMAGE_LAYOUT_GENERAL
 		);
+
+		_de_frame_attachments.resize(2);
+		_de_frame_attachments[0] = FrameAttachment::create(_color_image);
+		_de_frame_attachments[1] = FrameAttachment::create(_de_node_image);
+
+
 
 		return {};
 	}
