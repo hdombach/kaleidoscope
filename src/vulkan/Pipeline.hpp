@@ -44,7 +44,6 @@ namespace vulkan {
 
 			std::vector<DescriptorSetLayout> const &layouts();
 			std::vector<VkDescriptorSetLayout> vk_layouts();
-			VkFramebuffer framebuffer() const;
 			std::vector<VkClearValue> const &clear_values() const;
 
 			Attachments const &attachments() const;
@@ -59,7 +58,6 @@ namespace vulkan {
 
 			VkPipeline _pipeline = nullptr;
 			VkPipelineLayout _pipeline_layout = nullptr;
-			VkFramebuffer _framebuffer = nullptr;
 
 			Attachments _attachments;
 

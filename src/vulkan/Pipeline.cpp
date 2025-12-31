@@ -207,28 +207,7 @@ namespace vulkan {
 		//TODO: make sure all the images are the same size maybe
 		auto frame_images = std::vector<VkImageView>();
 		for (auto &attachment : pipeline._render_pass->frame_attachments()) {
-			frame_images.push_back(attachment.image_view());
 			pipeline._clear_values.push_back(attachment.clear_color());
-		}
-
-		auto framebuffer_info = VkFramebufferCreateInfo{};
-		framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebuffer_info.renderPass = pipeline._render_pass->render_pass();
-		framebuffer_info.attachmentCount = frame_images.size();
-		framebuffer_info.pAttachments = frame_images.data();
-		framebuffer_info.width = pipeline._render_pass->frame_attachments().front().size().width;
-		framebuffer_info.height = pipeline._render_pass->frame_attachments().front().size().height;
-		framebuffer_info.layers = 1;
-
-		res = vkCreateFramebuffer(
-			Graphics::DEFAULT->device(),
-			&framebuffer_info,
-			nullptr,
-			&pipeline._framebuffer
-		);
-
-		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create framebuffer", VkError(res));
 		}
 
 		pipeline._size = {static_cast<uint32_t>(viewport.width), static_cast<uint32_t>(viewport.height)};
@@ -244,7 +223,6 @@ namespace vulkan {
 
 		_pipeline = util::move_ptr(other._pipeline);
 		_pipeline_layout = util::move_ptr(other._pipeline_layout);
-		_framebuffer = util::move_ptr(other._framebuffer);
 
 		_attachments = std::move(other._attachments);
 
@@ -259,7 +237,6 @@ namespace vulkan {
 
 		_pipeline = util::move_ptr(other._pipeline);
 		_pipeline_layout = util::move_ptr(other._pipeline_layout);
-		_framebuffer = util::move_ptr(other._framebuffer);
 
 		_attachments = std::move(other._attachments);
 
@@ -285,10 +262,6 @@ namespace vulkan {
 			);
 			_pipeline = nullptr;
 		}
-		if (_framebuffer) {
-			vkDestroyFramebuffer(Graphics::DEFAULT->device(), _framebuffer, nullptr);
-			_framebuffer = nullptr;
-		}
 	}
 
 	Pipeline::~Pipeline() {
@@ -313,10 +286,6 @@ namespace vulkan {
 			layouts.push_back(layout.layout());
 		}
 		return layouts;
-	}
-
-	VkFramebuffer Pipeline::framebuffer() const {
-		return _framebuffer;
 	}
 
 	std::vector<VkClearValue> const &Pipeline::clear_values() const {

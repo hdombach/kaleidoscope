@@ -8,11 +8,13 @@ namespace vulkan {
 	RenderPass::RenderPass(RenderPass &&other) {
 		_frame_attachments = std::move(other._frame_attachments);
 		_render_pass = util::move_ptr(other._render_pass);
+		_framebuffer = util::move_ptr(other._framebuffer);
 	}
 
 	RenderPass &RenderPass::operator=(RenderPass &&other) {
 		_frame_attachments = std::move(other._frame_attachments);
 		_render_pass = util::move_ptr(other._render_pass);
+		_framebuffer = util::move_ptr(other._framebuffer);
 
 		return *this;
 	}
@@ -21,6 +23,10 @@ namespace vulkan {
 		if (_render_pass) {
 			vkDestroyRenderPass(Graphics::DEFAULT->device(), _render_pass, nullptr);
 			_render_pass = nullptr;
+		}
+		if (_framebuffer) {
+			vkDestroyFramebuffer(Graphics::DEFAULT->device(), _framebuffer, nullptr);
+			_framebuffer = nullptr;
 		}
 	}
 
@@ -31,6 +37,10 @@ namespace vulkan {
 	) {
 		auto render_pass = RenderPass();
 		render_pass._frame_attachments = std::move(frame_attachments);
+
+		if (render_pass._frame_attachments.empty()) {
+			return Error(ErrorType::INVALID_ARG, "Cannot create render pass with 0 frame attachments");
+		}
 
 		auto descriptions = std::vector<VkAttachmentDescription>();
 		auto attachment_refs = std::vector<VkAttachmentReference>();
@@ -97,11 +107,41 @@ namespace vulkan {
 			return Error(ErrorType::VULKAN, "Could not create render pass", VkError(res));
 		}
 
+		// Create framebuffer
+		auto frame_images = std::vector<VkImageView>();
+		for (auto &attachment : render_pass._frame_attachments) {
+			frame_images.push_back(attachment.image_view());
+		}
+
+		auto framebuffer_info = VkFramebufferCreateInfo{};
+		framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebuffer_info.renderPass = render_pass._render_pass;
+		framebuffer_info.attachmentCount = frame_images.size();
+		framebuffer_info.pAttachments = frame_images.data();
+		framebuffer_info.width = render_pass._frame_attachments.front().size().width;
+		framebuffer_info.height = render_pass._frame_attachments.front().size().height;
+		framebuffer_info.layers = 1;
+
+		res = vkCreateFramebuffer(
+			Graphics::DEFAULT->device(), 
+			&framebuffer_info, 
+			nullptr, 
+			&render_pass._framebuffer
+		);
+
+		if (res != VK_SUCCESS) {
+			return Error(ErrorType::VULKAN, "Could not create framebuffer", VkError(res));
+		}
+
 		return render_pass;
 	}
 
 	VkRenderPass RenderPass::render_pass() const {
 		return _render_pass;
+	}
+
+	VkFramebuffer RenderPass::framebuffer() const {
+		return _framebuffer;
 	}
 
 	std::vector<FrameAttachment> const &RenderPass::frame_attachments() const {

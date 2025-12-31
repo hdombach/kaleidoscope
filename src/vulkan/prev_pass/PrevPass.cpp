@@ -285,7 +285,7 @@ namespace vulkan {
 			auto render_pass_info = VkRenderPassBeginInfo{};
 			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			render_pass_info.renderPass = _de_pipeline.render_pass().render_pass();
-			render_pass_info.framebuffer = _de_pipeline.framebuffer();
+			render_pass_info.framebuffer = _de_pipeline.render_pass().framebuffer();
 			render_pass_info.renderArea.offset = {0, 0};
 			render_pass_info.renderArea.extent = _size;
 
@@ -480,6 +480,8 @@ namespace vulkan {
 
 	util::Result<void, PrevPass::Error> PrevPass::_create_prim_render_pass() {
 		_destroy_de_render_pass();
+
+
 
 		/* Create render pass */
 		auto color_attachment = VkAttachmentDescription{};

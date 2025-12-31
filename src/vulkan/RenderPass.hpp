@@ -28,10 +28,13 @@ namespace vulkan {
 
 			VkRenderPass render_pass() const;
 
+			VkFramebuffer framebuffer() const;
+
 			std::vector<FrameAttachment> const &frame_attachments() const;
 
 		private:
 			std::vector<FrameAttachment> _frame_attachments;
 			VkRenderPass _render_pass = nullptr;
+			VkFramebuffer _framebuffer = nullptr;
 	};
 }
