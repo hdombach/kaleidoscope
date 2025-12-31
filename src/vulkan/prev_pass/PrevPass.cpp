@@ -782,6 +782,7 @@ namespace vulkan {
 
 	void PrevPass::_destroy_de_descriptor_set() {
 		_de_descriptor_set.destroy();
+		_de_shared_descriptor_set.destroy();
 	}
 
 	void PrevPass::_destroy_de_render_pass() {

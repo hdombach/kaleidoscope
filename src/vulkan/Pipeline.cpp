@@ -285,6 +285,10 @@ namespace vulkan {
 			);
 			_pipeline = nullptr;
 		}
+		if (_framebuffer) {
+			vkDestroyFramebuffer(Graphics::DEFAULT->device(), _framebuffer, nullptr);
+			_framebuffer = nullptr;
+		}
 	}
 
 	Pipeline::~Pipeline() {
