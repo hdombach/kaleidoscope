@@ -17,6 +17,7 @@ set(VULKAN_SRC
 	${CMAKE_CURRENT_SOURCE_DIR}/DescAttachment.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/FrameAttachment.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/RenderPass.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/Pipeline.cpp
 
 	${CMAKE_CURRENT_SOURCE_DIR}/prev_pass/PrevPass.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/prev_pass/PrevPassCodegen.cpp

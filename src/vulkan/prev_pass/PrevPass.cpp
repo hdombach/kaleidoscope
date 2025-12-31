@@ -158,7 +158,17 @@ namespace vulkan {
 		} else {
 			//exit(0);
 		}
+
+		if (_de_pipe_dirty_bit) {
+			log_trace() << "Creating de pipeline" << std::endl;
+			if (auto err = _create_de_pipeline().move_or()) {
+				log_error() << err.value() << std::endl;
+			}
+			_de_pipe_dirty_bit = false;
+		}
+
 		if (_de_buf_dirty_bit) {
+			log_trace() << "Create de buffers and de descriptor set" << std::endl;
 			if (auto err = _create_de_buffers().move_or()) {
 				log_error() << err.value() << std::endl;
 			}
@@ -166,13 +176,6 @@ namespace vulkan {
 				log_error() << err.value() << std::endl;
 			}
 			_de_buf_dirty_bit = false;
-		}
-
-		if (_de_pipe_dirty_bit) {
-			if (auto err = _create_de_pipeline().move_or()) {
-				log_error() << err.value() << std::endl;
-			}
-			_de_pipe_dirty_bit = false;
 		}
 
 		_fence.wait();
@@ -281,35 +284,30 @@ namespace vulkan {
 
 			auto render_pass_info = VkRenderPassBeginInfo{};
 			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			render_pass_info.renderPass = _de_render_pass.render_pass();
-			render_pass_info.framebuffer = _de_framebuffer;
+			render_pass_info.renderPass = _de_pipeline.render_pass().render_pass();
+			render_pass_info.framebuffer = _de_pipeline.framebuffer();
 			render_pass_info.renderArea.offset = {0, 0};
 			render_pass_info.renderArea.extent = _size;
 
 			i = 0;
-			auto clear_values = std::vector<VkClearValue>(_de_frame_attachments.size());
-			for (auto &clear_value : clear_values) {
-				clear_value = _de_frame_attachments[i].clear_color();
-				i++;
-			}
+			auto clear_values = _de_pipeline.clear_values();
 
 			render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
 			render_pass_info.pClearValues = clear_values.data();
 
 			vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
-			log_assert(_de_pipeline, "DE pipeline does not exist");
-			vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _de_pipeline);
+			vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _de_pipeline.pipeline());
 
 			auto descriptor_sets = std::array<VkDescriptorSet, 2>{
-				shared_descriptor_set(),
-				_de_descriptor_set.descriptor_set(0),
+				_de_shared_descriptor_set.descriptor_set(),
+				_de_descriptor_set.descriptor_set(),
 			};
 
 			vkCmdBindDescriptorSets(
 					command_buffer,
 					VK_PIPELINE_BIND_POINT_GRAPHICS,
-					_de_pipeline_layout,
+					_de_pipeline.pipeline_layout(),
 					0,
 					descriptor_sets.size(),
 					descriptor_sets.data(),
@@ -724,22 +722,23 @@ namespace vulkan {
 	}
 
 	util::Result<void, PrevPass::Error> PrevPass::_create_de_descriptor_set() {
-		_destroy_de_descriptor_set();
+		_de_descriptor_set.destroy();
 
 		auto textures = used_textures(_scene->resource_manager().textures());
-		auto attachments = std::vector<DescAttachment>();
-		attachments.push_back(DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT));
-		attachments.push_back(DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT));
-		attachments.push_back(DescAttachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT));
-		attachments.push_back(DescAttachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT));
-		if (textures.size() > 0) {
-			attachments.push_back(DescAttachment::create_images(VK_SHADER_STAGE_FRAGMENT_BIT, textures.size()));
-			attachments[4].set_image_layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+		auto attachments = _de_pipeline.attachments()[0];
+
+		attachments[0].add_uniform(_prim_uniform);
+
+		if (auto err = DescriptorSets::create(
+				attachments,
+				_de_pipeline.layouts()[0],
+				descriptor_pool()
+		).move_or(_de_shared_descriptor_set)) {
+			return Error(ErrorType::RESOURCE, "Could not create de shared descriptor set", err.value());
 		}
 
-		if (auto err = DescriptorSetLayout::create(attachments).move_or(_de_descriptor_set_layout)) {
-			return Error(ErrorType::RESOURCE, "Could not create descriptor set layout", err.value());
-		}
+		attachments = _de_pipeline.attachments()[1];
 
 		attachments[0].add_image(_depth_buf_image);
 		attachments[1].add_image(_node_image);
@@ -751,7 +750,11 @@ namespace vulkan {
 
 		attachments[1].set_sampler(Graphics::DEFAULT->near_texture_sampler());
 
-		if (auto err = DescriptorSets::create(attachments, _de_descriptor_set_layout, descriptor_pool()).move_or(_de_descriptor_set)) {
+		if (auto err = DescriptorSets::create(
+				attachments,
+				_de_pipeline.layouts()[1],
+				descriptor_pool()
+		) .move_or(_de_descriptor_set)) {
 			return Error(ErrorType::RESOURCE, "Could not create de descriptor set", err.value());
 		}
 
@@ -804,209 +807,36 @@ namespace vulkan {
 			return Error(ErrorType::VULKAN, "Could not create frag shader", frag_shader.error());
 		}
 
-		auto shader_stage_infos = std::array<VkPipelineShaderStageCreateInfo, 2>();
+		auto textures = used_textures(_scene->resource_manager().textures());
 
-		shader_stage_infos[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shader_stage_infos[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-		shader_stage_infos[0].module = vert_shader.value().shader_module();
-		shader_stage_infos[0].pName = "main";
+		_de_desc_attachments.resize(2);
 
-		shader_stage_infos[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		shader_stage_infos[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		shader_stage_infos[1].module = frag_shader.value().shader_module();
-		shader_stage_infos[1].pName = "main";
+		_de_desc_attachments[0].push_back(DescAttachment::create_uniform(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT));
 
-		auto vertex_input_info = VkPipelineVertexInputStateCreateInfo{};
+		_de_desc_attachments[1].push_back(DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT));
+		_de_desc_attachments[1].push_back(DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT));
+		_de_desc_attachments[1].push_back(DescAttachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT));
+		_de_desc_attachments[1].push_back(DescAttachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT));
+		if (textures.size() > 0) {
+			_de_desc_attachments[1].push_back(DescAttachment::create_images(VK_SHADER_STAGE_FRAGMENT_BIT, textures.size()));
 
-		auto vertex_binding_description = VkVertexInputBindingDescription{};
-		vertex_binding_description.binding = 0;
-		vertex_binding_description.stride = sizeof(glm::vec4);
-		vertex_binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		auto vertex_attribute_descriptions = std::array<VkVertexInputAttributeDescription, 1>();
-		vertex_attribute_descriptions[0].binding = 0;
-		vertex_attribute_descriptions[0].location = 0;
-		vertex_attribute_descriptions[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		vertex_attribute_descriptions[0].offset = 0;
-
-		vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertex_input_info.vertexBindingDescriptionCount = 1;
-		vertex_input_info.pVertexBindingDescriptions = &vertex_binding_description;
-		vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(
-				vertex_attribute_descriptions.size());
-		vertex_input_info.pVertexAttributeDescriptions = vertex_attribute_descriptions.data();
-
-		auto input_assembly = VkPipelineInputAssemblyStateCreateInfo{};
-		input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		input_assembly.primitiveRestartEnable = VK_FALSE;
-
-		auto viewport = VkViewport{};
-		viewport.x = 0.0f;
-		viewport.width = (float) 100;
-		viewport.height = (float) 100;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		auto scissor = VkRect2D{};
-		scissor.offset = {0, 0};
-		scissor.extent = VkExtent2D{100, 100};
-
-		auto viewport_state = VkPipelineViewportStateCreateInfo{};
-		viewport_state.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-		viewport_state.viewportCount = 1;
-		viewport_state.pViewports = &viewport;
-		viewport_state.scissorCount = 1;
-		viewport_state.pScissors = &scissor;
-
-		auto rasterizer = VkPipelineRasterizationStateCreateInfo{};
-		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-		rasterizer.depthClampEnable = VK_FALSE;
-		rasterizer.rasterizerDiscardEnable = VK_FALSE;
-		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-		rasterizer.lineWidth = 1.0f;
-		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-		rasterizer.depthBiasEnable = VK_FALSE;
-		rasterizer.depthBiasConstantFactor = 0.0f;
-		rasterizer.depthBiasClamp = 0.0f;
-		rasterizer.depthBiasSlopeFactor = 0.0f;
-
-		auto multisampling = VkPipelineMultisampleStateCreateInfo{};
-		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		multisampling.sampleShadingEnable = VK_FALSE;
-		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-		multisampling.minSampleShading = 1.0f;
-		multisampling.pSampleMask = nullptr;
-		multisampling.alphaToCoverageEnable = VK_FALSE;
-		multisampling.alphaToOneEnable = VK_FALSE;
-
-		auto color_blend_attachment = VkPipelineColorBlendAttachmentState{};
-		if (auto err = _de_frame_attachments[0].blend_attachment_state().move_or(color_blend_attachment)) {
-			return Error(
-				ErrorType::RESOURCE,
-				"Could not get blend attachment state of the color attachment",
-				err.value()
-			);
+			_de_desc_attachments[1][4].set_image_layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 		}
 
-		auto node_blend_attachment = VkPipelineColorBlendAttachmentState{};
-		if (auto err = _de_frame_attachments[1].blend_attachment_state().move_or(node_blend_attachment)) {
-			return Error(
-				ErrorType::RESOURCE,
-				"Could not get blend attachment state of the node attachment",
-				err.value()
-			);
-		}
-
-		auto color_attachments = std::array<VkPipelineColorBlendAttachmentState, 2>{
-			color_blend_attachment,
-			node_blend_attachment,
-		};
-
-		auto color_blending = VkPipelineColorBlendStateCreateInfo{};
-		color_blending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-		color_blending.logicOpEnable = VK_FALSE;
-		color_blending.logicOp = VK_LOGIC_OP_COPY;
-		color_blending.attachmentCount = color_attachments.size();
-		color_blending.pAttachments = color_attachments.data();
-		color_blending.blendConstants[0] = 0.0f;
-		color_blending.blendConstants[1] = 0.0f;
-		color_blending.blendConstants[2] = 0.0f;
-		color_blending.blendConstants[3] = 0.0f;
-
-		auto dynamic_states = std::array<VkDynamicState, 2>{
-			VK_DYNAMIC_STATE_VIEWPORT,
-			VK_DYNAMIC_STATE_SCISSOR,
-		};
-
-		auto dynamic_state = VkPipelineDynamicStateCreateInfo{};
-		dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-		dynamic_state.dynamicStateCount = static_cast<uint32_t>(dynamic_states.size());
-		dynamic_state.pDynamicStates = dynamic_states.data();
-
-		auto descriptor_set_layouts = std::array<VkDescriptorSetLayout, 2>{
-			shared_descriptor_set_layout(),
-			_de_descriptor_set_layout.layout(),
-		};
-
-		auto dset_layout = shared_descriptor_set_layout();
-		auto pipeline_layout_info = VkPipelineLayoutCreateInfo{};
-		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipeline_layout_info.setLayoutCount = descriptor_set_layouts.size();
-		pipeline_layout_info.pSetLayouts = descriptor_set_layouts.data();
-		pipeline_layout_info.pushConstantRangeCount = 0;
-		pipeline_layout_info.pPushConstantRanges = nullptr;
-
-		auto res = vkCreatePipelineLayout(
-				Graphics::DEFAULT->device(),
-				&pipeline_layout_info,
-				nullptr,
-				&_de_pipeline_layout);
-		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create de pipeline layout", VkError(res));
-		}
-
-		auto depth_stencil = VkPipelineDepthStencilStateCreateInfo{};
-		depth_stencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-		depth_stencil.depthTestEnable = VK_TRUE;
-		depth_stencil.depthWriteEnable = VK_TRUE;
-		depth_stencil.depthCompareOp = VK_COMPARE_OP_LESS;
-		depth_stencil.depthBoundsTestEnable = VK_FALSE;
-		depth_stencil.minDepthBounds = 0.0f;
-		depth_stencil.maxDepthBounds = 1.0f;
-		depth_stencil.stencilTestEnable = VK_FALSE;
-		depth_stencil.front = {};
-		depth_stencil.back = {};
-
-
-		auto pipeline_info = VkGraphicsPipelineCreateInfo{};
-		pipeline_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipeline_info.stageCount = shader_stage_infos.size();
-		pipeline_info.pStages = shader_stage_infos.data();
-		pipeline_info.pVertexInputState = &vertex_input_info;
-		pipeline_info.pInputAssemblyState = &input_assembly;
-		pipeline_info.pViewportState = &viewport_state;
-		pipeline_info.pRasterizationState = &rasterizer;
-		pipeline_info.pMultisampleState = &multisampling;
-		//pipeline_info.pDepthStencilState = &depth_stencil;
-		pipeline_info.pColorBlendState = &color_blending;
-		pipeline_info.pDynamicState = &dynamic_state;
-		pipeline_info.layout = _de_pipeline_layout;
-		pipeline_info.renderPass = _de_render_pass.render_pass();
-		pipeline_info.subpass = 0;
-		pipeline_info.basePipelineHandle = VK_NULL_HANDLE;
-		pipeline_info.basePipelineIndex = -1;
-
-		res = vkCreateGraphicsPipelines(
-				Graphics::DEFAULT->device(), 
-				VK_NULL_HANDLE, 
-				1,
-				&pipeline_info, 
-				nullptr, 
-				&_de_pipeline);
-
-		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create de pipeline", VkError(res));
+		if (auto err = Pipeline::create_graphics(
+			vert_shader.value(),
+			frag_shader.value(),
+			_de_render_pass,
+			_de_desc_attachments
+		).move_or(_de_pipeline)) {
+			return Error(ErrorType::MISC, "Could not create graphics pipeline", err.value());
 		}
 
 		return {};
 	}
 
 	void PrevPass::_destroy_de_pipeline() {
-		if (_de_pipeline_layout) {
-			vkDestroyPipelineLayout(
-					Graphics::DEFAULT->device(), 
-					_de_pipeline_layout, 
-					nullptr);
-			_de_pipeline_layout = nullptr;
-		}
-		if (_de_pipeline) {
-			vkDestroyPipeline(
-					Graphics::DEFAULT->device(), 
-					_de_pipeline, 
-					nullptr);
-			_de_pipeline = nullptr;
-		}
+		_de_pipeline.destroy();
 	}
 
 	util::Result<void, PrevPass::Error> PrevPass::_create_de_buffers() {
@@ -1151,7 +981,6 @@ namespace vulkan {
 		_de_frame_attachments[1] = FrameAttachment::create(_de_node_image);
 
 
-
 		return {};
 	}
 
@@ -1223,44 +1052,12 @@ namespace vulkan {
 			}
 		}
 
-		{
-			auto attachments = std::array<VkImageView, 2>{
-				_color_image.image_view(),
-				_de_node_image.image_view(),
-			};
-
-			auto framebuffer_info = VkFramebufferCreateInfo{};
-			framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebuffer_info.renderPass = _de_render_pass.render_pass();
-			framebuffer_info.attachmentCount = attachments.size();
-			framebuffer_info.pAttachments = attachments.data();
-			framebuffer_info.width = _size.width;
-			framebuffer_info.height = _size.height;
-			framebuffer_info.layers = 1;
-
-			auto res = vkCreateFramebuffer(
-				Graphics::DEFAULT->device(),
-				&framebuffer_info,
-				nullptr,
-				&_de_framebuffer
-			);
-
-			if (res != VK_SUCCESS) {
-				return Error(ErrorType::VULKAN, "Could not create de framebuffer", VkError(res));
-			}
-
-		}
-
 		return {};
 	}
 
 	void PrevPass::_destroy_framebuffers() {
 		vkDestroyFramebuffer(Graphics::DEFAULT->device(), _prim_framebuffer, nullptr);
 		_prim_framebuffer = nullptr;
-
-		vkDestroyFramebuffer(Graphics::DEFAULT->device(), _de_framebuffer, nullptr);
-		_de_framebuffer = nullptr;
-
 	}
 
 	util::Result<void, PrevPass::Error> PrevPass::_create_sync_objects() {

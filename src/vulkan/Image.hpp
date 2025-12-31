@@ -45,6 +45,7 @@ namespace vulkan {
 
 			uint32_t width() const { return _size.width; }
 			uint32_t height() const { return _size.height; }
+			VkExtent2D size() const { return _size; }
 
 		private:
 			VkImage _image;

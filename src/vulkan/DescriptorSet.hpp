@@ -90,7 +90,7 @@ namespace vulkan {
 			 * attachments stores internal structs used for construction structs.
 			 */
 			static util::Result<DescriptorSetLayout, Error> create(
-				std::vector<DescAttachment> &attachments
+				std::vector<DescAttachment> const &attachments
 			);
 
 			DescriptorSetLayout(DescriptorSetLayout const &other) = delete;

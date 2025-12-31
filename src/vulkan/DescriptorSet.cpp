@@ -145,7 +145,7 @@ namespace vulkan {
 	}
 
 	util::Result<DescriptorSetLayout, Error> DescriptorSetLayout::create(
-		std::vector<DescAttachment> &attachments
+		std::vector<DescAttachment> const &attachments
 	) {
 		auto layout = DescriptorSetLayout();
 

@@ -44,7 +44,7 @@ namespace vulkan {
 		return attachment;
 	}
 
-	util::Result<VkAttachmentDescription, Error> FrameAttachment::attachment_description() {
+	util::Result<VkAttachmentDescription, Error> FrameAttachment::attachment_description() const {
 		if (_image == nullptr) {
 			return Error(
 				ErrorType::INVALID_ARG,
@@ -65,7 +65,7 @@ namespace vulkan {
 		return description;
 	}
 
-	util::Result<VkPipelineColorBlendAttachmentState, Error> FrameAttachment::blend_attachment_state() {
+	util::Result<VkPipelineColorBlendAttachmentState, Error> FrameAttachment::blend_attachment_state() const {
 		if (_image == nullptr) {
 			return Error(
 				ErrorType::INVALID_ARG,
@@ -107,5 +107,13 @@ namespace vulkan {
 
 	VkClearValue FrameAttachment::clear_color() const {
 		return _clear_color;
+	}
+
+	VkImageView FrameAttachment::image_view() const {
+		return _image->image_view();
+	}
+
+	VkExtent2D FrameAttachment::size() const {
+		return _image->size();
 	}
 }

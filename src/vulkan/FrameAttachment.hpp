@@ -24,17 +24,27 @@ namespace vulkan {
 			/**
 			 * @brief Resolves the VkAttachmentDescription for the render pass
 			 */
-			util::Result<VkAttachmentDescription, Error> attachment_description();
+			util::Result<VkAttachmentDescription, Error> attachment_description() const;
 
 			/**
 			 * @brief Resolves the VkPipelineColorBlendAttachmentState for the render pass
 			 */
-			util::Result<VkPipelineColorBlendAttachmentState, Error> blend_attachment_state();
+			util::Result<VkPipelineColorBlendAttachmentState, Error> blend_attachment_state() const;
 
 			/**
 			 * @brief Gets the clear color that will be used by the render pass
 			 */
 			VkClearValue clear_color() const;
+
+			/**
+			 * @brief Gets the image view of the underlying attached image
+			 */
+			VkImageView image_view() const;
+
+			/**
+			 * @brief Get the size of the underlying image
+			 */
+			VkExtent2D size() const;
 
 		private:
 			Image const *_image=nullptr;

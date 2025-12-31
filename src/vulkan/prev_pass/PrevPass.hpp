@@ -16,6 +16,7 @@
 #include "vulkan/Uniforms.hpp"
 #include "vulkan/Fence.hpp"
 #include "vulkan/Semaphore.hpp"
+#include "vulkan/Pipeline.hpp"
 #include "util/result.hpp"
 #include "util/Observer.hpp"
 #include "util/UIDList.hpp"
@@ -201,12 +202,11 @@ namespace vulkan {
 			MappedPrevPassUniform _prim_uniform;
 
 			std::vector<FrameAttachment> _de_frame_attachments;
-			VkPipelineLayout _de_pipeline_layout;
-			VkPipeline _de_pipeline;
-			RenderPass _de_render_pass;
-			VkFramebuffer _de_framebuffer;
-			DescriptorSetLayout _de_descriptor_set_layout;
+			Pipeline::Attachments _de_desc_attachments;
 			DescriptorSets _de_descriptor_set;
+			DescriptorSets _de_shared_descriptor_set;
+			Pipeline _de_pipeline;
+			RenderPass _de_render_pass;
 			StaticBuffer _de_node_buffer;
 			StaticBuffer _de_material_buffer;
 

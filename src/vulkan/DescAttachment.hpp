@@ -41,28 +41,28 @@ namespace vulkan {
 			 * @brief Describes a uniform
 			 */
 			static DescAttachment create_uniform(
-				VkShaderStageFlagBits shader_stage
+				VkShaderStageFlags shader_stage
 			);
 
 			/**
 			 * @brief Describes a general buffer
 			 */
 			static DescAttachment create_storage_buffer(
-				VkShaderStageFlagBits shader_stage
+				VkShaderStageFlags shader_stage
 			);
 
 			/**
 			 * @brief Creates an image sampler
 			 */
 			static DescAttachment create_image(
-				VkShaderStageFlagBits shader_stage
+				VkShaderStageFlags shader_stage
 			);
 
 			/**
 			 * @brief Create an image sampler for a collection of textures
 			 */
 			static DescAttachment create_images(
-				VkShaderStageFlagBits shader_stage,
+				VkShaderStageFlags shader_stage,
 				size_t count
 			);
 
@@ -70,7 +70,7 @@ namespace vulkan {
 			 * @brief Creates an image that can be written too arbitrarily
 			 */
 			static DescAttachment create_image_target(
-				VkShaderStageFlagBits shader_stage
+				VkShaderStageFlags shader_stage
 			);
 
 			/**
@@ -138,7 +138,7 @@ namespace vulkan {
 			 *
 			 * The binding index needs to be handeled by the caller
 			 */
-			util::Result<VkDescriptorSetLayoutBinding, Error> descriptor_binding();
+			util::Result<VkDescriptorSetLayoutBinding, Error> descriptor_binding() const;
 
 			/**
 			 * @brief Resolves the VkWriteDescriptorSet
@@ -162,7 +162,7 @@ namespace vulkan {
 			Type _type;
 
 			VkFormat _image_format = VK_FORMAT_UNDEFINED;
-			VkShaderStageFlagBits _shader_stage;
+			VkShaderStageFlags _shader_stage;
 			uint32_t _descriptor_count = 1; // currently used for multiple images
 
 			std::vector<VkImageView> _image_views = {};
@@ -177,7 +177,7 @@ namespace vulkan {
 			std::vector<VkDescriptorImageInfo> _image_infos;
 
 		private:
-			DescAttachment(Type type, VkShaderStageFlagBits shader_stage);
+			DescAttachment(Type type, VkShaderStageFlags shader_stage);
 	};
 }
 

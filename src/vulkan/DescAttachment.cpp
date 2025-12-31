@@ -19,20 +19,20 @@ namespace vulkan {
 		}
 	}
 
-	DescAttachment DescAttachment::create_uniform(VkShaderStageFlagBits shader_stage) {
+	DescAttachment DescAttachment::create_uniform(VkShaderStageFlags shader_stage) {
 		return DescAttachment(Type::UNIFORM, shader_stage);
 	}
 
-	DescAttachment DescAttachment::create_storage_buffer(VkShaderStageFlagBits shader_stage) {
+	DescAttachment DescAttachment::create_storage_buffer(VkShaderStageFlags shader_stage) {
 		return DescAttachment(Type::STORAGE_BUFFER, shader_stage);
 	}
 
-	DescAttachment DescAttachment::create_image(VkShaderStageFlagBits shader_stage) {
+	DescAttachment DescAttachment::create_image(VkShaderStageFlags shader_stage) {
 		return DescAttachment(Type::IMAGE, shader_stage);
 	}
 
 	DescAttachment DescAttachment::create_images(
-		VkShaderStageFlagBits shader_stage,
+		VkShaderStageFlags shader_stage,
 		size_t count
 	) {
 		auto a = DescAttachment(Type::IMAGE, shader_stage);
@@ -40,7 +40,7 @@ namespace vulkan {
 		return a;
 	}
 
-	DescAttachment DescAttachment::create_image_target(VkShaderStageFlagBits shader_stage) {
+	DescAttachment DescAttachment::create_image_target(VkShaderStageFlags shader_stage) {
 		return DescAttachment(Type::IMAGE_TARGET, shader_stage);
 	}
 
@@ -157,7 +157,7 @@ namespace vulkan {
 		return *this;
 	}
 
-	util::Result<VkDescriptorSetLayoutBinding, Error> DescAttachment::descriptor_binding() {
+	util::Result<VkDescriptorSetLayoutBinding, Error> DescAttachment::descriptor_binding() const {
 		if (_error) return _error.value();
 
 		auto binding = VkDescriptorSetLayoutBinding{};
@@ -299,7 +299,7 @@ namespace vulkan {
 		return descriptor_write;
 	}
 
-	DescAttachment::DescAttachment(Type type, VkShaderStageFlagBits shader_stage):
+	DescAttachment::DescAttachment(Type type, VkShaderStageFlags shader_stage):
 		_type(type),
 		_shader_stage(shader_stage)
 	{ }
