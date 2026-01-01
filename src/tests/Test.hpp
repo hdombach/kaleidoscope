@@ -125,6 +125,26 @@ inline void expect(
 	}
 }
 
+template<typename Value, typename Result>
+inline void expect(
+	Test &test,
+	util::Result<Value, Result> const &value,
+	const char *value_string,
+	std::source_location loc=std::source_location::current()
+) {
+	if (value.has_value()) {
+		test.passed_test_count++;
+	} else {
+		auto &os = fail_head(test, loc) << std::endl;
+
+		os << "\tEXPECT(" << value_string << ");" << std::endl;
+		os << std::endl;
+		os << "\terror: " << value.error() << std::endl;
+		os << std::endl;
+	}
+}
+
+
 template<typename ErrorType>
 inline void expect_terror(
 	Test &test,
@@ -200,7 +220,7 @@ inline void expect_terror(
 #define EXPECT(value) {\
 	_test.total_test_count++;\
 	try { \
-		expect(_test, static_cast<bool>(value), #value); \
+		expect(_test, value, #value); \
 	} catch (std::exception const &e) { \
 		auto &os = fail_head(_test) << std::endl; \
 		os << "\tEXPECT(" #value ");" << std::endl; \

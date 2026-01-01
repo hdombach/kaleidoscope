@@ -1,6 +1,7 @@
 #pragma once
 
 #include "format.hpp"
+#include "util/BaseError.hpp"
 #include "util/Util.hpp"
 #include "util/log.hpp"
 #include <optional>
@@ -220,8 +221,17 @@ namespace util {
 		};
 
 	template<typename Value, typename Error>
-		void require(Result<Value, Error> &result) {
-			log_assert(result.has_value(), util::f("Expecting value. got error, ", result.error()));
+		void require(Result<Value, Error> const &result) {
+			if (!result.has_value()) {
+				log_fatal_error(result.error()) << std::endl;
+			}
+		}
+
+	template<typename Value, typename Error>
+		void require_log(Result<Value, Error> const &result) {
+			if (!result.has_value()) {
+				log_error(result.error()) << std::endl;
+			}
 		}
 }
 

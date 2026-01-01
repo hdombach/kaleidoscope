@@ -2,11 +2,7 @@
 #include "codegen/CfgContext.hpp"
 #include "tests/Test.hpp"
 #include "SParser.hpp"
-#include "util/log.hpp"
-#include "AstNode.hpp"
 #include "util/StringRef.hpp"
-
-#include <fstream>
 
 namespace cg {
 	class AstNodeTest: TestFixture {
@@ -26,7 +22,7 @@ namespace cg {
 
 			auto match(std::string const &str) {
 				if (!_is_prepped) {
-					_parser->cfg().prep();
+					require_log(_parser->cfg().prep());
 					if (_should_simplify) {
 						_parser->cfg().simplify();
 					}

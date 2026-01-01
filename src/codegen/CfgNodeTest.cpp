@@ -10,7 +10,7 @@ namespace cg {
 		c.root("literal") = T::StrConst;
 		c.prim("literal2") = T::IntConst;
 
-		c.prep();
+		EXPECT(c.prep());
 
 		EXPECT_EQ(c.get("literal")->str(), "literal -> StrConstant");
 		EXPECT_EQ(c.get("literal2")->str(), "literal2 -> IntConstant");
@@ -28,7 +28,7 @@ namespace cg {
 		c.prim("test") = T::CommentB + T::CommentE + c["condition"];
 		c.prim("test2") = c["test"] + T::ExpB + T::ExpE;
 
-		c.prep();
+		EXPECT(c.prep());
 
 		EXPECT_EQ(c.get("if_ref")->str(), "if_ref -> If");
 		EXPECT_EQ(c.get("condition")->str(), "condition -> ParanOpen StrConstant ParanClose");
@@ -52,7 +52,7 @@ namespace cg {
 		c.prim("tok_concat") = T::IntConst | T::ParanOpen + T::ParanClose;
 		c.prim("ref_concat") = c["ref_concat"] | T::ParanOpen + T::ParanClose;
 
-		c.prep();
+		EXPECT(c.prep());
 
 		EXPECT_EQ(c.get("tok_ref")->str(), "tok_ref -> ParanOpen | <tok_ref>");
 		EXPECT_EQ(c.get("ref_tok")->str(), "ref_tok -> <ref_tok> | ParanClose");

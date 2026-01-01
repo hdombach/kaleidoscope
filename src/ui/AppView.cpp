@@ -161,7 +161,7 @@ namespace ui {
 		ImGui::BeginDisabled(state.selected_item == State::SELECTED_NONE || state.selected_item == scene.root()->id());
 		if (ImGui::Button("Delete node", ImVec2(width, 0))) {
 			if (state.selected_item != 0) {
-				scene.remove_node(state.selected_item);
+				util::require_log(scene.remove_node(state.selected_item));
 			}
 		}
 		ImGui::EndDisabled();
@@ -284,7 +284,7 @@ namespace ui {
 		ImGui::DragFloat3("Scale", scale.data(), 0.01f);
 		ImGui::BeginDisabled(node->id() == scene.root()->id());
 		if (ImGui::Button("Delete")) {
-			scene.remove_node(node->id());
+			util::require_log(scene.remove_node(node->id()));
 		}
 		ImGui::EndDisabled();
 		ImGui::PopID();
@@ -395,7 +395,7 @@ namespace ui {
 		ImGui::EndChild();
 		if (ImGui::Button("Add texture", ImVec2(width, 0))) {
 			auto urls = pfd::open_file("Select an image", ".", {"Image Files", "*.png *.jpg *.jpeg *.bmp"}).result();
-			resources.add_texture_from_file(urls[0]);
+			util::require_log(resources.add_texture_from_file(urls[0]));
 		}
 	}
 
@@ -411,7 +411,7 @@ namespace ui {
 			}
 			ImGui::SameLine();
 			if (ImGui::Button("Set Name")) {
-				resources.rename_texture(texture->id(), state.selected_name);
+				util::require_log(resources.rename_texture(texture->id(), state.selected_name));
 			}
 			if (state.dup_name_error) {
 				ImGui::TextColored({1.0, 0.0, 0.0, 1.0}, "ERROR: Duplicate name");
@@ -541,7 +541,7 @@ namespace ui {
 		ImGui::EndChild();
 		if (ImGui::Button("Add Object", ImVec2(width, 0))) {
 			auto urls = pfd::open_file("Select a mesh", ".", {"Object file", "*.obj"}).result();
-			resources.add_mesh_from_file(urls[0]);
+			util::require_log(resources.add_mesh_from_file(urls[0]));
 		}
 	}
 
@@ -561,7 +561,7 @@ namespace ui {
 			}
 			ImGui::SameLine();
 			if (ImGui::Button("Set Name")) {
-				resources.rename_mesh(mesh->id(), state.selected_name);
+				util::require_log(resources.rename_mesh(mesh->id(), state.selected_name));
 			}
 			if (state.dup_name_error) {
 				ImGui::TextColored({1.0, 0.0, 0.0, 1.0}, "ERROR: Duplicate name");
@@ -606,7 +606,7 @@ namespace ui {
 			}
 			ImGui::SameLine();
 			if (ImGui::Button("Set Name")) {
-				resources.rename_material(material->id(), state.selected_name);
+				util::require_log(resources.rename_material(material->id(), state.selected_name));
 			}
 			if (state.dup_name_error) {
 				ImGui::TextColored({1.0, 0.0, 0.0, 1.0}, "ERROR: Duplicate name");

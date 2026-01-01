@@ -5,6 +5,7 @@
 #include "PrevPass.hpp"
 #include "vulkan/DescriptorSet.hpp"
 #include "util/result.hpp"
+#include "util/log.hpp"
 #include "types/Node.hpp"
 #include "types/ShaderResource.hpp"
 
@@ -40,7 +41,7 @@ namespace vulkan {
 	}
 
 	void PrevPassNode::update() {
-		_create_descriptor_sets();
+		require(_create_descriptor_sets());
 	}
 
 	PrevPassNode::VImpl PrevPassNode::vimpl() {
