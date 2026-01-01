@@ -44,6 +44,24 @@ namespace vulkan {
 		return attachment;
 	}
 
+	FrameAttachment &FrameAttachment::set_depth(bool is_depth) {
+		_depth = is_depth;
+
+		return *this;
+	}
+
+	FrameAttachment &FrameAttachment::set_clear_value(VkClearValue const &clear_value) {
+		_clear_color = clear_value;
+
+		return *this;
+	}
+
+	FrameAttachment &FrameAttachment::set_load_op(VkAttachmentLoadOp load_op) {
+		_load_op = load_op;
+
+		return *this;
+	}
+
 	util::Result<VkAttachmentDescription, Error> FrameAttachment::attachment_description() const {
 		if (_image == nullptr) {
 			return Error(
@@ -55,12 +73,20 @@ namespace vulkan {
 		auto description = VkAttachmentDescription{};
 		description.format = _image->format();
 		description.samples = VK_SAMPLE_COUNT_1_BIT;
-		description.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		description.loadOp = _load_op;
 		description.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 		description.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 		description.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		description.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
+		description.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		description.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+		if (_depth) {
+			description.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		}
+
+		if (_load_op == VK_ATTACHMENT_LOAD_OP_LOAD) {
+			description.initialLayout = VK_IMAGE_LAYOUT_GENERAL;
+		}
 
 		return description;
 	}
@@ -115,5 +141,9 @@ namespace vulkan {
 
 	VkExtent2D FrameAttachment::size() const {
 		return _image->size();
+	}
+
+	bool FrameAttachment::depth() const {
+		return _depth;
 	}
 }

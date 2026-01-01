@@ -43,7 +43,9 @@ namespace vulkan {
 		}
 
 		auto descriptions = std::vector<VkAttachmentDescription>();
-		auto attachment_refs = std::vector<VkAttachmentReference>();
+		auto color_attachment_refs = std::vector<VkAttachmentReference>();
+		VkAttachmentReference *depth_attachment_ref = nullptr;
+		VkAttachmentReference depth_attachment_ref_value;
 
 		int i = 0;
 		for (auto &attachment : render_pass._frame_attachments) {
@@ -63,16 +65,25 @@ namespace vulkan {
 			attachment_ref.attachment = i;
 			attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-			attachment_refs.push_back(attachment_ref);
+			if (attachment.depth()) {
+				if (depth_attachment_ref != nullptr) {
+					return Error(ErrorType::SHADER_RESOURCE, "Cannot attach more than one depth buffer");
+				}
+				depth_attachment_ref_value = attachment_ref;
+				depth_attachment_ref = &depth_attachment_ref_value;
+				depth_attachment_ref->layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			} else {
+				color_attachment_refs.push_back(attachment_ref);
+			}
 
 			i++;
 		}
 
 		auto subpass = VkSubpassDescription{};
 		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = attachment_refs.size();
-		subpass.pColorAttachments = attachment_refs.data();
-		subpass.pDepthStencilAttachment = nullptr;
+		subpass.colorAttachmentCount = color_attachment_refs.size();
+		subpass.pColorAttachments = color_attachment_refs.data();
+		subpass.pDepthStencilAttachment = depth_attachment_ref;
 
 		auto render_pass_info = VkRenderPassCreateInfo{};
 		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;

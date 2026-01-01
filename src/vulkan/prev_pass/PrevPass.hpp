@@ -143,7 +143,6 @@ namespace vulkan {
 			PrevPass(Scene &scene, VkExtent2D size);
 
 			util::Result<void, Error> _create_prim_render_pass();
-			void _destroy_prim_render_pass();
 
 			util::Result<void, Error> _create_overlay_descriptor_set();
 
@@ -167,9 +166,6 @@ namespace vulkan {
 
 			util::Result<void, Error> _create_shared_descriptor_set();
 			void _destroy_shared_descriptor_set();
-
-			util::Result<void, Error> _create_framebuffers();
-			void _destroy_framebuffers();
 
 			util::Result<void, Error> _create_sync_objects();
 			void _create_command_buffers();
@@ -197,8 +193,7 @@ namespace vulkan {
 			DescriptorSetLayout _shared_descriptor_set_layout;
 			DescriptorSets _shared_descriptor_set;
 
-			VkRenderPass _prim_render_pass;
-			VkFramebuffer _prim_framebuffer;
+			RenderPass _prim_render_pass;
 			MappedPrevPassUniform _prim_uniform;
 
 			std::vector<FrameAttachment> _de_frame_attachments;

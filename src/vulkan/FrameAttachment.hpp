@@ -17,9 +17,19 @@ namespace vulkan {
 			static FrameAttachment create(Image const &image);
 
 			/**
+			 * @brief Marks that this attachment is a depth buffer
+			 */
+			FrameAttachment &set_depth(bool is_depth=true);
+
+			/**
 			 * @brief Assigns a clear value
 			 */
 			FrameAttachment &set_clear_value(VkClearValue const &clear_value);
+
+			/**
+			 * @brief Sets the load op
+			 */
+			FrameAttachment &set_load_op(VkAttachmentLoadOp load_op);
 
 			/**
 			 * @brief Resolves the VkAttachmentDescription for the render pass
@@ -46,9 +56,17 @@ namespace vulkan {
 			 */
 			VkExtent2D size() const;
 
+			/**
+			 * @brief Is the attachment depth
+			 */
+			bool depth() const;
+
 		private:
 			Image const *_image=nullptr;
 
 			VkClearValue _clear_color;
+			VkAttachmentLoadOp _load_op=VK_ATTACHMENT_LOAD_OP_CLEAR;
+
+			bool _depth;
 	};
 }

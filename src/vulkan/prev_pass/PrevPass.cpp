@@ -109,9 +109,6 @@ namespace vulkan {
 		if (auto err = result->_create_overlay_pipeline().move_or()) {
 			return Error(ErrorType::VULKAN, "Could not create overlay pipeline", err.value());
 		}
-		if (auto err = result->_create_framebuffers().move_or()) {
-			return Error(ErrorType::VULKAN, "Could not create framebuffers", err.value());
-		}
 
 		result->_de_buf_dirty_bit = true;
 		result->_de_pipe_dirty_bit = true;;
@@ -127,12 +124,11 @@ namespace vulkan {
 		log_memory() << "Deconstructing main render pipeline" << std::endl;
 
 		_cleanup_images();
-		_destroy_framebuffers();
 		_nodes.clear();
 		_meshes.clear();
 		_materials.clear();
 		_destroy_shared_descriptor_set();
-		_destroy_prim_render_pass();
+		_prim_render_pass.destroy();
 		_destroy_de_buffers();
 		_destroy_de_render_pass();
 		_destroy_de_pipeline();
@@ -152,13 +148,6 @@ namespace vulkan {
 			types::Camera const &camera,
 			VkSemaphore semaphore)
 	{
-		static uint32_t count = 0;
-		if (count < 2) {
-			count++;
-		} else {
-			//exit(0);
-		}
-
 		if (_de_pipe_dirty_bit) {
 			log_trace() << "Creating de pipeline" << std::endl;
 			if (auto err = _create_de_pipeline().move_or()) {
@@ -213,8 +202,8 @@ namespace vulkan {
 		{
 			auto render_pass_info = VkRenderPassBeginInfo{};
 			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			render_pass_info.renderPass = _prim_render_pass;
-			render_pass_info.framebuffer = _prim_framebuffer;
+			render_pass_info.renderPass = _prim_render_pass.render_pass();
+			render_pass_info.framebuffer = _prim_render_pass.framebuffer();
 			render_pass_info.renderArea.offset = {0, 0};
 			render_pass_info.renderArea.extent = _size;
 
@@ -280,8 +269,6 @@ namespace vulkan {
 
 		// de render pass
 		if (1) {
-			int i;
-
 			auto render_pass_info = VkRenderPassBeginInfo{};
 			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			render_pass_info.renderPass = _de_pipeline.render_pass().render_pass();
@@ -289,7 +276,6 @@ namespace vulkan {
 			render_pass_info.renderArea.offset = {0, 0};
 			render_pass_info.renderArea.extent = _size;
 
-			i = 0;
 			auto clear_values = _de_pipeline.clear_values();
 
 			render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
@@ -370,14 +356,9 @@ namespace vulkan {
 		if (size.width == _size.width && size.height == _size.height) return;
 		Graphics::DEFAULT->wait_idle();
 		_cleanup_images();
-		_destroy_framebuffers();
 		_size = size;
 
 		if (auto err = _create_images().move_or()) {
-			log_error() << err.value() << std::endl;
-		}
-
-		if (auto err = _create_framebuffers().move_or()) {
 			log_error() << err.value() << std::endl;
 		}
 
@@ -402,7 +383,7 @@ namespace vulkan {
 		return _color_image.image_view();
 	}
 	VkRenderPass PrevPass::render_pass() {
-		return _prim_render_pass;
+		return _prim_render_pass.render_pass();
 	}
 
 	void PrevPass::mesh_create(uint32_t id) {
@@ -479,127 +460,24 @@ namespace vulkan {
 	}
 
 	util::Result<void, PrevPass::Error> PrevPass::_create_prim_render_pass() {
-		_destroy_de_render_pass();
-
-
-
-		/* Create render pass */
-		auto color_attachment = VkAttachmentDescription{};
-		color_attachment.format = _RESULT_IMAGE_FORMAT;
-		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		color_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-		auto color_attachment_ref = VkAttachmentReference{};
-		color_attachment_ref.attachment = 0;
-		color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		auto depth_attachment = VkAttachmentDescription{};
-		depth_attachment.format = _depth_format();
-		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		auto depth_attachment_ref = VkAttachmentReference{};
-		depth_attachment_ref.attachment = 1;
-		depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		auto node_attachment = VkAttachmentDescription{};
-		node_attachment.format = _NODE_IMAGE_FORMAT;
-		node_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		node_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		node_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		node_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		node_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		node_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		node_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-		auto node_attachment_ref = VkAttachmentReference{};
-		node_attachment_ref.attachment = 2;
-		node_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		auto depth_buf_attachment = VkAttachmentDescription{};
-		depth_buf_attachment.format = _DEPTH_BUF_IMAGE_FORMAT;
-		depth_buf_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		depth_buf_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depth_buf_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		depth_buf_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		depth_buf_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depth_buf_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depth_buf_attachment.finalLayout = VK_IMAGE_LAYOUT_GENERAL;
-
-		auto depth_buf_attachment_ref = VkAttachmentReference{};
-		depth_buf_attachment_ref.attachment = 3;
-		depth_buf_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-
-		auto color_attachment_refs = std::array<VkAttachmentReference, 3>{
-			color_attachment_ref,
-			node_attachment_ref,
-			depth_buf_attachment_ref,
+		auto attachments = std::vector{
+			FrameAttachment::create(_color_image),
+			FrameAttachment::create(_depth_image),
+			FrameAttachment::create(_node_image),
+			FrameAttachment::create(_depth_buf_image)
 		};
 
-		auto subpass = VkSubpassDescription{};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = color_attachment_refs.size();
-		subpass.pColorAttachments = color_attachment_refs.data();
-		subpass.pDepthStencilAttachment = &depth_attachment_ref;
+		attachments[1].set_depth();
 
-		auto attachments = std::array<VkAttachmentDescription, 4>{
-			color_attachment,
-			depth_attachment,
-			node_attachment,
-			depth_buf_attachment,
-		};
-
-		auto render_pass_info = VkRenderPassCreateInfo{};
-		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		render_pass_info.attachmentCount = static_cast<uint32_t>(attachments.size());
-		render_pass_info.pAttachments = attachments.data();
-		render_pass_info.subpassCount = 1;
-		render_pass_info.pSubpasses = &subpass;
-
-		auto dependency = VkSubpassDependency{};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.srcAccessMask = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
-			VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT |
-			VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-			VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-		render_pass_info.dependencyCount = 1;
-		render_pass_info.pDependencies = &dependency;
-
-		auto res = vkCreateRenderPass(
-				Graphics::DEFAULT->device(),
-				&render_pass_info,
-				nullptr,
-				&_prim_render_pass);
-
-		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create render pass", VkError(res));
+		if (auto err = RenderPass::create(std::move(attachments)).move_or(_prim_render_pass)) {
+			return Error(
+				ErrorType::MISC,
+				"Could not create prim render pass",
+				err.value()
+			);
 		}
 
 		return {};
-	}
-
-	void PrevPass::_destroy_prim_render_pass() {
-		if (_prim_render_pass) {
-			vkDestroyRenderPass(Graphics::DEFAULT->device(), _prim_render_pass, nullptr);
-			_prim_render_pass = nullptr;
-		}
 	}
 
 	util::Result<void, PrevPass::Error> PrevPass::_create_overlay_descriptor_set() {
@@ -770,6 +648,9 @@ namespace vulkan {
 			FrameAttachment::create(_color_image),
 			FrameAttachment::create(_de_node_image)
 		};
+
+		attachments[0].set_load_op(VK_ATTACHMENT_LOAD_OP_LOAD);
+		attachments[1].set_load_op(VK_ATTACHMENT_LOAD_OP_LOAD);
 
 		if (auto err = RenderPass::create(std::move(attachments)).move_or(_de_render_pass)) {
 			return Error(
@@ -1023,44 +904,6 @@ namespace vulkan {
 
 	void PrevPass::_destroy_shared_descriptor_set() {
 		_shared_descriptor_set.destroy();
-	}
-
-	util::Result<void, PrevPass::Error> PrevPass::_create_framebuffers() {
-		{
-			auto attachments = std::array<VkImageView, 4>{
-				_color_image.image_view(),
-				_depth_image.image_view(),
-				_node_image.image_view(),
-				_depth_buf_image.image_view(),
-			};
-
-			auto framebuffer_info = VkFramebufferCreateInfo{};
-			framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebuffer_info.renderPass = _prim_render_pass;
-			framebuffer_info.attachmentCount = attachments.size();
-			framebuffer_info.pAttachments = attachments.data();
-			framebuffer_info.width = _size.width;
-			framebuffer_info.height = _size.height;
-			framebuffer_info.layers = 1;
-
-			auto res = vkCreateFramebuffer(
-				Graphics::DEFAULT->device(),
-				&framebuffer_info,
-				nullptr,
-				&_prim_framebuffer
-			);
-
-			if (res != VK_SUCCESS) {
-				return Error(ErrorType::VULKAN, "Could not create prim framebuffer", VkError(res));
-			}
-		}
-
-		return {};
-	}
-
-	void PrevPass::_destroy_framebuffers() {
-		vkDestroyFramebuffer(Graphics::DEFAULT->device(), _prim_framebuffer, nullptr);
-		_prim_framebuffer = nullptr;
 	}
 
 	util::Result<void, PrevPass::Error> PrevPass::_create_sync_objects() {
