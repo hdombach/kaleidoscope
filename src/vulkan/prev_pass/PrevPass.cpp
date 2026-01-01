@@ -207,11 +207,7 @@ namespace vulkan {
 			render_pass_info.renderArea.offset = {0, 0};
 			render_pass_info.renderArea.extent = _size;
 
-			auto clear_values = std::array<VkClearValue, 4>{};
-			clear_values[0].color = {{0.0f, 0.0f, 0.0f, 1.0f}};
-			clear_values[1].depthStencil = {1.0f, 0};
-			clear_values[2].color = {{0}};
-			clear_values[3].color = {{1.0}};
+			auto clear_values = _prim_render_pass.clear_values();
 
 			render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
 			render_pass_info.pClearValues = clear_values.data();
@@ -276,7 +272,7 @@ namespace vulkan {
 			render_pass_info.renderArea.offset = {0, 0};
 			render_pass_info.renderArea.extent = _size;
 
-			auto clear_values = _de_pipeline.clear_values();
+			auto clear_values = _de_render_pass.clear_values();
 
 			render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
 			render_pass_info.pClearValues = clear_values.data();
@@ -468,6 +464,7 @@ namespace vulkan {
 		};
 
 		attachments[1].set_depth();
+		attachments[3].set_clear_value({{1.0}});
 
 		if (auto err = RenderPass::create(std::move(attachments)).move_or(_prim_render_pass)) {
 			return Error(

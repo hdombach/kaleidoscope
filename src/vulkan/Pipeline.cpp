@@ -203,13 +203,6 @@ namespace vulkan {
 			return Error(ErrorType::VULKAN, "Could not create pipeline", VkError(res));
 		}
 
-		// Frame attachments
-		//TODO: make sure all the images are the same size maybe
-		auto frame_images = std::vector<VkImageView>();
-		for (auto &attachment : pipeline._render_pass->frame_attachments()) {
-			pipeline._clear_values.push_back(attachment.clear_color());
-		}
-
 		pipeline._size = {static_cast<uint32_t>(viewport.width), static_cast<uint32_t>(viewport.height)};
 
 		return pipeline;
@@ -286,10 +279,6 @@ namespace vulkan {
 			layouts.push_back(layout.layout());
 		}
 		return layouts;
-	}
-
-	std::vector<VkClearValue> const &Pipeline::clear_values() const {
-		return _clear_values;
 	}
 
 	Pipeline::Attachments const &Pipeline::attachments() const {

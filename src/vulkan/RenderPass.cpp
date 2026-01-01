@@ -158,4 +158,14 @@ namespace vulkan {
 	std::vector<FrameAttachment> const &RenderPass::frame_attachments() const {
 		return _frame_attachments;
 	}
+
+	std::vector<VkClearValue> RenderPass::clear_values() const {
+		auto r = std::vector<VkClearValue>();
+
+		for (auto &attachment : _frame_attachments) {
+			r.push_back(attachment.clear_color());
+		}
+
+		return r;
+	}
 }

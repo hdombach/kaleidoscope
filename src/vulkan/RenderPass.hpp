@@ -32,6 +32,8 @@ namespace vulkan {
 
 			std::vector<FrameAttachment> const &frame_attachments() const;
 
+			std::vector<VkClearValue> clear_values() const;
+
 		private:
 			std::vector<FrameAttachment> _frame_attachments;
 			VkRenderPass _render_pass = nullptr;

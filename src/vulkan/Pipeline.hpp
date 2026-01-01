@@ -44,7 +44,6 @@ namespace vulkan {
 
 			std::vector<DescriptorSetLayout> const &layouts();
 			std::vector<VkDescriptorSetLayout> vk_layouts();
-			std::vector<VkClearValue> const &clear_values() const;
 
 			Attachments const &attachments() const;
 
@@ -62,6 +61,5 @@ namespace vulkan {
 			Attachments _attachments;
 
 			std::vector<DescriptorSetLayout> _descriptor_set_layouts;
-			std::vector<VkClearValue> _clear_values;
 	};
 }
