@@ -458,13 +458,10 @@ namespace vulkan {
 	util::Result<void, PrevPass::Error> PrevPass::_create_prim_render_pass() {
 		auto attachments = std::vector{
 			FrameAttachment::create(_color_image),
-			FrameAttachment::create(_depth_image),
+			FrameAttachment::create(_depth_image).set_depth(),
 			FrameAttachment::create(_node_image),
-			FrameAttachment::create(_depth_buf_image)
+			FrameAttachment::create(_depth_buf_image).set_clear_value({{1.0}})
 		};
-
-		attachments[1].set_depth();
-		attachments[3].set_clear_value({{1.0}});
 
 		if (auto err = RenderPass::create(std::move(attachments)).move_or(_prim_render_pass)) {
 			return Error(
@@ -642,12 +639,9 @@ namespace vulkan {
 		_destroy_de_render_pass();
 
 		auto attachments = std::vector{
-			FrameAttachment::create(_color_image),
-			FrameAttachment::create(_de_node_image)
+			FrameAttachment::create(_color_image).set_load_op(VK_ATTACHMENT_LOAD_OP_LOAD),
+			FrameAttachment::create(_de_node_image).set_load_op(VK_ATTACHMENT_LOAD_OP_LOAD)
 		};
-
-		attachments[0].set_load_op(VK_ATTACHMENT_LOAD_OP_LOAD);
-		attachments[1].set_load_op(VK_ATTACHMENT_LOAD_OP_LOAD);
 
 		if (auto err = RenderPass::create(std::move(attachments)).move_or(_de_render_pass)) {
 			return Error(
@@ -858,8 +852,10 @@ namespace vulkan {
 		);
 
 		_de_frame_attachments.resize(2);
-		_de_frame_attachments[0] = FrameAttachment::create(_color_image);
-		_de_frame_attachments[1] = FrameAttachment::create(_de_node_image);
+		_de_frame_attachments = {
+			FrameAttachment::create(_color_image),
+			FrameAttachment::create(_de_node_image)
+		};
 
 
 		return {};

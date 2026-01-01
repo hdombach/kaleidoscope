@@ -44,19 +44,19 @@ namespace vulkan {
 		return attachment;
 	}
 
-	FrameAttachment &FrameAttachment::set_depth(bool is_depth) {
+	FrameAttachment FrameAttachment::set_depth(bool is_depth) {
 		_depth = is_depth;
 
 		return *this;
 	}
 
-	FrameAttachment &FrameAttachment::set_clear_value(VkClearValue const &clear_value) {
+	FrameAttachment FrameAttachment::set_clear_value(VkClearValue const &clear_value) {
 		_clear_color = clear_value;
 
 		return *this;
 	}
 
-	FrameAttachment &FrameAttachment::set_load_op(VkAttachmentLoadOp load_op) {
+	FrameAttachment FrameAttachment::set_load_op(VkAttachmentLoadOp load_op) {
 		_load_op = load_op;
 
 		return *this;

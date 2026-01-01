@@ -19,17 +19,17 @@ namespace vulkan {
 			/**
 			 * @brief Marks that this attachment is a depth buffer
 			 */
-			FrameAttachment &set_depth(bool is_depth=true);
+			FrameAttachment set_depth(bool is_depth=true);
 
 			/**
 			 * @brief Assigns a clear value
 			 */
-			FrameAttachment &set_clear_value(VkClearValue const &clear_value);
+			FrameAttachment set_clear_value(VkClearValue const &clear_value);
 
 			/**
 			 * @brief Sets the load op
 			 */
-			FrameAttachment &set_load_op(VkAttachmentLoadOp load_op);
+			FrameAttachment set_load_op(VkAttachmentLoadOp load_op);
 
 			/**
 			 * @brief Resolves the VkAttachmentDescription for the render pass
