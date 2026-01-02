@@ -4,6 +4,7 @@
 
 #include "FrameAttachment.hpp"
 #include "util/Util.hpp"
+#include "vulkan/Vertex.hpp"
 
 namespace vulkan {
 	util::Result<Pipeline, Error> Pipeline::create_graphics(
@@ -32,22 +33,15 @@ namespace vulkan {
 
 		auto vertex_input_info = VkPipelineVertexInputStateCreateInfo{};
 
-		auto vertex_binding_description = VkVertexInputBindingDescription{};
-		vertex_binding_description.binding = 0;
-		vertex_binding_description.stride = sizeof(glm::vec4);
-		vertex_binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		auto vertex_attribute_descriptions = std::array<VkVertexInputAttributeDescription, 1>();
-		vertex_attribute_descriptions[0].binding = 0;
-		vertex_attribute_descriptions[0].location = 0;
-		vertex_attribute_descriptions[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		vertex_attribute_descriptions[0].offset = 0;
+		auto binding_description = Vertex::getBindingDescription();
+		auto attribute_descriptions = Vertex::getAttributeDescriptions();
 
 		vertex_input_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 		vertex_input_info.vertexBindingDescriptionCount = 1;
-		vertex_input_info.pVertexBindingDescriptions = &vertex_binding_description;
+		vertex_input_info.pVertexBindingDescriptions = &binding_description;
 		vertex_input_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(
-				vertex_attribute_descriptions.size());
-		vertex_input_info.pVertexAttributeDescriptions = vertex_attribute_descriptions.data();
+				attribute_descriptions.size());
+		vertex_input_info.pVertexAttributeDescriptions = attribute_descriptions.data();
 
 		auto input_assembly = VkPipelineInputAssemblyStateCreateInfo{};
 		input_assembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -95,15 +89,18 @@ namespace vulkan {
 		multisampling.alphaToOneEnable = VK_FALSE;
 
 		auto blend_attachments = std::vector<VkPipelineColorBlendAttachmentState>();
+		int i = 0;
 		for (auto &attachemnt : render_pass.frame_attachments()) {
+			if (attachemnt.depth()) continue;
 			blend_attachments.push_back({});
 			if (auto err = attachemnt.blend_attachment_state().move_or(blend_attachments.back())) {
 				return Error(
 					ErrorType::MISC,
-					"Could not resolve blend attachment",
+					util::f("Could not resolve blend attachment for frame attachment ", i),
 					err.value()
 				);
 			}
+			i++;
 		}
 
 		auto color_blending = VkPipelineColorBlendStateCreateInfo{};
@@ -181,7 +178,7 @@ namespace vulkan {
 		pipeline_info.pViewportState = &viewport_state;
 		pipeline_info.pRasterizationState = &rasterizer;
 		pipeline_info.pMultisampleState = &multisampling;
-		//pipeline_info.pDepthStencilState = &depth_stencil;
+		pipeline_info.pDepthStencilState = &depth_stencil;
 		pipeline_info.pColorBlendState = &color_blending;
 		pipeline_info.pDynamicState = &dynamic_state;
 		pipeline_info.layout = pipeline._pipeline_layout;
@@ -259,6 +256,14 @@ namespace vulkan {
 
 	Pipeline::~Pipeline() {
 		destroy();
+	}
+
+	bool Pipeline::has_value() const {
+		return _pipeline;
+	}
+
+	Pipeline::operator bool() const {
+		return has_value();
 	}
 
 	VkPipeline Pipeline::pipeline() const {

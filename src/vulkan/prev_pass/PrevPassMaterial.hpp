@@ -4,6 +4,7 @@
 
 #include "util/log.hpp"
 #include "vulkan/Shader.hpp"
+#include "vulkan/Pipeline.hpp"
 #include "util/result.hpp"
 #include "types/Material.hpp"
 #include "util/BaseError.hpp"
@@ -65,21 +66,6 @@ namespace vulkan {
 			}
 
 		private:
-			/**
-			 * @param[in] vertex_shader
-			 * @param[in] fragment_shader
-			 * @param[in] descriptor_set_layout
-			 * @param[out] pipeline
-			 * @param[out] pipeline_layout
-			 */
-			static util::Result<void, Error> _create_pipeline(
-					Shader &vertex_shader,
-					Shader &fragment_shader,
-					PrevPass &render_pass,
-					std::vector<VkDescriptorSetLayout> &descriptor_set_layouts,
-					VkPipeline *pipeline,
-					VkPipelineLayout *pipeline_layout);
-
 			static void _codegen(
 					std::string &frag_source,
 					std::string &vert_source,
@@ -90,10 +76,9 @@ namespace vulkan {
 
 		private:
 			const types::Material *_material;
-			PrevPass *_render_pass;
+			PrevPass *_prev_pass;
 			bool _pipeline_ready;
-			VkPipelineLayout _pipeline_layout;
-			VkPipeline _pipeline;
+			Pipeline _pipeline;
 	};
 }
 

@@ -39,6 +39,9 @@ namespace vulkan {
 			void destroy();
 			~Pipeline();
 
+			bool has_value() const;
+			operator bool() const;
+
 			VkPipeline pipeline() const;
 			VkPipelineLayout pipeline_layout() const;
 

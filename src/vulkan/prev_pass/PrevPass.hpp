@@ -103,7 +103,8 @@ namespace vulkan {
 			 * Needs to be used by PrevPassMaterial to use in pipelines
 			 * The DE stage is handeled in a seperate render pass internally
 			 */
-			VkRenderPass render_pass();
+			RenderPass const &render_pass() const;
+
 			DescriptorPool &descriptor_pool() { return _descriptor_pool; };
 			/**
 			 * @brief Descriptor set layout used across rasterization and de render pass

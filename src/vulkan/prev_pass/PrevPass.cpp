@@ -378,8 +378,9 @@ namespace vulkan {
 	VkImageView PrevPass::image_view() {
 		return _color_image.image_view();
 	}
-	VkRenderPass PrevPass::render_pass() {
-		return _prim_render_pass.render_pass();
+
+	RenderPass const &PrevPass::render_pass() const {
+		return _prim_render_pass;
 	}
 
 	void PrevPass::mesh_create(uint32_t id) {

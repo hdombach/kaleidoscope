@@ -116,6 +116,7 @@ namespace vulkan {
 				blend_attachment.alphaBlendOp = VK_BLEND_OP_ADD;
 				break;
 			case VK_FORMAT_R16_UINT:
+			case VK_FORMAT_R8_SRGB:
 				blend_attachment.colorWriteMask =
 					VK_COLOR_COMPONENT_R_BIT |
 					VK_COLOR_COMPONENT_A_BIT;
