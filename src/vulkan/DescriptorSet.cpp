@@ -571,6 +571,13 @@ namespace vulkan {
 		DescriptorSetLayout const &layout,
 		DescriptorPool const &pool
 	) {
+		if (!layout.has_value()) {
+			return Error(ErrorType::INVALID_ARG, "Layout must be initialized");
+		}
+		if (!pool.descriptor_pool()) {
+			return Error(ErrorType::INVALID_ARG, "Descriptor pool must be initialized");
+		}
+
 		auto set = DescriptorSets();
 		set._descriptor_pool = &pool;
 

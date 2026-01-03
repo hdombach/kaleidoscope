@@ -31,6 +31,11 @@ namespace vulkan {
 				Attachments const &attachments
 			);
 
+			static util::Result<Pipeline, Error> create_compute(
+				Shader const &compute_shader,
+				Attachments const &attachments
+			);
+
 			Pipeline(Pipeline const &pipeline) = delete;
 			Pipeline(Pipeline &&pipeline);
 			Pipeline &operator=(Pipeline const &pipeline) = delete;

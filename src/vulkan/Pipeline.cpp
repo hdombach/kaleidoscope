@@ -4,6 +4,7 @@
 
 #include "FrameAttachment.hpp"
 #include "util/Util.hpp"
+#include "util/log.hpp"
 #include "vulkan/Vertex.hpp"
 
 namespace vulkan {
@@ -205,6 +206,68 @@ namespace vulkan {
 		return pipeline;
 	}
 
+	util::Result<Pipeline, Error> Pipeline::create_compute(
+		const Shader &compute_shader,
+		const Attachments &attachments
+	) {
+		auto pipeline = Pipeline();
+
+		pipeline._attachments = attachments;
+
+		for (auto &attachment_row : attachments) {
+			pipeline._descriptor_set_layouts.push_back({});
+			if (auto err = DescriptorSetLayout::create(
+					attachment_row
+			).move_or(pipeline._descriptor_set_layouts.back())) {
+				return Error(ErrorType::MISC, "Could not create descriptor set layout", err.value());
+			}
+		}
+
+		auto compute_shader_stage_info = VkPipelineShaderStageCreateInfo{};
+		compute_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+		compute_shader_stage_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+		compute_shader_stage_info.module = compute_shader.shader_module();
+		compute_shader_stage_info.pName = "main";
+
+		auto layouts = pipeline.vk_layouts();
+
+		auto pipeline_layout_info = VkPipelineLayoutCreateInfo{};
+		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipeline_layout_info.setLayoutCount = layouts.size();
+		pipeline_layout_info.pSetLayouts = layouts.data();
+
+		auto res = vkCreatePipelineLayout(
+			Graphics::DEFAULT->device(),
+			&pipeline_layout_info,
+			nullptr,
+			&pipeline._pipeline_layout
+		);
+
+		if (res != VK_SUCCESS) {
+			return Error(ErrorType::VULKAN, "Could not create compute pipeline overlay", VkError(res));
+		}
+
+		auto pipeline_info = VkComputePipelineCreateInfo{};
+		pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+		pipeline_info.layout = pipeline._pipeline_layout;
+		pipeline_info.stage =  compute_shader_stage_info;
+
+		res = vkCreateComputePipelines(
+			Graphics::DEFAULT->device(),
+			VK_NULL_HANDLE,
+			1,
+			&pipeline_info,
+			nullptr,
+			&pipeline._pipeline
+		);
+
+		if (res != VK_SUCCESS) {
+			return Error(ErrorType::VULKAN, "Could not create overlay compute pipeline", VkError(res));
+		}
+
+		return pipeline;
+	}
+
 	Pipeline::Pipeline(Pipeline &&other) {
 		_type = other._type;
 		_size = other._size;
@@ -267,6 +330,7 @@ namespace vulkan {
 	}
 
 	VkPipeline Pipeline::pipeline() const {
+		log_assert(_pipeline, "Must initialize Pipeline before using it");
 		return _pipeline;
 	}
 

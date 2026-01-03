@@ -106,10 +106,6 @@ namespace vulkan {
 			RenderPass const &render_pass() const;
 
 			DescriptorPool &descriptor_pool();
-			/**
-			 * @brief Descriptor set used across rasterization and de render pass
-			 */
-			DescriptorSetLayout const &shared_descriptor_set_layout() const;
 
 			/**
 			 * @brief PrevPass handlers to changes in materials list
@@ -144,10 +140,8 @@ namespace vulkan {
 			util::Result<void, Error> _create_overlay_descriptor_set();
 
 			util::Result<void, Error> _create_overlay_pipeline();
-			void _destroy_overlay_pipeline();
 
 			util::Result<void, Error> _create_de_descriptor_set();
-			void _destroy_de_descriptor_set();
 
 			util::Result<void, Error> _create_de_render_pass();
 			void _destroy_de_render_pass();
@@ -201,9 +195,7 @@ namespace vulkan {
 			StaticBuffer _de_material_buffer;
 
 			MappedOverlayUniform _mapped_overlay_uniform;
-			VkPipelineLayout _overlay_pipeline_layout;
-			VkPipeline _overlay_pipeline;
-			DescriptorSetLayout _overlay_descriptor_set_layout;
+			Pipeline _overlay_pipeline;
 			DescriptorSets _overlay_descriptor_set;
 
 			VkDescriptorSet _imgui_descriptor_set;

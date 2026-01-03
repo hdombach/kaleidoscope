@@ -103,11 +103,11 @@ namespace vulkan {
 		if (auto err = result->_create_de_render_pass().move_or()) {
 			return Error(ErrorType::VULKAN, "Could not create de render pass", err.value());
 		}
-		if (auto err = result->_create_overlay_descriptor_set().move_or()) {
-			return Error(ErrorType::VULKAN, "Could not create overlay descriptor set", err.value());
-		}
 		if (auto err = result->_create_overlay_pipeline().move_or()) {
 			return Error(ErrorType::VULKAN, "Could not create overlay pipeline", err.value());
+		}
+		if (auto err = result->_create_overlay_descriptor_set().move_or()) {
+			return Error(ErrorType::VULKAN, "Could not create overlay descriptor set", err.value());
 		}
 
 		result->_de_buf_dirty_bit = true;
@@ -132,8 +132,8 @@ namespace vulkan {
 		_destroy_de_buffers();
 		_destroy_de_render_pass();
 		_destroy_de_pipeline();
-		_destroy_de_descriptor_set();
-		_destroy_overlay_pipeline();
+		_de_descriptor_set.destroy();
+		_overlay_pipeline.destroy();
 		_overlay_descriptor_set.destroy();
 		_fence.destroy();
 		_semaphore.destroy();
@@ -302,23 +302,24 @@ namespace vulkan {
 
 		// Overlay
 		if (1) {
+			log_assert(_overlay_pipeline.has_value(), "Overlay pipeline is not initialized");
+
 			auto uniform = OverlayUniform{};
 			uniform.selected_node = _scene->selected_node();
 			_mapped_overlay_uniform.set_value(uniform);
 
-			log_assert(_overlay_pipeline, "Overlay pipeline does not exist");
 			vkCmdBindPipeline(
 					command_buffer,
 					VK_PIPELINE_BIND_POINT_COMPUTE,
-					_overlay_pipeline);
+					_overlay_pipeline.pipeline());
 
 			auto descriptor_set = _overlay_descriptor_set.descriptor_set(0);
 
 			vkCmdBindDescriptorSets(
 					command_buffer,
 					VK_PIPELINE_BIND_POINT_COMPUTE,
-					_overlay_pipeline_layout,
-					0,
+					_overlay_pipeline.pipeline_layout(),
+					1,
 					1,
 					&descriptor_set,
 					0,
@@ -386,12 +387,11 @@ namespace vulkan {
 		return _descriptor_pool;
 	}
 
-	DescriptorSetLayout const &PrevPass::shared_descriptor_set_layout() const {
-		return _shared_descriptor_set_layout;
-	}
-
 	void PrevPass::mesh_create(uint32_t id) {
-		if (auto mesh = PrevPassMesh::create(*_scene, _scene->resource_manager().get_mesh(id))) {
+		if (auto mesh = PrevPassMesh::create(
+				*_scene,
+				_scene->resource_manager().get_mesh(id))
+		) {
 			log_assert(_meshes.insert(std::move(mesh.value())), "Duplicated mesh in PrevPass");
 		} else {
 			std::cerr << std::endl << mesh.error() << std::endl;
@@ -487,26 +487,20 @@ namespace vulkan {
 			return Error(ErrorType::VULKAN, "Could not create mapped overlay uniform", {err.value()});
 		}
 
-		auto bindings = std::vector<VkDescriptorSetLayoutBinding>();
-		bindings.push_back(descriptor_layout_image_target(VK_SHADER_STAGE_COMPUTE_BIT, 1));
-		bindings.push_back(descriptor_layout_uniform(VK_SHADER_STAGE_COMPUTE_BIT));
-		bindings.push_back(descriptor_layout_image_target(VK_SHADER_STAGE_COMPUTE_BIT, 1));
+		auto attachments = _overlay_pipeline.attachments();
 
-		if (auto err = DescriptorSetLayout::create(bindings).move_or(_overlay_descriptor_set_layout)) {
-			return Error(ErrorType::RESOURCE, "Could not create overlay descriptor set layout", err.value());
-		}
+		log_assert(attachments.size() >= 2, "Overlay pipeline must be initialized and have enough attachments");
+		log_assert(attachments[1].size() >= 3, "The second attachment of overlay pipeline must have enough attachments");
 
-		auto builder = _overlay_descriptor_set_layout.builder();
-		if (auto err = builder.add_image_target(_color_image.image_view()).move_or()) {
-			return Error(ErrorType::RESOURCE, "Could not add color image target", {err.value()});
-		}
-		if (auto err = builder.add_uniform(_mapped_overlay_uniform).move_or()) {
-			return Error(ErrorType::RESOURCE, "Could not add uniform to descriptor set", {err.value()});
-		}
-		if (auto err = builder.add_image_target(_de_node_image.image_view()).move_or()) {
-			return Error(ErrorType::RESOURCE, "Could not add de node image target", {err.value()});
-		}
-		if (auto err = DescriptorSets::create(builder, descriptor_pool()).move_or(_overlay_descriptor_set)) {
+		attachments[1][0].add_image_target(_color_image.image_view());
+		attachments[1][1].add_uniform(_mapped_overlay_uniform);
+		attachments[1][2].add_image_target(_de_node_image.image_view());
+
+		if (auto err = DescriptorSets::create(
+				attachments[1],
+				_overlay_pipeline.layouts()[1],
+				_descriptor_pool
+		).move_or(_overlay_descriptor_set)) {
 			return Error(ErrorType::RESOURCE, "Could not create DescriptorSet", err.value());
 		}
 
@@ -514,8 +508,6 @@ namespace vulkan {
 	}
 
 	util::Result<void, PrevPass::Error> PrevPass::_create_overlay_pipeline() {
-		_destroy_overlay_pipeline();
-
 		auto codegen_args = cg::TemplObj{
 			{"overlay_declarations", OverlayUniform::declaration_content}
 		};
@@ -530,60 +522,27 @@ namespace vulkan {
 			return Error(ErrorType::VULKAN, "Could not create preview_overlay shader", compute_shader.error());
 		}
 
-		auto compute_shader_stage_info = VkPipelineShaderStageCreateInfo{};
-		compute_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		compute_shader_stage_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		compute_shader_stage_info.module = compute_shader.value().shader_module();
-		compute_shader_stage_info.pName = "main";
+		auto attachments = Pipeline::Attachments{
+			{
+				_shared_descriptor_set_layout.desc_attachments(),
+			},
+			{
+				DescAttachment::create_image_target(VK_SHADER_STAGE_COMPUTE_BIT),
+				DescAttachment::create_uniform(VK_SHADER_STAGE_COMPUTE_BIT),
+				DescAttachment::create_image_target(VK_SHADER_STAGE_COMPUTE_BIT),
+			}
+		};
 
-		auto pipeline_layout_info = VkPipelineLayoutCreateInfo{};
-		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipeline_layout_info.setLayoutCount = 1;
-		pipeline_layout_info.pSetLayouts = &_overlay_descriptor_set_layout.layout();
-
-		auto res = vkCreatePipelineLayout(
-				Graphics::DEFAULT->device(),
-				&pipeline_layout_info,
-				nullptr,
-				&_overlay_pipeline_layout);
-		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create overlay pipeline layout", VkError(res));
+		if (auto err = Pipeline::create_compute(
+				compute_shader.value(),
+				attachments
+		).move_or(_overlay_pipeline)) {
+			return Error(ErrorType::VULKAN, "Could not create overlay pipeline", err.value());
 		}
 
-		auto pipeline_info = VkComputePipelineCreateInfo{};
-		pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-		pipeline_info.layout = _overlay_pipeline_layout;
-		pipeline_info.stage = compute_shader_stage_info;
-
-		res = vkCreateComputePipelines(
-				Graphics::DEFAULT->device(),
-				VK_NULL_HANDLE,
-				1,
-				&pipeline_info,
-				nullptr,
-				&_overlay_pipeline);
-		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create overlay compute pipeline", VkError(res));
-		}
+		log_trace() << "Created preview overlay pipeline" << std::endl;
 
 		return {};
-	}
-
-	void PrevPass::_destroy_overlay_pipeline() {
-		if (_overlay_pipeline_layout) {
-			vkDestroyPipelineLayout(
-					Graphics::DEFAULT->device(),
-					_overlay_pipeline_layout, 
-					nullptr);
-			_overlay_pipeline_layout = nullptr;
-		}
-		if (_overlay_pipeline) {
-			vkDestroyPipeline(
-					Graphics::DEFAULT->device(), 
-					_overlay_pipeline, 
-					nullptr);
-			_overlay_pipeline = nullptr;
-		}
 	}
 
 	//TODO unify this as well.
@@ -650,10 +609,6 @@ namespace vulkan {
 		return {};
 	}
 
-	void PrevPass::_destroy_de_descriptor_set() {
-		_de_descriptor_set.destroy();
-	}
-
 	void PrevPass::_destroy_de_render_pass() {
 		_de_render_pass.destroy();
 	}
@@ -680,8 +635,6 @@ namespace vulkan {
 		auto textures = used_textures(_scene->resource_manager().textures());
 
 		//_de_desc_attachments.resize(2);
-
-		log_debug() << "Size of layout attachments i " << _shared_descriptor_set_layout.desc_attachments().size() << std::endl;
 
 		_de_desc_attachments = {
 			{
@@ -880,8 +833,6 @@ namespace vulkan {
 		if (auto err = DescriptorSetLayout::create(attachments).move_or(_shared_descriptor_set_layout)) {
 			return Error(ErrorType::RESOURCE, "Could not create shared descriptor set layout", err.value());
 		}
-		log_debug() << "Just created shared descriptor set" << std::endl;
-		log_debug() << "Size of layout attachments i " << _shared_descriptor_set_layout.desc_attachments().size() << std::endl;
 
 		attachments[0].add_uniform(_prim_uniform);
 

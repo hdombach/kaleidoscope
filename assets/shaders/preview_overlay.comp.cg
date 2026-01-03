@@ -4,13 +4,13 @@
 {{decl.uniform_type}} {{decl.name}};
 {% endmacro %}
 
-layout(set = 0, binding = 0, rgba8) uniform image2D result;
-layout(set = 0, binding = 1) uniform OverlayUniform {
+layout(set = 1, binding = 0, rgba8) uniform image2D result;
+layout(set = 1, binding = 1) uniform OverlayUniform {
 	{% for decl in overlay_declarations %}
 	{{declaration(decl)}}
 	{% endfor %}
 } overlay_uniform;
-layout(set = 0, binding = 2, r32ui) uniform uimage2D node_id;
+layout(set = 1, binding = 2, r32ui) uniform uimage2D node_id;
 
 void main() {
 	vec4 color = imageLoad(result, ivec2(gl_GlobalInvocationID.xy));
