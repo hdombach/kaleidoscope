@@ -11,6 +11,7 @@
 #include "codegen/TemplGen.hpp"
 #include "util/log.hpp"
 #include "util/result.hpp"
+#include "vulkan/DescAttachment.hpp"
 #include "vulkan/DescriptorSet.hpp"
 #include "vulkan/Shader.hpp"
 #include "vulkan/graphics.hpp"
@@ -123,21 +124,7 @@ namespace vulkan {
 	}
 
 	void RayPass::destroy() {
-		if (_pipeline_layout) {
-			vkDestroyPipelineLayout(
-					Graphics::DEFAULT->device(), 
-					_pipeline_layout, 
-					nullptr);
-			_pipeline_layout = nullptr;
-		}
-
-		if (_pipeline) {
-			vkDestroyPipeline(
-					Graphics::DEFAULT->device(), 
-					_pipeline, 
-					nullptr);
-			_pipeline = nullptr;
-		}
+		_pipeline.destroy();
 
 		if (_imgui_descriptor_set) {
 			ImGui_ImplVulkan_RemoveTexture(_imgui_descriptor_set);
@@ -162,13 +149,9 @@ namespace vulkan {
 
 		_imgui_descriptor_set = other._imgui_descriptor_set;
 		other._imgui_descriptor_set = nullptr;
+
+		_pipeline = std::move(other._pipeline);
 		
-		_pipeline_layout = other._pipeline_layout;
-		other._pipeline_layout = nullptr;
-
-		_pipeline = other._pipeline;
-		other._pipeline = nullptr;
-
 		_command_buffer = other._command_buffer;
 		other._command_buffer = nullptr;
 
@@ -218,10 +201,7 @@ namespace vulkan {
 
 		_imgui_descriptor_set = other._imgui_descriptor_set;
 		other._imgui_descriptor_set = nullptr;
-		_pipeline_layout = other._pipeline_layout;
-		other._pipeline_layout = nullptr;
-		_pipeline = other._pipeline;
-		other._pipeline = nullptr;
+		_pipeline = std::move(other._pipeline);
 		_command_buffer = other._command_buffer;
 		other._command_buffer = nullptr;
 
@@ -251,9 +231,7 @@ namespace vulkan {
 		return *this;
 	}
 
-	RayPass::RayPass():
-	_pipeline_layout(nullptr),
-	_pipeline(nullptr)
+	RayPass::RayPass()
 	{ }
 
 	VkDescriptorSet RayPass::imgui_descriptor_set() {
@@ -274,16 +252,16 @@ namespace vulkan {
 		static glm::u32vec4 seed = {1919835750, 2912171293, 1124614627, 4259748986};
 
 		_update_buffers();
-		if (_descriptor_set.has_value()) {
-			if (auto err = _create_descriptor_sets().move_or()) {
-				log_error() << err.value() << std::endl;
-			}
-		}
 		if (!_pipeline) {
 			auto res = _create_pipeline();
 			if (!res) {
 				log_error() << "problem creating pipeline: " << res.error() << std::endl;
 				return nullptr;
+			}
+		}
+		if (!_descriptor_set.has_value()) {
+			if (auto err = _create_descriptor_sets().move_or()) {
+				log_error() << err.value() << std::endl;
 			}
 		}
 
@@ -332,12 +310,12 @@ namespace vulkan {
 			range.levelCount = 1;
 			vkCmdClearColorImage(_command_buffer, _accumulator_image.image(), VK_IMAGE_LAYOUT_GENERAL, &clear_color, 1, &range);
 		}
-		vkCmdBindPipeline(_command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, _pipeline);
+		vkCmdBindPipeline(_command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, _pipeline.pipeline());
 		auto descriptor_set = _descriptor_set.descriptor_set(0);
 		vkCmdBindDescriptorSets(
 				_command_buffer,
 				VK_PIPELINE_BIND_POINT_COMPUTE,
-				_pipeline_layout,
+				_pipeline.pipeline_layout(),
 				0,
 				1,
 				&descriptor_set,
@@ -480,49 +458,29 @@ namespace vulkan {
 		auto textures = used_textures();
 		auto bindings = std::vector<VkDescriptorSetLayoutBinding>();
 
-		bindings.push_back(descriptor_layout_image_target(VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1));
-		bindings.push_back(descriptor_layout_image_target(VK_SHADER_STAGE_COMPUTE_BIT, 1));
-		bindings.push_back(descriptor_layout_uniform(VK_SHADER_STAGE_COMPUTE_BIT));
-		bindings.push_back(descriptor_layout_storage_buffer(VK_SHADER_STAGE_COMPUTE_BIT));
-		bindings.push_back(descriptor_layout_storage_buffer(VK_SHADER_STAGE_COMPUTE_BIT));
-		bindings.push_back(descriptor_layout_storage_buffer(VK_SHADER_STAGE_COMPUTE_BIT));
-		bindings.push_back(descriptor_layout_storage_buffer(VK_SHADER_STAGE_COMPUTE_BIT));
+		auto attachments = _pipeline.attachments();
+
+		log_assert(attachments.size() >= 1, "Ray trace descriptor set must be initialized");
+		log_assert(attachments[0].size() >= 7, "Ray trace attachments do not have enough values");
+
+		attachments[0][0].add_image_target(_result_image.image_view());
+		attachments[0][1].add_image_target(_accumulator_image.image_view());
+		attachments[0][2].add_uniform(_mapped_uniform);
+		attachments[0][3].add_buffer(_vertex_buffer);
+		attachments[0][4].add_buffer(_bvnode_buffer);
+		attachments[0][5].add_buffer(_node_buffer);
+		attachments[0][6].add_buffer(_material_buffer);
 		if (textures.size() > 0) {
-			bindings.push_back(descriptor_layout_images(VK_SHADER_STAGE_COMPUTE_BIT, textures.size()));
+			attachments[0][7].add_images(textures);
 		}
 
-		_descriptor_set_layout = DescriptorSetLayout::create(bindings).move_value();
-
-		auto builder = _descriptor_set_layout.builder();
-
-		if (auto err = builder.add_image_target(_result_image.image_view()).move_or()) {
-			return Error(ErrorType::SHADER_RESOURCES, "Could not add result image", err.value());
+		if (auto err = DescriptorSets::create(
+				attachments[0],
+				_pipeline.layouts()[0],
+				_descriptor_pool
+		).move_or(_descriptor_set)) {
+			return Error(ErrorType::MISC, "Could not create ray pass descriptor set", err.value());
 		}
-		if (auto err = builder.add_image_target(_accumulator_image.image_view()).move_or()) {
-			return Error(ErrorType::SHADER_RESOURCES, "Could not add accumulator image", err.value());
-		}
-		if (auto err = builder.add_uniform(_mapped_uniform).move_or()) {
-			return Error(ErrorType::SHADER_RESOURCES, "Could not add mapped uniform", err.value());
-		}
-		if (auto err = builder.add_storage_buffer(_vertex_buffer).move_or()) {
-			return Error(ErrorType::SHADER_RESOURCES, "Could not add vertex buffer", err.value());
-		}
-		if (auto err = builder.add_storage_buffer(_bvnode_buffer).move_or()) {
-			return Error(ErrorType::SHADER_RESOURCES, "Could not add bvnode buffer", err.value());
-		}
-		if (auto err = builder.add_storage_buffer(_node_buffer).move_or()) {
-			return Error(ErrorType::SHADER_RESOURCES, "Could not add node buffer", err.value());
-		}
-		if (auto err = builder.add_storage_buffer(_material_buffer).move_or()) {
-			return Error(ErrorType::SHADER_RESOURCES, "Could not add material buffer", err.value());
-		}
-		if (textures.size() > 0) {
-			if (auto err = builder.add_image(textures).move_or()) {
-				return Error(ErrorType::SHADER_RESOURCES, "Could not add ray pass textures", err.value());
-			}
-		}
-
-		_descriptor_set = DescriptorSets::create(builder, _descriptor_pool).move_value();
 
 		return {};
 	}
@@ -533,37 +491,29 @@ namespace vulkan {
 			return Error(ErrorType::VULKAN, "Could not compile compute shader code", compute_shader.error());
 		}
 
-		auto compute_shader_stage_info = VkPipelineShaderStageCreateInfo{};
-		compute_shader_stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		compute_shader_stage_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-		compute_shader_stage_info.module = compute_shader.value().shader_module();
-		compute_shader_stage_info.pName = "main";
+		auto textures = used_textures();
 
-		auto pipeline_layout_info = VkPipelineLayoutCreateInfo{};
-		pipeline_layout_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipeline_layout_info.setLayoutCount = 1;
-		pipeline_layout_info.pSetLayouts = &_descriptor_set_layout.layout();
+		auto attachments = Pipeline::Attachments{
+			{
+				DescAttachment::create_image_target(VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
+				DescAttachment::create_image_target(VK_SHADER_STAGE_COMPUTE_BIT),
+				DescAttachment::create_uniform(VK_SHADER_STAGE_COMPUTE_BIT),
+				DescAttachment::create_storage_buffer(VK_SHADER_STAGE_COMPUTE_BIT),
+				DescAttachment::create_storage_buffer(VK_SHADER_STAGE_COMPUTE_BIT),
+				DescAttachment::create_storage_buffer(VK_SHADER_STAGE_COMPUTE_BIT),
+				DescAttachment::create_storage_buffer(VK_SHADER_STAGE_COMPUTE_BIT)
+			}
+		};
 
-		auto res = vkCreatePipelineLayout(Graphics::DEFAULT->device(), &pipeline_layout_info, nullptr, &_pipeline_layout);
-		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create pipeline layout for ray pass", VkError(res));
+		if (textures.size() > 0) {
+			attachments[0].push_back(DescAttachment::create_images(VK_SHADER_STAGE_COMPUTE_BIT, textures.size()));
 		}
 
-		auto pipeline_info = VkComputePipelineCreateInfo{};
-		pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-		pipeline_info.layout = _pipeline_layout;
-		pipeline_info.stage = compute_shader_stage_info;
-
-		res = vkCreateComputePipelines(
-			Graphics::DEFAULT->device(),
-			VK_NULL_HANDLE,
-			1,
-			&pipeline_info,
-			nullptr,
-			&_pipeline
-		);
-		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create compute pipline for ray pass", VkError(res));
+		if (auto err = Pipeline::create_compute(
+				compute_shader.value(),
+				attachments
+		).move_or(_pipeline)) {
+			return Error(ErrorType::MISC, "Could not create compute pipeline for ray pass", err.value());
 		}
 
 		return {};
@@ -659,12 +609,12 @@ namespace vulkan {
 		}
 
 		if (update) {
-			if (auto err = _create_descriptor_sets().move_or()) {
-				log_error() << "Could not create descriptor set: " << err.value() << std::endl;
-			}
 			//TODO: Slow as it doesn't need to be done every time
 			if (auto err = _create_pipeline().move_or()) {
 				log_error() << "Could not create pipeline: " << err.value() << std::endl;
+			}
+			if (auto err = _create_descriptor_sets().move_or()) {
+				log_error() << "Could not create descriptor set: " << err.value() << std::endl;
 			}
 		}
 	}

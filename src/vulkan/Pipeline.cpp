@@ -158,6 +158,8 @@ namespace vulkan {
 			return Error(ErrorType::VULKAN, "Could not create pipeline layout", VkError(res));
 		}
 
+		log_trace() << "Created pipeline layout " << pipeline._pipeline_layout << std::endl;
+
 		auto depth_stencil = VkPipelineDepthStencilStateCreateInfo{};
 		depth_stencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 		depth_stencil.depthTestEnable = VK_TRUE;
@@ -200,6 +202,8 @@ namespace vulkan {
 		if (res != VK_SUCCESS) {
 			return Error(ErrorType::VULKAN, "Could not create pipeline", VkError(res));
 		}
+
+		log_trace() << "Created pipeline " << pipeline._pipeline << std::endl;
 
 		pipeline._size = {static_cast<uint32_t>(viewport.width), static_cast<uint32_t>(viewport.height)};
 

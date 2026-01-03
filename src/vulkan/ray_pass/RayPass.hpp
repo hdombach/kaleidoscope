@@ -12,6 +12,7 @@
 #include "vulkan/Semaphore.hpp"
 #include "vulkan/Uniforms.hpp"
 #include "vulkan/StaticBuffer.hpp"
+#include "vulkan/Pipeline.hpp"
 
 #include "types/Node.hpp"
 
@@ -134,10 +135,8 @@ namespace vulkan {
 			Semaphore _semaphore;
 			DescriptorPool _descriptor_pool;
 			DescriptorSets _descriptor_set;
-			DescriptorSetLayout _descriptor_set_layout;
 			VkDescriptorSet _imgui_descriptor_set;
-			VkPipelineLayout _pipeline_layout;
-			VkPipeline _pipeline;
+			Pipeline _pipeline;
 			VkCommandBuffer _command_buffer;
 			MappedComputeUniform _mapped_uniform;
 			MeshObserver _mesh_observer;

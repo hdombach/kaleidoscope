@@ -41,6 +41,9 @@ namespace vulkan {
 
 			static util::Result<Ptr, Error> create(types::ResourceManager &resource_manager);
 
+			void destroy();
+			~Scene();
+
 			VkDescriptorSet imgui_descriptor_set();
 			VkImageView image_view();
 

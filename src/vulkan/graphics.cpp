@@ -955,7 +955,7 @@ namespace vulkan {
 		if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT && false) {
 			throw std::runtime_error(pCallbackData->pMessage);
 		} else {
-			std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+			log_warning() << pCallbackData->pMessage << std::endl;
 		}
 
 		return VK_FALSE;

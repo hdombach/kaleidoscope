@@ -67,6 +67,17 @@ namespace vulkan {
 		return scene;
 	}
 
+	void Scene::destroy() {
+		_preview_render_pass.reset();
+		_raytrace_render_pass.reset();
+		_instanced_pass.reset();
+		_nodes.clear();
+	}
+
+	Scene::~Scene() {
+		destroy();
+	}
+
 	VkDescriptorSet Scene::imgui_descriptor_set() {
 		if (_is_preview) {
 			//return _instanced_pass->imgui_descriptor_set();
