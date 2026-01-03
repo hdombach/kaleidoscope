@@ -46,6 +46,30 @@ namespace util {
 				Container const &_c;
 		};
 
+	template<typename Container>
+		class pllist {
+			public:
+				pllist(Container const &container): _c(container) {}
+
+				std::ostream &print(std::ostream &os) const {
+					os << "[";
+					bool is_first = true;
+					for (auto &element : _c) {
+						if (is_first) {
+							is_first = false;
+						} else {
+							os << ", ";
+						}
+						util::plist(element).print(os);
+					}
+					os << "]";
+					return os;
+				}
+			private:
+				Container const &_c;
+		};
+
+
 	/**
 	 * @brief Prints a vector as a numberd list
 	 */
@@ -79,6 +103,11 @@ template<typename T>
 	inline std::ostream &operator<<(std::ostream &os, util::plist<T> const &l) {
 		return l.print(os);
 	}
+
+template<typename T>
+inline std::ostream &operator<<(std::ostream &os, util::pllist<T> const &l) {
+	return l.print(os);
+}
 
 template<typename T>
 	inline std::ostream &operator<<(std::ostream &os, util::plist_enumerated<T> const &l) {

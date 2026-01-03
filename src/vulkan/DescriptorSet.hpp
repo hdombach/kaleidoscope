@@ -125,9 +125,15 @@ namespace vulkan {
 			 */
 			std::vector<VkDescriptorSetLayoutBinding> const &bindings() const;
 
+			/**
+			 * @brief The underlysing set of attachments used
+			 */
+			std::vector<DescAttachment> const &desc_attachments() const;
+
 		private:
 			VkDescriptorSetLayout _layout = nullptr;
 			std::vector<VkDescriptorSetLayoutBinding> _bindings;
+			std::vector<DescAttachment> _desc_attachments;
 	};
 
 	/**

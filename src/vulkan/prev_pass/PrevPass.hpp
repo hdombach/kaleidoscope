@@ -105,15 +105,11 @@ namespace vulkan {
 			 */
 			RenderPass const &render_pass() const;
 
-			DescriptorPool &descriptor_pool() { return _descriptor_pool; };
-			/**
-			 * @brief Descriptor set layout used across rasterization and de render pass
-			 */
-			VkDescriptorSetLayout shared_descriptor_set_layout() { return _shared_descriptor_set_layout.layout(); }
+			DescriptorPool &descriptor_pool();
 			/**
 			 * @brief Descriptor set used across rasterization and de render pass
 			 */
-			VkDescriptorSet shared_descriptor_set() { return _shared_descriptor_set.descriptor_set(0); }
+			DescriptorSetLayout const &shared_descriptor_set_layout() const;
 
 			/**
 			 * @brief PrevPass handlers to changes in materials list
@@ -197,10 +193,8 @@ namespace vulkan {
 			RenderPass _prim_render_pass;
 			MappedPrevPassUniform _prim_uniform;
 
-			std::vector<FrameAttachment> _de_frame_attachments;
 			Pipeline::Attachments _de_desc_attachments;
 			DescriptorSets _de_descriptor_set;
-			DescriptorSets _de_shared_descriptor_set;
 			Pipeline _de_pipeline;
 			RenderPass _de_render_pass;
 			StaticBuffer _de_node_buffer;

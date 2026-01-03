@@ -151,7 +151,7 @@ namespace vulkan {
 		if (_de_pipe_dirty_bit) {
 			log_trace() << "Creating de pipeline" << std::endl;
 			if (auto err = _create_de_pipeline().move_or()) {
-				log_error() << err.value() << std::endl;
+				log_error() << std::endl << err.value() << std::endl;
 			}
 			_de_pipe_dirty_bit = false;
 		}
@@ -243,8 +243,8 @@ namespace vulkan {
 				vkCmdBindIndexBuffer(command_buffer, mesh.index_buffer(), 0, VK_INDEX_TYPE_UINT32);
 
 				auto descriptor_sets = std::array<VkDescriptorSet, 2>{
-					shared_descriptor_set(),
-					prev_node.descriptor_set().descriptor_set(0),
+					_shared_descriptor_set.descriptor_set(),
+					prev_node.descriptor_set().descriptor_set(),
 				};
 
 				vkCmdBindDescriptorSets(
@@ -281,8 +281,7 @@ namespace vulkan {
 
 			vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _de_pipeline.pipeline());
 
-			auto descriptor_sets = std::array<VkDescriptorSet, 2>{
-				_de_shared_descriptor_set.descriptor_set(),
+			auto descriptor_sets = std::array<VkDescriptorSet, 1>{
 				_de_descriptor_set.descriptor_set(),
 			};
 
@@ -290,7 +289,7 @@ namespace vulkan {
 					command_buffer,
 					VK_PIPELINE_BIND_POINT_GRAPHICS,
 					_de_pipeline.pipeline_layout(),
-					0,
+					1,
 					descriptor_sets.size(),
 					descriptor_sets.data(),
 					0,
@@ -381,6 +380,14 @@ namespace vulkan {
 
 	RenderPass const &PrevPass::render_pass() const {
 		return _prim_render_pass;
+	}
+
+	DescriptorPool &PrevPass::descriptor_pool() {
+		return _descriptor_pool;
+	}
+
+	DescriptorSetLayout const &PrevPass::shared_descriptor_set_layout() const {
+		return _shared_descriptor_set_layout;
 	}
 
 	void PrevPass::mesh_create(uint32_t id) {
@@ -601,19 +608,7 @@ namespace vulkan {
 
 		auto textures = used_textures(_scene->resource_manager().textures());
 
-		auto attachments = _de_pipeline.attachments()[0];
-
-		attachments[0].add_uniform(_prim_uniform);
-
-		if (auto err = DescriptorSets::create(
-				attachments,
-				_de_pipeline.layouts()[0],
-				descriptor_pool()
-		).move_or(_de_shared_descriptor_set)) {
-			return Error(ErrorType::RESOURCE, "Could not create de shared descriptor set", err.value());
-		}
-
-		attachments = _de_pipeline.attachments()[1];
+		auto attachments = _de_pipeline.attachments()[1];
 
 		attachments[0].add_image(_depth_buf_image);
 		attachments[1].add_image(_node_image);
@@ -657,7 +652,6 @@ namespace vulkan {
 
 	void PrevPass::_destroy_de_descriptor_set() {
 		_de_descriptor_set.destroy();
-		_de_shared_descriptor_set.destroy();
 	}
 
 	void PrevPass::_destroy_de_render_pass() {
@@ -685,14 +679,22 @@ namespace vulkan {
 
 		auto textures = used_textures(_scene->resource_manager().textures());
 
-		_de_desc_attachments.resize(2);
+		//_de_desc_attachments.resize(2);
 
-		_de_desc_attachments[0].push_back(DescAttachment::create_uniform(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT));
+		log_debug() << "Size of layout attachments i " << _shared_descriptor_set_layout.desc_attachments().size() << std::endl;
 
-		_de_desc_attachments[1].push_back(DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT));
-		_de_desc_attachments[1].push_back(DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT));
-		_de_desc_attachments[1].push_back(DescAttachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT));
-		_de_desc_attachments[1].push_back(DescAttachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT));
+		_de_desc_attachments = {
+			{
+				_shared_descriptor_set_layout.desc_attachments(),
+			},
+			{
+				DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT),
+				DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT),
+				DescAttachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT),
+				DescAttachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT)
+			}
+		};
+
 		if (textures.size() > 0) {
 			_de_desc_attachments[1].push_back(DescAttachment::create_images(VK_SHADER_STAGE_FRAGMENT_BIT, textures.size()));
 
@@ -705,6 +707,7 @@ namespace vulkan {
 			_de_render_pass,
 			_de_desc_attachments
 		).move_or(_de_pipeline)) {
+			log_info() << "desc attachments: " << util::pllist(_de_desc_attachments) << std::endl;
 			return Error(ErrorType::MISC, "Could not create graphics pipeline", err.value());
 		}
 
@@ -852,13 +855,6 @@ namespace vulkan {
 			VK_IMAGE_LAYOUT_GENERAL
 		);
 
-		_de_frame_attachments.resize(2);
-		_de_frame_attachments = {
-			FrameAttachment::create(_color_image),
-			FrameAttachment::create(_de_node_image)
-		};
-
-
 		return {};
 	}
 
@@ -873,24 +869,28 @@ namespace vulkan {
 	}
 
 	util::Result<void, PrevPass::Error> PrevPass::_create_shared_descriptor_set() {
-		{
-			if (auto err = MappedPrevPassUniform::create().move_or(_prim_uniform)) {
-				return Error(ErrorType::VULKAN, "Could not create prim uniform", err.value());
-			}
+		if (auto err = MappedPrevPassUniform::create().move_or(_prim_uniform)) {
+			return Error(ErrorType::VULKAN, "Could not create prim uniform", err.value());
 		}
 
-		auto descriptor_bindings = std::vector<VkDescriptorSetLayoutBinding>();
-		descriptor_bindings.push_back(descriptor_layout_uniform(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT));
+		auto attachments = std::vector{
+			DescAttachment::create_uniform(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT)
+		};
 
-		_shared_descriptor_set_layout = std::move(DescriptorSetLayout::create(descriptor_bindings).value());
-
-		auto builder = _shared_descriptor_set_layout.builder();
-		if (auto err = builder.add_uniform(_prim_uniform).move_or()) {
-			return Error(ErrorType::VULKAN, "Could not add prim uniform", err.value());
+		if (auto err = DescriptorSetLayout::create(attachments).move_or(_shared_descriptor_set_layout)) {
+			return Error(ErrorType::RESOURCE, "Could not create shared descriptor set layout", err.value());
 		}
+		log_debug() << "Just created shared descriptor set" << std::endl;
+		log_debug() << "Size of layout attachments i " << _shared_descriptor_set_layout.desc_attachments().size() << std::endl;
 
-		if (auto err = DescriptorSets::create(builder, _descriptor_pool).move_or(_shared_descriptor_set)) {
-			return Error(ErrorType::VULKAN, "Could not create shared desriptor set", err.value());
+		attachments[0].add_uniform(_prim_uniform);
+
+		if (auto err = DescriptorSets::create(
+				attachments,
+				_shared_descriptor_set_layout,
+				descriptor_pool()
+		).move_or(_shared_descriptor_set)) {
+			return Error(ErrorType::RESOURCE, "Could not create shared descriptor set", err.value());
 		}
 
 		return {};

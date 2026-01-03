@@ -148,6 +148,7 @@ namespace vulkan {
 		std::vector<DescAttachment> const &attachments
 	) {
 		auto layout = DescriptorSetLayout();
+		layout._desc_attachments = attachments;
 
 		uint32_t i = 0;
 		auto bindings = std::vector<VkDescriptorSetLayoutBinding>();
@@ -187,16 +188,16 @@ namespace vulkan {
 
 	DescriptorSetLayout::DescriptorSetLayout(DescriptorSetLayout &&other) {
 		_bindings = std::move(other._bindings);
-		_layout = other._layout;
-		other._layout = nullptr;
+		_layout = util::move_ptr(other._layout);
+		_desc_attachments = std::move(other._desc_attachments);
 	}
 
 	DescriptorSetLayout& DescriptorSetLayout::operator=(DescriptorSetLayout &&other) {
 		destroy();
 
 		_bindings = std::move(other._bindings);
-		_layout = other._layout;
-		other._layout = nullptr;
+		_layout = util::move_ptr(other._layout);
+		_desc_attachments = std::move(other._desc_attachments);
 
 		return *this;
 	}
@@ -228,6 +229,10 @@ namespace vulkan {
 
 	std::vector<VkDescriptorSetLayoutBinding> const &DescriptorSetLayout::bindings() const {
 		return _bindings;
+	}
+
+	std::vector<DescAttachment> const &DescriptorSetLayout::desc_attachments() const {
+		return _desc_attachments;
 	}
 
 	DescriptorSetBuilder::DescriptorSetBuilder(

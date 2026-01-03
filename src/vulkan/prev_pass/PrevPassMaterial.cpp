@@ -160,20 +160,6 @@ namespace vulkan {
 			return Error(ErrorType::MISC, "Could not create frag shader", shader.error());
 		}
 
-		auto bindings = std::vector<VkDescriptorSetLayoutBinding>();
-		bindings.push_back(descriptor_layout_uniform(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT));
-		if (texture_names.size() > 0) {
-			bindings.push_back(descriptor_layout_images(VK_SHADER_STAGE_FRAGMENT_BIT, texture_names.size()));
-		}
-
-		auto descriptor_layout = DescriptorSetLayout::create(bindings).move_value();
-
-		//Nodes need to be created first.
-		auto descriptor_layouts = std::vector<VkDescriptorSetLayout>{
-			_prev_pass->shared_descriptor_set_layout(),
-			descriptor_layout.layout(),
-		};
-
 		auto attachments = Pipeline::Attachments{
 			{
 				DescAttachment::create_uniform(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),

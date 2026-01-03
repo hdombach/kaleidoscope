@@ -151,6 +151,11 @@ namespace vulkan {
 			 */
 			util::Result<VkWriteDescriptorSet, Error> descriptor_write();
 
+			/**
+			 * @brief Get a debug description of the os
+			 */
+			std::ostream &print_debug(std::ostream &os) const;
+
 		private:
 			/**
 			 * Internally keeps track of any error that occurs
@@ -182,3 +187,5 @@ namespace vulkan {
 }
 
 std::ostream &operator<<(std::ostream &os, vulkan::DescAttachment::Type const &type);
+
+std::ostream &operator<<(std::ostream &os, vulkan::DescAttachment const &attachment);

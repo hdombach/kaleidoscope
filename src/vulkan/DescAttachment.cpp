@@ -2,6 +2,8 @@
 
 #include "Image.hpp"
 #include "DescriptorSet.hpp"
+#include "util/PrintTools.hpp"
+#include "util/log.hpp"
 
 namespace vulkan {
 	const char *DescAttachment::type_str(Type type) {
@@ -299,6 +301,39 @@ namespace vulkan {
 		return descriptor_write;
 	}
 
+	std::ostream &DescAttachment::print_debug(std::ostream &os) const {
+		switch (_type) {
+			case Type::UNKNOWN:
+				return os << "Unknown";
+			case Type::IMAGE:
+				if (_image_views.empty()) {
+					return os << "Image: template";
+				} else if (_image_views.size() == 1) {
+					return os << "Image: " << _image_views[0];
+				} else {
+					return os << "Images: " << util::plist(_image_views);
+				}
+			case Type::IMAGE_TARGET:
+				if (_image_views.empty()) {
+					return os << "Image target: template";
+				} else {
+					return os << "Image target: " << _image_views[0];
+				}
+			case Type::UNIFORM:
+				if (_buffer) {
+					return os << "Uniform: " << _buffer << " x " << _buffer_size;
+				} else {
+					return os << "Uniform: template";
+				}
+			case Type::STORAGE_BUFFER:
+				if (_buffer) {
+					return os << "Storage buffer: " << _buffer << " x " << _buffer_size;
+				} else {
+					return os << "Storage buffer: template";
+				}
+		}
+	}
+
 	DescAttachment::DescAttachment(Type type, VkShaderStageFlags shader_stage):
 		_type(type),
 		_shader_stage(shader_stage)
@@ -307,4 +342,8 @@ namespace vulkan {
 
 std::ostream &operator<<(std::ostream &os, vulkan::DescAttachment::Type const &type) {
 	return os << vulkan::DescAttachment::type_str(type);
+}
+
+std::ostream &operator<<(std::ostream &os, vulkan::DescAttachment const &attachment) {
+	return attachment.print_debug(os);
 }
