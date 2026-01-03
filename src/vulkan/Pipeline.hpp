@@ -50,7 +50,7 @@ namespace vulkan {
 			VkPipeline pipeline() const;
 			VkPipelineLayout pipeline_layout() const;
 
-			std::vector<DescriptorSetLayout> const &layouts();
+			std::vector<DescriptorSetLayout> const &layouts() const;
 			std::vector<VkDescriptorSetLayout> vk_layouts();
 
 			Attachments const &attachments() const;

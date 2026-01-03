@@ -225,7 +225,6 @@ namespace vulkan {
 				auto &prev_node = _nodes[node->id()];
 
 				if (mesh.is_de()) continue;
-				if (material->pipeline() == nullptr) continue;
 
 				auto size = glm::vec2{_size.width, _size.height};
 				/*node.material().preview_impl()->update_uniform(
@@ -235,7 +234,7 @@ namespace vulkan {
 				vkCmdBindPipeline(
 						command_buffer, 
 						VK_PIPELINE_BIND_POINT_GRAPHICS, 
-						material->pipeline());
+						material->pipeline().pipeline());
 
 				VkBuffer vertex_buffers[] = {mesh.vertex_buffer()};
 				VkDeviceSize offsets[] = {0};
@@ -250,7 +249,7 @@ namespace vulkan {
 				vkCmdBindDescriptorSets(
 						command_buffer, 
 						VK_PIPELINE_BIND_POINT_GRAPHICS, 
-						material->pipeline_layout(),
+						material->pipeline().pipeline_layout(),
 						0,
 						descriptor_sets.size(),
 						descriptor_sets.data(),
@@ -385,6 +384,10 @@ namespace vulkan {
 
 	DescriptorPool &PrevPass::descriptor_pool() {
 		return _descriptor_pool;
+	}
+
+	PrevPassMaterial const &PrevPass::material(uint32_t id) const {
+		return *_materials[id];
 	}
 
 	void PrevPass::mesh_create(uint32_t id) {

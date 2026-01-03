@@ -107,6 +107,8 @@ namespace vulkan {
 
 			DescriptorPool &descriptor_pool();
 
+			PrevPassMaterial const &material(uint32_t id) const;
+
 			/**
 			 * @brief PrevPass handlers to changes in materials list
 			 */

@@ -38,7 +38,6 @@ namespace vulkan {
 
 		result->_material = material;
 		result->_prev_pass = &preview_pass;
-		result->_pipeline_ready = false;
 
 		auto r = result.get();
 
@@ -91,12 +90,8 @@ namespace vulkan {
 		return _material->id();
 	}
 
-	VkPipeline PrevPassMaterial::pipeline() {
-		return _pipeline_ready ? _pipeline.pipeline() : nullptr;
-	}
-
-	VkPipelineLayout PrevPassMaterial::pipeline_layout() {
-		return _pipeline_ready ? _pipeline.pipeline_layout() : nullptr;
+	Pipeline const &PrevPassMaterial::pipeline() const {
+		return _pipeline;
 	}
 
 	void PrevPassMaterial::_codegen(
@@ -181,8 +176,6 @@ namespace vulkan {
 		).move_or(_pipeline)) {
 			return Error(ErrorType::MISC, "Could not create pipeline", err.value());
 		}
-
-		_pipeline_ready = true;
 
 		return {};
 	}

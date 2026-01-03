@@ -342,7 +342,7 @@ namespace vulkan {
 		return _pipeline_layout;
 	}
 
-	std::vector<DescriptorSetLayout> const &Pipeline::layouts() {
+	std::vector<DescriptorSetLayout> const &Pipeline::layouts() const {
 		return _descriptor_set_layouts;
 	}
 

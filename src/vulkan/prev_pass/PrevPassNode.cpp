@@ -72,25 +72,24 @@ namespace vulkan {
 			}
 		}
 
-		auto bindings = std::vector<VkDescriptorSetLayoutBinding>();
-		bindings.push_back(descriptor_layout_uniform(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT));
+		auto &material = _prev_pass->material(_node->material().id());
+		auto attachments = material.pipeline().attachments();
+
+		log_assert(attachments.size() >= 2, "Prev pass material must have initialized pipeline");
+		log_assert(attachments[1].size() >= 1, "There are not enough attachments in a prev pass material");
+
+		attachments[1][0].add_uniform(_uniform);
 		if (images.size() > 0) {
-			bindings.push_back(descriptor_layout_images(VK_SHADER_STAGE_FRAGMENT_BIT, images.size()));
+			attachments[1][1].add_images(images);
 		}
 
-		_descriptor_set_layout = DescriptorSetLayout::create(bindings).move_value();
-
-		auto builder = _descriptor_set_layout.builder();
-		if (auto err = builder.add_uniform(_uniform).move_or()) {
-			return Error(ErrorType::RESOURCE, "Could not add uniform", err.value());
+		if (auto err = DescriptorSets::create(
+				attachments[1],
+				material.pipeline().layouts()[1],
+				_prev_pass->descriptor_pool()
+		).move_or(_descriptor_set)) {
+			return Error(ErrorType::MISC, "Could not create prev pass node", err.value());
 		}
-		if (images.size() > 0) {
-			if (auto err = builder.add_image(images).move_or()) {
-				return Error(ErrorType::RESOURCE, "Could not add image", err.value());
-			}
-		}
-
-		_descriptor_set = DescriptorSets::create(builder, _prev_pass->descriptor_pool()).move_value();
 
 		return {};
 	}

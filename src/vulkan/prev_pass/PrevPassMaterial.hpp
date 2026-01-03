@@ -51,14 +51,7 @@ namespace vulkan {
 
 			uint32_t id() const;
 
-			/**
-			 * @brief Optional pipeline
-			 */
-			VkPipeline pipeline();
-			/**
-			 * @brief Optional pipeline layout
-			 */
-			VkPipelineLayout pipeline_layout();
+			Pipeline const &pipeline() const;
 
 			const types::Material *material() const {
 				log_assert(_material, "material must exist");
@@ -77,7 +70,6 @@ namespace vulkan {
 		private:
 			const types::Material *_material;
 			PrevPass *_prev_pass;
-			bool _pipeline_ready;
 			Pipeline _pipeline;
 	};
 }
