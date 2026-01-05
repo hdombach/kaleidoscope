@@ -147,6 +147,10 @@ namespace vulkan {
 		return render_pass;
 	}
 
+	bool RenderPass::has_value() const {
+		return _render_pass != nullptr;
+	}
+
 	VkRenderPass RenderPass::render_pass() const {
 		return _render_pass;
 	}

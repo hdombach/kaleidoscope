@@ -26,6 +26,8 @@ namespace vulkan {
 				std::vector<FrameAttachment> &&frame_attachments
 			);
 
+			bool has_value() const;
+
 			VkRenderPass render_pass() const;
 
 			VkFramebuffer framebuffer() const;

@@ -9,6 +9,7 @@
 #include "vulkan/Semaphore.hpp"
 #include "vulkan/Image.hpp"
 #include "vulkan/Error.hpp"
+#include "vulkan/Pipeline.hpp"
 #include "util/UIDList.hpp"
 
 #include "InstancedPassMesh.hpp"
@@ -108,7 +109,7 @@ namespace vulkan {
 			 * @brief The render pass for the rasterization stage
 			 * TODO: might not need to be used
 			 */
-			VkRenderPass render_pass();
+			RenderPass const &render_pass() const;
 
 			/**
 			 * @brief Handle for the preview in imgui
@@ -119,6 +120,11 @@ namespace vulkan {
 			 * @brief The layout for descriptor set used by the meshes
 			 */
 			DescriptorSetLayout const &mesh_descriptor_set_layout() const;
+
+			/**
+			 * @brief The layout of the attachments used in the main instanced pass pipeline
+			 */
+			Pipeline::Attachments const &pipeline_attachments() const;
 
 			/**
 			 * @brief The primary viewport
@@ -144,17 +150,13 @@ namespace vulkan {
 			NodeObserver _node_observer;
 		
 			Scene *_scene;
-			VkRenderPass _render_pass;
-			VkPipeline _pipeline;
-			VkPipelineLayout _pipeline_layout;
+			RenderPass _render_pass;
+			Pipeline _pipeline;
 			DescriptorPool _descriptor_pool;
 			DescriptorSets _shared_descriptor_set;
-			DescriptorSetLayout _shared_descriptor_set_layout;
-			DescriptorSetLayout _mesh_descriptor_set_layout;
 			Fence _fence;
 			Semaphore _semaphore;
 			VkCommandBuffer _command_buffer;
-			VkFramebuffer _framebuffer;
 			VkExtent2D _size;
 			Image _depth_image;
 			Image _material_image;
@@ -179,18 +181,13 @@ namespace vulkan {
 			 * @brief Sets up the render pass
 			 * Does not depend on any other components to be initialized
 			 */
-			util::Result<VkRenderPass, Error> _create_render_pass();
-			void _destroy_render_pass();
+			util::Result<RenderPass, Error> _create_render_pass();
 
 			/**
 			 * @brief Sets up the pipeline
 			 * Requires the descriptor set and render pass to be initialized.
 			 */
-			util::Result<void, Error>_create_pipeline(
-				VkPipeline &pipeline,
-				VkPipelineLayout &pipeline_layout
-			);
-			void _destroy_pipeline();
+			util::Result<void, Error>_create_pipeline(Pipeline &pipeline);
 
 			/**
 			 * @brief Creates the depth and material images
@@ -202,14 +199,6 @@ namespace vulkan {
 			 * Does not depend on any other components to be initialized.
 			 */
 			util::Result<VkCommandBuffer, Error> _create_command_buffer();
-			void _destroy_command_buffer();
-
-			/**
-			 * @brief Creates the framebuffer
-			 * Requires the images and render pass to be initialized.
-			 */
-			util::Result<VkFramebuffer, Error> _create_framebuffers();
-			void _destroy_framebuffers();
 
 			/**
 			 * @brief Figures out the best supported depth format

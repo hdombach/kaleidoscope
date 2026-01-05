@@ -183,26 +183,16 @@ namespace vulkan {
 			return Error(ErrorType::MISC, "Could not allocate node buffer for InstancedPassMesh.", err.value());
 		}
 
-		// update descriptor set
-		auto builder = _instanced_pass->mesh_descriptor_set_layout().builder();
-
-		if (auto err = builder.add_storage_buffer(_node_buffer).move_or()) {
-			return Error(
-				ErrorType::SHADER_RESOURCE,
-				"Could not add node buffer to DescriptorSetBuilder",
-				err.value()
-			);
-		}
+		auto attachments = _instanced_pass->mesh_descriptor_set_layout().desc_attachments();
+		log_assert(attachments.size() >= 1, "There are not enough desc attachments");
+		attachments[0].add_buffer(_node_buffer);
 
 		if (auto err = DescriptorSets::create(
-			builder,
-			_instanced_pass->descriptor_pool()
+				attachments,
+				_instanced_pass->mesh_descriptor_set_layout(),
+				_instanced_pass->descriptor_pool()
 		).move_or(_descriptor_set)) {
-			return Error(
-				ErrorType::SHADER_RESOURCE,
-				"Could not create InstancedPassMesh descriptor set",
-				err.value()
-			);
+			return Error(ErrorType::VULKAN, "Could not create instaced pass mesh descriptor set", err.value());
 		}
 
 		return {};

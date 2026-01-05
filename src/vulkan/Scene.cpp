@@ -23,11 +23,11 @@ namespace vulkan {
 		if (auto err = PrevPass::create(*scene, {300, 300}).move_or(scene->_preview_render_pass)) {
 			return Error(ErrorType::MISC, "Could not create preview render pass", err.value());
 		}
-		/*
+
 		if (auto err = InstancedPass::create({300, 300}, *scene).move_or(scene->_instanced_pass)) {
 			return Error(ErrorType::MISC, "Could not create instanced pass", err.value());
 		}
-		*/
+
 
 		scene->_is_preview = true;
 		if (auto err = scene->add_node_observer(&scene->_preview_render_pass->node_observer()).move_or()) {
@@ -50,14 +50,14 @@ namespace vulkan {
 			return Error(ErrorType::MISC, "Could not add raytrace pass material observer", err.value());
 		}
 
-		/*
+
 		if (auto err = scene->add_node_observer(&scene->_instanced_pass->node_observer()).move_or()) {
 			return Error(ErrorType::MISC, "Could not add instanced pass node observer", err.value());
 		}
 		if (auto err = resource_manager.add_mesh_observer(&scene->_instanced_pass->mesh_observer()).move_or()) {
 			return Error(ErrorType::MISC, "Could not add instanced pass mesh observer", err.value());
 		}
-		*/
+
 
 		scene->_root = scene->create_virtual_node().value();
 		scene->_root->name() = "root";
@@ -80,8 +80,8 @@ namespace vulkan {
 
 	VkDescriptorSet Scene::imgui_descriptor_set() {
 		if (_is_preview) {
-			//return _instanced_pass->imgui_descriptor_set();
-			return _preview_render_pass->imgui_descriptor_set();
+			return _instanced_pass->imgui_descriptor_set();
+			//return _preview_render_pass->imgui_descriptor_set();
 		} else {
 			return _raytrace_render_pass->imgui_descriptor_set();
 		}
@@ -89,8 +89,8 @@ namespace vulkan {
 
 	VkImageView Scene::image_view() {
 		if (_is_preview) {
-			//return _instanced_pass->image_view();
-			return _preview_render_pass->image_view();
+			return _instanced_pass->image_view();
+			//return _preview_render_pass->image_view();
 		} else {
 			return _raytrace_render_pass->image_view();
 		}
@@ -125,8 +125,8 @@ namespace vulkan {
 	}
 
 	VkSemaphore Scene::render_preview(VkSemaphore semaphore) {
-		//return _instanced_pass->render(semaphore, camera());
-		return _preview_render_pass->render(_nodes.raw(), camera(), semaphore);
+		return _instanced_pass->render(semaphore, camera());
+		//return _preview_render_pass->render(_nodes.raw(), camera(), semaphore);
 	}
 
 	VkSemaphore Scene::render_raytrace(VkSemaphore semaphore) {

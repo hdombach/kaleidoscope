@@ -28,6 +28,8 @@ namespace vulkan {
 
 			/**
 			 * @brief Sets the load op
+			 *
+			 * The default is VK_ATTACHMENT_LOAD_OP_CLEAR
 			 */
 			FrameAttachment set_load_op(VkAttachmentLoadOp load_op);
 
