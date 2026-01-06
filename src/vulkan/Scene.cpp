@@ -80,8 +80,8 @@ namespace vulkan {
 
 	VkDescriptorSet Scene::imgui_descriptor_set() {
 		if (_is_preview) {
-			//return _instanced_pass->imgui_descriptor_set();
-			return _preview_render_pass->imgui_descriptor_set();
+			return _instanced_pass->imgui_descriptor_set();
+			//return _preview_render_pass->imgui_descriptor_set();
 		} else {
 			return _raytrace_render_pass->imgui_descriptor_set();
 		}
@@ -89,8 +89,8 @@ namespace vulkan {
 
 	VkImageView Scene::image_view() {
 		if (_is_preview) {
-			//return _instanced_pass->image_view();
-			return _preview_render_pass->image_view();
+			return _instanced_pass->image_view();
+			//return _preview_render_pass->image_view();
 		} else {
 			return _raytrace_render_pass->image_view();
 		}
@@ -101,7 +101,8 @@ namespace vulkan {
 	}
 
 	void Scene::resize(VkExtent2D new_size) {
-		_preview_render_pass->resize(new_size);
+		//_preview_render_pass->resize(new_size);
+		_instanced_pass->resize(new_size);
 		_raytrace_render_pass->resize(new_size);
 	}
 
@@ -124,8 +125,8 @@ namespace vulkan {
 	}
 
 	VkSemaphore Scene::render_preview(VkSemaphore semaphore) {
-		//return _instanced_pass->render(semaphore, camera());
-		return _preview_render_pass->render(_nodes.raw(), camera(), semaphore);
+		return _instanced_pass->render(semaphore, camera());
+		//return _preview_render_pass->render(_nodes.raw(), camera(), semaphore);
 	}
 
 	VkSemaphore Scene::render_raytrace(VkSemaphore semaphore) {

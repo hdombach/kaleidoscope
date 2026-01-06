@@ -141,7 +141,14 @@ namespace vulkan {
 			 */
 			NodeObserver &node_observer();
 
+			/**
+			 * @brief The descriptor pool for allocating descriptor sets used in the instanced pass
+			 *
+			 * Get used by InstancedPassMesh
+			 */
 			DescriptorPool const &descriptor_pool() const;
+
+			void resize(VkExtent2D size);
 
 		private:
 			util::UIDList<InstancedPassMesh> _meshes;
@@ -193,6 +200,11 @@ namespace vulkan {
 			 * @brief Creates the depth and material images
 			 */
 			util::Result<void, Error> _create_images();
+
+			/**
+			 * @brief Destroys all the images that are used
+			 */
+			void _destroy_images();
 
 			/**
 			 * @brief Creates the command buffer

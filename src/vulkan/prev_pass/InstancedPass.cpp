@@ -86,6 +86,7 @@ namespace vulkan {
 
 	InstancedPass::InstancedPass(InstancedPass &&other) {
 		_meshes = std::move(other._meshes);
+		_nodes = std::move(other._nodes);
 		_mesh_observer = std::move(other._mesh_observer);
 		_node_observer = std::move(other._node_observer);
 
@@ -107,6 +108,7 @@ namespace vulkan {
 
 	InstancedPass &InstancedPass::operator=(InstancedPass &&other) {
 		_meshes = std::move(other._meshes);
+		_nodes = std::move(other._nodes);
 		_mesh_observer = std::move(other._mesh_observer);
 		_node_observer = std::move(other._node_observer);
 
@@ -138,9 +140,7 @@ namespace vulkan {
 		_pipeline.destroy();
 		_fence.destroy();
 		_semaphore.destroy();
-		_depth_image.destroy();
-		_material_image.destroy();
-		_result_image.destroy();
+		_destroy_images();
 		_prim_uniform.destroy();
 	}
 
@@ -309,6 +309,30 @@ namespace vulkan {
 
 	DescriptorPool const &InstancedPass::descriptor_pool() const {
 		return _descriptor_pool;
+	}
+
+	void InstancedPass::resize(VkExtent2D size) {
+		if (_size.width == size.width && _size.height == size.height) return;
+		Graphics::DEFAULT->wait_idle();
+		_size = size;
+		if (auto err = _create_images().move_or()) {
+			log_error() << "Could not create images for instanced pass." << std::endl << err.value();
+		}
+
+		if (auto err = _create_descriptor_set().move_or()) {
+			log_error() << "Could not create descriptor set while resizing instanced pass."
+				<< std::endl << err.value();
+		}
+
+		auto attachments = std::vector{
+			FrameAttachment::create(_result_image),
+			FrameAttachment::create(_material_image),
+			FrameAttachment::create(_depth_image).set_depth(),
+		};
+
+		if (auto err = _render_pass.resize(std::move(attachments)).move_or()) {
+			log_error() << "Could not resize framebuffer in instanced pass." << std::endl << err.value();
+		}
 	}
 
 	void InstancedPass::mesh_create(uint32_t id) {
@@ -486,6 +510,8 @@ namespace vulkan {
 	}
 
 	util::Result<void, Error> InstancedPass::_create_images() {
+		_destroy_images();
+
 		if (auto err = Image::create(
 			_size,
 			_depth_format(),
@@ -540,6 +566,12 @@ namespace vulkan {
 		);
 
 		return {};
+	}
+
+	void InstancedPass::_destroy_images() {
+		_depth_image.destroy();
+		_material_image.destroy();
+		_result_image.destroy();
 	}
 
 	util::Result<VkCommandBuffer, Error> InstancedPass::_create_command_buffer() {
