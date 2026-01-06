@@ -36,9 +36,14 @@ namespace vulkan {
 
 			std::vector<VkClearValue> clear_values() const;
 
+			util::Result<void, Error> resize(std::vector<FrameAttachment> &&attachments);
+
 		private:
 			std::vector<FrameAttachment> _frame_attachments;
 			VkRenderPass _render_pass = nullptr;
 			VkFramebuffer _framebuffer = nullptr;
+
+		private:
+			util::Result<void, Error> _create_framebuffer();
 	};
 }

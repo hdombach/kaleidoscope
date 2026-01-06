@@ -364,6 +364,24 @@ namespace vulkan {
 		if (auto err = _create_de_descriptor_set().move_or()) {
 			log_error() << err.value() << std::endl;
 		}
+
+		auto attachments = std::vector{
+			FrameAttachment::create(_color_image),
+			FrameAttachment::create(_depth_image).set_depth(),
+			FrameAttachment::create(_node_image),
+			FrameAttachment::create(_depth_buf_image).set_clear_value({{1.0}})
+		};
+
+		if (auto err = _prim_render_pass.resize(std::move(attachments)).move_or()) {
+			log_error(err.value());
+		}
+		attachments = std::vector{
+			FrameAttachment::create(_color_image).set_load_op(VK_ATTACHMENT_LOAD_OP_LOAD),
+			FrameAttachment::create(_de_node_image).set_load_op(VK_ATTACHMENT_LOAD_OP_LOAD),
+		};
+		if (auto err = _de_render_pass.resize(std::move(attachments)).move_or()) {
+			log_error(err.value());
+		}
 	}
 
 	VkExtent2D PrevPass::size() const {

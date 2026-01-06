@@ -3,6 +3,7 @@
 #include "RenderPass.hpp"
 #include "util/Util.hpp"
 #include "graphics.hpp"
+#include "util/log.hpp"
 
 namespace vulkan {
 	RenderPass::RenderPass(RenderPass &&other) {
@@ -118,30 +119,8 @@ namespace vulkan {
 			return Error(ErrorType::VULKAN, "Could not create render pass", VkError(res));
 		}
 
-		// Create framebuffer
-		auto frame_images = std::vector<VkImageView>();
-		for (auto &attachment : render_pass._frame_attachments) {
-			frame_images.push_back(attachment.image_view());
-		}
-
-		auto framebuffer_info = VkFramebufferCreateInfo{};
-		framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		framebuffer_info.renderPass = render_pass._render_pass;
-		framebuffer_info.attachmentCount = frame_images.size();
-		framebuffer_info.pAttachments = frame_images.data();
-		framebuffer_info.width = render_pass._frame_attachments.front().size().width;
-		framebuffer_info.height = render_pass._frame_attachments.front().size().height;
-		framebuffer_info.layers = 1;
-
-		res = vkCreateFramebuffer(
-			Graphics::DEFAULT->device(), 
-			&framebuffer_info, 
-			nullptr, 
-			&render_pass._framebuffer
-		);
-
-		if (res != VK_SUCCESS) {
-			return Error(ErrorType::VULKAN, "Could not create framebuffer", VkError(res));
+		if (auto err = render_pass._create_framebuffer().move_or()) {
+			return Error(ErrorType::MISC, "Could not create framebuffer", err.value());
 		}
 
 		return render_pass;
@@ -171,5 +150,67 @@ namespace vulkan {
 		}
 
 		return r;
+	}
+
+	util::Result<void, Error> RenderPass::resize(
+		std::vector<FrameAttachment> &&attachments
+	) {
+		if (_frame_attachments.size() != attachments.size()) {
+			return Error(
+				ErrorType::INVALID_ARG,
+				util::f("Frame attachment size does not match. (", _frame_attachments.size(), " != ", attachments.size())
+			);
+		}
+
+		for (int i = 0; i < _frame_attachments.size(); i++) {
+			if (_frame_attachments[i].depth() != attachments[i].depth()) {
+				return Error(
+					ErrorType::INVALID_ARG,
+					util::f("Attachment ", i, " has different depth settings.")
+				);
+			}
+		}
+
+		_frame_attachments = std::move(attachments);
+		return _create_framebuffer();
+	}
+
+	util::Result<void, Error> RenderPass::_create_framebuffer() {
+		if (_frame_attachments.empty()) {
+			return Error(ErrorType::INVALID_ARG, "Frame attachments can't be empty.");
+		}
+
+		auto frame_images = std::vector<VkImageView>();
+		for (auto &attachment : _frame_attachments) {
+			frame_images.push_back(attachment.image_view());
+		}
+
+
+		if (_framebuffer) {
+			vkDestroyFramebuffer(Graphics::DEFAULT->device(), _framebuffer, nullptr);
+			_framebuffer = nullptr;
+		}
+
+		auto framebuffer_info = VkFramebufferCreateInfo{};
+		framebuffer_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebuffer_info.renderPass = _render_pass;
+		framebuffer_info.attachmentCount = frame_images.size();
+		framebuffer_info.pAttachments = frame_images.data();
+		framebuffer_info.width = _frame_attachments.front().size().width;
+		framebuffer_info.height = _frame_attachments.front().size().height;
+		framebuffer_info.layers = 1;
+
+		auto res = vkCreateFramebuffer(
+			Graphics::DEFAULT->device(),
+			&framebuffer_info,
+			nullptr,
+			&_framebuffer
+		);
+
+		if (res != VK_SUCCESS) {
+			return Error(ErrorType::VULKAN, "Could not create framebuffer", VkError(res));
+		}
+
+		return {};
 	}
 }
