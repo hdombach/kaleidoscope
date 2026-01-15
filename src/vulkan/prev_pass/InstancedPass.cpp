@@ -15,7 +15,6 @@
 #include "vulkan/PassUtil.hpp"
 
 #include <imgui_impl_vulkan.h>
-#include <iterator>
 #include <vulkan/vulkan_core.h>
 
 namespace vulkan {
@@ -157,7 +156,10 @@ namespace vulkan {
 		_meshes.clear();
 		_nodes.clear();
 		_pipeline.destroy();
+		_composite_pipeline.destroy();
 		_shared_descriptor_set.destroy();
+		_composite_descriptor_set.destroy();
+		_material_buffer.destroy();
 		_descriptor_pool.destroy();
 		_render_pass.destroy();
 		_pipeline.destroy();
@@ -773,6 +775,8 @@ namespace vulkan {
 		_depth_image.destroy();
 		_material_image.destroy();
 		_result_image.destroy();
+		_node_image.destroy();
+		_node_image2.destroy();
 	}
 
 	util::Result<VkCommandBuffer, Error> InstancedPass::_create_command_buffer() {
