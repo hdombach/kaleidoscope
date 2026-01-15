@@ -174,6 +174,7 @@ namespace vulkan {
 			Image _result_image;
 			Image _node_image;
 			Image _node_image2;
+			Image _uv_image;
 			MappedPrevPassUniform _prim_uniform;
 			VkDescriptorSet _imgui_descriptor_set;
 
@@ -192,6 +193,7 @@ namespace vulkan {
 			const static VkFormat _MATERIAL_IMAGE_FORMAT = VK_FORMAT_R16_UINT;
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
 			const static VkFormat _NODE_IMAGE_FORMAT = VK_FORMAT_R16_UINT;
+			const static VkFormat _UV_IMAGE_FORMAT = VK_FORMAT_R8G8_SRGB;
 
 			/**
 			 * @brief Sets up the render pass

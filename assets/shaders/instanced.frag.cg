@@ -3,11 +3,14 @@
 layout(location = 0) flat in uint inInstance;
 layout(location = 1) flat in uint inMaterial;
 layout(location = 2) flat in uint inNodeId;
+layout(location = 3) in vec2 in_tex_coord;
 
 layout(location = 0) out uint outMaterial;
 layout(location = 1) out uint outNodeId;
+layout(location = 2) out vec2 out_tex_coord;
 
 void main() {
 	outMaterial = inMaterial;
 	outNodeId = inNodeId;
+	out_tex_coord = in_tex_coord;
 }

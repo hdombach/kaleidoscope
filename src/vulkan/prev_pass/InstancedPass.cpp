@@ -401,6 +401,7 @@ namespace vulkan {
 		auto attachments = std::vector{
 			FrameAttachment::create(_material_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
 			FrameAttachment::create(_node_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+			FrameAttachment::create(_uv_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
 			FrameAttachment::create(_depth_image).set_depth(),
 		};
 
@@ -511,6 +512,7 @@ namespace vulkan {
 		auto frame_attachments = std::vector{
 			FrameAttachment::create(_material_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
 			FrameAttachment::create(_node_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+			FrameAttachment::create(_uv_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
 			FrameAttachment::create(_depth_image).set_depth()
 		};
 
@@ -654,6 +656,7 @@ namespace vulkan {
 					DescAttachment::create_uniform(VK_SHADER_STAGE_FRAGMENT_BIT),
 					DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT),
 					DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT),
+					DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT),
 					DescAttachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT),
 					DescAttachment::create_images(
 						VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -761,6 +764,23 @@ namespace vulkan {
 			1
 		);
 
+		if (auto err = Image::create(
+				_size,
+				_UV_IMAGE_FORMAT,
+				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+				| VK_IMAGE_USAGE_STORAGE_BIT
+				| VK_IMAGE_USAGE_SAMPLED_BIT
+		).move_or(_uv_image)) {
+			return Error(ErrorType::VULKAN, "Could not create uv image", err.value());
+		}
+
+		Graphics::DEFAULT->transition_image_layout(
+			_uv_image.image(), 
+			_UV_IMAGE_FORMAT, 
+			VK_IMAGE_LAYOUT_UNDEFINED, 
+			VK_IMAGE_LAYOUT_GENERAL, 
+		1);
+
 
 		_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
 			*Graphics::DEFAULT->main_texture_sampler(),
@@ -848,8 +868,10 @@ namespace vulkan {
 		attachments[0][2]
 			.add_image(_material_image)
 			.set_sampler(Graphics::DEFAULT->near_texture_sampler());
-		attachments[0][3].add_buffer(_material_buffer);
-		attachments[0][4].add_images(textures);
+		attachments[0][3]
+			.add_image(_uv_image);
+		attachments[0][4].add_buffer(_material_buffer);
+		attachments[0][5].add_images(textures);
 
 		if (auto err = DescriptorSets::create(
 				attachments[0],

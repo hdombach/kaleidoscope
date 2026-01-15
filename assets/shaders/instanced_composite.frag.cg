@@ -16,7 +16,7 @@ struct Material{{material.id}} {
 };
 {% endfor %}
 
-layout(location = 1) in vec2 fragTexCoord;
+layout(location = 1) in vec2 fragTexCoordIn;
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out uint outNode;
@@ -29,14 +29,15 @@ layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
 
 layout(set = 0, binding = 1) uniform usampler2D node_id_sampler;
 layout(set = 0, binding = 2) uniform usampler2D material_id_sampler;
+layout(set = 0, binding = 3) uniform sampler2D uv_id_sampler;
 
 {% for material in materials %}
-layout(set = 0, binding = 3) readonly buffer material_buffer{{material.id}}{
+layout(set = 0, binding = 4) readonly buffer material_buffer{{material.id}}{
 	Material{{material.id}} material{{material.id}}[];
 };
 {% endfor %}
 
-layout(set = 0, binding = 4) uniform sampler2D textures[{{texture_count}}];
+layout(set = 0, binding = 5) uniform sampler2D textures[{{texture_count}}];
 
 
 {% for material in materials %}
@@ -52,11 +53,11 @@ void material{{material.id}}_main(
 {% endfor %}
 
 void main() {
-	vec2 uv = fragTexCoord;
+	vec2 uv = fragTexCoordIn;
 
 	uint material_id = texture(material_id_sampler, uv).x;
 	uint node_id = texture(node_id_sampler, uv).x;
-	vec2 huv = vec2(0.0, 0.0);
+	vec2 huv = texture(uv_id_sampler, uv).xy; 
 	vec4 color;
 
 	switch (material_id) {
@@ -74,13 +75,14 @@ void main() {
 				{% endif %}
 				{% endfor %}
 			);
+			break;
 
 		{% endfor %}
 	}
 
 	//color.r = 1.0;
 	color.w = 1.0;
-	//color.xyz = vec3(node_id * 0.2, 0, 0);
+	//color.xy = huv;
 
 	outNode = node_id;
 	outColor = color;

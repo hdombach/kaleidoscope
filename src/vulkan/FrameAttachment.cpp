@@ -36,6 +36,9 @@ namespace vulkan {
 			case VK_FORMAT_R8G8B8A8_UNORM:
 				attachment._clear_color = {0, 0, 0, 1};
 				break;
+			case VK_FORMAT_R8G8_SRGB:
+				attachment._clear_color = {0.0, 0.0};
+				break;
 			default:
 				log_error() << "Unimplimented image format: " << image.format() << std::endl;
 				break;
@@ -126,6 +129,12 @@ namespace vulkan {
 				blend_attachment.colorWriteMask =
 					VK_COLOR_COMPONENT_R_BIT |
 					VK_COLOR_COMPONENT_A_BIT;
+				blend_attachment.blendEnable = VK_FALSE;
+				break;
+			case VK_FORMAT_R8G8_SRGB:
+				blend_attachment.colorWriteMask =
+					VK_COLOR_COMPONENT_R_BIT |
+					VK_COLOR_COMPONENT_G_BIT;
 				blend_attachment.blendEnable = VK_FALSE;
 				break;
 			default:
