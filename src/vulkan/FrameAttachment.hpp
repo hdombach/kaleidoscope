@@ -34,6 +34,11 @@ namespace vulkan {
 			FrameAttachment set_load_op(VkAttachmentLoadOp load_op);
 
 			/**
+			 * @brief Sets the image layout
+			 */
+			FrameAttachment set_image_layout(VkImageLayout image_layout);
+
+			/**
 			 * @brief Resolves the VkAttachmentDescription for the render pass
 			 */
 			util::Result<VkAttachmentDescription, Error> attachment_description() const;
@@ -63,11 +68,17 @@ namespace vulkan {
 			 */
 			bool depth() const;
 
+			/**
+			 * @brief Gets the image layout
+			 */
+			VkImageLayout image_layout() const;
+
 		private:
 			Image const *_image=nullptr;
 
 			VkClearValue _clear_color;
 			VkAttachmentLoadOp _load_op=VK_ATTACHMENT_LOAD_OP_CLEAR;
+			VkImageLayout _image_layout=VK_IMAGE_LAYOUT_UNDEFINED;
 
 			bool _depth;
 	};

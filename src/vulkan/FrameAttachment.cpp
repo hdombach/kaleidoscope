@@ -62,6 +62,12 @@ namespace vulkan {
 		return *this;
 	}
 
+	FrameAttachment FrameAttachment::set_image_layout(VkImageLayout image_layout) {
+		_image_layout = image_layout;
+
+		return *this;
+	}
+
 	util::Result<VkAttachmentDescription, Error> FrameAttachment::attachment_description() const {
 		if (_image == nullptr) {
 			return Error(
@@ -146,5 +152,9 @@ namespace vulkan {
 
 	bool FrameAttachment::depth() const {
 		return _depth;
+	}
+
+	VkImageLayout FrameAttachment::image_layout() const {
+		return _image_layout;
 	}
 }

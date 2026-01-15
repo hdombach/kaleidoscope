@@ -66,6 +66,10 @@ namespace vulkan {
 			attachment_ref.attachment = i;
 			attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
+			if (attachment.image_layout() != VK_IMAGE_LAYOUT_UNDEFINED) {
+				attachment_ref.layout = attachment.image_layout();
+			}
+
 			if (attachment.depth()) {
 				if (depth_attachment_ref != nullptr) {
 					return Error(ErrorType::SHADER_RESOURCE, "Cannot attach more than one depth buffer");

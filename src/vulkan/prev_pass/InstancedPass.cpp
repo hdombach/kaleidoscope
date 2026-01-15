@@ -9,10 +9,13 @@
 #include "vulkan/FrameAttachment.hpp"
 #include "vulkan/Shader.hpp"
 #include "vulkan/Scene.hpp"
+#include "vulkan/Uniforms.hpp"
 #include "vulkan/prev_pass/InstancedPassNode.hpp"
 #include "vulkan/prev_pass/InstancedPassMesh.hpp"
+#include "vulkan/PassUtil.hpp"
 
 #include <imgui_impl_vulkan.h>
+#include <iterator>
 #include <vulkan/vulkan_core.h>
 
 namespace vulkan {
@@ -81,6 +84,14 @@ namespace vulkan {
 			return Error(ErrorType::MISC, "Could not create the descriptor set", err.value());
 		}
 
+		if (auto err = p->_create_composite_pipeline().move_or()) {
+			return Error(ErrorType::MISC, "Could not create composite pipeline", err.value());
+		}
+
+		if (auto err = p->_create_composite_descriptor_set().move_or()) {
+			return Error(ErrorType::MISC, "Could not create composite descriptor set", err.value());
+		}
+
 		return std::move(p);
 	}
 
@@ -93,8 +104,11 @@ namespace vulkan {
 		_scene = util::move_ptr(_scene);
 		_render_pass = std::move(other._render_pass);
 		_pipeline = std::move(other._pipeline);
+		_composite_pipeline = std::move(other._composite_pipeline);
 		_descriptor_pool = std::move(other._descriptor_pool);
 		_shared_descriptor_set = std::move(other._shared_descriptor_set);
+		_composite_descriptor_set = std::move(other._composite_descriptor_set);
+		_material_buffer = std::move(other._material_buffer);
 		_fence = std::move(other._fence);
 		_semaphore = std::move(other._semaphore);
 		_command_buffer = util::move_ptr(other._command_buffer);
@@ -102,8 +116,11 @@ namespace vulkan {
 		_depth_image = std::move(other._depth_image);
 		_material_image = std::move(other._material_image);
 		_result_image = std::move(other._result_image);
+		_node_image = std::move(other._node_image);
+		_node_image2 = std::move(other._node_image2);
 		_prim_uniform = std::move(other._prim_uniform);
 		_imgui_descriptor_set = std::move(other._imgui_descriptor_set);
+		_material_dirty_bit = other._material_dirty_bit;
 	}
 
 	InstancedPass &InstancedPass::operator=(InstancedPass &&other) {
@@ -115,8 +132,11 @@ namespace vulkan {
 		_scene = util::move_ptr(_scene);
 		_render_pass = std::move(other._render_pass);
 		_pipeline = std::move(other._pipeline);
+		_composite_pipeline = std::move(other._composite_pipeline);
 		_descriptor_pool = std::move(other._descriptor_pool);
 		_shared_descriptor_set = std::move(other._shared_descriptor_set);
+		_composite_descriptor_set = std::move(other._composite_descriptor_set);
+		_material_buffer = std::move(other._material_buffer);
 		_fence = std::move(other._fence);
 		_semaphore = std::move(other._semaphore);
 		_command_buffer = util::move_ptr(other._command_buffer);
@@ -124,8 +144,11 @@ namespace vulkan {
 		_depth_image = std::move(other._depth_image);
 		_material_image = std::move(other._material_image);
 		_result_image = std::move(other._result_image);
+		_node_image = std::move(other._node_image);
+		_node_image2 = std::move(other._node_image2);
 		_prim_uniform = std::move(other._prim_uniform);
 		_imgui_descriptor_set = std::move(other._imgui_descriptor_set);
+		_material_dirty_bit = other._material_dirty_bit;
 
 		return *this;
 	}
@@ -167,6 +190,13 @@ namespace vulkan {
 		}
 		if ((r = _fence.reset()) != VK_SUCCESS) {
 			log_error() << "Problem reseting fence: " << VkError::type_str(r) << std::endl;
+		}
+
+		if (_material_dirty_bit) {
+			if (auto err = _create_composite_descriptor_set().move_or()) {
+				log_error() << "Couldn't update material buffer: \n" << err.value();
+			}
+			_material_dirty_bit = false;
 		}
 
 		util::require(vkResetCommandBuffer(_command_buffer, 0));
@@ -250,6 +280,43 @@ namespace vulkan {
 
 		vkCmdEndRenderPass(_command_buffer);
 
+
+		{
+			auto render_pass_info = VkRenderPassBeginInfo{};
+			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			render_pass_info.renderPass = _composite_pipeline.render_pass().render_pass();
+			render_pass_info.framebuffer = _composite_pipeline.render_pass().framebuffer();
+			render_pass_info.renderArea.offset = {0, 0};
+			render_pass_info.renderArea.extent = _size;
+
+			auto clear_values = _composite_pipeline.render_pass().clear_values();
+
+			render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
+			render_pass_info.pClearValues = clear_values.data();
+
+			vkCmdBeginRenderPass(_command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBindPipeline(_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _composite_pipeline.pipeline());
+
+			auto descriptor_sets = std::array{
+				_composite_descriptor_set.descriptor_set(),
+			};
+
+			vkCmdBindDescriptorSets(
+				_command_buffer,
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				_composite_pipeline.pipeline_layout(),
+				0,
+				descriptor_sets.size(),
+				descriptor_sets.data(),
+				0,
+				nullptr
+			);
+
+			vkCmdDraw(_command_buffer, 6, 1, 0, 0);
+
+			vkCmdEndRenderPass(_command_buffer);
+		}
+
 		util::require(vkEndCommandBuffer(_command_buffer), "Problem ending command buffer: ");
 
 		VkSemaphore finish_semaphore = _semaphore.get();
@@ -324,15 +391,30 @@ namespace vulkan {
 				<< std::endl << err.value();
 		}
 
+		if (auto err = _create_composite_descriptor_set().move_or()) {
+			log_error() << "Could not create composite descriptor set while resizing instanced pass."
+				<< std::endl << err.value();
+		}
+
 		auto attachments = std::vector{
-			FrameAttachment::create(_result_image),
-			FrameAttachment::create(_material_image),
+			FrameAttachment::create(_material_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+			FrameAttachment::create(_node_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
 			FrameAttachment::create(_depth_image).set_depth(),
 		};
 
 		if (auto err = _render_pass.resize(std::move(attachments)).move_or()) {
-			log_error() << "Could not resize framebuffer in instanced pass." << std::endl << err.value();
+			log_error() << "could not resize framebuffer in instanced pass." << std::endl << err.value();
 		}
+
+		attachments = std::vector{
+				FrameAttachment::create(_result_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+				FrameAttachment::create(_node_image2).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+		};
+
+		if (auto err = _composite_render_pass.resize(std::move(attachments)).move_or()) {
+			log_error() << "could not resize framebuffer in composite instanced pass." << std::endl << err.value();
+		}
+
 	}
 
 	void InstancedPass::mesh_create(uint32_t id) {
@@ -370,6 +452,7 @@ namespace vulkan {
 		auto &mesh = _meshes[raw_node->mesh().id()];
 		mesh.add_node(*raw_node);
 		_nodes[id].registered_mesh = mesh.id();
+		_material_dirty_bit = true;
 	}
 
 	void InstancedPass::node_update(uint32_t id) {
@@ -397,11 +480,14 @@ namespace vulkan {
 			new_mesh.add_node(*raw_node);
 
 			node.registered_mesh = raw_node->mesh().id();
+
 		}
 
 		if (auto err = new_mesh.update_node(*raw_node).move_or()) {
 			log_error() << "Could not update node.\n" << err.value();
 		}
+
+		_material_dirty_bit = true;
 	}
 
 	void InstancedPass::node_remove(uint32_t id) {
@@ -415,12 +501,14 @@ namespace vulkan {
 		));
 
 		mesh.remove_node(id);
+
+		_material_dirty_bit = true;
 	}
 
 	util::Result<RenderPass, Error> InstancedPass::_create_render_pass() {
 		auto frame_attachments = std::vector{
-			FrameAttachment::create(_result_image),
-			FrameAttachment::create(_material_image),
+			FrameAttachment::create(_material_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+			FrameAttachment::create(_node_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
 			FrameAttachment::create(_depth_image).set_depth()
 		};
 
@@ -448,7 +536,7 @@ namespace vulkan {
 				{"global_declarations", GlobalPrevPassUniform::declaration_content},
 				{"node_declaration", InstancedPassMesh::NodeVImpl::declaration}
 			};
-			if (auto err = cg::TemplGen::codegen( source_code, args, "instanced.vert.cg").move_or(source_code)) {
+			if (auto err = cg::TemplGen::codegen(source_code, args, "instanced.vert.cg").move_or(source_code)) {
 				return Error(
 					ErrorType::MISC,
 					"Problem codegenerating instanced vert shader",
@@ -509,6 +597,82 @@ namespace vulkan {
 		return {};
 	}
 
+	std::vector<VkImageView> __used_textures(
+		types::ResourceManager::TextureContainer const &textures
+	) {
+		auto result = std::vector<VkImageView>();
+
+		for (auto &t : textures.raw()) {
+			if (t) {
+				result.push_back(t->image_view());
+			} else {
+				result.push_back(nullptr);
+			}
+		}
+
+		return result;
+	}
+
+
+	util::Result<void, Error> InstancedPass::_create_composite_pipeline() {
+		_composite_pipeline.destroy();
+
+		Shader vert_shader, frag_shader;
+
+		{
+			auto vert_source_code = util::readEnvFile("assets/shaders/unit_square.vert");
+			if (auto err = Shader::from_source_code(vert_source_code, Shader::Type::Vertex).move_or(vert_shader)) {
+				return Error(ErrorType::VULKAN, "could not load unit square shader", err.value());
+			}
+		}
+
+		{
+			auto source_code = _codegen_composite();
+
+			if (auto err = Shader::from_source_code(
+					source_code,
+					Shader::Type::Fragment
+			).move_or(frag_shader)) {
+				return Error(ErrorType::MISC, "Problem parsing instanced composite shader", err.value());
+			}
+
+			auto frame_attachments = std::vector{
+				FrameAttachment::create(_result_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+				FrameAttachment::create(_node_image2).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+			};
+
+			if (auto err = RenderPass::create(
+					std::move(frame_attachments)
+			).move_or(_composite_render_pass)) {
+				return Error(ErrorType::MISC, "Could not create instanced pass composite render pass", err.value());
+			}
+
+			auto desc_attributes = Pipeline::Attachments{
+				{
+					DescAttachment::create_uniform(VK_SHADER_STAGE_FRAGMENT_BIT),
+					DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT),
+					DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT),
+					DescAttachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT),
+					DescAttachment::create_images(
+						VK_SHADER_STAGE_FRAGMENT_BIT,
+						__used_textures(_scene->resource_manager().textures()).size()
+					),
+				}
+			};
+
+			if (auto err = Pipeline::create_graphics(
+					vert_shader,
+					frag_shader,
+					_composite_render_pass,
+					desc_attributes
+			).move_or(_composite_pipeline)) {
+				return Error(ErrorType::MISC, "Could not create instanced pass composite pipeline", err.value());
+			}
+		}
+
+		return {};
+	}
+
 	util::Result<void, Error> InstancedPass::_create_images() {
 		_destroy_images();
 
@@ -558,6 +722,43 @@ namespace vulkan {
 			VK_IMAGE_LAYOUT_GENERAL,
 			1
 		);
+
+		if (auto err = Image::create(
+				_size,
+				_NODE_IMAGE_FORMAT,
+				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+				| VK_IMAGE_USAGE_STORAGE_BIT
+				| VK_IMAGE_USAGE_SAMPLED_BIT
+		).move_or(_node_image)) {
+			return Error(ErrorType::VULKAN, "Could not create node id image", err.value());
+		}
+
+		Graphics::DEFAULT->transition_image_layout(
+			_node_image.image(),
+			_RESULT_IMAGE_FORMAT,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_GENERAL,
+			1
+		);
+
+		if (auto err = Image::create(
+				_size,
+				_NODE_IMAGE_FORMAT,
+				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+				| VK_IMAGE_USAGE_STORAGE_BIT
+				| VK_IMAGE_USAGE_SAMPLED_BIT
+		).move_or(_node_image2)) {
+			return Error(ErrorType::VULKAN, "Could not create node id image", err.value());
+		}
+
+		Graphics::DEFAULT->transition_image_layout(
+			_node_image2.image(),
+			_RESULT_IMAGE_FORMAT,
+			VK_IMAGE_LAYOUT_UNDEFINED,
+			VK_IMAGE_LAYOUT_GENERAL,
+			1
+		);
+
 
 		_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
 			*Graphics::DEFAULT->main_texture_sampler(),
@@ -620,8 +821,40 @@ namespace vulkan {
 				_pipeline.layouts()[0],
 				_descriptor_pool
 		).move_or(_shared_descriptor_set)) {
-			return Error(ErrorType::MISC, "Could not create InstacedPass descriptor set", err.value());
+			return Error(ErrorType::MISC, "Could not create InstancedPass descriptor set", err.value());
 		}
+		return {};
+	}
+
+	util::Result<void, Error> InstancedPass::_create_composite_descriptor_set() {
+		auto attachments = _composite_pipeline.attachments();
+
+		auto textures = __used_textures(_scene->resource_manager().textures());
+
+		log_assert(attachments.size() >= 1, "Instanced pass composite pipeline must be initialized");
+
+		if (auto err = create_material_buffer(*_scene).move_or(_material_buffer)) {
+			return Error(ErrorType::MISC, "Problem creating material buffer for composite render pass", err.value());
+		}
+
+		attachments[0][0].add_uniform(_prim_uniform);
+		attachments[0][1]
+			.add_image(_node_image)
+			.set_sampler(Graphics::DEFAULT->near_texture_sampler());
+		attachments[0][2]
+			.add_image(_material_image)
+			.set_sampler(Graphics::DEFAULT->near_texture_sampler());
+		attachments[0][3].add_buffer(_material_buffer);
+		attachments[0][4].add_images(textures);
+
+		if (auto err = DescriptorSets::create(
+				attachments[0],
+				_composite_pipeline.layouts()[0],
+				_descriptor_pool
+		).move_or(_composite_descriptor_set)) {
+			return Error(ErrorType::MISC, "Could not create compposte instanced pass descriptor set", err.value());
+		}
+		
 		return {};
 	}
 
@@ -631,5 +864,39 @@ namespace vulkan {
 		}
 
 		return {};
+	}
+
+
+	std::string InstancedPass::_codegen_composite() {
+		auto src_code = util::readEnvFile("assets/shaders/instanced_composite.frag.cg");
+
+		auto start = log_start_timer();
+
+		auto textures = __used_textures(_scene->resource_manager().textures());
+
+		auto materials = cg::TemplList();
+		for (auto &material : _scene->resource_manager().materials()) {
+			log_assert(material != nullptr, "Materials should be filtered");
+			materials.push_back(material_templobj(material->id(), _scene->resource_manager().materials()));
+		}
+
+		auto args = cg::TemplObj{
+			{"global_declarations", GlobalPrevPassUniform::declaration_content},
+			{"materials", materials},
+			{"texture_count", cg::TemplInt(textures.size())}
+		};
+
+		if (auto err = cg::TemplGen::codegen(
+				src_code,
+				args,
+				"instanced_composite.frag.cg"
+		).move_or(src_code)) {
+			log_error() << "Could not generate source code for instanced composite shader:" << std::endl
+				<< err.value();
+		}
+		log_info() << "Instanced took " << start << std::endl;
+		log_info() << "Instanced composite code: " << std::endl << util::add_strnum(src_code) << std::endl;
+
+		return src_code;
 	}
 }

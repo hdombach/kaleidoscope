@@ -25,10 +25,14 @@ layout(location = 1) in vec3 inColor;
 layout(location = 2) in vec2 inTexCoord;
 
 layout(location = 0) out uint outInstance;
+layout(location = 1) out uint outMaterial;
+layout(location = 2) out uint outNodeId;
 
 void main() {
 	outInstance = gl_InstanceIndex;
 	gl_Position = global_uniform.camera_transformation *
 		nodes[gl_InstanceIndex].transformation *
 		vec4(inPosition, 1.0);
+	outMaterial = nodes[gl_InstanceIndex].material_id;
+	outNodeId = nodes[gl_InstanceIndex].node_id;
 }

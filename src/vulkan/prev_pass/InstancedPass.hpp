@@ -159,8 +159,12 @@ namespace vulkan {
 			Scene *_scene;
 			RenderPass _render_pass;
 			Pipeline _pipeline;
+			RenderPass _composite_render_pass;
+			Pipeline _composite_pipeline;
 			DescriptorPool _descriptor_pool;
 			DescriptorSets _shared_descriptor_set;
+			DescriptorSets _composite_descriptor_set;
+			StaticBuffer _material_buffer;
 			Fence _fence;
 			Semaphore _semaphore;
 			VkCommandBuffer _command_buffer;
@@ -168,8 +172,12 @@ namespace vulkan {
 			Image _depth_image;
 			Image _material_image;
 			Image _result_image;
+			Image _node_image;
+			Image _node_image2;
 			MappedPrevPassUniform _prim_uniform;
 			VkDescriptorSet _imgui_descriptor_set;
+
+			bool _material_dirty_bit = false;
 
 		private:
 			void mesh_create(uint32_t id);
@@ -183,6 +191,7 @@ namespace vulkan {
 		private:
 			const static VkFormat _MATERIAL_IMAGE_FORMAT = VK_FORMAT_R16_UINT;
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
+			const static VkFormat _NODE_IMAGE_FORMAT = VK_FORMAT_R16_UINT;
 
 			/**
 			 * @brief Sets up the render pass
@@ -194,7 +203,12 @@ namespace vulkan {
 			 * @brief Sets up the pipeline
 			 * Requires the descriptor set and render pass to be initialized.
 			 */
-			util::Result<void, Error>_create_pipeline(Pipeline &pipeline);
+			util::Result<void, Error> _create_pipeline(Pipeline &pipeline);
+
+			/**
+			 * @brief Sets up the pipeline for the composite pipeline
+			 */
+			util::Result<void, Error> _create_composite_pipeline();
 
 			/**
 			 * @brief Creates the depth and material images
@@ -224,6 +238,10 @@ namespace vulkan {
 			 */
 			util::Result<void, Error> _create_descriptor_set();
 
+			util::Result<void, Error> _create_composite_descriptor_set();
+
 			util::Result<void, Error> _create_uniform();
+
+			std::string _codegen_composite();
 	};
 }

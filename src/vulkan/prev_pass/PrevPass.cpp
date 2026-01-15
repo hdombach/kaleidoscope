@@ -567,7 +567,7 @@ namespace vulkan {
 	}
 
 	//TODO unify this as well.
-	std::vector<VkImageView> used_textures(
+	std::vector<VkImageView> _used_textures(
 		types::ResourceManager::TextureContainer const &textures
 	) {
 		auto result = std::vector<VkImageView>();
@@ -586,7 +586,7 @@ namespace vulkan {
 	util::Result<void, PrevPass::Error> PrevPass::_create_de_descriptor_set() {
 		_de_descriptor_set.destroy();
 
-		auto textures = used_textures(_scene->resource_manager().textures());
+		auto textures = _used_textures(_scene->resource_manager().textures());
 
 		auto attachments = _de_pipeline.attachments()[1];
 
@@ -653,7 +653,7 @@ namespace vulkan {
 			return Error(ErrorType::VULKAN, "Could not create frag shader", frag_shader.error());
 		}
 
-		auto textures = used_textures(_scene->resource_manager().textures());
+		auto textures = _used_textures(_scene->resource_manager().textures());
 
 		//_de_desc_attachments.resize(2);
 
@@ -905,7 +905,7 @@ namespace vulkan {
 	std::string PrevPass::_codegen_de() {
 		auto source_code = util::readEnvFile("assets/shaders/preview_de.frag.cg");
 
-		auto textures = used_textures(_scene->resource_manager().textures());
+		auto textures = _used_textures(_scene->resource_manager().textures());
 
 		auto meshes = cg::TemplList();
 		for (auto &m : _meshes) {
