@@ -869,7 +869,8 @@ namespace vulkan {
 			.add_image(_material_image)
 			.set_sampler(Graphics::DEFAULT->near_texture_sampler());
 		attachments[0][3]
-			.add_image(_uv_image);
+			.add_image(_uv_image)
+			.set_sampler(Graphics::DEFAULT->main_texture_sampler());
 		attachments[0][4].add_buffer(_material_buffer);
 		attachments[0][5].add_images(textures);
 

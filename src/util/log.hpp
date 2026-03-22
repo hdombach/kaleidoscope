@@ -15,7 +15,7 @@
 
 namespace util {
 	enum Importance: uint8_t {
-		INFO        = 0b10000000,
+		INFO         = 0b10000000,
 		WARNING      = 0b01000000,
 		ERROR        = 0b00100000,
 		FATAL_ERROR  = 0b00010000,

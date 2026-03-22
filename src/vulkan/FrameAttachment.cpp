@@ -132,6 +132,8 @@ namespace vulkan {
 				blend_attachment.blendEnable = VK_FALSE;
 				break;
 			case VK_FORMAT_R8G8_SRGB:
+			case VK_FORMAT_R16G16_SFLOAT:
+			case VK_FORMAT_R32G32_SFLOAT:
 				blend_attachment.colorWriteMask =
 					VK_COLOR_COMPONENT_R_BIT |
 					VK_COLOR_COMPONENT_G_BIT;
