@@ -3,6 +3,12 @@
 #include "InstancedPass.hpp"
 
 namespace vulkan {
+	using VImpl = InstancedPassNode::VImpl;
+
+	VImpl VImpl::create_empty() {
+		return {0, 0, 0, glm::vec3(), glm::mat4(), glm::mat4()};
+	}
+
 	InstancedPassNode InstancedPassNode::create( const vulkan::Node &node) {
 		auto n = InstancedPassNode();
 		n._node = &node;
@@ -39,6 +45,17 @@ namespace vulkan {
 
 	vulkan::Node const &InstancedPassNode::node() const {
 		return *_node;
+	}
+
+	VImpl InstancedPassNode::vimpl() const {
+		return VImpl{
+			_node->mesh().id(),
+			_node->material().id(),
+			_node->mesh().is_de(),
+			_node->position(),
+			_node->get_matrix_inverse(), // Swap these?
+			_node->get_matrix(),
+		};
 	}
 
 	void InstancedPassNode::destroy() {

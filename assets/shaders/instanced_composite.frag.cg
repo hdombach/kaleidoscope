@@ -4,6 +4,12 @@
 
 {{struct_decls()}}
 
+struct Node {
+	{% for decl in node_declarations%}
+	{{declaration(decl)}}
+	{% endfor %}
+};
+
 {% for material in materials %}
 struct Material{{material.id}} {
 	{% for decl in material.declarations %}
@@ -39,6 +45,41 @@ layout(set = 0, binding = 4) readonly buffer material_buffer{{material.id}}{
 
 layout(set = 0, binding = 5) uniform sampler2D textures[{{texture_count}}];
 
+layout(set = 0, binding = 6) readonly buffer node_buffer {
+	Node nodes[];
+};
+
+{{ de_funcs() }}
+
+bool intersect_nodes(vec3 pos, vec3 dir, inout float d, inout uint id, inout int iterations, inout vec3 closest_pos, inout vec3 normal) {
+	d = global_uniform.z_far;
+	HitInfo hit_info;
+	hit_info.dist = 3.402823466e+38;
+	bool hit = false;
+	for (uint n = 1; n < nodes.length(); n++) {
+		if (nodes[n].is_de == 0) continue;
+		vec4 trans_pos = nodes[n].transformation * vec4(pos, 1.0);
+		vec4 trans_dir = nodes[n].transformation * vec4(dir, 0.0);
+		Ray ray = {
+			trans_pos,
+			trans_dir
+		};
+		if (intersect_de(nodes[n].mesh_id, ray, hit_info)) {
+			hit = true;
+			if (hit_info.dist < d) {
+				d = hit_info.dist;
+				trans_pos = nodes[n].inverse_transformation * vec4(hit_info.pos, 1.0);
+				hit_info.pos = trans_pos.xyz;
+				iterations = hit_info.iterations;
+				normal = hit_info.normal;
+			}
+			id = n;
+		}
+	}
+	closest_pos = hit_info.pos.xyz; // TODO undo
+	return hit;
+}
+
 
 {% for material in materials %}
 void material{{material.id}}_main(
@@ -59,6 +100,23 @@ void main() {
 	uint node_id = texture(node_id_sampler, uv).x;
 	vec2 huv = texture(uv_id_sampler, uv).xy; 
 	vec4 color;
+	vec4 pos = global_uniform.camera_translation;
+	vec4 dir = vec4(1.0 - uv.x * 2.0, uv.y * 2.0 - 1.0, 0.0, 0.0);
+	dir.x *= global_uniform.aspect;
+	dir.z = 1.0 / tan(global_uniform.fovy * PI / 360.0f);
+	dir = global_uniform.camera_rotation * normalize(dir) * -1.0;
+	float d = 0;
+	vec4 hit_pos = vec4(0.0, 0.0, 0.0, 1.0);
+	vec3 normal;
+
+	float scale = 1.0;
+	int iterations;
+
+	if (intersect_nodes(pos.xyz, dir.xyz, d, node_id, iterations, hit_pos.xyz, normal)) {
+		node_id = 4;
+		material_id = nodes[node_id].material_id;
+		scale = (1.0 - float(iterations) / global_uniform.de_iterations);
+	}
 
 	switch (material_id) {
 		{% for material in materials %}
@@ -81,6 +139,7 @@ void main() {
 	}
 
 	//color.r = 1.0;
+	color *= scale;
 	color.w = 1.0;
 	//color.xy = huv;
 

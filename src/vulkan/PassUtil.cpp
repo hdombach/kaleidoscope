@@ -1,5 +1,6 @@
 #include "PassUtil.hpp"
 #include "Error.hpp"
+#include "util/log.hpp"
 
 namespace vulkan {
 	size_t max_material_range(const MaterialContainer &materials) {

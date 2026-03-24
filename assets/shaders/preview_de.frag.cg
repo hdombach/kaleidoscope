@@ -84,8 +84,6 @@ bool intersect_nodes(vec3 pos, vec3 dir, inout float d, inout uint id, inout int
 	return hit;
 }
 
-float PI = 3.14159265358979;
-
 {% for material in materials %}
 void material{{material.id}}_main(
 	inout vec4 outColor,

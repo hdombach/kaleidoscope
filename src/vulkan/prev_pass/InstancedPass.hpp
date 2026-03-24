@@ -165,6 +165,7 @@ namespace vulkan {
 			DescriptorSets _shared_descriptor_set;
 			DescriptorSets _composite_descriptor_set;
 			StaticBuffer _material_buffer;
+			StaticBuffer _node_buffer;
 			Fence _fence;
 			Semaphore _semaphore;
 			VkCommandBuffer _command_buffer;

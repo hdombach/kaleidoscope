@@ -108,6 +108,7 @@ namespace vulkan {
 		_shared_descriptor_set = std::move(other._shared_descriptor_set);
 		_composite_descriptor_set = std::move(other._composite_descriptor_set);
 		_material_buffer = std::move(other._material_buffer);
+		_node_buffer = std::move(other._node_buffer);
 		_fence = std::move(other._fence);
 		_semaphore = std::move(other._semaphore);
 		_command_buffer = util::move_ptr(other._command_buffer);
@@ -136,6 +137,7 @@ namespace vulkan {
 		_shared_descriptor_set = std::move(other._shared_descriptor_set);
 		_composite_descriptor_set = std::move(other._composite_descriptor_set);
 		_material_buffer = std::move(other._material_buffer);
+		_node_buffer = std::move(other._node_buffer);
 		_fence = std::move(other._fence);
 		_semaphore = std::move(other._semaphore);
 		_command_buffer = util::move_ptr(other._command_buffer);
@@ -195,6 +197,9 @@ namespace vulkan {
 		}
 
 		if (_material_dirty_bit) {
+			if (auto err = _create_composite_pipeline().move_or()) {
+				log_error() << "Couldn't update material buffer: \n" << err.value();
+			}
 			if (auto err = _create_composite_descriptor_set().move_or()) {
 				log_error() << "Couldn't update material buffer: \n" << err.value();
 			}
@@ -619,6 +624,8 @@ namespace vulkan {
 
 
 	util::Result<void, Error> InstancedPass::_create_composite_pipeline() {
+		using VImpl = InstancedPassNode::VImpl;
+
 		_composite_pipeline.destroy();
 
 		Shader vert_shader, frag_shader;
@@ -639,7 +646,40 @@ namespace vulkan {
 			).move_or(frag_shader)) {
 				return Error(ErrorType::MISC, "Problem parsing instanced composite shader", err.value());
 			}
+		}
 
+		{
+			auto nodes = std::vector<VImpl>();
+
+			for (auto &node : _nodes.raw()) {
+				if (!node) {
+					nodes.push_back(VImpl::create_empty());
+					continue;
+				}
+				if (node.node().type() != vulkan::Node::Type::Object) {
+					nodes.push_back(VImpl::create_empty());
+					continue;
+				}
+				if (node && node.mesh().is_de()) {
+					nodes.push_back(node.vimpl());
+				} else {
+					nodes.push_back(VImpl::create_empty());
+				}
+			}
+
+			if (_nodes.size() == 0) {
+				nodes.push_back(VImpl::create_empty());
+			}
+
+			if (auto err = StaticBuffer::create(nodes).move_or(_node_buffer)) {
+				if (err->type() != vulkan::ErrorType::EMPTY_BUFFER) {
+					log_error() << err.value() << std::endl;
+				}
+				return Error(ErrorType::SHADER_RESOURCE, "Could not create node buffer", err.value());
+			}
+		}
+
+		{
 			auto frame_attachments = std::vector{
 				FrameAttachment::create(_result_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
 				FrameAttachment::create(_node_image2).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
@@ -662,6 +702,7 @@ namespace vulkan {
 						VK_SHADER_STAGE_FRAGMENT_BIT,
 						__used_textures(_scene->resource_manager().textures()).size()
 					),
+					DescAttachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT)
 				}
 			};
 
@@ -873,6 +914,7 @@ namespace vulkan {
 			.set_sampler(Graphics::DEFAULT->main_texture_sampler());
 		attachments[0][4].add_buffer(_material_buffer);
 		attachments[0][5].add_images(textures);
+		attachments[0][6].add_buffer(_node_buffer);
 
 		if (auto err = DescriptorSets::create(
 				attachments[0],
@@ -907,10 +949,18 @@ namespace vulkan {
 			materials.push_back(material_templobj(material->id(), _scene->resource_manager().materials()));
 		}
 
+		auto meshes = cg::TemplList();
+		for (auto &mesh : _scene->resource_manager().meshes()) {
+			log_assert(mesh != nullptr, "Meshes must be filtered");
+			meshes.push_back(mesh->cg_templobj());
+		}
+
 		auto args = cg::TemplObj{
 			{"global_declarations", GlobalPrevPassUniform::declaration_content},
 			{"materials", materials},
-			{"texture_count", cg::TemplInt(textures.size())}
+			{"texture_count", cg::TemplInt(textures.size())},
+			{"node_declarations", InstancedPassNode::VImpl::declaration},
+			{"meshes", meshes},
 		};
 
 		if (auto err = cg::TemplGen::codegen(

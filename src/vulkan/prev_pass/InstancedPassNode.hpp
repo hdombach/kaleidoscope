@@ -5,6 +5,7 @@
 #include <glm/mat4x4.hpp>
 
 #include "types/Node.hpp"
+#include "vulkan/TemplUtils.hpp"
 
 namespace vulkan {
 	/**
@@ -13,6 +14,26 @@ namespace vulkan {
 	 */
 	class InstancedPassNode {
 		public:
+			struct VImpl {
+				alignas(4) uint32_t mesh_id;
+				alignas(4) uint32_t material_id;
+				alignas(4) uint32_t is_de;
+				alignas(16) glm::vec3 position;
+				alignas(16) glm::mat4 tansformation;
+				alignas(16) glm::mat4 inverse_transformation;
+
+				static VImpl create_empty();
+
+				inline const static auto declaration = std::vector{
+					templ_property("uint", "mesh_id"),
+					templ_property("uint", "material_id"),
+					templ_property("uint", "is_de"),
+					templ_property("vec3", "position"),
+					templ_property("mat4", "transformation"),
+					templ_property("mat4", "inverse_transformation"),
+				};
+			} __attribute__((packed));
+
 			/**
 			 * @brief Creates an empty InstancedPassNode
 			 */
@@ -37,6 +58,8 @@ namespace vulkan {
 			uint32_t id() const;
 			types::Mesh const &mesh() const;
 			vulkan::Node const &node() const;
+
+			VImpl vimpl() const;
 
 			void destroy();
 			~InstancedPassNode();

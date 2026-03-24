@@ -21,6 +21,8 @@ struct HitInfo {
 	vec3 normal;
 	vec3 pos;
 };
+
+float PI = 3.14159265358979;
 {% endmacro %}
 
 {% macro de_funcs() %}
