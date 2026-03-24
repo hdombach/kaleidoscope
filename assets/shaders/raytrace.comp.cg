@@ -63,8 +63,6 @@ layout(binding = 6) readonly buffer material_buffer{{material.id}}{
 {% endfor %}
 layout(binding = 7) uniform sampler2D textures[{{texture_count}}];
 
-float PI = 3.14159265358979;
-
 
 struct Triangle {
 	vec3 v1, v2, v3;

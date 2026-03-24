@@ -197,9 +197,6 @@ namespace vulkan {
 		}
 
 		if (_material_dirty_bit) {
-			if (auto err = _create_composite_pipeline().move_or()) {
-				log_error() << "Couldn't update material buffer: \n" << err.value();
-			}
 			if (auto err = _create_composite_descriptor_set().move_or()) {
 				log_error() << "Couldn't update material buffer: \n" << err.value();
 			}
@@ -624,8 +621,6 @@ namespace vulkan {
 
 
 	util::Result<void, Error> InstancedPass::_create_composite_pipeline() {
-		using VImpl = InstancedPassNode::VImpl;
-
 		_composite_pipeline.destroy();
 
 		Shader vert_shader, frag_shader;
@@ -645,37 +640,6 @@ namespace vulkan {
 					Shader::Type::Fragment
 			).move_or(frag_shader)) {
 				return Error(ErrorType::MISC, "Problem parsing instanced composite shader", err.value());
-			}
-		}
-
-		{
-			auto nodes = std::vector<VImpl>();
-
-			for (auto &node : _nodes.raw()) {
-				if (!node) {
-					nodes.push_back(VImpl::create_empty());
-					continue;
-				}
-				if (node.node().type() != vulkan::Node::Type::Object) {
-					nodes.push_back(VImpl::create_empty());
-					continue;
-				}
-				if (node && node.mesh().is_de()) {
-					nodes.push_back(node.vimpl());
-				} else {
-					nodes.push_back(VImpl::create_empty());
-				}
-			}
-
-			if (_nodes.size() == 0) {
-				nodes.push_back(VImpl::create_empty());
-			}
-
-			if (auto err = StaticBuffer::create(nodes).move_or(_node_buffer)) {
-				if (err->type() != vulkan::ErrorType::EMPTY_BUFFER) {
-					log_error() << err.value() << std::endl;
-				}
-				return Error(ErrorType::SHADER_RESOURCE, "Could not create node buffer", err.value());
 			}
 		}
 
@@ -901,6 +865,41 @@ namespace vulkan {
 		if (auto err = create_material_buffer(*_scene).move_or(_material_buffer)) {
 			return Error(ErrorType::MISC, "Problem creating material buffer for composite render pass", err.value());
 		}
+
+		{
+			using VImpl = InstancedPassNode::VImpl;
+
+			auto nodes = std::vector<VImpl>();
+
+			for (auto &node : _nodes.raw()) {
+				if (!node) {
+					nodes.push_back(VImpl::create_empty());
+					continue;
+				}
+				if (node.node().type() != vulkan::Node::Type::Object) {
+					nodes.push_back(VImpl::create_empty());
+					continue;
+				}
+				if (node && node.mesh().is_de()) {
+					nodes.push_back(node.vimpl());
+				} else {
+					nodes.push_back(VImpl::create_empty());
+				}
+			}
+
+			if (_nodes.size() == 0) {
+				nodes.push_back(VImpl::create_empty());
+			}
+
+			if (auto err = StaticBuffer::create(nodes).move_or(_node_buffer)) {
+				if (err->type() != vulkan::ErrorType::EMPTY_BUFFER) {
+					log_error() << err.value() << std::endl;
+				}
+				return Error(ErrorType::SHADER_RESOURCE, "Could not create node buffer", err.value());
+			}
+		}
+
+
 
 		attachments[0][0].add_uniform(_prim_uniform);
 		attachments[0][1]
