@@ -19,11 +19,6 @@ set(VULKAN_SRC
 	${CMAKE_CURRENT_SOURCE_DIR}/RenderPass.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/Pipeline.cpp
 
-	${CMAKE_CURRENT_SOURCE_DIR}/prev_pass/PrevPass.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/prev_pass/PrevPassCodegen.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/prev_pass/PrevPassMaterial.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/prev_pass/PrevPassMesh.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/prev_pass/PrevPassNode.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/prev_pass/InstancedPass.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/prev_pass/InstancedPassMesh.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/prev_pass/InstancedPassNode.cpp

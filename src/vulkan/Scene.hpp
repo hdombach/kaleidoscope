@@ -12,7 +12,6 @@
 #include "util/IterAdapter.hpp"
 #include "types/ResourceManager.hpp"
 #include "types/Camera.hpp"
-#include "prev_pass/PrevPass.hpp"
 #include "ray_pass/RayPass.hpp"
 #include "types/Node.hpp"
 #include "Error.hpp"
@@ -31,8 +30,6 @@ namespace vulkan {
 			using const_iterator = Container::const_iterator;
 
 			using camera_iterator = util::filter_iterator<util::map_iterator<iterator, types::Camera*>>;
-
-			Scene(types::ResourceManager &resource_manager, PrevPass::Ptr preview_render_pass);
 
 			Scene(const Scene& other) = delete;
 			Scene(Scene &&other) = default;
@@ -106,7 +103,6 @@ namespace vulkan {
 			Scene() = default;
 
 		private:
-			PrevPass::Ptr _preview_render_pass;
 			RayPass::Ptr _raytrace_render_pass;
 			InstancedPass::Ptr _instanced_pass;
 

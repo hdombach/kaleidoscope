@@ -150,6 +150,8 @@ namespace vulkan {
 
 			void resize(VkExtent2D size);
 
+			VkExtent2D size() const;
+
 		private:
 			util::UIDList<InstancedPassMesh> _meshes;
 			util::UIDList<InstancedPassNode> _nodes;

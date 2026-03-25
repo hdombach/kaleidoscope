@@ -422,6 +422,10 @@ namespace vulkan {
 
 	}
 
+	VkExtent2D InstancedPass::size() const {
+		return _size;
+	}
+
 	void InstancedPass::mesh_create(uint32_t id) {
 		auto &raw_mesh = _scene->resource_manager().meshes()[id];
 		log_assert(raw_mesh != nullptr, util::f("Mesh ", id, " does not exist"));
