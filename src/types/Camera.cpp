@@ -46,7 +46,7 @@ namespace types {
 	}
 
 	void Camera::set_width(int w) {
-		_width = w;
+		_width = std::max(w, 0);
 	}
 
 	int Camera::height() const {
@@ -54,7 +54,7 @@ namespace types {
 	}
 
 	void Camera::set_height(int h) {
-		_height = h;
+		_height = std::max(h, 0);
 	}
 
 	float Camera::fovy() const {

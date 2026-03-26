@@ -45,7 +45,7 @@ namespace vulkan {
 			VkImageView image_view();
 
 			VkExtent2D size() const;
-			void resize(VkExtent2D new_size);
+			void resize_viewport(int width, int height);
 
 			int render_rate() const;
 			void set_render_rate(int rate);

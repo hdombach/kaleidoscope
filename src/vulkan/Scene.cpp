@@ -83,9 +83,11 @@ namespace vulkan {
 		return _instanced_pass->size();
 	}
 
-	void Scene::resize(VkExtent2D new_size) {
-		_instanced_pass->resize(new_size);
-		_raytrace_render_pass->resize(new_size);
+	void Scene::resize_viewport(int width, int height) {
+		if (_active_camera == 0) {
+			_viewport_camera->set_width(width);
+			_viewport_camera->set_height(height);
+		}
 	}
 
 	int Scene::render_rate() const {
@@ -129,12 +131,13 @@ namespace vulkan {
 				node->clear_dirty_bits();
 			}
 		}
-		if (_camera_dirty_bit) {
+		//if (_camera_dirty_bit) {
 			VkExtent2D new_size;
 			new_size.width = camera().width();
 			new_size.height = camera().height();
-			resize(new_size);
-		}
+			_instanced_pass->resize(new_size);
+			_raytrace_render_pass->resize(new_size);
+		//}
 	}
 
 	void Scene::set_active_camera(uint32_t id) {

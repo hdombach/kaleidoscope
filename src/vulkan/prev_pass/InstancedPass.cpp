@@ -203,6 +203,44 @@ namespace vulkan {
 			_material_dirty_bit = false;
 		}
 
+		if (_size_dirty_bit) {
+			_size_dirty_bit = false;
+			Graphics::DEFAULT->wait_idle();
+			if (auto err = _create_images().move_or()) {
+				log_error() << "Could not create images for instanced pass." << std::endl << err.value();
+			}
+
+			if (auto err = _create_descriptor_set().move_or()) {
+				log_error() << "Could not create descriptor set while resizing instanced pass."
+					<< std::endl << err.value();
+			}
+
+			if (auto err = _create_composite_descriptor_set().move_or()) {
+				log_error() << "Could not create composite descriptor set while resizing instanced pass."
+					<< std::endl << err.value();
+			}
+
+			auto attachments = std::vector{
+				FrameAttachment::create(_material_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+				FrameAttachment::create(_node_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+				FrameAttachment::create(_uv_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+				FrameAttachment::create(_depth_image).set_depth(),
+			};
+
+			if (auto err = _render_pass.resize(std::move(attachments)).move_or()) {
+				log_error() << "could not resize framebuffer in instanced pass." << std::endl << err.value();
+			}
+
+			attachments = std::vector{
+					FrameAttachment::create(_result_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+					FrameAttachment::create(_node_image2).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+			};
+
+			if (auto err = _composite_render_pass.resize(std::move(attachments)).move_or()) {
+				log_error() << "could not resize framebuffer in composite instanced pass." << std::endl << err.value();
+			}
+		}
+
 		util::require(vkResetCommandBuffer(_command_buffer, 0));
 
 		auto begin_info = VkCommandBufferBeginInfo{};
@@ -384,41 +422,9 @@ namespace vulkan {
 
 	void InstancedPass::resize(VkExtent2D size) {
 		if (_size.width == size.width && _size.height == size.height) return;
-		Graphics::DEFAULT->wait_idle();
+
 		_size = size;
-		if (auto err = _create_images().move_or()) {
-			log_error() << "Could not create images for instanced pass." << std::endl << err.value();
-		}
-
-		if (auto err = _create_descriptor_set().move_or()) {
-			log_error() << "Could not create descriptor set while resizing instanced pass."
-				<< std::endl << err.value();
-		}
-
-		if (auto err = _create_composite_descriptor_set().move_or()) {
-			log_error() << "Could not create composite descriptor set while resizing instanced pass."
-				<< std::endl << err.value();
-		}
-
-		auto attachments = std::vector{
-			FrameAttachment::create(_material_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
-			FrameAttachment::create(_node_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
-			FrameAttachment::create(_uv_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
-			FrameAttachment::create(_depth_image).set_depth(),
-		};
-
-		if (auto err = _render_pass.resize(std::move(attachments)).move_or()) {
-			log_error() << "could not resize framebuffer in instanced pass." << std::endl << err.value();
-		}
-
-		attachments = std::vector{
-				FrameAttachment::create(_result_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
-				FrameAttachment::create(_node_image2).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
-		};
-
-		if (auto err = _composite_render_pass.resize(std::move(attachments)).move_or()) {
-			log_error() << "could not resize framebuffer in composite instanced pass." << std::endl << err.value();
-		}
+		_size_dirty_bit = true;
 
 	}
 

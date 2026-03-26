@@ -181,6 +181,7 @@ namespace vulkan {
 			MappedPrevPassUniform _prim_uniform;
 			VkDescriptorSet _imgui_descriptor_set;
 
+			bool _size_dirty_bit = false;
 			bool _material_dirty_bit = false;
 
 		private:

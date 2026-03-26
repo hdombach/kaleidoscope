@@ -19,8 +19,4 @@ namespace vulkan {
 	uint32_t SceneTexture::id() const {
 		return _id;
 	}
-
-	void SceneTexture::resize(VkExtent2D size) {
-		_scene.resize(size);
-	}
 }

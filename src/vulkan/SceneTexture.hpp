@@ -19,10 +19,8 @@ namespace vulkan {
 			void set_name(std::string const &name) override { _name = name; }
 
 			bool is_resizable() const override {
-				return true;
+				return false;
 			}
-
-			void resize(VkExtent2D size) override;
 		private:
 			Scene &_scene;
 			uint32_t _id;

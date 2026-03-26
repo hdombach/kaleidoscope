@@ -25,14 +25,16 @@ namespace ui {
 		auto mouse_raw = ImGui::GetMousePos();
 		auto cur_mouse_pos = glm::vec2(mouse_raw.x, mouse_raw.y);
 		auto mouse_offset = cur_mouse_pos - state.prev_mouse_pos;
-		auto scene_size = ImVec2(
-			app.scene().camera().width(),
-			app.scene().camera().height()
-		);
 
 		ImGui::Begin("Viewport");
 
 		ImGui::Text("offsett: %f, %f", mouse_offset.x, mouse_offset.y);
+		auto avail_size = ImGui::GetContentRegionAvail();
+
+		auto scene_size = ImVec2(
+			app.scene().camera().width(),
+			app.scene().camera().height()
+		);
 		TextureView(state.scene_texture, scene_size);
 		if (ImGui::IsItemHovered()) {
 			auto &camera = app.scene().camera();
@@ -51,6 +53,7 @@ namespace ui {
 				app.scene().camera().set_position(camera.position() + glm::vec3(p.x, p.y, p.z));
 			}
 		}
+		app.scene().resize_viewport(avail_size.x, avail_size.y);
 		ImGui::End();
 
 		SceneView(app.scene(), state);
