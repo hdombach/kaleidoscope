@@ -114,7 +114,6 @@ void main() {
 	int iterations;
 
 	if (intersect_nodes(pos.xyz, dir.xyz, d, node_id, iterations, hit_pos.xyz, normal)) {
-		node_id = 4;
 		material_id = nodes[node_id].material_id;
 		scale = (1.0 - float(iterations) / global_uniform.de_iterations);
 	}

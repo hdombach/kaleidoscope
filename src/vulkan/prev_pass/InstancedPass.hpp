@@ -17,6 +17,14 @@
 #include "vulkan/Uniforms.hpp"
 
 namespace vulkan {
+	struct InstancedOverlay {
+		alignas(4) uint32_t selected_node;
+
+		inline const static auto declaration_content = std::vector{
+			templ_property("uint", "selected_node")
+		};
+	};
+
 	class Scene;
 	/**
 	 * @brief Render pass for the instanced preview render pass.
@@ -24,6 +32,7 @@ namespace vulkan {
 	class InstancedPass {
 		public:
 			using Ptr = std::unique_ptr<InstancedPass>;
+			using MappedOverlay = MappedUniform<InstancedOverlay>;
 
 			/**
 			 * @brief Watch when the meshes list is modified in the resource manager
@@ -163,9 +172,11 @@ namespace vulkan {
 			Pipeline _pipeline;
 			RenderPass _composite_render_pass;
 			Pipeline _composite_pipeline;
+			Pipeline _overlay_pipeline;
 			DescriptorPool _descriptor_pool;
 			DescriptorSets _shared_descriptor_set;
 			DescriptorSets _composite_descriptor_set;
+			DescriptorSets _overlay_descriptor_set;
 			StaticBuffer _material_buffer;
 			StaticBuffer _node_buffer;
 			Fence _fence;
@@ -179,6 +190,7 @@ namespace vulkan {
 			Image _node_image;
 			Image _node_image2;
 			Image _uv_image;
+			MappedOverlayUniform _overlay_uniform;
 			MappedPrevPassUniform _prim_uniform;
 			VkDescriptorSet _imgui_descriptor_set;
 
@@ -219,6 +231,11 @@ namespace vulkan {
 			util::Result<void, Error> _create_composite_pipeline();
 
 			/**
+			 * @brief Sets up the pipeline for the overlay
+			 */
+			util::Result<void, Error> _create_overlay_pipeline();
+
+			/**
 			 * @brief Creates the depth and material images
 			 */
 			util::Result<void, Error> _create_images();
@@ -247,6 +264,8 @@ namespace vulkan {
 			util::Result<void, Error> _create_descriptor_set();
 
 			util::Result<void, Error> _create_composite_descriptor_set();
+
+			util::Result<void, Error> _create_overlay_descriptor_set();
 
 			util::Result<void, Error> _create_uniform();
 

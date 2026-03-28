@@ -91,6 +91,14 @@ namespace vulkan {
 			return Error(ErrorType::MISC, "Could not create composite descriptor set", err.value());
 		}
 
+		if (auto err = p->_create_overlay_pipeline().move_or()) {
+			return Error(ErrorType::MISC, "Could not create overlay pipeline", err.value());
+		}
+
+		if (auto err = p->_create_overlay_descriptor_set().move_or()) {
+			return Error(ErrorType::MISC, "Could not create overlay descriptor set", err.value());
+		}
+
 		return std::move(p);
 	}
 
@@ -107,6 +115,7 @@ namespace vulkan {
 		_descriptor_pool = std::move(other._descriptor_pool);
 		_shared_descriptor_set = std::move(other._shared_descriptor_set);
 		_composite_descriptor_set = std::move(other._composite_descriptor_set);
+		_overlay_descriptor_set = std::move(other._overlay_descriptor_set);
 		_material_buffer = std::move(other._material_buffer);
 		_node_buffer = std::move(other._node_buffer);
 		_fence = std::move(other._fence);
@@ -119,6 +128,7 @@ namespace vulkan {
 		_result_image = std::move(other._result_image);
 		_node_image = std::move(other._node_image);
 		_node_image2 = std::move(other._node_image2);
+		_overlay_uniform = std::move(other._overlay_uniform);
 		_prim_uniform = std::move(other._prim_uniform);
 		_imgui_descriptor_set = std::move(other._imgui_descriptor_set);
 		_material_dirty_bit = other._material_dirty_bit;
@@ -137,6 +147,7 @@ namespace vulkan {
 		_descriptor_pool = std::move(other._descriptor_pool);
 		_shared_descriptor_set = std::move(other._shared_descriptor_set);
 		_composite_descriptor_set = std::move(other._composite_descriptor_set);
+		_overlay_descriptor_set = std::move(other._overlay_descriptor_set);
 		_material_buffer = std::move(other._material_buffer);
 		_node_buffer = std::move(other._node_buffer);
 		_fence = std::move(other._fence);
@@ -149,6 +160,7 @@ namespace vulkan {
 		_result_image = std::move(other._result_image);
 		_node_image = std::move(other._node_image);
 		_node_image2 = std::move(other._node_image2);
+		_overlay_uniform = std::move(other._overlay_uniform);
 		_prim_uniform = std::move(other._prim_uniform);
 		_imgui_descriptor_set = std::move(other._imgui_descriptor_set);
 		_material_dirty_bit = other._material_dirty_bit;
@@ -170,6 +182,7 @@ namespace vulkan {
 		_fence.destroy();
 		_semaphore.destroy();
 		_destroy_images();
+		_overlay_uniform.destroy();
 		_prim_uniform.destroy();
 	}
 
@@ -190,6 +203,8 @@ namespace vulkan {
 		types::Camera const &camera
 	) {
 		VkResult r;
+
+		if (_size.width == 0 || _size.height == 0) return nullptr;
 
 		if ((r = _fence.wait()) != VK_SUCCESS) {
 			log_error() << "Problem waiting on fence: " << VkError::type_str(r) << std::endl;
@@ -220,6 +235,10 @@ namespace vulkan {
 			if (auto err = _create_composite_descriptor_set().move_or()) {
 				log_error() << "Could not create composite descriptor set while resizing instanced pass."
 					<< std::endl << err.value();
+			}
+
+			if (auto err = _create_overlay_descriptor_set().move_or()) {
+				log_error() << "Could not create overlay descriptor set." << std::endl << err.value();
 			}
 
 			auto attachments = std::vector{
@@ -360,6 +379,32 @@ namespace vulkan {
 			vkCmdDraw(_command_buffer, 6, 1, 0, 0);
 
 			vkCmdEndRenderPass(_command_buffer);
+		}
+
+		// Overlay
+		{
+			_overlay_uniform.set_value({_scene->selected_node()});
+
+			vkCmdBindPipeline(
+				_command_buffer,
+				VK_PIPELINE_BIND_POINT_COMPUTE,
+				_overlay_pipeline.pipeline()
+			);
+
+			auto descriptor_set = _overlay_descriptor_set.descriptor_set();
+
+			vkCmdBindDescriptorSets(
+				_command_buffer,
+				VK_PIPELINE_BIND_POINT_COMPUTE,
+				_overlay_pipeline.pipeline_layout(),
+				0,
+				1,
+				&descriptor_set,
+				0,
+				nullptr
+			);
+
+			vkCmdDispatch(_command_buffer, _size.width, _size.height, 1);
 		}
 
 		util::require(vkEndCommandBuffer(_command_buffer), "Problem ending command buffer: ");
@@ -700,6 +745,43 @@ namespace vulkan {
 		return {};
 	}
 
+	util::Result<void, Error> InstancedPass::_create_overlay_pipeline() {
+		_overlay_pipeline.destroy();
+
+		auto args = cg::TemplObj{
+			{"overlay_declarations", OverlayUniform::declaration_content}
+		};
+		auto source_code = util::readEnvFile("assets/shaders/instanced_overlay.comp.cg");
+		auto start = log_start_timer();
+		source_code = cg::TemplGen::codegen(source_code, args, "instanced_overlay.comp.cg").value();
+		log_info() << "instanced_overlay took " << start << std::endl;
+		auto compute_shader = Shader::from_source_code(source_code, Shader::Type::Compute);
+		log_info() << "\n" << util::add_strnum(source_code) << std::endl;
+		if (!compute_shader) {
+			log_fatal_error() << "Overlay error " << compute_shader.error() << std::endl;
+			return Error(ErrorType::VULKAN, "Could not create instanced_overlay shader", compute_shader.error());
+		}
+
+		auto attachments = Pipeline::Attachments{
+			{
+				DescAttachment::create_image_target(VK_SHADER_STAGE_COMPUTE_BIT),
+				DescAttachment::create_image_target(VK_SHADER_STAGE_COMPUTE_BIT),
+				DescAttachment::create_uniform(VK_SHADER_STAGE_COMPUTE_BIT),
+			}
+		};
+
+		if (auto err = Pipeline::create_compute(
+				compute_shader.value(),
+				attachments
+		).move_or(_overlay_pipeline)) {
+			return Error(ErrorType::VULKAN, "Could not create overlay pipeline", err.value());
+		}
+
+		log_trace() << "Created overlay pipeline" << std::endl;
+
+		return {};
+	}
+
 	util::Result<void, Error> InstancedPass::_create_images() {
 		_destroy_images();
 
@@ -964,9 +1046,31 @@ namespace vulkan {
 		return {};
 	}
 
+	util::Result<void, Error> InstancedPass::_create_overlay_descriptor_set() {
+		auto attachments = _overlay_pipeline.attachments();
+
+		attachments[0][0].add_image_target(_result_image.image_view());
+		attachments[0][1].add_image_target(_node_image2.image_view());
+		attachments[0][2].add_uniform(_overlay_uniform);
+
+		if (auto err = DescriptorSets::create(
+				attachments[0],
+				_overlay_pipeline.layouts()[0],
+				_descriptor_pool
+		).move_or(_overlay_descriptor_set)) {
+			return Error(ErrorType::MISC, "Could not create overlay pass descriptor set", err.value());
+		}
+
+		return {};
+	}
+
 	util::Result<void, Error> InstancedPass::_create_uniform() {
 		if (auto err = MappedPrevPassUniform::create().move_or(_prim_uniform)) {
 			return Error(ErrorType::SHADER_RESOURCE, "Could not create uniform", err.value());
+		}
+
+		if (auto err = MappedOverlayUniform::create().move_or(_overlay_uniform)) {
+			return Error(ErrorType::SHADER_RESOURCE, "Could not create overlay uniform", err.value());
 		}
 
 		return {};
