@@ -22,10 +22,10 @@ struct Material{{material.id}} {
 };
 {% endfor %}
 
-layout(location = 1) in vec2 fragTexCoordIn;
+layout(location = 1) in vec2 in_uv;
 
-layout(location = 0) out vec4 outColor;
-layout(location = 1) out uint outNode;
+layout(location = 0) out vec4 out_color;
+layout(location = 1) out uint out_node_id;
 
 layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
 	{% for decl in global_declarations %}
@@ -52,7 +52,15 @@ layout(set = 0, binding = 7) readonly buffer node_buffer {
 
 {{ de_funcs() }}
 
-bool intersect_nodes(vec3 pos, vec3 dir, inout float d, inout uint id, inout int iterations, inout vec3 closest_pos, inout vec3 normal) {
+bool intersect_nodes(
+	vec3 pos,
+	vec3 dir,
+	inout float d,
+	inout uint id,
+	inout int iterations,
+	inout vec3 closest_pos,
+	inout vec3 normal
+) {
 	HitInfo hit_info;
 	hit_info.dist = 3.402823466e+38;
 	bool hit = false;
@@ -83,8 +91,8 @@ bool intersect_nodes(vec3 pos, vec3 dir, inout float d, inout uint id, inout int
 
 {% for material in materials %}
 void material{{material.id}}_main(
-	inout vec4 outColor,
-	inout vec2 fragTexCoord
+	inout vec4 out_color,
+	inout vec2 in_uv
 	{% for declaration in material.declarations %}
 	, in {{declaration.arg_type}} {{declaration.name}}
 	{% endfor %}
@@ -94,18 +102,16 @@ void material{{material.id}}_main(
 {% endfor %}
 
 void main() {
-	vec2 uv = fragTexCoordIn;
-
-	uint material_id = texture(material_id_sampler, uv).x;
-	uint node_id = texture(node_id_sampler, uv).x;
-	vec2 huv = texture(uv_id_sampler, uv).xy; 
-	vec4 color;
+	uint material_id = texture(material_id_sampler, in_uv).x;
+	uint node_id = texture(node_id_sampler, in_uv).x;
+	vec2 material_uv = texture(uv_id_sampler, in_uv).xy; 
+	vec4 color = vec4(0.0, 0.0, 0.0, 1.0);
 	vec4 pos = global_uniform.camera_translation;
-	vec4 dir = vec4(1.0 - uv.x * 2.0, uv.y * 2.0 - 1.0, 0.0, 0.0);
+	vec4 dir = vec4(1.0 - in_uv.x * 2.0, in_uv.y * 2.0 - 1.0, 0.0, 0.0);
 	dir.x *= global_uniform.aspect;
 	dir.z = 1.0 / tan(global_uniform.fovy * PI / 360.0f);
 	dir = global_uniform.camera_rotation * normalize(dir) * -1.0;
-	float d = texture(depth_sampler, uv).x;
+	float d = texture(depth_sampler, in_uv).x;
 	d = d * (global_uniform.z_far - global_uniform.z_near) + global_uniform.z_near;
 	vec4 hit_pos = vec4(0.0, 0.0, 0.0, 1.0);
 	vec3 normal;
@@ -123,7 +129,7 @@ void main() {
 		case {{material.id}}:
 			material{{material.id}}_main(
 				color,
-				huv
+				material_uv	
 				{% for declaration in material.declarations %}
 				,
 				{% if declaration.is_texture %}
@@ -138,12 +144,10 @@ void main() {
 		{% endfor %}
 	}
 
-	//color.r = 1.0;
 	color *= scale;
 	color.w = 1.0;
-	//color.xy = huv;
 
-	outNode = node_id;
-	outColor = color;
+	out_node_id = node_id;
+	out_color = color;
 	 
 }

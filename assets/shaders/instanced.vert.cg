@@ -1,8 +1,6 @@
 #version 450
 
-{% macro declaration(decl) %}
-{{decl.uniform_type}} {{decl.name}};
-{% endmacro %}
+{%include "assets/shaders/common.hpp.cg"%}
 
 struct Node {
 	{% for decl in node_declaration %}

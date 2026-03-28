@@ -120,8 +120,8 @@ vec3 rand_unit_vec3(inout uvec4 s) {
 
 {% for material in materials %}
 void material{{material.id}}_main(
-	inout vec4 outColor,
-	inout vec2 fragTexCoord
+	inout vec4 out_color,
+	inout vec2 in_uv
 	{% for declaration in material.declarations %}
 	, in {{declaration.arg_type}} {{declaration.name}}
 	{% endfor %}

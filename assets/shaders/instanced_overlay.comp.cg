@@ -1,8 +1,6 @@
 #version 450
 
-{% macro declaration(decl) %}
-{{decl.uniform_type}} {{decl.name}};
-{% endmacro %}
+{%include "assets/shaders/common.hpp.cg"%}
 
 layout(set = 0, binding = 0, rgba8) uniform image2D result;
 layout(set = 0, binding = 1, r32ui) uniform uimage2D node_id;

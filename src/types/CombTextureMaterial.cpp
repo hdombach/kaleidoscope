@@ -28,8 +28,8 @@ namespace types {
 				ShaderResource::create_texture("combine_texture", comb_texture));
 
 		result->_frag_shader_src =
-			"outColor = texture(primary_texture, fragTexCoord) * (texture(combine_texture, fragTexCoord) * comb_ratio + (1 - comb_ratio));\n"
-			"outColor.w = 1.0;\n";
+			"out_color = texture(primary_texture, in_uv) * (texture(combine_texture, in_uv) * comb_ratio + (1 - comb_ratio));\n"
+			"out_color.w = 1.0;\n";
 
 		return result;
 	}

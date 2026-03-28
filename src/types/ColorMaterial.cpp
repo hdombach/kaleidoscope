@@ -19,7 +19,7 @@ namespace types {
 					result->_color));
 
 		result->_frag_shader_src =
-			"outColor = vec4(color, 1.0);\n";
+			"out_color = vec4(color, 1.0);\n";
 
 		return result;
 	}

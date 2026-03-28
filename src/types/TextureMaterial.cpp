@@ -22,8 +22,8 @@ namespace types {
 				ShaderResource::create_texture("primary_texture", texture));
 
 		result->_frag_shader_src =
-			"outColor = texture(primary_texture, fragTexCoord);\n"
-			"outColor.w = 1.0;\n";
+			"out_color = texture(primary_texture, in_uv);\n"
+			"out_color.w = 1.0;\n";
 
 		return result;
 	}
