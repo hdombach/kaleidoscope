@@ -114,6 +114,7 @@ namespace vulkan {
 		_command_buffer = util::move_ptr(other._command_buffer);
 		_size = other._size;
 		_depth_image = std::move(other._depth_image);
+		_depth_buf_image = std::move(other._depth_buf_image);
 		_material_image = std::move(other._material_image);
 		_result_image = std::move(other._result_image);
 		_node_image = std::move(other._node_image);
@@ -143,6 +144,7 @@ namespace vulkan {
 		_command_buffer = util::move_ptr(other._command_buffer);
 		_size = other._size;
 		_depth_image = std::move(other._depth_image);
+		_depth_buf_image = std::move(other._depth_buf_image);
 		_material_image = std::move(other._material_image);
 		_result_image = std::move(other._result_image);
 		_node_image = std::move(other._node_image);
@@ -224,6 +226,7 @@ namespace vulkan {
 				FrameAttachment::create(_material_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
 				FrameAttachment::create(_node_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
 				FrameAttachment::create(_uv_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+				FrameAttachment::create(_depth_buf_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL).set_clear_value({{1.0f, 0}}),
 				FrameAttachment::create(_depth_image).set_depth(),
 			};
 
@@ -525,6 +528,7 @@ namespace vulkan {
 			FrameAttachment::create(_material_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
 			FrameAttachment::create(_node_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
 			FrameAttachment::create(_uv_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+			FrameAttachment::create(_depth_buf_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL).set_clear_value({{1.0, 0}}),
 			FrameAttachment::create(_depth_image).set_depth()
 		};
 
@@ -572,7 +576,9 @@ namespace vulkan {
 
 		{
 			auto start = log_start_timer();
-			auto args = cg::TemplDict{};
+			auto args = cg::TemplDict{
+				{"global_declarations", GlobalPrevPassUniform::declaration_content},
+			};
 
 			auto source_code = util::readEnvFile("assets/shaders/instanced.frag.cg");
 			if (auto err = cg::TemplGen::codegen(source_code, args, "instanced.frag.cg").move_or(source_code)) {
@@ -594,7 +600,7 @@ namespace vulkan {
 				DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT),
 				DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT),
 				DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT),
-				DescAttachment::create_uniform(VK_SHADER_STAGE_VERTEX_BIT),
+				DescAttachment::create_uniform(VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT),
 			},
 			{
 				DescAttachment::create_storage_buffer(VK_SHADER_STAGE_VERTEX_BIT),
@@ -671,6 +677,7 @@ namespace vulkan {
 					DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT),
 					DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT),
 					DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT),
+					DescAttachment::create_image(VK_SHADER_STAGE_FRAGMENT_BIT),
 					DescAttachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT),
 					DescAttachment::create_images(
 						VK_SHADER_STAGE_FRAGMENT_BIT,
@@ -706,6 +713,24 @@ namespace vulkan {
 		).move_or(_depth_image)) {
 			return Error(ErrorType::VULKAN, "Could not create depth image", err.value());
 		}
+
+		if (auto err = Image::create(
+				_size,
+				_DEPTH_BUF_IMAGE_FORMAT,
+				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
+				| VK_IMAGE_USAGE_STORAGE_BIT
+				| VK_IMAGE_USAGE_SAMPLED_BIT
+		).move_or(_depth_buf_image)) {
+			return Error(ErrorType::VULKAN, "Could not create depth buf image", err.value());
+		}
+
+		Graphics::DEFAULT->transition_image_layout(
+			_depth_buf_image.image(), 
+			_DEPTH_BUF_IMAGE_FORMAT, 
+			VK_IMAGE_LAYOUT_UNDEFINED, 
+			VK_IMAGE_LAYOUT_GENERAL,
+			1
+		);
 
 		if (auto err = Image::create(
 			_size,
@@ -921,9 +946,12 @@ namespace vulkan {
 		attachments[0][3]
 			.add_image(_uv_image)
 			.set_sampler(Graphics::DEFAULT->main_texture_sampler());
-		attachments[0][4].add_buffer(_material_buffer);
-		attachments[0][5].add_images(textures);
-		attachments[0][6].add_buffer(_node_buffer);
+		attachments[0][4]
+			.add_image(_depth_buf_image)
+			.set_sampler(Graphics::DEFAULT->main_texture_sampler());
+		attachments[0][5].add_buffer(_material_buffer);
+		attachments[0][6].add_images(textures);
+		attachments[0][7].add_buffer(_node_buffer);
 
 		if (auto err = DescriptorSets::create(
 				attachments[0],

@@ -173,6 +173,7 @@ namespace vulkan {
 			VkCommandBuffer _command_buffer;
 			VkExtent2D _size;
 			Image _depth_image;
+			Image _depth_buf_image;
 			Image _material_image;
 			Image _result_image;
 			Image _node_image;
@@ -198,6 +199,7 @@ namespace vulkan {
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
 			const static VkFormat _NODE_IMAGE_FORMAT = VK_FORMAT_R16_UINT;
 			const static VkFormat _UV_IMAGE_FORMAT = VK_FORMAT_R32G32_SFLOAT;
+			const static VkFormat _DEPTH_BUF_IMAGE_FORMAT = VK_FORMAT_R8_SRGB;
 
 			/**
 			 * @brief Sets up the render pass

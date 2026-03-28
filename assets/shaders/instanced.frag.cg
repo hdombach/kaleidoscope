@@ -1,5 +1,7 @@
 #version 450
 
+{%include "assets/shaders/common.hpp.cg"%}
+
 layout(location = 0) flat in uint inInstance;
 layout(location = 1) flat in uint inMaterial;
 layout(location = 2) flat in uint inNodeId;
@@ -8,9 +10,17 @@ layout(location = 3) in vec2 in_tex_coord;
 layout(location = 0) out uint outMaterial;
 layout(location = 1) out uint outNodeId;
 layout(location = 2) out vec2 out_tex_coord;
+layout(location = 3) out float out_depth;
+
+layout(set = 0, binding = 3) uniform GlobalUniformBuffer {
+	{% for decl in global_declarations %}
+	{{declaration(decl)}}
+	{% endfor %}
+} global_uniform;
 
 void main() {
 	outMaterial = inMaterial;
 	outNodeId = inNodeId;
 	out_tex_coord = in_tex_coord;
+	out_depth = (gl_FragCoord.z / gl_FragCoord.w - global_uniform.z_near) / (global_uniform.z_far - global_uniform.z_near);
 }

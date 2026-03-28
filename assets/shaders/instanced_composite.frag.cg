@@ -36,23 +36,23 @@ layout(set = 0, binding = 0) uniform GlobalUniformBuffer {
 layout(set = 0, binding = 1) uniform usampler2D node_id_sampler;
 layout(set = 0, binding = 2) uniform usampler2D material_id_sampler;
 layout(set = 0, binding = 3) uniform sampler2D uv_id_sampler;
+layout(set = 0, binding = 4) uniform sampler2D depth_sampler;
 
 {% for material in materials %}
-layout(set = 0, binding = 4) readonly buffer material_buffer{{material.id}}{
+layout(set = 0, binding = 5) readonly buffer material_buffer{{material.id}}{
 	Material{{material.id}} material{{material.id}}[];
 };
 {% endfor %}
 
-layout(set = 0, binding = 5) uniform sampler2D textures[{{texture_count}}];
+layout(set = 0, binding = 6) uniform sampler2D textures[{{texture_count}}];
 
-layout(set = 0, binding = 6) readonly buffer node_buffer {
+layout(set = 0, binding = 7) readonly buffer node_buffer {
 	Node nodes[];
 };
 
 {{ de_funcs() }}
 
 bool intersect_nodes(vec3 pos, vec3 dir, inout float d, inout uint id, inout int iterations, inout vec3 closest_pos, inout vec3 normal) {
-	d = global_uniform.z_far;
 	HitInfo hit_info;
 	hit_info.dist = 3.402823466e+38;
 	bool hit = false;
@@ -65,15 +65,15 @@ bool intersect_nodes(vec3 pos, vec3 dir, inout float d, inout uint id, inout int
 			trans_dir
 		};
 		if (intersect_de(nodes[n].mesh_id, ray, hit_info)) {
-			hit = true;
 			if (hit_info.dist < d) {
+				hit = true;
 				d = hit_info.dist;
 				trans_pos = nodes[n].inverse_transformation * vec4(hit_info.pos, 1.0);
 				hit_info.pos = trans_pos.xyz;
 				iterations = hit_info.iterations;
 				normal = hit_info.normal;
+				id = n;
 			}
-			id = n;
 		}
 	}
 	closest_pos = hit_info.pos.xyz; // TODO undo
@@ -105,7 +105,8 @@ void main() {
 	dir.x *= global_uniform.aspect;
 	dir.z = 1.0 / tan(global_uniform.fovy * PI / 360.0f);
 	dir = global_uniform.camera_rotation * normalize(dir) * -1.0;
-	float d = 0;
+	float d = texture(depth_sampler, uv).x;
+	d = d * (global_uniform.z_far - global_uniform.z_near) + global_uniform.z_near;
 	vec4 hit_pos = vec4(0.0, 0.0, 0.0, 1.0);
 	vec3 normal;
 

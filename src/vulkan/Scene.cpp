@@ -15,6 +15,7 @@ namespace vulkan {
 	{
 		auto scene = Scene::Ptr(new Scene());
 		scene->_resource_manager = &resource_manager; // Needs to be initialized before prev pass
+		scene->_viewport_camera = types::Camera::create(scene->_nodes.get_id());
 
 		if (auto err = RayPass::create(*scene, {50, 500}).move_or(scene->_raytrace_render_pass)) {
 			return Error(ErrorType::MISC, "Could not create raytrace render pass", err.value());
@@ -44,10 +45,8 @@ namespace vulkan {
 			return Error(ErrorType::MISC, "Could not add instanced pass mesh observer", err.value());
 		}
 
-
 		scene->_root = scene->create_virtual_node().value();
 		scene->_root->name() = "root";
-		scene->_viewport_camera = types::Camera::create(scene->_nodes.get_id());
 		scene->_viewport_camera->name() = "Viewport camera";
 
 		return scene;
