@@ -169,12 +169,12 @@ namespace vulkan {
 		
 			Scene *_scene;
 			RenderPass _render_pass;
-			Pipeline _pipeline;
 			RenderPass _composite_render_pass;
+			Pipeline _pipeline;
 			Pipeline _composite_pipeline;
 			Pipeline _overlay_pipeline;
 			DescriptorPool _descriptor_pool;
-			DescriptorSets _shared_descriptor_set;
+			DescriptorSets _main_descriptor_set;
 			DescriptorSets _composite_descriptor_set;
 			DescriptorSets _overlay_descriptor_set;
 			StaticBuffer _material_buffer;
@@ -188,7 +188,7 @@ namespace vulkan {
 			Image _material_image;
 			Image _result_image;
 			Image _node_image;
-			Image _node_image2;
+			Image _node_image_post;
 			Image _uv_image;
 			MappedOverlayUniform _overlay_uniform;
 			MappedPrevPassUniform _prim_uniform;
@@ -214,16 +214,15 @@ namespace vulkan {
 			const static VkFormat _DEPTH_BUF_IMAGE_FORMAT = VK_FORMAT_R8_SRGB;
 
 			/**
-			 * @brief Sets up the render pass
-			 * Does not depend on any other components to be initialized
+			 * @brief Sets up all the resources needed to render
 			 */
-			util::Result<RenderPass, Error> _create_render_pass();
+			util::Result<void, Error> _regenerate();
 
 			/**
 			 * @brief Sets up the pipeline
 			 * Requires the descriptor set and render pass to be initialized.
 			 */
-			util::Result<void, Error> _create_pipeline(Pipeline &pipeline);
+			util::Result<void, Error> _create_pipeline();
 
 			/**
 			 * @brief Sets up the pipeline for the composite pipeline
@@ -239,6 +238,21 @@ namespace vulkan {
 			 * @brief Creates the depth and material images
 			 */
 			util::Result<void, Error> _create_images();
+
+			/**
+			 * @brief Creates the framebuffer attachments for the main render pass
+			 */
+			std::vector<FrameAttachment> _frame_attachments();
+
+			/**
+			 * @brief Creates the framebuffer attachments for the composite render apss
+			 */
+			std::vector<FrameAttachment> _composite_frame_attachments();
+
+			/**
+			 * @brief Creates the node buffer needed for the composite render pass
+			 */
+			util::Result<void, Error> _create_nodes();
 
 			/**
 			 * @brief Destroys all the images that are used
@@ -266,8 +280,6 @@ namespace vulkan {
 			util::Result<void, Error> _create_composite_descriptor_set();
 
 			util::Result<void, Error> _create_overlay_descriptor_set();
-
-			util::Result<void, Error> _create_uniform();
 
 			std::string _codegen_composite();
 	};

@@ -63,40 +63,8 @@ namespace vulkan {
 			return Error(ErrorType::MISC, "Could not create command buffer", err.value());
 		}
 
-		if (auto err = p->_create_images().move_or()) {
-			return Error(ErrorType::MISC, "Could not create images", err.value());
-		}
-
-		if (auto err = p->_create_uniform().move_or()) {
-			return Error(ErrorType::MISC, "Could not create uniform", err.value());
-		}
-
-		if (auto err = p->_create_render_pass().move_or(p->_render_pass)) {
-			return Error(ErrorType::MISC, "Could not create render pass", err.value());
-		}
-
-		if (auto err = p->_create_pipeline(p->_pipeline).move_or()) {
-			return Error(ErrorType::MISC, "Could not create pipeline", err.value());
-		}
-
-		if (auto err = p->_create_descriptor_set().move_or()) {
-			return Error(ErrorType::MISC, "Could not create the descriptor set", err.value());
-		}
-
-		if (auto err = p->_create_composite_pipeline().move_or()) {
-			return Error(ErrorType::MISC, "Could not create composite pipeline", err.value());
-		}
-
-		if (auto err = p->_create_composite_descriptor_set().move_or()) {
-			return Error(ErrorType::MISC, "Could not create composite descriptor set", err.value());
-		}
-
-		if (auto err = p->_create_overlay_pipeline().move_or()) {
-			return Error(ErrorType::MISC, "Could not create overlay pipeline", err.value());
-		}
-
-		if (auto err = p->_create_overlay_descriptor_set().move_or()) {
-			return Error(ErrorType::MISC, "Could not create overlay descriptor set", err.value());
+		if (auto err = p->_regenerate().move_or()) {
+			return Error(ErrorType::MISC, "Could not create resources needed rendering preview", err.value());
 		}
 
 		return std::move(p);
@@ -110,10 +78,12 @@ namespace vulkan {
 
 		_scene = util::move_ptr(_scene);
 		_render_pass = std::move(other._render_pass);
+		_composite_render_pass = std::move(other._composite_render_pass);
 		_pipeline = std::move(other._pipeline);
 		_composite_pipeline = std::move(other._composite_pipeline);
+		_overlay_pipeline = std::move(other._overlay_pipeline);
 		_descriptor_pool = std::move(other._descriptor_pool);
-		_shared_descriptor_set = std::move(other._shared_descriptor_set);
+		_main_descriptor_set = std::move(other._main_descriptor_set);
 		_composite_descriptor_set = std::move(other._composite_descriptor_set);
 		_overlay_descriptor_set = std::move(other._overlay_descriptor_set);
 		_material_buffer = std::move(other._material_buffer);
@@ -127,14 +97,19 @@ namespace vulkan {
 		_material_image = std::move(other._material_image);
 		_result_image = std::move(other._result_image);
 		_node_image = std::move(other._node_image);
-		_node_image2 = std::move(other._node_image2);
+		_node_image_post = std::move(other._node_image_post);
+		_uv_image = std::move(other._uv_image);
 		_overlay_uniform = std::move(other._overlay_uniform);
 		_prim_uniform = std::move(other._prim_uniform);
 		_imgui_descriptor_set = std::move(other._imgui_descriptor_set);
+
+		_size_dirty_bit = other._size_dirty_bit;
 		_material_dirty_bit = other._material_dirty_bit;
 	}
 
 	InstancedPass &InstancedPass::operator=(InstancedPass &&other) {
+		destroy();
+
 		_meshes = std::move(other._meshes);
 		_nodes = std::move(other._nodes);
 		_mesh_observer = std::move(other._mesh_observer);
@@ -142,10 +117,12 @@ namespace vulkan {
 
 		_scene = util::move_ptr(_scene);
 		_render_pass = std::move(other._render_pass);
+		_composite_render_pass = std::move(other._composite_render_pass);
 		_pipeline = std::move(other._pipeline);
 		_composite_pipeline = std::move(other._composite_pipeline);
+		_overlay_pipeline = std::move(other._overlay_pipeline);
 		_descriptor_pool = std::move(other._descriptor_pool);
-		_shared_descriptor_set = std::move(other._shared_descriptor_set);
+		_main_descriptor_set = std::move(other._main_descriptor_set);
 		_composite_descriptor_set = std::move(other._composite_descriptor_set);
 		_overlay_descriptor_set = std::move(other._overlay_descriptor_set);
 		_material_buffer = std::move(other._material_buffer);
@@ -159,10 +136,13 @@ namespace vulkan {
 		_material_image = std::move(other._material_image);
 		_result_image = std::move(other._result_image);
 		_node_image = std::move(other._node_image);
-		_node_image2 = std::move(other._node_image2);
+		_node_image_post = std::move(other._node_image_post);
+		_uv_image = std::move(other._uv_image);
 		_overlay_uniform = std::move(other._overlay_uniform);
 		_prim_uniform = std::move(other._prim_uniform);
 		_imgui_descriptor_set = std::move(other._imgui_descriptor_set);
+
+		_size_dirty_bit = other._size_dirty_bit;
 		_material_dirty_bit = other._material_dirty_bit;
 
 		return *this;
@@ -171,16 +151,21 @@ namespace vulkan {
 	void InstancedPass::destroy() {
 		_meshes.clear();
 		_nodes.clear();
+		_scene = nullptr;
+		_render_pass.destroy();
+		_composite_render_pass.destroy();
 		_pipeline.destroy();
 		_composite_pipeline.destroy();
-		_shared_descriptor_set.destroy();
-		_composite_descriptor_set.destroy();
-		_material_buffer.destroy();
+		_overlay_pipeline.destroy();
 		_descriptor_pool.destroy();
-		_render_pass.destroy();
-		_pipeline.destroy();
+		_main_descriptor_set.destroy();
+		_composite_descriptor_set.destroy();
+		_overlay_descriptor_set.destroy();
+		_material_buffer.destroy();
+		_node_buffer.destroy();
 		_fence.destroy();
 		_semaphore.destroy();
+		_command_buffer = nullptr;
 		_destroy_images();
 		_overlay_uniform.destroy();
 		_prim_uniform.destroy();
@@ -205,6 +190,11 @@ namespace vulkan {
 		VkResult r;
 
 		if (_size.width == 0 || _size.height == 0) return nullptr;
+
+		if (auto err = _regenerate().move_or()) {
+			log_error() << "Could not create resources required for render preview:\n" << err.value();
+			return nullptr;
+		}
 
 		if ((r = _fence.wait()) != VK_SUCCESS) {
 			log_error() << "Problem waiting on fence: " << VkError::type_str(r) << std::endl;
@@ -255,7 +245,7 @@ namespace vulkan {
 
 			attachments = std::vector{
 					FrameAttachment::create(_result_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
-					FrameAttachment::create(_node_image2).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+					FrameAttachment::create(_node_image_post).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
 			};
 
 			if (auto err = _composite_render_pass.resize(std::move(attachments)).move_or()) {
@@ -309,7 +299,7 @@ namespace vulkan {
 			if (mesh.instance_count() == 0) continue;
 
 			auto descriptor_sets = std::array{
-				_shared_descriptor_set.descriptor_set(),
+				_main_descriptor_set.descriptor_set(),
 				mesh.descriptor_set().descriptor_set()
 			};
 
@@ -568,27 +558,120 @@ namespace vulkan {
 		_material_dirty_bit = true;
 	}
 
-	util::Result<RenderPass, Error> InstancedPass::_create_render_pass() {
-		auto frame_attachments = std::vector{
-			FrameAttachment::create(_material_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
-			FrameAttachment::create(_node_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
-			FrameAttachment::create(_uv_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
-			FrameAttachment::create(_depth_buf_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL).set_clear_value({{1.0, 0}}),
-			FrameAttachment::create(_depth_image).set_depth()
-		};
+	util::Result<void, Error> InstancedPass::_regenerate() {
+		bool main_framebuffer = false;
+		bool composite_framebuffer = false;
 
-		RenderPass render_pass;
-
-		if (auto err = RenderPass::create(std::move(frame_attachments)).move_or(render_pass)) {
-			return Error(ErrorType::MISC, "Could not create instanced pass render pass", err.value());
+		if (!_result_image.has_value()) {
+			//Assuming all images are destroyed together
+			// Regenerate render pass
+			_render_pass.destroy();
+			_composite_render_pass.destroy();
+			main_framebuffer = true;
+			composite_framebuffer = true;
+			if (auto err = _create_images().move_or()) {
+				return Error(ErrorType::SHADER_RESOURCE, "Could not recreate images");
+			}
 		}
 
-		return render_pass;
+		if (!_prim_uniform.has_value()) {
+			if (auto err = MappedPrevPassUniform::create().move_or(_prim_uniform)) {
+				return Error(ErrorType::SHADER_RESOURCE, "Could not create primary uniform", err.value());
+			}
+		}
+
+		if (!_overlay_uniform.has_value()) {
+			if (auto err = MappedOverlayUniform::create().move_or(_overlay_uniform)) {
+				return Error(ErrorType::SHADER_RESOURCE, "Could not create overlay uniform", err.value());
+			}
+		}
+
+		if (!_material_buffer.has_value()) {
+			//Regenerate descriptor pass
+			_composite_descriptor_set.destroy();
+			if (auto err = create_material_buffer(*_scene).move_or(_material_buffer)) {
+				return Error(ErrorType::MISC, "Problem creating material buffer for composite render pass", err.value());
+			}
+		}
+
+		if (!_node_buffer.has_value()) {
+			// Regenerate composite descriptor pass
+			_composite_descriptor_set.destroy();
+			if (auto err = _create_nodes().move_or()) {
+				return Error(
+					ErrorType::SHADER_RESOURCE,
+					"Problem creating node buffer for composite render pass",
+					err.value()
+				);
+			}
+		}
+
+		if (!_render_pass.has_value()) {
+			main_framebuffer = false;
+			if (auto err = RenderPass::create(_frame_attachments()).move_or(_render_pass)) {
+				return Error(ErrorType::MISC, "Could not create main render pass", err.value());
+			}
+		}
+
+		if (!_pipeline.has_value()) {
+			if (auto err = _create_pipeline().move_or()) {
+				return Error(ErrorType::SHADER_RESOURCE, "Could not create pipeline", err.value());
+			}
+		}
+
+		if (!_composite_render_pass.has_value()) {
+			composite_framebuffer = false;
+			if (auto err = RenderPass::create(_composite_frame_attachments()).move_or(_composite_render_pass)) {
+				return Error(ErrorType::MISC, "Could not create composite render pass", err.value());
+			}
+		}
+
+		if (!_composite_pipeline.has_value()) {
+			if (auto err = _create_composite_pipeline().move_or()) {
+				return Error(ErrorType::SHADER_RESOURCE, "Could not create composite pipeline", err.value());
+			}
+		}
+
+		if (!_overlay_pipeline.has_value()) {
+			if (auto err = _create_overlay_pipeline().move_or()) {
+				return Error(ErrorType::SHADER_RESOURCE, "Could not create overlay pipeline", err.value());
+			}
+		}
+
+		if (main_framebuffer) {
+			if (auto err = _render_pass.resize(_frame_attachments()).move_or()) {
+				return Error(ErrorType::SHADER_RESOURCE, "Could not resize main framebuffer", err.value());
+			}
+		}
+
+		if (composite_framebuffer) {
+			if (auto err = _composite_render_pass.resize(_frame_attachments()).move_or()) {
+				return Error(ErrorType::SHADER_RESOURCE, "Could not resize composite framebuffer", err.value());
+			}
+		}
+
+		if (!_main_descriptor_set.has_value()) {
+			if (auto err = _create_descriptor_set().move_or()) {
+				return Error(ErrorType::SHADER_RESOURCE, "Could not create descriptor set for main render pipeline", err.value());
+			}
+		}
+
+		if (!_composite_descriptor_set.has_value()) {
+			if (auto err = _create_composite_descriptor_set().move_or()) {
+				return Error(ErrorType::SHADER_RESOURCE, "Could not create descriptor set for composite render pipeline", err.value());
+			}
+		}
+
+		if (!_overlay_descriptor_set.has_value()) {
+			if (auto err = _create_overlay_descriptor_set().move_or()) {
+				return Error(ErrorType::SHADER_RESOURCE, "Could not create descriptor set for overlay compute pipeline", err.value());
+			}
+		}
+
+		return {};
 	}
 
-	util::Result<void, Error> InstancedPass::_create_pipeline(
-		Pipeline &pipeline
-	) {
+	util::Result<void, Error> InstancedPass::_create_pipeline() {
 		_pipeline.destroy();
 
 		Shader vert_shader, frag_shader;
@@ -705,17 +788,6 @@ namespace vulkan {
 		}
 
 		{
-			auto frame_attachments = std::vector{
-				FrameAttachment::create(_result_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
-				FrameAttachment::create(_node_image2).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
-			};
-
-			if (auto err = RenderPass::create(
-					std::move(frame_attachments)
-			).move_or(_composite_render_pass)) {
-				return Error(ErrorType::MISC, "Could not create instanced pass composite render pass", err.value());
-			}
-
 			auto desc_attributes = Pipeline::Attachments{
 				{
 					DescAttachment::create_uniform(VK_SHADER_STAGE_FRAGMENT_BIT),
@@ -874,12 +946,12 @@ namespace vulkan {
 				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 				| VK_IMAGE_USAGE_STORAGE_BIT
 				| VK_IMAGE_USAGE_SAMPLED_BIT
-		).move_or(_node_image2)) {
+		).move_or(_node_image_post)) {
 			return Error(ErrorType::VULKAN, "Could not create node id image", err.value());
 		}
 
 		Graphics::DEFAULT->transition_image_layout(
-			_node_image2.image(),
+			_node_image_post.image(),
 			_RESULT_IMAGE_FORMAT,
 			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_GENERAL,
@@ -913,12 +985,64 @@ namespace vulkan {
 		return {};
 	}
 
+	std::vector<FrameAttachment> InstancedPass::_frame_attachments() {
+		return {
+			FrameAttachment::create(_material_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+			FrameAttachment::create(_node_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+			FrameAttachment::create(_uv_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+			FrameAttachment::create(_depth_buf_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL).set_clear_value({{1.0f, 0}}),
+			FrameAttachment::create(_depth_image).set_depth(),
+		};
+	}
+
+	std::vector<FrameAttachment> InstancedPass::_composite_frame_attachments() {
+		return {
+			FrameAttachment::create(_result_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+			FrameAttachment::create(_node_image_post).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+		};
+	}
+
+	util::Result<void, Error> InstancedPass::_create_nodes() {
+		using VImpl = InstancedPassNode::VImpl;
+
+		auto nodes = std::vector<VImpl>();
+
+		for (auto &node : _nodes.raw()) {
+			if (!node) {
+				nodes.push_back(VImpl::create_empty());
+				continue;
+			}
+			if (node.node().type() != vulkan::Node::Type::Object) {
+				nodes.push_back(VImpl::create_empty());
+				continue;
+			}
+			if (node && node.mesh().is_de()) {
+				nodes.push_back(node.vimpl());
+			} else {
+				nodes.push_back(VImpl::create_empty());
+			}
+		}
+
+		if (_nodes.size() == 0) {
+			nodes.push_back(VImpl::create_empty());
+		}
+
+		if (auto err = StaticBuffer::create(nodes).move_or(_node_buffer)) {
+			if (err->type() != vulkan::ErrorType::EMPTY_BUFFER) {
+				log_error() << err.value() << std::endl;
+			}
+			return Error(ErrorType::SHADER_RESOURCE, "Could not create node buffer", err.value());
+		}
+
+		return {};
+	}
+
 	void InstancedPass::_destroy_images() {
 		_depth_image.destroy();
 		_material_image.destroy();
 		_result_image.destroy();
 		_node_image.destroy();
-		_node_image2.destroy();
+		_node_image_post.destroy();
 	}
 
 	util::Result<VkCommandBuffer, Error> InstancedPass::_create_command_buffer() {
@@ -966,7 +1090,7 @@ namespace vulkan {
 				attachments[0],
 				_pipeline.layouts()[0],
 				_descriptor_pool
-		).move_or(_shared_descriptor_set)) {
+		).move_or(_main_descriptor_set)) {
 			return Error(ErrorType::MISC, "Could not create InstancedPass descriptor set", err.value());
 		}
 		return {};
@@ -982,41 +1106,6 @@ namespace vulkan {
 		if (auto err = create_material_buffer(*_scene).move_or(_material_buffer)) {
 			return Error(ErrorType::MISC, "Problem creating material buffer for composite render pass", err.value());
 		}
-
-		{
-			using VImpl = InstancedPassNode::VImpl;
-
-			auto nodes = std::vector<VImpl>();
-
-			for (auto &node : _nodes.raw()) {
-				if (!node) {
-					nodes.push_back(VImpl::create_empty());
-					continue;
-				}
-				if (node.node().type() != vulkan::Node::Type::Object) {
-					nodes.push_back(VImpl::create_empty());
-					continue;
-				}
-				if (node && node.mesh().is_de()) {
-					nodes.push_back(node.vimpl());
-				} else {
-					nodes.push_back(VImpl::create_empty());
-				}
-			}
-
-			if (_nodes.size() == 0) {
-				nodes.push_back(VImpl::create_empty());
-			}
-
-			if (auto err = StaticBuffer::create(nodes).move_or(_node_buffer)) {
-				if (err->type() != vulkan::ErrorType::EMPTY_BUFFER) {
-					log_error() << err.value() << std::endl;
-				}
-				return Error(ErrorType::SHADER_RESOURCE, "Could not create node buffer", err.value());
-			}
-		}
-
-
 
 		attachments[0][0].add_uniform(_prim_uniform);
 		attachments[0][1]
@@ -1050,7 +1139,7 @@ namespace vulkan {
 		auto attachments = _overlay_pipeline.attachments();
 
 		attachments[0][0].add_image_target(_result_image.image_view());
-		attachments[0][1].add_image_target(_node_image2.image_view());
+		attachments[0][1].add_image_target(_node_image_post.image_view());
 		attachments[0][2].add_uniform(_overlay_uniform);
 
 		if (auto err = DescriptorSets::create(
@@ -1063,19 +1152,6 @@ namespace vulkan {
 
 		return {};
 	}
-
-	util::Result<void, Error> InstancedPass::_create_uniform() {
-		if (auto err = MappedPrevPassUniform::create().move_or(_prim_uniform)) {
-			return Error(ErrorType::SHADER_RESOURCE, "Could not create uniform", err.value());
-		}
-
-		if (auto err = MappedOverlayUniform::create().move_or(_overlay_uniform)) {
-			return Error(ErrorType::SHADER_RESOURCE, "Could not create overlay uniform", err.value());
-		}
-
-		return {};
-	}
-
 
 	std::string InstancedPass::_codegen_composite() {
 		auto src_code = util::readEnvFile("assets/shaders/instanced_composite.frag.cg");

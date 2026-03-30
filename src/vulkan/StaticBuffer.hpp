@@ -52,13 +52,13 @@ namespace vulkan {
 			void destroy();
 			~StaticBuffer();
 
-			VkBuffer buffer() { return _buffer; }
-			const VkBuffer buffer() const { return _buffer; }
-			VkDeviceSize range() const { return _range; }
+			VkBuffer buffer();
+			const VkBuffer buffer() const;
+			VkDeviceSize range() const;
 
-			operator bool() const {
-				return _buffer != nullptr;
-			}
+			bool has_value() const;
+
+			operator bool() const;
 
 		private:
 			VkBuffer _buffer;

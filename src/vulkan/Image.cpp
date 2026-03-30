@@ -181,6 +181,14 @@ namespace vulkan {
 		return *this;
 	}
 
+	bool Image::has_value() const {
+		return _image != nullptr;
+	}
+
+	Image::operator bool() const {
+		return has_value();
+	}
+
 	void Image::destroy() {
 		if (_image) {
 			vkDestroyImage(Graphics::DEFAULT->device(), _image, nullptr);

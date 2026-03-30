@@ -183,6 +183,8 @@ namespace vulkan {
 			return Error(ErrorType::MISC, "Could not allocate node buffer for InstancedPassMesh.", err.value());
 		}
 
+		log_assert(_instanced_pass->has_value(), "Instanced pass must be initialized");
+
 		auto attachments = _instanced_pass->mesh_descriptor_set_layout().desc_attachments();
 		log_assert(attachments.size() >= 1, "There are not enough desc attachments");
 		attachments[0].add_buffer(_node_buffer);

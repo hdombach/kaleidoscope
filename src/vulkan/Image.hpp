@@ -34,7 +34,8 @@ namespace vulkan {
 			Image& operator=(const Image& other) = delete;
 			Image& operator=(Image &&other);
 
-			bool empty() const;
+			bool has_value() const;
+			operator bool() const;
 
 			void destroy();
 			~Image();

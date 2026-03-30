@@ -104,4 +104,18 @@ namespace vulkan {
 	StaticBuffer::~StaticBuffer() {
 		destroy();
 	}
+
+	VkBuffer StaticBuffer::buffer() { return _buffer; }
+
+	const VkBuffer StaticBuffer::buffer() const { return _buffer; }
+
+	VkDeviceSize StaticBuffer::range() const { return _range; }
+
+	bool StaticBuffer::has_value() const {
+		return _buffer != nullptr;
+	}
+
+	StaticBuffer::operator bool() const {
+		return has_value();
+	}
 }
