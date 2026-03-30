@@ -191,11 +191,6 @@ namespace vulkan {
 
 		if (_size.width == 0 || _size.height == 0) return nullptr;
 
-		if (auto err = _regenerate().move_or()) {
-			log_error() << "Could not create resources required for render preview:\n" << err.value();
-			return nullptr;
-		}
-
 		if ((r = _fence.wait()) != VK_SUCCESS) {
 			log_error() << "Problem waiting on fence: " << VkError::type_str(r) << std::endl;
 		}
@@ -203,54 +198,9 @@ namespace vulkan {
 			log_error() << "Problem reseting fence: " << VkError::type_str(r) << std::endl;
 		}
 
-		if (_material_dirty_bit) {
-			if (auto err = _create_composite_descriptor_set().move_or()) {
-				log_error() << "Couldn't update material buffer: \n" << err.value();
-			}
-			_material_dirty_bit = false;
-		}
-
-		if (_size_dirty_bit) {
-			_size_dirty_bit = false;
-			Graphics::DEFAULT->wait_idle();
-			if (auto err = _create_images().move_or()) {
-				log_error() << "Could not create images for instanced pass." << std::endl << err.value();
-			}
-
-			if (auto err = _create_descriptor_set().move_or()) {
-				log_error() << "Could not create descriptor set while resizing instanced pass."
-					<< std::endl << err.value();
-			}
-
-			if (auto err = _create_composite_descriptor_set().move_or()) {
-				log_error() << "Could not create composite descriptor set while resizing instanced pass."
-					<< std::endl << err.value();
-			}
-
-			if (auto err = _create_overlay_descriptor_set().move_or()) {
-				log_error() << "Could not create overlay descriptor set." << std::endl << err.value();
-			}
-
-			auto attachments = std::vector{
-				FrameAttachment::create(_material_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
-				FrameAttachment::create(_node_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
-				FrameAttachment::create(_uv_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
-				FrameAttachment::create(_depth_buf_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL).set_clear_value({{1.0f, 0}}),
-				FrameAttachment::create(_depth_image).set_depth(),
-			};
-
-			if (auto err = _render_pass.resize(std::move(attachments)).move_or()) {
-				log_error() << "could not resize framebuffer in instanced pass." << std::endl << err.value();
-			}
-
-			attachments = std::vector{
-					FrameAttachment::create(_result_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
-					FrameAttachment::create(_node_image_post).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
-			};
-
-			if (auto err = _composite_render_pass.resize(std::move(attachments)).move_or()) {
-				log_error() << "could not resize framebuffer in composite instanced pass." << std::endl << err.value();
-			}
+		if (auto err = _regenerate().move_or()) {
+			log_error() << "Could not create resources required for render preview:\n" << err.value();
+			return nullptr;
 		}
 
 		util::require(vkResetCommandBuffer(_command_buffer, 0));
@@ -461,9 +411,8 @@ namespace vulkan {
 	void InstancedPass::resize(VkExtent2D size) {
 		if (_size.width == size.width && _size.height == size.height) return;
 
+		_destroy_images();
 		_size = size;
-		_size_dirty_bit = true;
-
 	}
 
 	VkExtent2D InstancedPass::size() const {
@@ -505,7 +454,7 @@ namespace vulkan {
 		auto &mesh = _meshes[raw_node->mesh().id()];
 		mesh.add_node(*raw_node);
 		_nodes[id].registered_mesh = mesh.id();
-		_material_dirty_bit = true;
+		_material_buffer.destroy();
 	}
 
 	void InstancedPass::node_update(uint32_t id) {
