@@ -477,7 +477,8 @@ namespace vulkan {
 		if (auto err = DescriptorSets::create(
 				attachments[0],
 				_pipeline.layouts()[0],
-				_descriptor_pool
+				_descriptor_pool,
+				"Ray pass"
 		).move_or(_descriptor_set)) {
 			return Error(ErrorType::MISC, "Could not create ray pass descriptor set", err.value());
 		}
@@ -533,9 +534,9 @@ namespace vulkan {
 			VK_FORMAT_R8G8B8A8_SRGB,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 				| VK_IMAGE_USAGE_STORAGE_BIT
-				| VK_IMAGE_USAGE_SAMPLED_BIT
-			).move_or(_result_image)
-		) {
+				| VK_IMAGE_USAGE_SAMPLED_BIT,
+				"Raypass render target"
+		).move_or(_result_image)) {
 			return Error(ErrorType::VULKAN, "Could not create result image", err.value());
 		}
 
@@ -560,8 +561,9 @@ namespace vulkan {
 			VK_FORMAT_R16G16B16A16_SFLOAT,
 			VK_IMAGE_USAGE_STORAGE_BIT
 				| VK_IMAGE_USAGE_SAMPLED_BIT
-				| VK_IMAGE_USAGE_TRANSFER_DST_BIT) .move_or(_accumulator_image)
-		) {
+				| VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+			"Raypass accumulator"
+		).move_or(_accumulator_image)) {
 			return Error(ErrorType::VULKAN, "Could not create accumulator image", err.value());
 		}
 

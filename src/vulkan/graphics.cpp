@@ -169,6 +169,14 @@ namespace vulkan {
 	
 	}
 
+	void Graphics::set_debug_name(VkImage image, std::string const &name) {
+		_set_debug_name(VK_OBJECT_TYPE_IMAGE, image, name);
+	}
+
+	void Graphics::set_debug_name(VkDescriptorSet descriptor_set, std::string const &name) {
+		_set_debug_name(VK_OBJECT_TYPE_DESCRIPTOR_SET, descriptor_set, name);
+	}
+
 	Graphics::Graphics():
 		_name(nullptr),
 		_window(nullptr),
@@ -201,6 +209,9 @@ namespace vulkan {
 		if (auto err = _create_instance().move_or()) {
 			log_fatal_error(err.value());
 		}
+		_set_obj_name = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(
+			vkGetInstanceProcAddr(_instance, "vkSetDebugUtilsObjectNameEXT")
+		);
 		if (auto err = _setup_debug_messenger().move_or()) {
 			log_fatal_error(err.value());
 		}
@@ -959,6 +970,22 @@ namespace vulkan {
 		}
 
 		return VK_FALSE;
+	}
+
+	void Graphics::_set_debug_name(VkObjectType type, void *addr, std::string const &name) {
+		auto name_info = VkDebugUtilsObjectNameInfoEXT{
+			.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+			.pNext = nullptr,
+			.objectType = type,
+			.objectHandle = reinterpret_cast<uint64_t>(addr),
+			.pObjectName = name.c_str()
+		};
+
+		auto res = _set_obj_name(_device, &name_info);
+		if (res != VK_SUCCESS) {
+			log_error() << "Could not set debug name " << name
+				<< " for object of type " << type << std::endl;
+		}
 	}
 
 	void Graphics::_destroy_debug_utils_messenger_EXT(

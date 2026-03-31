@@ -59,6 +59,7 @@ namespace vulkan {
 				VK_IMAGE_USAGE_TRANSFER_SRC_BIT
 				| VK_IMAGE_USAGE_TRANSFER_DST_BIT
 				| VK_IMAGE_USAGE_SAMPLED_BIT,
+				std::filesystem::path(url).filename(),
 				VK_IMAGE_ASPECT_COLOR_BIT,
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT).move_or(result->_image)
 			) {

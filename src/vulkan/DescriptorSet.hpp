@@ -90,7 +90,8 @@ namespace vulkan {
 			static util::Result<DescriptorSets, Error> create(
 				std::vector<DescAttachment> &attachments,
 				DescriptorSetLayout const &layout,
-				DescriptorPool const &pool
+				DescriptorPool const &pool,
+				std::string const &debug_name
 			);
 
 			DescriptorSets(const DescriptorSets &other) = delete;

@@ -87,6 +87,9 @@ namespace vulkan {
 					VkDeviceSize size) const;
 			void execute_single_time_command(std::function<void(VkCommandBuffer)>) const;
 
+			void set_debug_name(VkImage image, std::string const &name);
+			void set_debug_name(VkDescriptorSet descriptor_set, std::string const &name);
+
 			struct SwapchainSupportDetails {
 				VkSurfaceCapabilitiesKHR capabilities;
 				std::vector<VkSurfaceFormatKHR> formats;
@@ -178,6 +181,8 @@ namespace vulkan {
 				const VkDebugUtilsMessengerCallbackDataEXT * p_callback_data,
 				void* p_user_data);
 
+			void _set_debug_name(VkObjectType type, void *addr, std::string const &name);
+
 		private:
 			const char *_name;
 			GLFWwindow* _window;
@@ -195,6 +200,7 @@ namespace vulkan {
 			Sampler _main_sampler;
 			Sampler _near_sampler;
 			SwapchainSupportDetails _swapchain_support_details;
+			PFN_vkSetDebugUtilsObjectNameEXT _set_obj_name;
 
 			//imgui stuff
 			bool _framebuffer_resized = false;

@@ -811,6 +811,7 @@ namespace vulkan {
 			_depth_format(),
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
 			| VK_IMAGE_USAGE_SAMPLED_BIT,
+			"InstancedPass depth buffer",
 			VK_IMAGE_ASPECT_DEPTH_BIT,
 			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
 		).move_or(_depth_image)) {
@@ -822,7 +823,8 @@ namespace vulkan {
 				_DEPTH_BUF_IMAGE_FORMAT,
 				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 				| VK_IMAGE_USAGE_STORAGE_BIT
-				| VK_IMAGE_USAGE_SAMPLED_BIT
+				| VK_IMAGE_USAGE_SAMPLED_BIT,
+				"Instanced pass depth sample buffer"
 		).move_or(_depth_buf_image)) {
 			return Error(ErrorType::VULKAN, "Could not create depth buf image", err.value());
 		}
@@ -840,7 +842,8 @@ namespace vulkan {
 			_MATERIAL_IMAGE_FORMAT,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 			| VK_IMAGE_USAGE_STORAGE_BIT
-			| VK_IMAGE_USAGE_SAMPLED_BIT
+			| VK_IMAGE_USAGE_SAMPLED_BIT,
+			"Instanced pass material"
 		).move_or(_material_image)) {
 			return Error(ErrorType::VULKAN, "Could not create material image", err.value());
 		}
@@ -858,7 +861,8 @@ namespace vulkan {
 			_RESULT_IMAGE_FORMAT,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 			| VK_IMAGE_USAGE_STORAGE_BIT
-			| VK_IMAGE_USAGE_SAMPLED_BIT
+			| VK_IMAGE_USAGE_SAMPLED_BIT,
+			"Instanced pass result"
 		).move_or(_result_image)) {
 			return Error(ErrorType::VULKAN, "Could not create result image", err.value());
 		}
@@ -876,7 +880,8 @@ namespace vulkan {
 				_NODE_IMAGE_FORMAT,
 				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 				| VK_IMAGE_USAGE_STORAGE_BIT
-				| VK_IMAGE_USAGE_SAMPLED_BIT
+				| VK_IMAGE_USAGE_SAMPLED_BIT,
+				"Instanced pass node id"
 		).move_or(_node_image)) {
 			return Error(ErrorType::VULKAN, "Could not create node id image", err.value());
 		}
@@ -894,7 +899,8 @@ namespace vulkan {
 				_NODE_IMAGE_FORMAT,
 				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 				| VK_IMAGE_USAGE_STORAGE_BIT
-				| VK_IMAGE_USAGE_SAMPLED_BIT
+				| VK_IMAGE_USAGE_SAMPLED_BIT,
+				"Instanced pass node id post DE"
 		).move_or(_node_image_post)) {
 			return Error(ErrorType::VULKAN, "Could not create node id image", err.value());
 		}
@@ -912,7 +918,8 @@ namespace vulkan {
 				_UV_IMAGE_FORMAT,
 				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 				| VK_IMAGE_USAGE_STORAGE_BIT
-				| VK_IMAGE_USAGE_SAMPLED_BIT
+				| VK_IMAGE_USAGE_SAMPLED_BIT,
+				"Instanced pass UV"
 		).move_or(_uv_image)) {
 			return Error(ErrorType::VULKAN, "Could not create uv image", err.value());
 		}
@@ -1038,7 +1045,8 @@ namespace vulkan {
 		if (auto err = DescriptorSets::create(
 				attachments[0],
 				_pipeline.layouts()[0],
-				_descriptor_pool
+				_descriptor_pool,
+				"Shared instanced pass deferred"
 		).move_or(_main_descriptor_set)) {
 			return Error(ErrorType::MISC, "Could not create InstancedPass descriptor set", err.value());
 		}
@@ -1076,7 +1084,8 @@ namespace vulkan {
 		if (auto err = DescriptorSets::create(
 				attachments[0],
 				_composite_pipeline.layouts()[0],
-				_descriptor_pool
+				_descriptor_pool,
+				"Instanced composite pass"
 		).move_or(_composite_descriptor_set)) {
 			return Error(ErrorType::MISC, "Could not create compposte instanced pass descriptor set", err.value());
 		}
@@ -1094,7 +1103,8 @@ namespace vulkan {
 		if (auto err = DescriptorSets::create(
 				attachments[0],
 				_overlay_pipeline.layouts()[0],
-				_descriptor_pool
+				_descriptor_pool,
+				"Instanced overlay pass"
 		).move_or(_overlay_descriptor_set)) {
 			return Error(ErrorType::MISC, "Could not create overlay pass descriptor set", err.value());
 		}

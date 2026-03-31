@@ -130,7 +130,8 @@ namespace vulkan {
 	util::Result<DescriptorSets, Error> DescriptorSets::create(
 		std::vector<DescAttachment> &attachments,
 		DescriptorSetLayout const &layout,
-		DescriptorPool const &pool
+		DescriptorPool const &pool,
+		std::string const &debug_name
 	) {
 		if (!layout.has_value()) {
 			return Error(ErrorType::INVALID_ARG, "Layout must be initialized");
@@ -160,6 +161,13 @@ namespace vulkan {
 				"Cannot allocate descriptor sets",
 				VkError(res)
 			);
+		}
+
+		{
+			size_t i = 0;
+			for (auto ds : set._descriptor_sets) {
+				Graphics::DEFAULT->set_debug_name(ds, util::f(debug_name, " #", std::to_string(i)));
+			}
 		}
 
 		auto writes = std::vector<VkWriteDescriptorSet>();

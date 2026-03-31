@@ -18,14 +18,18 @@ namespace vulkan {
 			static util::Result<Image, Error> create(
 					VkExtent2D size,
 					VkFormat format,
-					VkImageUsageFlags usage);
+					VkImageUsageFlags usage,
+					std::string const &debug_name
+			);
 
 			static util::Result<Image, Error> create(
 					VkExtent2D size,
 					VkFormat format,
 					VkImageUsageFlags usage,
+					std::string const &debug_name,
 					VkImageAspectFlagBits aspect,
-					VkMemoryPropertyFlagBits memory_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+					VkMemoryPropertyFlagBits memory_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+				);
 
 			Image();
 

@@ -37,20 +37,24 @@ namespace vulkan {
 	util::Result<Image, Error> Image::create(
 			VkExtent2D size,
 			VkFormat format,
-			VkImageUsageFlags usage)
-	{
+			VkImageUsageFlags usage,
+			std::string const &name
+	) {
 		return create(
 				size,
 				format,
 				usage,
+				name,
 				VK_IMAGE_ASPECT_COLOR_BIT,
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+		);
 	}
 
 	util::Result<Image, Error> Image::create(
 			VkExtent2D size,
 			VkFormat format,
 			VkImageUsageFlags usage,
+			std::string const &debug_name,
 			VkImageAspectFlagBits aspect,
 			VkMemoryPropertyFlagBits memory_properties)
 	{
@@ -81,6 +85,8 @@ namespace vulkan {
 		if (res != VK_SUCCESS) {
 			return Error(ErrorType::VULKAN, "Could not create image. ", VkError(res));
 		}
+
+		Graphics::DEFAULT->set_debug_name(result._image, debug_name);
 
 		auto mem_requirements = VkMemoryRequirements{};
 		vkGetImageMemoryRequirements(

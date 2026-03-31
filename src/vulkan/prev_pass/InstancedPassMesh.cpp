@@ -192,7 +192,8 @@ namespace vulkan {
 		if (auto err = DescriptorSets::create(
 				attachments,
 				_instanced_pass->mesh_descriptor_set_layout(),
-				_instanced_pass->descriptor_pool()
+				_instanced_pass->descriptor_pool(),
+				"Instanced per-material"
 		).move_or(_descriptor_set)) {
 			return Error(ErrorType::VULKAN, "Could not create instanced pass mesh descriptor set", err.value());
 		}
