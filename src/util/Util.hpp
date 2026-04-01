@@ -174,4 +174,7 @@ namespace util {
 			ptr = nullptr;
 			return temp;
 		}
+
+	// nop that you can easily tag from in a debugger
+	inline void breakpoint() {}
 }

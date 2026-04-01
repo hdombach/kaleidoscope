@@ -89,6 +89,7 @@ namespace vulkan {
 
 			void set_debug_name(VkImage image, std::string const &name);
 			void set_debug_name(VkDescriptorSet descriptor_set, std::string const &name);
+			void set_debug_name(VkDescriptorPool descriptor_pool, std::string const &name);
 
 			struct SwapchainSupportDetails {
 				VkSurfaceCapabilitiesKHR capabilities;

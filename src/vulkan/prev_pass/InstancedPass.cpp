@@ -46,7 +46,7 @@ namespace vulkan {
 		p->_size = size;
 		p->_scene = &scene;
 
-		p->_descriptor_pool = DescriptorPool::create();
+		p->_descriptor_pool = DescriptorPool::create("Instanced Pass");
 
 		p->_node_observer = NodeObserver(*p);
 		p->_mesh_observer = MeshObserver(*p);
@@ -103,8 +103,9 @@ namespace vulkan {
 		_prim_uniform = std::move(other._prim_uniform);
 		_imgui_descriptor_set = std::move(other._imgui_descriptor_set);
 
-		_size_dirty_bit = other._size_dirty_bit;
-		_material_dirty_bit = other._material_dirty_bit;
+		_material_buffer_dirty = other._material_buffer_dirty;
+		_node_buffer_dirty = other._node_buffer_dirty;
+		_images_dirty = other._images_dirty;
 	}
 
 	InstancedPass &InstancedPass::operator=(InstancedPass &&other) {
@@ -142,8 +143,9 @@ namespace vulkan {
 		_prim_uniform = std::move(other._prim_uniform);
 		_imgui_descriptor_set = std::move(other._imgui_descriptor_set);
 
-		_size_dirty_bit = other._size_dirty_bit;
-		_material_dirty_bit = other._material_dirty_bit;
+		_material_buffer_dirty = other._material_buffer_dirty;
+		_node_buffer_dirty = other._node_buffer_dirty;
+		_images_dirty = other._images_dirty;
 
 		return *this;
 	}
@@ -157,7 +159,6 @@ namespace vulkan {
 		_pipeline.destroy();
 		_composite_pipeline.destroy();
 		_overlay_pipeline.destroy();
-		_descriptor_pool.destroy();
 		_main_descriptor_set.destroy();
 		_composite_descriptor_set.destroy();
 		_overlay_descriptor_set.destroy();
@@ -169,6 +170,7 @@ namespace vulkan {
 		_destroy_images();
 		_overlay_uniform.destroy();
 		_prim_uniform.destroy();
+		_descriptor_pool.destroy();
 	}
 
 	InstancedPass::~InstancedPass() {
@@ -411,8 +413,8 @@ namespace vulkan {
 	void InstancedPass::resize(VkExtent2D size) {
 		if (_size.width == size.width && _size.height == size.height) return;
 
-		_destroy_images();
 		_size = size;
+		_images_dirty = true;
 	}
 
 	VkExtent2D InstancedPass::size() const {
@@ -454,8 +456,9 @@ namespace vulkan {
 		auto &mesh = _meshes[raw_node->mesh().id()];
 		mesh.add_node(*raw_node);
 		_nodes[id].registered_mesh = mesh.id();
-		_material_buffer.destroy();
-		_node_buffer.destroy();
+
+		_node_buffer_dirty = true;
+		_material_buffer_dirty = true;
 	}
 
 	void InstancedPass::node_update(uint32_t id) {
@@ -490,9 +493,8 @@ namespace vulkan {
 			log_error() << "Could not update node.\n" << err.value();
 		}
 
-		_material_dirty_bit = true;
-		_material_buffer.destroy();
-		_node_buffer.destroy();
+		_node_buffer_dirty = true;
+		_material_buffer_dirty = true;
 	}
 
 	void InstancedPass::node_remove(uint32_t id) {
@@ -507,12 +509,28 @@ namespace vulkan {
 
 		mesh.remove_node(id);
 
-		_material_dirty_bit = true;
+		_node_buffer_dirty = true;
+		_material_buffer_dirty = true;
 	}
 
 	util::Result<void, Error> InstancedPass::_regenerate() {
 		bool main_framebuffer = false;
 		bool composite_framebuffer = false;
+
+		if (_material_buffer_dirty) {
+			_material_buffer.destroy();
+			_material_buffer_dirty = false;
+		}
+
+		if (_node_buffer_dirty) {
+			_node_buffer.destroy();
+			_node_buffer_dirty = false;
+		}
+
+		if (_images_dirty) {
+			_destroy_images();
+			_images_dirty = false;
+		}
 
 		if (!_result_image.has_value()) {
 			//Assuming all images are destroyed together

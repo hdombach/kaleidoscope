@@ -4,7 +4,7 @@
 #include <array>
 
 namespace vulkan {
-	DescriptorPool DescriptorPool::create() {
+	DescriptorPool DescriptorPool::create(std::string const &debug_name) {
 		auto result = DescriptorPool();
 
 		auto poolSizes = std::array<VkDescriptorPoolSize, 4>{};
@@ -25,10 +25,13 @@ namespace vulkan {
 		poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 		util::require(vkCreateDescriptorPool(
-					Graphics::DEFAULT->device(),
-					&poolInfo,
-					nullptr,
-					&result._descriptor_pool));
+			Graphics::DEFAULT->device(),
+			&poolInfo,
+			nullptr,
+			&result._descriptor_pool
+		));
+
+		Graphics::DEFAULT->set_debug_name(result._descriptor_pool, debug_name);
 
 		return result;
 	}

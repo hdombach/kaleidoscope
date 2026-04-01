@@ -1,4 +1,5 @@
 #include "DescriptorSet.hpp"
+#include "util/log.hpp"
 
 #include <vulkan/vulkan_core.h>
 
@@ -217,6 +218,7 @@ namespace vulkan {
 
 	void DescriptorSets::destroy() {
 		if (_descriptor_sets.size() > 0) {
+			log_assert(_descriptor_pool->descriptor_pool(), "Descriptor pool must exist");
 			vkFreeDescriptorSets(
 				Graphics::DEFAULT->device(),
 				_descriptor_pool->descriptor_pool(),

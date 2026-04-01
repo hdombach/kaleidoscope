@@ -2,10 +2,12 @@
 
 #include <vulkan/vulkan.h>
 
+#include <string>
+
 namespace vulkan {
 	class DescriptorPool {
 		public:
-			static DescriptorPool create();
+			static DescriptorPool create(std::string const &debug_name);
 
 			DescriptorPool();
 

@@ -3,6 +3,7 @@
 
 #include "log.hpp"
 #include "NullStream.hpp"
+#include "util/Util.hpp"
 
 namespace util {
 	uint8_t g_log_flags = DEBUG | WARNING | ERROR | FATAL_ERROR;
@@ -49,6 +50,7 @@ void log_assert(
 	util::FileLocation loc
 ) {
 	if (!test) {
+		util::breakpoint();
 		log(util::Importance::FATAL_ERROR, loc) << desc << std::endl;
 	}
 }

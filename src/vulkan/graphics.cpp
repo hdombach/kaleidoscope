@@ -177,6 +177,10 @@ namespace vulkan {
 		_set_debug_name(VK_OBJECT_TYPE_DESCRIPTOR_SET, descriptor_set, name);
 	}
 
+	void Graphics::set_debug_name(VkDescriptorPool descriptor_pool, std::string const &name) {
+		_set_debug_name(VK_OBJECT_TYPE_DESCRIPTOR_POOL, descriptor_pool, name);
+	}
+
 	Graphics::Graphics():
 		_name(nullptr),
 		_window(nullptr),
@@ -960,15 +964,16 @@ namespace vulkan {
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
 		const VkDebugUtilsMessengerCallbackDataEXT * pCallbackData,
-		void* pUserData)
-	{
+		void* pUserData
+	) {
 
-		if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT && false) {
-			throw std::runtime_error(pCallbackData->pMessage);
+		if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+			log_error() << pCallbackData->pMessage << std::endl;
 		} else {
 			log_warning() << pCallbackData->pMessage << std::endl;
 		}
 
+		// Documentation says to always return false
 		return VK_FALSE;
 	}
 

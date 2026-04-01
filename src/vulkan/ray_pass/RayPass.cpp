@@ -79,7 +79,7 @@ namespace vulkan {
 		result->_scene = &scene;
 		result->_size = size;
 
-		result->_descriptor_pool = DescriptorPool::create();
+		result->_descriptor_pool = DescriptorPool::create("Raytrace Pass");
 
 		result->_mesh_observer = MeshObserver(*result);
 		result->_material_observer = MaterialObserver(*result);
