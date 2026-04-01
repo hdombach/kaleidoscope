@@ -107,6 +107,16 @@ namespace vulkan {
 			return *this;
 		}
 
+		for (auto image_view : image_views) {
+			if (image_view == nullptr) {
+				_error = Error(
+					ErrorType::INVALID_ARG,
+					"Cannot pass a null image view"
+				);
+				return *this;
+			}
+		}
+
 		_image_views = image_views;
 		_image_layout = VK_IMAGE_LAYOUT_GENERAL;
 
@@ -123,6 +133,13 @@ namespace vulkan {
 				util::f("Cannot add image target to attachment of type ", type_str(_type))
 			);
 			return *this;
+		}
+		if (image_view == nullptr) {
+			_error = Error(
+				ErrorType::SHADER_RESOURCE,
+				util::f("Cannot add a null image target")
+			);
+			return  *this;
 		}
 
 		_image_views = {image_view};
@@ -259,6 +276,13 @@ namespace vulkan {
 					image_info.imageView = image_view;
 					image_info.sampler = _sampler;
 					i++;
+
+					if (image_view == nullptr) {
+						return Error(
+							ErrorType::SHADER_RESOURCE,
+							"Cannot write a null image"
+						);
+					}
 				}
 
 				descriptor_write.dstBinding = DESCRIPTOR_BINDING_UNUSED;

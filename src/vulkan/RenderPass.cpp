@@ -162,7 +162,7 @@ namespace vulkan {
 		if (_frame_attachments.size() != attachments.size()) {
 			return Error(
 				ErrorType::INVALID_ARG,
-				util::f("Frame attachment size does not match. (", _frame_attachments.size(), " != ", attachments.size())
+				util::f("Frame attachment size does not match. (", _frame_attachments.size(), " != ", attachments.size(), ")")
 			);
 		}
 
@@ -185,8 +185,13 @@ namespace vulkan {
 		}
 
 		auto frame_images = std::vector<VkImageView>();
+		int i = 0;
 		for (auto &attachment : _frame_attachments) {
+			if (attachment.image_view() == nullptr) {
+				return Error(ErrorType::INVALID_ARG, util::f("Cannot pass in a null image_view for attachment ", i, "."));
+			}
 			frame_images.push_back(attachment.image_view());
+			i++;
 		}
 
 

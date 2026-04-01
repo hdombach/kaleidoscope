@@ -455,6 +455,7 @@ namespace vulkan {
 		mesh.add_node(*raw_node);
 		_nodes[id].registered_mesh = mesh.id();
 		_material_buffer.destroy();
+		_node_buffer.destroy();
 	}
 
 	void InstancedPass::node_update(uint32_t id) {
@@ -490,6 +491,8 @@ namespace vulkan {
 		}
 
 		_material_dirty_bit = true;
+		_material_buffer.destroy();
+		_node_buffer.destroy();
 	}
 
 	void InstancedPass::node_remove(uint32_t id) {
@@ -513,11 +516,12 @@ namespace vulkan {
 
 		if (!_result_image.has_value()) {
 			//Assuming all images are destroyed together
-			// Regenerate render pass
-			_render_pass.destroy();
-			_composite_render_pass.destroy();
+			// Regenerate framebuffers
 			main_framebuffer = true;
 			composite_framebuffer = true;
+			_main_descriptor_set.destroy();
+			_composite_descriptor_set.destroy();
+			_overlay_descriptor_set.destroy();
 			if (auto err = _create_images().move_or()) {
 				return Error(ErrorType::SHADER_RESOURCE, "Could not recreate images");
 			}
@@ -594,7 +598,7 @@ namespace vulkan {
 		}
 
 		if (composite_framebuffer) {
-			if (auto err = _composite_render_pass.resize(_frame_attachments()).move_or()) {
+			if (auto err = _composite_render_pass.resize(_composite_frame_attachments()).move_or()) {
 				return Error(ErrorType::SHADER_RESOURCE, "Could not resize composite framebuffer", err.value());
 			}
 		}
@@ -697,15 +701,15 @@ namespace vulkan {
 	}
 
 	std::vector<VkImageView> __used_textures(
-		types::ResourceManager::TextureContainer const &textures
+		types::ResourceManager const &resource_manager
 	) {
 		auto result = std::vector<VkImageView>();
 
-		for (auto &t : textures.raw()) {
+		for (auto &t : resource_manager.textures().raw()) {
 			if (t) {
 				result.push_back(t->image_view());
 			} else {
-				result.push_back(nullptr);
+				result.push_back(resource_manager.default_texture()->image_view());
 			}
 		}
 
@@ -747,7 +751,7 @@ namespace vulkan {
 					DescAttachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT),
 					DescAttachment::create_images(
 						VK_SHADER_STAGE_FRAGMENT_BIT,
-						__used_textures(_scene->resource_manager().textures()).size()
+						__used_textures(_scene->resource_manager()).size()
 					),
 					DescAttachment::create_storage_buffer(VK_SHADER_STAGE_FRAGMENT_BIT)
 				}
@@ -1056,7 +1060,7 @@ namespace vulkan {
 	util::Result<void, Error> InstancedPass::_create_composite_descriptor_set() {
 		auto attachments = _composite_pipeline.attachments();
 
-		auto textures = __used_textures(_scene->resource_manager().textures());
+		auto textures = __used_textures(_scene->resource_manager());
 
 		log_assert(attachments.size() >= 1, "Instanced pass composite pipeline must be initialized");
 
@@ -1117,7 +1121,7 @@ namespace vulkan {
 
 		auto start = log_start_timer();
 
-		auto textures = __used_textures(_scene->resource_manager().textures());
+		auto textures = __used_textures(_scene->resource_manager());
 
 		auto materials = cg::TemplList();
 		for (auto &material : _scene->resource_manager().materials()) {
