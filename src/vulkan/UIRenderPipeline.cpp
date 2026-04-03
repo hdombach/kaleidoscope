@@ -22,7 +22,7 @@ namespace vulkan {
 	UIRenderPipeline::UIRenderPipeline() {
 		_create_descriptor_pool();
 		_init_im_gui();
-		_semaphore = std::move(Semaphore::create().value());
+		_semaphore = std::move(Semaphore::create("UI render pipeline semaphore").value());
 	}
 
 	UIRenderPipeline::~UIRenderPipeline() {

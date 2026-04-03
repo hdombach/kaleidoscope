@@ -55,7 +55,7 @@ namespace vulkan {
 			return Error(ErrorType::VULKAN, "Could not create fence", VkError(err.value()));
 		}
 
-		if (auto err = Semaphore::create().move_or(p->_semaphore)) {
+		if (auto err = Semaphore::create("Instanced pass semaphore").move_or(p->_semaphore)) {
 			return Error(ErrorType::VULKAN, "Could not create semaphore", VkError(err.value()));
 		}
 
@@ -191,7 +191,7 @@ namespace vulkan {
 	) {
 		VkResult r;
 
-		if (_size.width == 0 || _size.height == 0) return nullptr;
+		if (_size.width == 0 || _size.height == 0) return semaphore;
 
 		if ((r = _fence.wait()) != VK_SUCCESS) {
 			log_error() << "Problem waiting on fence: " << VkError::type_str(r) << std::endl;
@@ -202,7 +202,7 @@ namespace vulkan {
 
 		if (auto err = _regenerate().move_or()) {
 			log_error() << "Could not create resources required for render preview:\n" << err.value();
-			return nullptr;
+			return semaphore;
 		}
 
 		util::require(vkResetCommandBuffer(_command_buffer, 0));

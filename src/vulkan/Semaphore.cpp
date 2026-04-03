@@ -4,20 +4,25 @@
 #include "graphics.hpp"
 
 namespace vulkan {
-	util::Result<Semaphore, VkResult> Semaphore::create() {
-		return create(Graphics::DEFAULT->device());
+	util::Result<Semaphore, VkResult> Semaphore::create(std::string const &name) {
+		return create(Graphics::DEFAULT->device(), name);
 	}
 
-	util::Result<Semaphore, VkResult> Semaphore::create(VkDevice device) {
+	util::Result<Semaphore, VkResult> Semaphore::create(
+		VkDevice device,
+		std::string const &name
+	) {
 		auto info = VkSemaphoreCreateInfo{};
 		info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 		VkSemaphore semaphore;
 		auto res = vkCreateSemaphore(
-				device,
-				&info,
-				nullptr,
-				&semaphore);
+			device,
+			&info,
+			nullptr,
+			&semaphore
+		);
 		if (res == VK_SUCCESS) {
+			Graphics::DEFAULT->set_debug_name(semaphore, name);
 			return Semaphore(semaphore);
 		} else {
 			return {res};

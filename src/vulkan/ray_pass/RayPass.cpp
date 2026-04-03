@@ -89,7 +89,7 @@ namespace vulkan {
 			return Error(ErrorType::VULKAN, "Could not create ray pass fence", VkError(err.value()));
 		}
 
-		if (auto err = Semaphore::create().move_or(result->_semaphore)) {
+		if (auto err = Semaphore::create("Raypass semaphore").move_or(result->_semaphore)) {
 			return Error(ErrorType::VULKAN, "Could not create ray pass semaphore", VkError(err.value()));
 		}
 		if (auto err = result->_create_images().move_or()) {

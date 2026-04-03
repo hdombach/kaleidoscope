@@ -146,10 +146,17 @@ void App::main_loop() {
 		} else {
 			semaphore = _scene->render_raytrace(_prev_semaphore);
 		}
+		if (semaphore == nullptr) {
+			semaphore = _prev_semaphore;
+		}
+
 		_prev_semaphore = _ui_render_pipeline->submit([&] {
 			//ImGui::ShowDemoWindow();
 			ui::AppView(*this, *_view_state);
 		}, semaphore);
+		if (_prev_semaphore == nullptr) {
+			_prev_semaphore = semaphore;
+		}
 		//TODO: temp
 	}
 

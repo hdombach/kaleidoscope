@@ -8,8 +8,11 @@ namespace vulkan {
 	class Semaphore final {
 		public:
 
-			static util::Result<Semaphore, VkResult> create();
-			static util::Result<Semaphore, VkResult> create(VkDevice device);
+			static util::Result<Semaphore, VkResult> create(std::string const &name);
+			static util::Result<Semaphore, VkResult> create(
+				VkDevice device,
+				std::string const &name
+			);
 
 			Semaphore();
 

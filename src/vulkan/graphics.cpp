@@ -181,6 +181,14 @@ namespace vulkan {
 		_set_debug_name(VK_OBJECT_TYPE_DESCRIPTOR_POOL, descriptor_pool, name);
 	}
 
+	void Graphics::set_debug_name(VkSemaphore semaphore, std::string const &name) {
+		_set_debug_name(VK_OBJECT_TYPE_SEMAPHORE, semaphore, name);
+	}
+
+	void Graphics::set_debug_name(VkQueue queue, std::string const &name) {
+		_set_debug_name(VK_OBJECT_TYPE_QUEUE, queue, name);
+	}
+
 	Graphics::Graphics():
 		_name(nullptr),
 		_window(nullptr),
@@ -465,6 +473,10 @@ namespace vulkan {
 		//TODO: search specifically for a compute queue
 		vkGetDeviceQueue(_device, indices.graphics_family.value(), 0, &_compute_queue);
 		vkGetDeviceQueue(_device, indices.present_family.value(), 0, &_present_queue);
+
+		set_debug_name(_graphics_queue, "Graphics queue");
+		set_debug_name(_compute_queue, "Compute queue");
+		set_debug_name(_present_queue, "Present queue");
 		return {};
 	}
 
