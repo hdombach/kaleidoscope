@@ -7,7 +7,9 @@ namespace cg {
 		CfgContext c;
 		using T = CfgLeaf::TType;
 
-		c.root("literal") = T::StrConst;
+		c.root("root") = c["literal"] + T::Eof;
+
+		c.prim("literal") = T::StrConst;
 		c.prim("literal2") = T::IntConst;
 
 		EXPECT(c.prep());
@@ -20,7 +22,9 @@ namespace cg {
 		auto c = CfgContext();
 		using T = CfgLeaf::TType;
 
-		c.root("if_ref") = T::If;
+		c.root("root") = c["if_ref"] + T::Eof;
+
+		c.prim("if_ref") = T::If;
 		c.prim("condition") = T::ParanOpen + T::StrConst + T::ParanClose;
 
 		c.prim("if_else") = c["if_ref"] + c["condition"] + T::Else;
@@ -41,7 +45,8 @@ namespace cg {
 		auto c = CfgContext();
 		using T = CfgLeaf::TType;
 
-		c.root("tok_ref") = T::ParanOpen | c["tok_ref"];
+		c.root("root") = c["tok_ref"] + T::Eof;
+		c.prim("tok_ref") = T::ParanOpen | c["tok_ref"];
 		c.prim("ref_tok") = c["ref_tok"] | T::ParanClose;
 		c.prim("tok_tok") = T::IntConst | T::Ident;
 		c.prim("ref_ref") = c["ref_ref"] | c["tok_ref"];
@@ -54,6 +59,7 @@ namespace cg {
 
 		EXPECT(c.prep());
 
+		EXPECT_EQ(c.get("root")->str(), "root -> <tok_ref> EOF");
 		EXPECT_EQ(c.get("tok_ref")->str(), "tok_ref -> ParanOpen | <tok_ref>");
 		EXPECT_EQ(c.get("ref_tok")->str(), "ref_tok -> <ref_tok> | ParanClose");
 		EXPECT_EQ(c.get("tok_tok")->str(), "tok_tok -> IntConstant | Identifier");
