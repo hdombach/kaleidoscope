@@ -66,6 +66,8 @@ class Test {
 				std::cout << "\t" << msg << std::endl;
 			}
 
+			std::cout << std::endl;
+
 			_total_tests++;
 		}
 
@@ -73,7 +75,7 @@ class Test {
 			std::string const &msg,
 			util::FileLocation const &loc = std::source_location::current()
 		) {
-			return fail({msg}, loc);
+			return fail(std::vector{msg}, loc);
 		}
 
 		void fail(
@@ -81,8 +83,8 @@ class Test {
 			BaseError const &err,
 			util::FileLocation const &loc = std::source_location::current()
 		) {
-			fail(msg, loc);
-			std::cout << util::indented(err.str(), "\t");
+			fail(std::vector{msg}, loc);
+			std::cout << util::indented(err.str(), "\t") << std::endl;;
 		}
 
 		void fail(
@@ -91,7 +93,7 @@ class Test {
 			util::FileLocation const &loc = std::source_location::current()
 		) {
 			fail(msgs, loc);
-			std::cout << util::indented(err.str(), "\t");
+			std::cout << util::indented(err.str(), "\t") << std::endl;
 		}
 
 		template<typename Val, typename Err>
@@ -136,7 +138,7 @@ class Test {
 				pass();
 			} else {
 				auto more_msgs = msgs;
-				more_msgs.push_back(util::f("Lhs and rhs are not equal. (", util::abbrev(util::f(lhs)), " != ", util::abbrev(util::f(rhs))));
+				more_msgs.push_back(util::f("Lhs and rhs are not equal. (\"", util::abbrev(util::f(lhs)), "\" != \"", util::abbrev(util::f(rhs)), "\""));
 				fail(more_msgs, loc);
 			}
 		}
