@@ -77,7 +77,7 @@ namespace cg {
 
 		auto str = std::string();
 		if (auto err = f.parse_str("UnmatchedToken").move_or(str)) {
-			EXPECT(err.value());
+			FAIL("Could not parse string", err.value());
 			return;
 		}
 		EXPECT_EQ(str, "root hello Unmatched EOF ");

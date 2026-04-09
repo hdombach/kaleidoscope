@@ -3,6 +3,46 @@
 
 std::map<std::string, TestSuite> suites;
 
+Test::Test(
+	Test::Callback callback,
+	std::string const &suite_name,
+	std::string const &test_name,
+	size_t variant_count
+):
+	_callback(callback),
+	_suite_name(suite_name),
+	_test_name(test_name),
+	_variant_count(variant_count)
+{}
+
+std::string Test::full_name() const {
+	return _suite_name + "::" + _test_name;
+}
+
+size_t Test::variant_count() const {
+	return _variant_count;
+}
+
+uint32_t Test::total_tests() const {
+	return _total_tests;
+}
+
+uint32_t Test::passed_tests() const {
+	return _passed_tests;
+}
+
+std::string const &Test::suite_name() const {
+	return _suite_name;
+}
+
+std::string const &Test::test_name() const {
+	return _test_name;
+}
+
+void Test::operator()(Test &test, int variant_index) {
+	_callback(test, variant_index);
+}
+
 bool _in_filter(
 	std::string const &test_name,
 	std::vector<std::string> const &filters
@@ -30,24 +70,18 @@ int test_main(std::vector<std::string> const &filters) {
 			}
 
 			try {
-				for (int i = 0; i < test.second.enum_count; i++) {
+				for (int i = 0; i < test.second.variant_count(); i++) {
 					log_trace() << "Starting test: " << test.first << ":" << i << std::endl;
-					test.second.fn(test.second, i);
-					auto test_total = test.second.total_test_count;
-					auto test_passed = test.second.passed_test_count;
+					test.second(test.second, i);
+					auto test_total = test.second.total_tests();
+					auto test_passed = test.second.passed_tests();
 
 					suite_passed += test_passed;
 					suite_total += test_total;
 				}
-			} catch (std::exception const &e) {
-				suite_total++;
-				auto &os = fail_head(test.second) << std::endl;
-				os << std::endl;
-				os << "\tException was thrown:" << std::endl << "\t";
-				log_error() << "Exception thrown " << e.what() << std::endl;
 			} catch (...) {
+				test.second.fail("Exception was thrown");
 				suite_total++;
-				log_error() << "Unknown exception was thrown" << std::endl;
 			}
 		}
 

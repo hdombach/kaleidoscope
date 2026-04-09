@@ -9,7 +9,7 @@ namespace cg {
 			if (auto r = f.gen(src, args)) { \
 				EXPECT_EQ(r.value(), expect_src); \
 			} else { \
-				EXPECT(r); \
+				FAIL("Could not codegenerate", r.error()); \
 			} \
 		}
 
@@ -30,7 +30,7 @@ namespace cg {
 				TemplDict const &args)
 			{
 				count++;
-				return TemplGen::codegen(src, args, _test.suite_name + "-" + _test.test_name + "-" + std::to_string(count));
+				return TemplGen::codegen(src, args, _test.suite_name() + "-" + _test.test_name() + "-" + std::to_string(count));
 			}
 
 			util::Result<std::string, Error> gen(
@@ -38,7 +38,7 @@ namespace cg {
 				TemplObj const &args)
 			{
 				count++;
-				return TemplGen::codegen(src, args, _test.suite_name + "-" + _test.test_name + "-" + std::to_string(count));
+				return TemplGen::codegen(src, args, _test.suite_name() + "-" + _test.test_name() + "-" + std::to_string(count));
 			}
 
 		private:

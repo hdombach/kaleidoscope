@@ -8,6 +8,7 @@
 
 #include "util/BaseError.hpp"
 #include "util/Env.hpp"
+#include "util/Util.hpp"
 #include "util/log.hpp"
 #include "util/result.hpp"
 
@@ -23,17 +24,162 @@ class TestFixture {
 		Test &_test;
 };
 
-struct Test {
-	std::function<void(Test &, int enum_index)> fn;
-	std::string suite_name;
-	std::string test_name;
-	size_t enum_count = 1;
-	uint32_t total_test_count = 0;
-	uint32_t passed_test_count = 0;
+class Test {
+	public:
+		using Callback = std::function<void(Test &, int variant_index)>;
 
-	std::string full_name() const {
-		return suite_name + "::" + test_name;
-	}
+		Test() = default;
+
+		Test(
+			Callback callback,
+			std::string const &suite_name,
+			std::string const &test_name,
+			size_t variant_count = 1
+		);
+
+		std::string full_name() const;
+		size_t variant_count() const;
+		uint32_t total_tests() const;
+		uint32_t passed_tests() const;
+		std::string const &suite_name() const;
+		std::string const &test_name() const;
+
+
+		void operator()(Test &, int variant_index);
+
+		void pass() {
+			_total_tests++;
+			_passed_tests++;
+		}
+
+		void fail(
+			std::vector<std::string> const &msgs,
+			util::FileLocation const &loc = std::source_location::current()
+		) {
+			std::cout << util::color::RED << "TEST FAILED. " << util::color::RESET;
+			std::cout << full_name() << " (";
+			std::cout	<< std::filesystem::relative(loc.file_name, util::g_env.working_dir).c_str();
+			std::cout << ":" << loc.line << ")";
+			std::cout << std::endl;
+
+			for (auto &msg : msgs) {
+				std::cout << "\t" << msg << std::endl;
+			}
+
+			_total_tests++;
+		}
+
+		void fail(
+			std::string const &msg,
+			util::FileLocation const &loc = std::source_location::current()
+		) {
+			return fail({msg}, loc);
+		}
+
+		void fail(
+			std::string const &msg,
+			BaseError const &err,
+			util::FileLocation const &loc = std::source_location::current()
+		) {
+			fail(msg, loc);
+			std::cout << util::indented(err.str(), "\t");
+		}
+
+		void fail(
+			std::vector<std::string> const &msgs,
+			BaseError const &err,
+			util::FileLocation const &loc = std::source_location::current()
+		) {
+			fail(msgs, loc);
+			std::cout << util::indented(err.str(), "\t");
+		}
+
+		template<typename Val, typename Err>
+		void expect(
+			util::Result<Val, Err> const &val,
+			std::vector<std::string> const &msgs = {},
+			util::FileLocation const &loc = std::source_location::current()
+		) {
+			if (!val.has_value()) {
+				auto more_msgs = msgs;
+				more_msgs.push_back("Could not unwrap Result");
+				fail(more_msgs, val.error(), loc);
+			}
+		}
+
+		template<typename Val, typename ErrType>
+		void expect_terror(
+			util::Result<Val, TypedError<ErrType>> const &val,
+			ErrType const &t,
+			std::vector<std::string> const &msgs = {},
+			util::FileLocation const &loc = std::source_location::current()
+		) {
+			if (val.has_value()) {
+				auto more_msgs = msgs;
+				more_msgs.push_back(util::f(
+						"Expected error ",
+						TypedError<ErrType>::type_str(t),
+						" but no error was thrown"
+				));
+				fail(more_msgs, loc);
+			}
+		}
+
+		template<typename Lhs, typename Rhs>
+		void expect_eq(
+			Lhs const &lhs,
+			Rhs const &rhs,
+			std::vector<std::string> const &msgs = {},
+			util::FileLocation const &loc = std::source_location::current()
+		) {
+			if (lhs == rhs) {
+				pass();
+			} else {
+				auto more_msgs = msgs;
+				more_msgs.push_back(util::f("Lhs and rhs are not equal. (", util::abbrev(util::f(lhs)), " != ", util::abbrev(util::f(rhs))));
+				fail(more_msgs, loc);
+			}
+		}
+
+		template<typename LhsVal, typename LhsErr, typename Rhs>
+		void expect_eq(
+			util::Result<LhsVal, LhsErr> const &lhs,
+			Rhs const &rhs,
+			std::vector<std::string> const &msgs = {},
+			util::FileLocation const &loc = std::source_location::current()
+		) {
+			if (lhs.has_value()) {
+				return expect_eq(lhs.value(), rhs);
+			} else {
+				auto more_msgs = msgs;
+				more_msgs.push_back("Could not unwrap lhs");
+				fail(more_msgs, lhs.error(), loc);
+			}
+		}
+
+		template<typename Lhs, typename RhsVal, typename RhsErr>
+		void expect_eq(
+			Lhs const &lhs,
+			util::Result<RhsVal, RhsErr> const &rhs,
+			std::vector<std::string> const &msgs = {},
+			util::FileLocation const &loc = std::source_location::current()
+		) {
+			if (rhs.has_value()) {
+				return expect_eq(lhs, rhs.value());
+			} else {
+				auto more_msgs = msgs;
+				more_msgs.push_back("Could not unwrap rhs");
+				fail(more_msgs, rhs.error(), loc);
+			}
+		}
+
+	private:
+		Callback _callback;
+		std::string _suite_name = "";
+		std::string _test_name = "";
+		size_t _variant_count = 0;
+		uint32_t _total_tests = 0;
+		uint32_t _passed_tests = 0;
 };
 
 using TestSuite = std::map<std::string, Test>;
@@ -46,11 +192,11 @@ test##pre##suite_name##seperator##test_name
 void _TEST_NAME(_, suite_name, _, test_name)(Test &_test, int); \
 inline struct _TEST_NAME(_class_, suite_name, _, test_name) {\
 	_TEST_NAME(_class_, suite_name, _, test_name)() {\
-		suites[#suite_name][#test_name] = { \
+		suites[#suite_name][#test_name] = Test( \
 			_TEST_NAME(_, suite_name, _, test_name), \
 			#suite_name, \
 			#test_name \
-		}; \
+		); \
 	};\
 } _TEST_NAME(_inst_, suite_name, _, test_name); \
 void _TEST_NAME(_, suite_name, _, test_name)(Test &_test, int)
@@ -75,212 +221,37 @@ void _TEST_NAME(_wrapper_, fixture, _, test_name)(Test &_test, int i) {\
 void _TEST_NAME(_, fixture, _, test_name)(Test &_test, fixture &f)
 
 
-inline std::ostream &fail_head(
-	Test &test,
-	std::source_location loc=std::source_location::current()
-) {
-	std::cout << "[";
-	std::cout << util::color::RED << "FAILED_TEST " << util::color::RESET;
-	std::cout	<< std::filesystem::relative(loc.file_name(), util::g_env.working_dir).c_str();
-	std::cout << "(" << loc.line() << ":" << loc.column() << ")] ";
-	std::cout << test.full_name();
+/*** main api ***/
 
-	return std::cout;
-}
-
-template<typename LHS, typename RHS>
-void expect_eq(
-	Test &test,
-	LHS const &lhs,
-	RHS const &rhs,
-	const char *lhs_string,
-	const char *rhs_string,
-	std::source_location loc=std::source_location::current()
-) {
-	if (lhs == rhs) {
-		test.passed_test_count++;
-	} else {
-		auto &os = fail_head(test, loc) << std::endl;
-
-		os << "\tEXPECT_EQ(" << lhs_string << ", " << rhs_string << ");" << std::endl;
-		os << std::endl;
-		os << "\tlhs: \"" << lhs << "\"" << std::endl;
-		os << "\trhs: \"" << rhs << "\"" << std::endl;
-		os << std::endl;
-	}
-}
-
-inline void expect(
-	Test &test,
-	bool value,
-	const char *value_string,
-	std::source_location loc=std::source_location::current()
-) {
-	if (value) {
-		test.passed_test_count++;
-	} else {
-		auto &os = fail_head(test, loc) << std::endl;
-
-		os << "\tEXPECT(" << value_string << ");" << std::endl;
-		os << std::endl;
-		os << "\tvalue: " << value << std::endl;
-		os << std::endl;
-	}
-}
-
-template<typename Value, typename Result>
-inline void expect(
-	Test &test,
-	util::Result<Value, Result> const &value,
-	const char *value_string,
-	std::source_location loc=std::source_location::current()
-) {
-	if (value.has_value()) {
-		test.passed_test_count++;
-	} else {
-		auto &os = fail_head(test, loc) << std::endl;
-
-		os << "\tEXPECT(" << value_string << ");" << std::endl;
-		os << std::endl;
-		os << "\terror: " << value.error() << std::endl;
-		os << std::endl;
-	}
-}
-
-template<typename ErrT>
-inline void expect(
-	Test &test,
-	TypedError<ErrT> const &err,
-	const char *value_string,
-	std::source_location loc=std::source_location::current()
-) {
-	auto &os = fail_head(test, loc) << std::endl;
-
-	os << "\tEXPECT(" << value_string << ");" << std::endl;
-	os << std::endl;
-	os << "\terror: " << err << std::endl;
-	os << std::endl;
-}
-
-template<typename ErrorType>
-inline void expect_terror(
-	Test &test,
-	TypedError<ErrorType> error,
-	ErrorType type,
-	const char *lhs_string,
-	const char *rhs_string,
-	std::source_location loc=std::source_location::current()
-) {
-	if (error.type() == type) {
-		test.passed_test_count++;
-	} else {
-		auto &os = fail_head(test, loc) << std::endl;
-		os << "\tEXPECT_TERROR(" << lhs_string << ", " << rhs_string << ");" << std::endl;
-		os << std::endl;
-		os << "Mismatching error types. " << error.type() << " != " << type << std::endl;
-		os << std::endl;
-	}
-}
-
-template<typename Val, typename ErrorType>
-inline void expect_terror(
-	Test &test,
-	util::Result<Val, TypedError<ErrorType>> result,
-	ErrorType type,
-	const char *lhs_string,
-	const char *rhs_string,
-	std::source_location loc=std::source_location::current()
-) {
-	if (result.has_value()) {
-		auto &os = fail_head(test, loc) << std::endl;
-		os << "\tEXPECT_TERROR(" << lhs_string << ", " << rhs_string << ");" << std::endl;
-		os << std::endl;
-		os << lhs_string << " Did not return or throw an error." << std::endl;
-		os << std::endl;
-	} else if (result.error().type() == type) {
-		test.passed_test_count++;
-	} else {
-		auto &os = fail_head(test, loc) << std::endl;
-		os << "EXPECT_TERROR(" << lhs_string << ", " << rhs_string << ");" << std::endl;
-		os << std::endl;
-		os << "Mismatching error types. " << result.error().type() << " != " << type << std::endl;
-		os << std::endl;
-	}
-}
-
-
-#define EXPECT_EQ(lhs, rhs) {\
-	_test.total_test_count++;\
+#define EXPECT_EQ(lhs, rhs, ...) {\
 	try { \
-		expect_eq(_test, lhs, rhs, #lhs, #rhs); \
-	} catch (std::exception const &e) { \
-		auto &os = fail_head(_test) << std::endl; \
-		os << "\tEXPECT_EQ(" #lhs ", " #rhs ");" << std::endl; \
-		os << std::endl; \
-		os << "\t"; \
-		log_error() << "Exception thrown " << e.what() << std::endl; \
-	} catch (BaseError const &e) { \
-		auto &os = fail_head(_test) << std::endl; \
-		os << "\tEXPECT_EQ(" #lhs ", " #rhs ");" << std::endl; \
-		os << std::endl; \
-		os << "\t"; \
-		log_error() << "Exception thrown " << e << std::endl; \
+		_test.expect_eq(lhs, rhs __VA_OPT__(,) __VA_ARGS__); \
 	} catch (...) { \
-		auto &os = fail_head(_test) << std::endl; \
-		os << "\tEXPECT_EQ(" #lhs ", " #rhs ");" << std::endl; \
-		os << std::endl; \
-		os << "\t"; \
-		log_error() << "Unknown exception was thrown" << std::endl; \
-	}\
+		_test.fail("Unexpected exception was thrown"); \
+	} \
 }
 
-#define EXPECT(value) {\
-	_test.total_test_count++;\
+#define EXPECT(value, ...) {\
 	try { \
-		expect(_test, value, #value); \
-	} catch (std::exception const &e) { \
-		auto &os = fail_head(_test) << std::endl; \
-		os << "\tEXPECT(" #value ");" << std::endl; \
-		os << std::endl; \
-		os << "\t"; \
-		log_error() << "Exception thrown " << e.what() << std::endl; \
-	} catch (BaseError const &e) { \
-		auto &os = fail_head(_test) << std::endl; \
-		os << "\tEXPECT(" #value ");" << std::endl; \
-		os << std::endl; \
-		os << "\t"; \
-		log_error() << "Exception thrown " << e << std::endl; \
+		_test.expect(value __VA_OPT__(,) __VA_ARGS__); \
 	} catch (...) { \
-		auto &os = fail_head(_test) << std::endl; \
-		os << "\tEXPECT(" #value ");" << std::endl; \
-		os << std::endl; \
-		os << "\t"; \
-		log_error() << "Unknown exception was thrown" << std::endl; \
-	}\
+		_test.fail("Unexpected exception was thrown"); \
+	} \
 }
 
-#define EXPECT_TERROR(value, error_type) {\
+#define EXPECT_TERROR(value, error_type, ...) { \
 	try { \
-		_test.total_test_count++;\
-		expect_terror(_test, value, error_type, #value, #error_type); \
-	} catch (std::exception const &e) { \
-		auto &os = fail_head(_test) << std::endl; \
-		os << "\tEXPECT_KERROR(" #value ", " #error_type ");" << std::endl; \
-		os << std::endl; \
-		os << "\t"; \
-		log_error() << "Exception thrown " << e.what() << std::endl; \
-	} catch (BaseError const &e) { \
-		auto &os = fail_head(_test) << std::endl; \
-		os << "\tEXPECT_KERROR(" #value ", " #error_type ");" << std::endl; \
-		os << std::endl; \
-		os << "\t"; \
-		log_error() << "Exception thrown " << e << std::endl; \
+		_test.expect_terror(value, error_type __VA_OPT__(,) __VA_ARGS__); \
 	} catch (...) { \
-		auto &os = fail_head(_test) << std::endl; \
-		os << "\tEXPECT_TERROR(" #value ", " #error_type ");" << std::endl; \
-		os << std::endl; \
-		os << "\t"; \
-		log_error() << "Unknown exception was thrown" << std::endl; \
+		_test.fail("Unexpected exception was thrown"); \
+	} \
+}
+
+#define FAIL(msg, err, ...) {\
+	try { \
+		_test.fail(msg, err __VA_OPT__(,) __VA_ARGS__); \
+	} catch (...) { \
+		_test.fail("Unexpected exception was thrown"); \
 	} \
 }
 

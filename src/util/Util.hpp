@@ -145,6 +145,16 @@ namespace util {
 			return trim(ss.str());
 		}
 
+	inline std::string abbrev(std::string const &str, size_t length = 16) {
+		std::string res;
+		if (str.size() >= 16) {
+			res = std::string{str.begin(), str.begin() + 12} + " ...";
+		} else {
+			res = str;
+		}
+		return res;
+	}
+
 	/**
 	 * @brief Tests whether a ptr exists
 	 */

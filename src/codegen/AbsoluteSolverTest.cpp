@@ -24,7 +24,7 @@ namespace cg {
 		ParserContext result;
 		AstNode *root;
 		if (auto err = solver->parse(util::StringRef("{{1*1+2}}"), result).move_or(root)) {
-			EXPECT(err.value());
+			FAIL("Could not parse provided text", err.value());
 			return;
 		}
 
