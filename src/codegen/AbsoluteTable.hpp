@@ -76,8 +76,17 @@ namespace cg::abs {
 			bool operator>(RulePos const &rhs) const;
 
 		private:
+			/**
+			 * @brief The referenced RuleSet
+			 */
 			uint32_t _set=0;
+			/**
+			 * @brief The referenced rule inside the rule set
+			 */
 			uint32_t _rule=0;
+			/**
+			 * @brief The offset in the rule
+			 */
 			uint32_t _offset=0;
 			CfgContext const *_ctx=nullptr;
 	};
@@ -144,9 +153,17 @@ namespace cg::abs {
 	class AbsoluteTable {
 		public:
 			using Row = util::IterAdapter<uint32_t*>;
-			using StateId = uint32_t;
+			/**
+			 * @brief An entry in the table
+			 * 
+			 * Consists of the following actions
+			 * - Invalid operation: 0
+			 * - Consume a token. Value is index into table (starts at 1)
+			 * - Reduce a rule. Is masked with REDUCE_MASK. Starts counting from 1.
+			 */
+			using Entry = uint32_t;
 
-			static const uint32_t ACCEPT_ACTION = 0x88888888;
+			static const uint32_t ACCEPT_ACTION = 0xffffffff;
 			static const uint32_t REDUCE_MASK = 0x80000000;
 
 			AbsoluteTable() = default;
@@ -171,7 +188,7 @@ namespace cg::abs {
 			 * @brief Returns a row for a corresponding state id
 			 * @param[in] table_state
 			 */
-			Row row(StateId const &state_id);
+			Row row(Entry const &state_id);
 
 			/**
 			 * @brief does a row exist for a table_state yet
@@ -186,7 +203,7 @@ namespace cg::abs {
 			 * @param[in] c
 			 * @returns id of the new state
 			 */
-			StateId &lookup_tok(TableState const &row, Token::Type t);
+			Entry &lookup_tok(TableState const &row, Token::Type t);
 
 			/**
 			 * @brief Looks up a cell for a corresponding row and token
@@ -194,13 +211,13 @@ namespace cg::abs {
 			 * @param[in] c
 			 * @returns id of the new state
 			 */
-			StateId &lookup_tok(uint32_t state_id, Token::Type t);
+			Entry &lookup_tok(uint32_t state_id, Token::Type t);
 
 			/**
 			 * @brief Gets the next state for a given set
 			 * @param[in] index of row
 			 */
-			StateId &lookup_ruleset(TableState const &row, uint32_t ruleset);
+			Entry &lookup_ruleset(TableState const &row, uint32_t ruleset);
 
 			/**
 			 * @brief Looks up a cell for a corresponding row and ruleset id
@@ -208,7 +225,7 @@ namespace cg::abs {
 			 * @param[in] c
 			 * @returns id of the new state
 			 */
-			StateId &lookup_ruleset(uint32_t state_id, uint32_t ruleset);
+			Entry &lookup_ruleset(uint32_t state_id, uint32_t ruleset);
 
 			/**
 			 * @brief Gets the string representation of an action

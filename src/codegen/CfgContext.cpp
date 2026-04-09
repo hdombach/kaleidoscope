@@ -18,27 +18,24 @@ namespace cg {
 		return CfgLeaf::var(str);
 	}
 
+	CfgLeaf CfgContext::cls(CfgRuleSet const &rule_set) {
+		return CfgLeaf::cls(rule_set);
+	}
+
 	CfgRuleSet &CfgContext::prim(std::string const &name) {
 		_prim_names.insert(name);
-		if (!_cfg_map.contains(name)) {
-			_cfg_rule_sets.push_back(CfgRuleSet(name));
-			_cfg_map.emplace(name, _cfg_rule_sets.size() - 1);
-		}
+		_add_rule_set(name);
 		return _cfg_rule_sets[_cfg_map[name]];
 	}
 	CfgRuleSet &CfgContext::temp(std::string const &name) {
-		if (!_cfg_map.contains(name)) {
-			_cfg_rule_sets.push_back(CfgRuleSet(name));
-			_cfg_map.emplace(name, _cfg_rule_sets.size() - 1);
-		}
+		_add_rule_set(name);
 		return _cfg_rule_sets[_cfg_map[name]];
 	}
 	CfgRuleSet &CfgContext::root(std::string const &name) {
 		if (_root_name.empty()) {
 			log_assert(!_cfg_map.contains(name), "Cannot create root if rule already exists");
+			_add_rule_set(name);
 			_root_name = name;
-			_cfg_rule_sets.push_back(CfgRuleSet(_root_name));
-			_cfg_map.emplace(name, _cfg_rule_sets.size() - 1);
 		} else {
 			log_error() << "Cannot create root " << name
 				<< " since root " << name << " already exists" << std::endl;
@@ -101,7 +98,7 @@ namespace cg {
 			}
 
 			auto rule = root.rules().front();
-			auto msg = "Rot rule must have the structure \"<var_name> eof\"";
+			auto msg = "Root rule must have the structure \"<var_name> eof\"";
 
 			if (rule.leaves().size() != 2) {
 				return Error(ErrorType::INTERNAL, msg);
@@ -123,6 +120,7 @@ namespace cg {
 	}
 
 	void CfgContext::simplify() {
+		_remove_cls();
 		_remove_empty();
 	}
 
@@ -189,6 +187,38 @@ namespace cg {
 		}
 	}
 
+	void CfgContext::_remove_cls() {
+		auto new_sets = std::vector<CfgRuleSet>();
+
+		for (auto &set : _cfg_rule_sets) {
+			uint32_t i = 0;
+			for (auto &rule : set.rules()) {
+				for (auto &leaf : rule.leaves()) {
+					if (leaf.type() == CfgLeaf::Type::cls) {
+						auto name = util::f("_", set.name(), "_cls_", i++);
+
+						new_sets.push_back(CfgRuleSet(name));
+
+						//Construct new set
+						new_sets.back().add_rules(leaf.rule_set());
+						for (auto &rule : new_sets.back().rules()) {
+							rule = rule + CfgLeaf::var(name);
+						}
+						new_sets.back().add_rule(empty());
+
+						leaf = CfgLeaf::var(name);
+					}
+				}
+			}
+		}
+
+		for (auto &s : new_sets) {
+			_add_rule_set(s.name(), true);
+			_cfg_rule_sets[_cfg_map[s.name()]] = s;
+			_closures.insert(s.name());
+		}
+	}
+
 	void CfgContext::_remove_empty() {
 		auto empty_sets = get_empty_sets(*this);
 		auto new_sets = std::vector<CfgRuleSet>();
@@ -215,6 +245,16 @@ namespace cg {
 			for (auto &rule : set.rules()) {
 				rule.set_set_id(i);
 			}
+		}
+	}
+
+	void CfgContext::_add_rule_set(std::string const &name, bool builtin) {
+		log_assert(!name.empty(), "Cannot add a rule set with an empty name");
+		log_assert(builtin || name[0] != '_', "Rule set name cannot start with \"_\"");
+
+		if (!_cfg_map.contains(name)) {
+			_cfg_rule_sets.push_back(CfgRuleSet(name));
+			_cfg_map.emplace(name, _cfg_rule_sets.size() - 1);
 		}
 	}
 }

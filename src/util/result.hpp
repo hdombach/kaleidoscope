@@ -31,17 +31,17 @@ namespace util {
 				}
 
 				Value &value() {
-					log_assert(std::holds_alternative<Value>(*this), "Check has_value() before accessing has_value()");
+					log_assert(std::holds_alternative<Value>(*this), "Check has_value() before accessing value()");
 					return std::get<Value>(*this);
 				}
 
 				Value const &value() const {
-					log_assert(std::holds_alternative<Value>(*this), "Check has_value() before accessing has_value()");
+					log_assert(std::holds_alternative<Value>(*this), "Check has_value() before accessing value()");
 					return std::get<Value>(*this);
 				}
 
 				Value &&move_value() {
-					log_assert(std::holds_alternative<Value>(*this), "Check has_value() before accessing has_value()");
+					log_assert(std::holds_alternative<Value>(*this), "Check has_value() before accessing value()");
 					return std::move(std::get<Value>(*this));
 				}
 

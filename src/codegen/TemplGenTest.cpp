@@ -5,10 +5,13 @@
 
 namespace cg {
 	#define EXPECT_CG(expect_src)\
-		EXPECT_EQ(\
-			f.gen(src, args).value(),\
-			expect_src\
-		);
+		{ \
+			if (auto r = f.gen(src, args)) { \
+				EXPECT_EQ(r.value(), expect_src); \
+			} else { \
+				EXPECT(r); \
+			} \
+		}
 
 	class TemplGenTest: public TestFixture {
 		public:

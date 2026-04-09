@@ -261,7 +261,9 @@ namespace cg {
 			if (auto err = AbsoluteSolver::create(std::move(context)).move_or(_parser)) {
 				return Error(ErrorType::INTERNAL, "Could not initialize the AbsoluteSolver", *err);
 			}
-			//parser->print_table(file);
+
+			auto file = std::ofstream("gen/templgen-table.txt");
+			static_cast<AbsoluteSolver*>(_parser.get())->print_table(file);
 		} else {
 			auto parser = SParser::create(std::move(context));
 			_parser = std::move(parser);

@@ -16,8 +16,11 @@ struct Test;
 class TestFixture {
 	public:
 		TestFixture(Test &test): TestFixture(test, 1) {}
-		TestFixture(Test &test, size_t variant) {}
+		TestFixture(Test &test, size_t variant): _test(test) {};
 		static size_t variant_count() { return 1; }
+
+	protected:
+		Test &_test;
 };
 
 struct Test {
@@ -144,6 +147,20 @@ inline void expect(
 	}
 }
 
+template<typename ErrT>
+inline void expect(
+	Test &test,
+	TypedError<ErrT> const &err,
+	const char *value_string,
+	std::source_location loc=std::source_location::current()
+) {
+	auto &os = fail_head(test, loc) << std::endl;
+
+	os << "\tEXPECT(" << value_string << ");" << std::endl;
+	os << std::endl;
+	os << "\terror: " << err << std::endl;
+	os << std::endl;
+}
 
 template<typename ErrorType>
 inline void expect_terror(

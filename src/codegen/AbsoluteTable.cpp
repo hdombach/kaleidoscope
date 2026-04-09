@@ -245,7 +245,7 @@ namespace cg::abs {
 		return rule - _table_states.begin();
 	}
 
-	AbsoluteTable::Row AbsoluteTable::row(StateId const &state_id) {
+	AbsoluteTable::Row AbsoluteTable::row(Entry const &state_id) {
 		return util::Adapt(
 			&_states[state_id * _state_size()],
 			&_states[(state_id + 1) * _state_size()]
@@ -256,28 +256,30 @@ namespace cg::abs {
 		return util::contains(_table_states, table_state);
 	}
 
-	AbsoluteTable::StateId &AbsoluteTable::lookup_tok(
+	AbsoluteTable::Entry &AbsoluteTable::lookup_tok(
 		TableState const &r,
 		Token::Type t
 	) {
+		log_assert(t < _token_size, util::f(t, " is not a valid token"));
 		return row(r).begin()[t];
 	}
 
-	AbsoluteTable::StateId &AbsoluteTable::lookup_tok(
+	AbsoluteTable::Entry &AbsoluteTable::lookup_tok(
 		uint32_t state_id,
 		Token::Type t
 	) {
+		log_assert(t < _token_size, util::f(t, " is not a valid token"));
 		return row(state_id).begin()[t];
 	}
 
-	AbsoluteTable::StateId &AbsoluteTable::lookup_ruleset(
+	AbsoluteTable::Entry &AbsoluteTable::lookup_ruleset(
 		TableState const &r,
 		uint32_t ruleset
 	) {
 		return row(r).begin()[ruleset + _token_size];
 	}
 
-	AbsoluteTable::StateId &AbsoluteTable::lookup_ruleset(
+	AbsoluteTable::Entry &AbsoluteTable::lookup_ruleset(
 		uint32_t state_id,
 		uint32_t ruleset
 	) {

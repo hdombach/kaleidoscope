@@ -16,6 +16,73 @@ namespace cg {
 		return l;
 	}
 
+	CfgLeaf CfgLeaf::cls(CfgRuleSet const &rule_set) {
+		auto l = CfgLeaf();
+		l._type = Type::cls;
+		l._rule_set = SetPtr(new CfgRuleSet(rule_set));
+		return l;
+	}
+
+	CfgLeaf::CfgLeaf(CfgLeaf const &other) {
+		_type = other._type;
+		_token_type = other._token_type;
+		_var_name = other._var_name;
+
+		if (_type == Type::cls) {
+			_rule_set = SetPtr(new CfgRuleSet(other.rule_set()));
+		}
+	}
+
+	CfgLeaf::CfgLeaf(CfgLeaf &&other) {
+		_type = other._type;
+		_token_type = other._token_type;
+		_var_name = std::move(other._var_name);
+		_rule_set = std::move(other._rule_set);
+	}
+
+	CfgLeaf &CfgLeaf::operator=(CfgLeaf const &other) {
+		_type = other._type;
+		_token_type = other._token_type;
+		_var_name = other._var_name;
+
+		if (_type == Type::cls) {
+			_rule_set = SetPtr(new CfgRuleSet(other.rule_set()));
+		}
+
+		return *this;
+	}
+
+	CfgLeaf &CfgLeaf::operator=(CfgLeaf &&other) {
+		_type = other._type;
+		_token_type = other._token_type;
+		_var_name = std::move(other._var_name);
+		_rule_set = std::move(other._rule_set);
+
+		return *this;
+	}
+
+	CfgLeaf::Type CfgLeaf::type() const {
+		return _type;
+	}
+
+	Token::Type CfgLeaf::token_type() const {
+		return _token_type;
+	}
+
+	std::string const &CfgLeaf::var_name() const {
+		return _var_name;
+	}
+
+	CfgRuleSet &CfgLeaf::rule_set() {
+		log_assert(_rule_set.get(), "Must test type before getting rule set");
+		return *_rule_set;
+	}
+
+	CfgRuleSet const &CfgLeaf::rule_set() const {
+		log_assert(_rule_set.get(), "Must test type before getting rule set");
+		return *_rule_set;
+	}
+
 	std::ostream& CfgLeaf::print_debug(std::ostream &os) const {
 		switch (_type) {
 			case Type::empty:
@@ -24,6 +91,8 @@ namespace cg {
 				return os << _token_type;
 			case Type::var:
 				return os << "<" << _var_name << ">";
+			case Type::cls:
+				return os << "[" << *_rule_set << "]";
 		}
 	}
 
@@ -42,6 +111,8 @@ namespace cg {
 				return _token_type == other._token_type;
 			case Type::var:
 				return _var_name == other._var_name;
+			case Type::cls:
+				return rule_set() == other.rule_set();
 		}
 	}
 
@@ -59,6 +130,10 @@ namespace cg {
 	}
 
 	CfgRule::CfgRule(std::vector<CfgLeaf> const &leaves): _leaves(leaves) {}
+
+	std::vector<CfgLeaf> const &CfgRule::leaves() const { return _leaves; }
+
+	std::vector<CfgLeaf> &CfgRule::leaves() { return _leaves; }
 
 	uint32_t CfgRule::set_id() const {
 		return _set_id;
@@ -117,6 +192,14 @@ namespace cg {
 		return *this;
 	}
 
+	bool CfgRuleSet::operator==(CfgRuleSet const &other) const {
+		return _name == other._name && _rules == other._rules;
+	}
+
+	bool CfgRuleSet::operator!=(CfgRuleSet const &other) const {
+		return *this != other;
+	}
+
 	void CfgRuleSet::add_rule(CfgRule const &rule) {
 		_rules.push_back(rule);
 	}
@@ -165,4 +248,8 @@ namespace cg {
 		print_debug(ss, multiline);
 		return ss.str();
 	}
+
+	CfgClosure::CfgClosure(CfgRuleSet const &rule_set): _rule_set(rule_set) {}
+
+	CfgRuleSet const &CfgClosure::rule_set() const { return _rule_set; }
 }

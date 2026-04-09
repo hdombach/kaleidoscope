@@ -53,7 +53,7 @@ namespace cg::abs {
 	}
 
 	uint32_t StackElement::table_state() const {
-		log_assert(std::holds_alternative<uint32_t>(_value), "tabestate must hold uint32_t");
+		log_assert(std::holds_alternative<uint32_t>(_value), "tablestate must hold uint32_t");
 		return std::get<uint32_t>(_value);
 	}
 
@@ -93,6 +93,9 @@ namespace cg::abs {
 			for (auto &rule : set.rules()) {
 				r->_rules.push_back(rule);
 			}
+			if (set == *r->_ctx->get_root()) {
+				r->_root_rule = set.name();
+			}
 		}
 
 		r->_table = AbsoluteTable(*r->_ctx);
@@ -131,7 +134,12 @@ namespace cg::abs {
 		while (1) {
 			log_assert(stack.back().is_table_state(), "Stack must end with a state");
 			uint32_t cur_state_id = stack.back().table_state();
-			auto cur_t = t->type();
+			Token::Type cur_t;
+			if (t >= tokens.end()) {
+				cur_t = Token::Type::Eof;
+			} else {
+				cur_t = t->type();
+			}
 			uint32_t action = _table.lookup_tok(cur_state_id, cur_t);
 			if (action == 0) {
 				return Error(ErrorType::UNEXPECTED_TOKEN, util::f("Unexpected token: ", *t, " at ", t->loc()));
@@ -139,19 +147,33 @@ namespace cg::abs {
 			log_abs() << "state_" << cur_state_id << "[" << Token::type_str(cur_t) << "] == " << _table.action_str(action) << std::endl;
 
 			if (action == AbsoluteTable::ACCEPT_ACTION) {
+				//stack.push_back(parser_ctx.create_tok_node(*t));
+				//stack.push_back(StackElement(action));
+				// Reduce the root
+				//log_debug() << "Before reduce: " << util::plist(stack) << std::endl;
+				/*_reduce(
+					stack,
+					_root_rule,
+					node_id,
+					parser_ctx
+				);
+				log_debug() << "After reduce: " << util::plist(stack) << std::endl;
+*/
 				log_abs() << "Accepting" << std::endl;
 				break;
 			} else if (action & AbsoluteTable::REDUCE_MASK) {
 				uint32_t production_rule_id = action & ~AbsoluteTable::REDUCE_MASK;
-				_reduce(
+				if (_reduce(
 					stack,
 					production_rule_id,
 					node_id,
 					parser_ctx
-				);
+				)->cfg_rule() == _root_rule) {
+					break;
+				}
 			} else {
 				if (cur_t == Token::Type::Eof) {
-					return Error(ErrorType::UNEXPECTED_TOKEN, util::f("Reached EOF unexpectedly"));
+					//return Error(ErrorType::UNEXPECTED_TOKEN, util::f("Reached EOF unexpectedly"));
 				}
 				//TODO: update source location
 				stack.push_back(StackElement(
@@ -163,6 +185,7 @@ namespace cg::abs {
 			}
 		}
 		if (stack.size() != 3) {
+			log_trace() << "Stack is: " << util::plist(stack) << std::endl;
 			return Error(ErrorType::INVALID_ABS_STACK, "Stack must contain 3 elements");
 		}
 		if (!stack[1].is_node()) {
@@ -179,7 +202,7 @@ namespace cg::abs {
 		return *_ctx;
 	}
 
-	void AbsoluteSolver::_reduce(
+	AstNode *AbsoluteSolver::_reduce(
 		std::vector<StackElement> &stack,
 		uint32_t rule_id,
 		uint32_t &node_id,
@@ -204,6 +227,8 @@ namespace cg::abs {
 
 		stack.push_back(StackElement(new_node));
 		stack.push_back(StackElement(next_state_id));
+
+		return &new_node;
 	}
 
 	uint32_t AbsoluteSolver::_add_state(TableState const &state_rule) {
@@ -218,8 +243,15 @@ namespace cg::abs {
 		//Right now, can only reduce if it is the only rule in a group
 		auto end_rules = unsorted_rules.find_ends();
 		if (end_rules.size() == 1) {
-			for (auto &s : new_state) {
-				s = _get_rule_id(end_rules.front()) | AbsoluteTable::REDUCE_MASK;
+			if (end_rules.front().set().name() == _ctx->get_root()->name() && false) {
+				//Always accept
+				for (auto &s : new_state) {
+					s = AbsoluteTable::ACCEPT_ACTION;
+				}
+			} else {
+				for (auto &s : new_state) {
+					s = _get_rule_id(end_rules.front()) | AbsoluteTable::REDUCE_MASK;
+				}
 			}
 		} else if (end_rules.size() > 1) {
 			log_fatal_error() << "Multiple end rules for state: " << state_rule << std::endl;
@@ -238,11 +270,7 @@ namespace cg::abs {
 			auto next = rules.step();
 
 			if (leaf.type() == CfgLeaf::Type::token) {
-				if (leaf.token_type() == Token::Type::Eof) {
-					_table.lookup_tok(state_rule, leaf.token_type()) = AbsoluteTable::ACCEPT_ACTION;
-				} else {
-					_table.lookup_tok(state_rule, leaf.token_type()) = _add_state(next);
-				}
+				_table.lookup_tok(state_rule, leaf.token_type()) = _add_state(next);
 			} else {
 				_table.lookup_ruleset(state_rule, _ctx->rule_id(leaf.var_name())) = _add_state(next);
 			}

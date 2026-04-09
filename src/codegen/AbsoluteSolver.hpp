@@ -99,6 +99,7 @@ namespace cg::abs {
 			CfgContext::Ptr _ctx;
 			AbsoluteTable _table;
 			std::vector<CfgRule> _rules;
+			std::string _root_rule;
 
 		private:
 			/**
@@ -106,8 +107,9 @@ namespace cg::abs {
 			 * @param[in, out] stack The stack to reduce
 			 * @param[in] rule_id
 			 * @param[in, out] node_id uid to assign the node
+			 * @returns The node created
 			 */
-			void _reduce(
+			AstNode *_reduce(
 				std::vector<StackElement> &stack,
 				uint32_t rule_id,
 				uint32_t &node_id,
@@ -135,7 +137,7 @@ namespace cg::abs {
 			std::string _state_str(TableState const &state) const;
 
 			/**
-			 * @brief Finds the deepest rulest at each position
+			 * @brief Finds the deepest rule set at each position
 			 * Keeps track of the inbetween positions while drilling down
 			 */
 			void _drill(
@@ -146,6 +148,11 @@ namespace cg::abs {
 
 			/**
 			 * @brief Wrapper around base _drill func
+			 *
+			 * Finds the deepest rule set at each position in start
+			 * @returns Set of all positions if you unwrap all variables recursively
+			 *
+			 * Will return rule positions that reference both leaf and variables
 			 */
 			TableState _drill(TableState const &start);
 

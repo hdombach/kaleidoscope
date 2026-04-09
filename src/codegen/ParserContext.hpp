@@ -16,6 +16,10 @@ namespace cg {
 	 */
 	class ParserContext {
 		public:
+			ParserContext() = default;
+
+			void destroy();
+
 			std::vector<Token> const &get_tokens(util::StringRef str);
 			AstNode &create_tok_node(Token const &token);
 			AstNode &create_rule_node(std::string const &cfg_name);
@@ -27,10 +31,25 @@ namespace cg {
 				std::vector<Token> tokens;
 			};
 
+			/**
+			 * @brief The next available uid
+			 */
 			uint32_t _node_id=0;
-			uint32_t _node_count;
+			/**
+			 * @brief The current number of allocated nodes
+			 */
+			uint32_t _node_count = 0;
+			/**
+			 * @brief The size of a single node bank
+			 */
 			uint32_t _bank_count=100;
+			/**
+			 * @brief The parsed tokens across all files
+			 */
 			std::map<std::string, FileItem> _items;
+			/**
+			 * @brief The allocated nodes
+			 */
 			std::vector<std::vector<AstNode>> _node_bank;
 
 	};

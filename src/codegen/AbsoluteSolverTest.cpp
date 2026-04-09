@@ -22,11 +22,15 @@ namespace cg {
 
 		auto solver = std::move(AbsoluteSolver::create(std::move(ctx)).value());
 		ParserContext result;
-		auto node = solver->parse(util::StringRef("{{1*1+2}}"), result).value();
+		AstNode *root;
+		if (auto err = solver->parse(util::StringRef("{{1*1+2}}"), result).move_or(root)) {
+			EXPECT(err.value());
+			return;
+		}
 
 		auto ss = std::stringstream();
-		node->print_pre_order(ss);
-		EXPECT_EQ(ss.str(), "S ExpB E E E B IntConstant Multiply B IntConstant Plus B IntConstant ExpE ");
+		root->print_pre_order(ss);
+		EXPECT_EQ(ss.str(), "root S ExpB E E E B IntConstant Multiply B IntConstant Plus B IntConstant ExpE EOF ");
 
 		//std::ofstream file("gen/ast-test.gv");
 		//node->print_dot(file, "ast-test");

@@ -18,6 +18,7 @@ set(CG_TEST
 	${CMAKE_CURRENT_SOURCE_DIR}/TemplGenTest.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/AbsoluteSolverTest.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/TokenizerTest.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/ParserTest.cpp
 )
 
 add_library(cg OBJECT ${CG_SRC})

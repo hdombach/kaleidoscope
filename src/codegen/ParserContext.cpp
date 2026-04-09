@@ -3,6 +3,13 @@
 #include "util/log.hpp"
 
 namespace cg {
+	void ParserContext::destroy() {
+		_node_id = 0;
+		_node_count = 0;
+		_items.clear();
+		_node_bank.clear();
+	}
+
 	std::vector<Token> const &ParserContext::get_tokens(util::StringRef str) {
 		auto &item = _items[str.location().file_name];
 		if (item.source.empty()) {

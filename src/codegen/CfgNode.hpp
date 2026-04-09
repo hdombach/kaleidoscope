@@ -3,11 +3,13 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <memory>
 
 #include "util/result.hpp"
 #include "Tokenizer.hpp"
 
 namespace cg {
+	class CfgRuleSet;
 	/**
 	 * @brief Represents a leaf node for the context free grammar
 	 *
@@ -17,12 +19,16 @@ namespace cg {
 	 * - A single token type to match against
 	 *
 	 */
-	class CfgLeaf final {
+	class CfgLeaf {
+		public:
+			using SetPtr = std::unique_ptr<CfgRuleSet>;
+
 		public:
 			enum class Type {
 				empty,
 				var,
 				token,
+				cls
 			};
 
 			using TType = Token::Type;
@@ -42,15 +48,37 @@ namespace cg {
 			 */
 			static CfgLeaf var(std::string const &str);
 
-			Type type() const { return _type; }
+			/**
+			 * @brief Creates a closure containing a rule set
+			 */
+			static CfgLeaf cls(CfgRuleSet const &rule_set);
 
-			Token::Type token_type() const { return _token_type; }
+			CfgLeaf(CfgLeaf const &other);
+			CfgLeaf(CfgLeaf &&other);
+			CfgLeaf &operator=(CfgLeaf const &other);
+			CfgLeaf &operator=(CfgLeaf &&other);
+
+			Type type() const;
+
+			Token::Type token_type() const;
 			/**
 			 * @brief Get the name of the variable referenced
 			 *
 			 * Only valid if the token type is var
 			 */
-			std::string const &var_name() const { return _var_name; }
+			std::string const &var_name() const;
+			/**
+			 * @brief Gets the rule set
+			 *
+			 * Only valid if the token type is a closure
+			 */
+			CfgRuleSet &rule_set();
+			/**
+			 * @brief Gets the rule set
+			 *
+			 * Only valid if the token type is a closure
+			 */
+			CfgRuleSet const &rule_set() const;
 
 			/**
 			 * @brief Prints a debug representation of the leaf to an ostream
@@ -67,6 +95,7 @@ namespace cg {
 			Type _type;
 			TType _token_type;
 			std::string _var_name;
+			std::unique_ptr<CfgRuleSet> _rule_set;
 	};
 
 	/**
@@ -74,7 +103,7 @@ namespace cg {
 	 *
 	 * Consists of a sequence of leaf nodes which must be matched against
 	 */
-	class CfgRule final {
+	class CfgRule {
 		public:
 			/**
 			 * @brief Creates an empty rule set
@@ -97,7 +126,8 @@ namespace cg {
 			 */
 			CfgRule(std::vector<Token::Type> const &tokens);
 
-			std::vector<CfgLeaf> const &leaves() const { return _leaves; }
+			std::vector<CfgLeaf> const &leaves() const;
+			std::vector<CfgLeaf> &leaves();
 
 			/**
 			 * @brief Gets the uid
@@ -132,7 +162,7 @@ namespace cg {
 	 * Consists of a sequence of CfgRules. Only one of them must be matched.
 	 * The rules are tested in the order they are added until the first one matches
 	 */
-	class CfgRuleSet final {
+	class CfgRuleSet {
 		public:
 			using RuleContainer = std::vector<CfgRule>;
 			using iterator = RuleContainer::iterator;
@@ -179,6 +209,9 @@ namespace cg {
 			 */
 			CfgRuleSet& operator=(CfgLeaf const &leaf);
 
+			bool operator==(CfgRuleSet const &other) const;
+			bool operator!=(CfgRuleSet const &other) const;
+
 			/**
 			 * @brief Appends a single rule to test against
 			 */
@@ -221,6 +254,29 @@ namespace cg {
 		private:
 			std::string _name;
 			std::vector<CfgRule> _rules;
+	};
+
+	/**
+	 * @brief A closure containing a CfgRuleSet
+	 *
+	 * Matches 0 or more instances of the CfgRuleSet
+	 * Closures are removed by the time they are processed by the Parser
+	 */
+	class CfgClosure final {
+		public:
+			/**
+			 * @brief Creates an empty closure
+			 */
+			CfgClosure() = default;
+			/**
+			 * @brief Creates a closure from a rule set
+			 */
+			CfgClosure(CfgRuleSet const &rule_set);
+
+			CfgRuleSet const &rule_set() const;
+
+		private:
+			CfgRuleSet _rule_set;
 	};
 
 	/******** CfgRule *********/

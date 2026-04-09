@@ -38,6 +38,11 @@ namespace cg {
 			CfgLeaf operator [](std::string const &str) const;
 
 			/**
+			 * @brief Wrapper around CfgLeaf::cls
+			 */
+			CfgLeaf cls(CfgRuleSet const &rule_set);
+
+			/**
 			 * @brief Creates a new primary node
 			 *
 			 * A primary node means the node will remain in the created
@@ -80,20 +85,23 @@ namespace cg {
 
 			/**
 			 * @brief Reduces the Context Free Grammar to only use basic operations
-			 * - removes optional fields
-			 * - Seperate all strings into individual character leaves
-			 * - Create rules enumerating all possibilities in character sets
+			 * - Removes closures
+			 * - Removes optional fields by enumerating all combinations
 			 */
 			void simplify();
 		private:
 			std::vector<CfgRuleSet> _cfg_rule_sets;
 			std::map<std::string, uint32_t> _cfg_map;
 			std::set<std::string> _prim_names;
+			std::set<std::string> _closures;
 			std::string _root_name;
 
+		private:
+			void _remove_cls();
 			void _remove_empty();
 
 			void _update_set_ids();
+			void _add_rule_set(std::string const &name, bool builtin=false);
 	};
 
 }

@@ -257,7 +257,11 @@ namespace cg {
 	std::ostream &AstNode::print_debug(std::ostream &os) const {
 		std::string str;
 		if (_type == Type::Leaf) {
-			str = util::escape_str(tok().content());
+			if (tok().type() == Token::Type::Eof) {
+				str = "EOF";
+			} else {
+				str = util::escape_str(tok().content());
+			}
 		} else if (_type == Type::Rule) {
 			str = _cfg_rule;
 		}
@@ -319,6 +323,12 @@ namespace cg {
 	std::string AstNode::str_src() const {
 		auto ss = std::stringstream();
 		print_src(ss);
+		return ss.str();
+	}
+
+	std::string AstNode::str_pre_order() const {
+		auto ss = std::stringstream();
+		print_pre_order(ss);
 		return ss.str();
 	}
 
