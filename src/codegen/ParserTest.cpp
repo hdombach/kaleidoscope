@@ -39,11 +39,14 @@ namespace cg {
 				return _parser->match(util::StringRef(str.c_str(), filename.c_str()));
 			}
 
-			util::Result<std::string, cg::Error> parse_str(std::string const &str) {
+			void parse_eq(
+				std::string const &src,
+				std::string const &expected
+			) {
 				auto filename = util::f("gen/test-output-", _variant, "-", _count++, ".gv");
 				AstNode *node;
-				if (auto err = _parser->parse(util::StringRef(str.c_str(), filename.c_str()), _parser_ctx).move_or(node)) {
-					return cg::Error(cg::ErrorType::MISC, "Could not parse string", err.value());
+				if (auto err = _parser->parse(util::StringRef(src.c_str(), filename.c_str()), _parser_ctx).move_or(node)) {
+					_test.fail("Could not parse provided expression", err.value());
 				}
 
 				auto file = std::ofstream(filename);
@@ -55,7 +58,7 @@ namespace cg {
 					abs->print_table(table_file);
 				}
 
-				return node->str_pre_order();
+				_test.expect_eq(node->str_pre_order(), expected);
 			}
 
 		private:
@@ -75,11 +78,23 @@ namespace cg {
 
 		EXPECT(f.setup(std::move(ctx)));
 
-		auto str = std::string();
-		if (auto err = f.parse_str("UnmatchedToken").move_or(str)) {
-			FAIL("Could not parse string", err.value());
-			return;
-		}
-		EXPECT_EQ(str, "root hello Unmatched EOF ");
+		f.parse_eq("UnmatchedToken", "root hello Unmatched EOF ");
+	}
+
+	TEST_F(ParserTest, simple_exp) {
+		auto ctx = CfgContext::create();
+		auto &c = *ctx;
+		using T = Token::Type;
+
+		c.root("root") = c["S"] + T::Eof; 
+		c.prim("S") = T::ExpB + c["E"] + T::ExpE;
+		c.prim("E") = c["E"] + T::Mult + c["B"];
+		c.prim("E") = c["E"] + T::Plus + c["B"];
+		c.prim("E") = c["B"];
+		c.prim("B") = T::IntConst;
+		EXPECT(c.prep());
+		c.prep().value();
+		c.simplify();
+
 	}
 }

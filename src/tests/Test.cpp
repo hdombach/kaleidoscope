@@ -23,12 +23,8 @@ size_t Test::variant_count() const {
 	return _variant_count;
 }
 
-uint32_t Test::total_tests() const {
-	return _total_tests;
-}
-
-uint32_t Test::passed_tests() const {
-	return _passed_tests;
+bool Test::test_failed() const {
+	return _test_failed;
 }
 
 std::string const &Test::suite_name() const {
@@ -40,6 +36,7 @@ std::string const &Test::test_name() const {
 }
 
 void Test::operator()(Test &test, int variant_index) {
+	_test_failed = false;
 	_callback(test, variant_index);
 }
 
@@ -57,8 +54,8 @@ bool _in_filter(
 }
 
 int test_main(std::vector<std::string> const &filters) {
-	uint32_t all_total = 0;
-	uint32_t all_passed = 0;
+	uint32_t errors = 0;
+	uint32_t total = 0;
 	for (auto &suite : suites) {
 		log_trace() << "Starting test suite: " << suite.first << std::endl;
 		uint32_t suite_total = 0;
@@ -69,30 +66,26 @@ int test_main(std::vector<std::string> const &filters) {
 				continue;
 			}
 
-			try {
-				for (int i = 0; i < test.second.variant_count(); i++) {
+			for (int i = 0; i < test.second.variant_count(); i++) {
+				total++;
+				try {
 					log_trace() << "Starting test: " << test.first << ":" << i << std::endl;
 					test.second(test.second, i);
-					auto test_total = test.second.total_tests();
-					auto test_passed = test.second.passed_tests();
-
-					suite_passed += test_passed;
-					suite_total += test_total;
+					
+					if (test.second.test_failed()) errors++;
+				} catch (...) {
+					test.second.fail("Exception was thrown");
+					errors++;
 				}
-			} catch (...) {
-				test.second.fail("Exception was thrown");
-				suite_total++;
 			}
 		}
 
-		all_total += suite_total;
-		all_passed += suite_passed;
 	}
 
 	std::cout << "Finished all tests: "
-		<< "(" << all_passed << "/" << all_total << ")" << std::endl;
+		<< "(" << total - errors << "/" << total << ")" << std::endl;
 
-	if (all_passed == all_total) {
+	if (errors == 0) {
 		return 0;
 	} else {
 		return 1;

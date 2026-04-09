@@ -39,18 +39,12 @@ class Test {
 
 		std::string full_name() const;
 		size_t variant_count() const;
-		uint32_t total_tests() const;
-		uint32_t passed_tests() const;
+		bool test_failed() const;
 		std::string const &suite_name() const;
 		std::string const &test_name() const;
 
 
 		void operator()(Test &, int variant_index);
-
-		void pass() {
-			_total_tests++;
-			_passed_tests++;
-		}
 
 		void fail(
 			std::vector<std::string> const &msgs,
@@ -68,7 +62,7 @@ class Test {
 
 			std::cout << std::endl;
 
-			_total_tests++;
+			_test_failed = true;
 		}
 
 		void fail(
@@ -134,9 +128,7 @@ class Test {
 			std::vector<std::string> const &msgs = {},
 			util::FileLocation const &loc = std::source_location::current()
 		) {
-			if (lhs == rhs) {
-				pass();
-			} else {
+			if (lhs != rhs) {
 				auto more_msgs = msgs;
 				more_msgs.push_back(util::f("Lhs and rhs are not equal. (\"", util::abbrev(util::f(lhs)), "\" != \"", util::abbrev(util::f(rhs)), "\""));
 				fail(more_msgs, loc);
@@ -179,9 +171,8 @@ class Test {
 		Callback _callback;
 		std::string _suite_name = "";
 		std::string _test_name = "";
-		size_t _variant_count = 0;
-		uint32_t _total_tests = 0;
-		uint32_t _passed_tests = 0;
+		size_t _variant_count = 1;
+		bool _test_failed = false;
 };
 
 using TestSuite = std::map<std::string, Test>;
