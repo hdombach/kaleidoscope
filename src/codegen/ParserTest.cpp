@@ -61,6 +61,18 @@ namespace cg {
 				_test.expect_eq(node->str_pre_order(), expected);
 			}
 
+			void parse_err(
+				std::string const &src,
+				cg::ErrorType type
+			) {
+				auto filename = util::f("gen/test-output-", _variant, "-", _count++);
+				if (auto res = _parser->parse(util::StringRef(src.c_str(), filename.c_str()), _parser_ctx)) {
+					_test.fail(util::f("Expecting parse to fail with ", Error::type_str(type)));
+				} else {
+					_test.expect_eq(type, res.error().type());
+				}
+			}
+
 		private:
 			Parser::Ptr _parser;
 			ParserContext _parser_ctx;
@@ -81,6 +93,113 @@ namespace cg {
 		f.parse_eq("UnmatchedToken", "root hello Unmatched EOF ");
 	}
 
+	TEST_F(ParserTest, match_number) {
+		auto ctx = CfgContext::create();
+		auto &c = *ctx;
+		using T = Token::Type;
+
+		c.root("root") = c["exp"] + T::Eof;
+		c.prim("integer") = T::IntConst | c.empty();
+		c.prim("decimal")
+			= c["integer"] + T::Period + c["integer"];
+		c.prim("exp") = T::ExpB + c["decimal"] + T::ExpE;
+
+		EXPECT(f.setup(std::move(ctx)));
+
+		f.parse_err("{{491f}}", ErrorType::INVALID_PARSE);
+		f.parse_err("{{hello}}", ErrorType::INVALID_PARSE);
+		f.parse_eq("{{192.}}", "root exp ExpB decimal integer IntConstant Period ExpE EOF ");
+		f.parse_eq("{{.89141}}", "root exp ExpB decimal Period integer IntConstant ExpE EOF ");
+		f.parse_err("{{..123}}", ErrorType::INVALID_PARSE);
+		f.parse_eq("{{.}}", "root exp ExpB decimal Period ExpE EOF ");
+		f.parse_eq("{{15.9}}", "root exp ExpB decimal integer IntConstant Period integer IntConstant ExpE EOF ");
+	}
+
+	TEST_F(ParserTest, match_math) {
+		auto ctx = CfgContext::create();
+		auto &c = *ctx;
+		using T = Token::Type;
+
+		c.prim("decimal")
+			= T::IntConst + T::Period + T::IntConst
+			| T::IntConst
+			| T::Period + T::IntConst
+			| T::IntConst + T::Period;
+		c.prim("exp_sing") = c["decimal"];
+		c.prim("exp_inc_dec")
+			= T::Plus + c["exp_inc_dec"]
+			| T::Minus + c["exp_inc_dec"]
+			| T::Excl + c["exp_inc_dec"]
+			| c["exp_sing"];
+		c.prim("exp_mult_div")
+			= c["exp_inc_dec"] + T::Mult + c["exp_mult_div"]
+			| c["exp_inc_dec"] + T::Div + c["exp_mult_div"]
+			| c["exp_inc_dec"] + T::Perc + c["exp_mult_div"]
+			| c["exp_inc_dec"];
+		c.prim("exp_add_sub")
+			= c["exp_mult_div"] + T::Plus + c["exp_add_sub"]
+			| c["exp_mult_div"] + T::Minus + c["exp_add_sub"]
+			| c["exp_mult_div"];
+		c.prim("exp") = c["exp_add_sub"];
+
+		c.prim("e") = T::ExpB + c["exp"] + T::ExpE;
+		c.root("root") = c["e"] + T::Eof;
+
+		EXPECT(f.setup(std::move(ctx)));
+
+		f.parse_eq(
+			"{{1}}",
+			"root e ExpB exp exp_add_sub exp_mult_div exp_inc_dec exp_sing decimal "
+			"IntConstant ExpE EOF "
+		);
+		f.parse_eq(
+			"{{42.1}}",
+			"root e ExpB exp exp_add_sub exp_mult_div exp_inc_dec exp_sing decimal "
+			"IntConstant Period IntConstant ExpE EOF "
+		);
+		f.parse_eq(
+			"{{192.12+41}}",
+			"root e ExpB exp exp_add_sub exp_mult_div exp_inc_dec exp_sing decimal "
+			"IntConstant Period IntConstant Plus exp_add_sub exp_mult_div exp_inc_dec "
+			"exp_sing decimal IntConstant ExpE EOF "
+		);
+		f.parse_eq(
+			"{{192.12+41-0.12}}",
+			"root e ExpB exp exp_add_sub exp_mult_div exp_inc_dec exp_sing decimal "
+			"IntConstant Period IntConstant Plus exp_add_sub exp_mult_div exp_inc_dec "
+			"exp_sing decimal IntConstant Minus exp_add_sub exp_mult_div exp_inc_dec "
+			"exp_sing decimal IntConstant Period IntConstant ExpE EOF "
+		);
+		f.parse_eq(
+			"{{19*1.0}}",
+			"root e ExpB exp exp_add_sub exp_mult_div exp_inc_dec exp_sing decimal "
+			"IntConstant Multiply exp_mult_div exp_inc_dec exp_sing decimal IntConstant "
+			"Period IntConstant ExpE EOF "
+		);
+		f.parse_eq(
+			"{{19/1.0*20}}",
+			"root e ExpB exp exp_add_sub exp_mult_div exp_inc_dec exp_sing decimal "
+			"IntConstant Divide exp_mult_div exp_inc_dec exp_sing decimal IntConstant "
+			"Period IntConstant Multiply exp_mult_div exp_inc_dec exp_sing decimal "
+			"IntConstant ExpE EOF "
+		);
+		f.parse_eq(
+			"{{5+2*12}}",
+			"root e ExpB exp exp_add_sub exp_mult_div exp_inc_dec exp_sing decimal "
+			"IntConstant Plus exp_add_sub exp_mult_div exp_inc_dec exp_sing "
+			"decimal IntConstant Multiply exp_mult_div exp_inc_dec exp_sing decimal "
+			"IntConstant ExpE EOF "
+		);
+		f.parse_eq(
+			"{{5+-2*-+-12}}",
+			"root e ExpB exp exp_add_sub exp_mult_div exp_inc_dec exp_sing decimal "
+			"IntConstant Plus exp_add_sub exp_mult_div exp_inc_dec Minus exp_inc_dec "
+			"exp_sing decimal IntConstant Multiply exp_mult_div exp_inc_dec Minus "
+			"exp_inc_dec Plus exp_inc_dec Minus exp_inc_dec exp_sing decimal IntConstant "
+			"ExpE EOF "
+		);
+	}
+
 	TEST_F(ParserTest, simple_exp) {
 		auto ctx = CfgContext::create();
 		auto &c = *ctx;
@@ -88,13 +207,13 @@ namespace cg {
 
 		c.root("root") = c["S"] + T::Eof; 
 		c.prim("S") = T::ExpB + c["E"] + T::ExpE;
-		c.prim("E") = c["E"] + T::Mult + c["B"];
-		c.prim("E") = c["E"] + T::Plus + c["B"];
+		c.prim("E") = c["B"] + T::Mult + c["E"];
+		c.prim("E") = c["B"] + T::Plus + c["E"];
 		c.prim("E") = c["B"];
 		c.prim("B") = T::IntConst;
-		EXPECT(c.prep());
-		c.prep().value();
-		c.simplify();
 
+		EXPECT(f.setup(std::move(ctx)));
+
+		f.parse_eq("{{1*1+2}}", "root S ExpB E B IntConstant Multiply E B IntConstant Plus E B IntConstant ExpE EOF ");
 	}
 }

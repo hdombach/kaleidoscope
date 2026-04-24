@@ -150,7 +150,7 @@ namespace cg {
 				" but got ",
 				token
 			);
-			return _set_failure(Error(ErrorType::INVALID_GRAMMAR, msg));
+			return _set_failure(Error(ErrorType::INVALID_PARSE, msg));
 		}
 	}
 }

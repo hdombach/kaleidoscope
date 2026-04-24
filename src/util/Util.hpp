@@ -155,6 +155,26 @@ namespace util {
 		return res;
 	}
 
+	inline std::string abbrev_diff(
+		std::string const &lhs,
+		std::string const &rhs,
+		size_t length = 16
+	) {
+		if (lhs == rhs) return abbrev(lhs, length);
+		int i;
+		for (i = 0; i < lhs.size(); i++) {
+			if (lhs[i] != rhs[i]) break;
+		}
+		i -= std::max(static_cast<int>(length) / 2, 0);
+		return util::f(
+			"\"",
+			abbrev({lhs.begin() + i, lhs.end()}, length),
+			"\" != \"",
+			abbrev({rhs.begin() + i, rhs.end()}, length),
+			"\""
+		);
+	}
+
 	/**
 	 * @brief Tests whether a ptr exists
 	 */

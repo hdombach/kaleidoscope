@@ -142,7 +142,7 @@ namespace cg::abs {
 			}
 			uint32_t action = _table.lookup_tok(cur_state_id, cur_t);
 			if (action == 0) {
-				return Error(ErrorType::UNEXPECTED_TOKEN, util::f("Unexpected token: ", *t, " at ", t->loc()));
+				return Error(ErrorType::INVALID_PARSE, util::f("Unexpected token: ", *t, " at ", t->loc()));
 			}
 			log_abs() << "state_" << cur_state_id << "[" << Token::type_str(cur_t) << "] == " << _table.action_str(action) << std::endl;
 
@@ -243,18 +243,19 @@ namespace cg::abs {
 		//Right now, can only reduce if it is the only rule in a group
 		auto end_rules = unsorted_rules.find_ends();
 		if (end_rules.size() == 1) {
-			if (end_rules.front().set().name() == _ctx->get_root()->name() && false) {
+			if (end_rules.begin()->set().name() == _ctx->get_root()->name() && false) {
 				//Always accept
 				for (auto &s : new_state) {
 					s = AbsoluteTable::ACCEPT_ACTION;
 				}
 			} else {
 				for (auto &s : new_state) {
-					s = _get_rule_id(end_rules.front()) | AbsoluteTable::REDUCE_MASK;
+					s = _get_rule_id(*end_rules.begin()) | AbsoluteTable::REDUCE_MASK;
 				}
 			}
 		} else if (end_rules.size() > 1) {
-			log_fatal_error() << "Multiple end rules for state: " << state_rule << std::endl;
+			log_fatal_error() << "Multiple end rules for state: " << state_rule
+				<< " end rules: " << util::plist(end_rules) << std::endl;
 		}
 
 		//group by leaf type. We already handeled positions at the end a rule so we

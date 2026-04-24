@@ -166,11 +166,11 @@ namespace cg::abs {
 		return false;
 	}
 
-	std::vector<RulePos> TableState::find_ends() const {
-		auto result = std::vector<RulePos>();
+	std::set<RulePos> TableState::find_ends() const {
+		auto result = std::set<RulePos>();
 		for (auto &rule : _rules) {
 			if (rule.is_end()) {
-				result.push_back(rule);
+				result.insert(rule);
 			}
 		}
 		return result;

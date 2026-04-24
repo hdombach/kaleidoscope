@@ -135,7 +135,7 @@ namespace cg::abs {
 			 */
 			bool contains_end() const;
 
-			std::vector<RulePos> find_ends() const;
+			std::set<RulePos> find_ends() const;
 
 			/**
 			 * @brief Creates a new TableState with every RulePos incrimented by one
