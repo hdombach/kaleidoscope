@@ -50,6 +50,8 @@ namespace cg {
 
 			CodegenRes _codegen(AstNode const &node, TemplDict &args);
 
+			void _trim_padding();
+
 			CodegenRes _cg_default(AstNode const &node, TemplDict &args);
 			CodegenRes _cg_recursive(AstNode const &node, TemplDict &args);
 			CodegenRes _cg_ref(AstNode const &node, TemplDict &args, size_t count=1);
@@ -101,8 +103,6 @@ namespace cg {
 				TemplDict const &args
 			);
 			EvalRes _eval_filter(AstNode const &node, TemplDict const &args);
-
-			util::Result<bool, Error> _tag_keep_padding(AstNode const &node, bool def);
 
 			util::Result<void, Error> _add_builtin_identifier(
 				std::string const &name,

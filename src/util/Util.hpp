@@ -152,7 +152,7 @@ namespace util {
 		} else {
 			res = str;
 		}
-		return res;
+		return util::escape_str(res);
 	}
 
 	inline std::string abbrev_diff(
@@ -165,7 +165,7 @@ namespace util {
 		for (i = 0; i < lhs.size(); i++) {
 			if (lhs[i] != rhs[i]) break;
 		}
-		i -= std::max(static_cast<int>(length) / 2, 0);
+		i = std::max(i - static_cast<int>(length), 0);
 		return util::f(
 			"\"",
 			abbrev({lhs.begin() + i, lhs.end()}, length),

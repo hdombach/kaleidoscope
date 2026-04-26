@@ -404,6 +404,9 @@ namespace cg {
 		}
 	}
 
+	void TemplGen::_trim_padding() {
+	}
+
 	util::Result<std::string, Error> TemplGen::_cg_default(
 		AstNode const &node,
 		TemplDict &args
@@ -1253,42 +1256,6 @@ namespace cg {
 			}
 		}
 		return res;
-	}
-
-
-	util::Result<bool, Error> TemplGen::_tag_keep_padding(
-		AstNode const &node,
-		bool def
-	) {
-		auto cons = node.consumed_all();
-		auto const &name = node.cfg_rule();
-		if (name == "comment_b" || name == "expression_b") {
-			if (cons.size() == 2) {
-				return def;
-			}
-			CG_ASSERT(cons.size() == 3, "Invalid beggining tag size");
-			if (cons[2] == '-') {
-				return false;
-			}
-			if (cons[2] == '+') {
-				return true;
-			}
-			return Error(ErrorType::SEMANTIC, util::f("Invalid tag ending: ", cons[2]), node.location());
-		} else if (name == "comment_e" || name == "expression_e") {
-			if (cons.size() == 2) {
-				return def;
-			}
-			CG_ASSERT(cons.size() == 3, "Invalid ending tag size");
-			if (cons[0] == '-') {
-				return false;
-			}
-			if (cons[0] == '+') {
-				return true;
-			}
-			return Error(ErrorType::SEMANTIC, util::f("Invalid tag beggining: ", cons[0]), node.location());
-		} else {
-			return Error(ErrorType::ASSERT, util::f("Cannot get tag padding for cfg node", name));
-		}
 	}
 
 	util::Result<void, Error> TemplGen::_add_builtin_identifier(

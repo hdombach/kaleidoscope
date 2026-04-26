@@ -131,8 +131,8 @@ class Test {
 			if (lhs != rhs) {
 				auto more_msgs = msgs;
 				more_msgs.push_back(util::f("Lhs and rhs are not equal. (", util::abbrev_diff(util::f(lhs), util::f(rhs)), ")"));
-				more_msgs.push_back(util::f("lhs: ", lhs));
-				more_msgs.push_back(util::f("rhs: ", rhs));
+				more_msgs.push_back(util::f("lhs: ", std::quoted(util::f(lhs))));
+				more_msgs.push_back(util::f("rhs: ", std::quoted(util::f(rhs))));
 				fail(more_msgs, loc);
 			}
 		}
