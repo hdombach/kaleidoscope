@@ -43,6 +43,16 @@ namespace cg {
 			CfgLeaf cls(CfgRuleSet const &rule_set);
 
 			/**
+			 * @brief Wrapper around CfgLeaf::cls
+			 */
+			CfgLeaf cls(CfgRule const &rule);
+
+			/**
+			 * @brief Wrapper around CfgLeaf::cls
+			 */
+			CfgLeaf cls(CfgLeaf const &leaf);
+
+			/**
 			 * @brief Creates a new primary node
 			 *
 			 * A primary node means the node will remain in the created

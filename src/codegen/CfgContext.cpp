@@ -22,6 +22,14 @@ namespace cg {
 		return CfgLeaf::cls(rule_set);
 	}
 
+	CfgLeaf CfgContext::cls(CfgRule const &rule) {
+		return CfgLeaf::cls(rule);
+	}
+
+	CfgLeaf CfgContext::cls(CfgLeaf const &leaf) {
+		return CfgLeaf::cls(leaf);
+	}
+
 	CfgRuleSet &CfgContext::prim(std::string const &name) {
 		_prim_names.insert(name);
 		_add_rule_set(name);

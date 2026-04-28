@@ -49,6 +49,8 @@ namespace cg {
 					_test.fail("Could not parse provided expression", err.value());
 				}
 
+				node->compress(_parser->cfg().prim_names());
+
 				auto file = std::ofstream(filename);
 				node->print_dot(file, util::f("Test ", _test.full_name(), " variant ", _variant));
 
@@ -215,5 +217,38 @@ namespace cg {
 		EXPECT(f.setup(std::move(ctx)));
 
 		f.parse_eq("{{1*1+2}}", "root S ExpB E B IntConstant Multiply E B IntConstant Plus E B IntConstant ExpE EOF ");
+	}
+
+	TEST_F(ParserTest, cls) {
+		auto ctx = CfgContext::create();
+		auto &c = *ctx;
+		using T = Token::Type;
+
+		c.root("value") = c["morse"] + T::Eof;
+		c.prim("morse") = T::ExpB + c.cls(T::Period | T::Minus) + T::ExpE;
+
+		EXPECT(f.setup(std::move(ctx)));
+
+		f.parse_err("hello world", ErrorType::INVALID_PARSE);
+		f.parse_eq("{{.--.}}", "value morse ExpB Period Minus Minus Period ExpE EOF ");
+		f.parse_eq("{{}}", "value morse ExpB ExpE EOF ");
+		f.parse_eq("{{.}}", "value morse ExpB Period ExpE EOF ");
+	}
+
+	TEST_F(ParserTest, cls_numbers) {
+		auto ctx = CfgContext::create();
+		auto &c = *ctx;
+		using T = Token::Type;
+
+		c.root("root") = c["exp"] + T::Eof;
+		c.temp("exp") = T::ExpB + c["num_list"] + T::ExpE;
+		c.prim("num_list") = T::IntConst + c.cls(T::Comma + T::IntConst);
+
+		EXPECT(f.setup(std::move(ctx)));
+
+		f.parse_err("hello world", ErrorType::INVALID_PARSE);
+		f.parse_err("{{}}", ErrorType::INVALID_PARSE);
+		f.parse_eq("{{194}}", "root ExpB num_list IntConstant ExpE EOF ");
+		f.parse_eq("{{1,402,215}}", "root ExpB num_list IntConstant Comma IntConstant Comma IntConstant ExpE EOF ");
 	}
 }

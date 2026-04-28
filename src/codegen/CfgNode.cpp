@@ -23,6 +23,17 @@ namespace cg {
 		return l;
 	}
 
+	CfgLeaf CfgLeaf::cls(CfgRule const &rule) {
+		auto l = CfgLeaf();
+
+		auto rs = new CfgRuleSet();
+		rs->add_rule(rule);
+
+		l._type = Type::cls;
+		l._rule_set = SetPtr(rs);
+		return l;
+	}
+
 	CfgLeaf::CfgLeaf(CfgLeaf const &other) {
 		_type = other._type;
 		_token_type = other._token_type;

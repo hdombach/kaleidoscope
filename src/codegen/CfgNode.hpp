@@ -10,6 +10,7 @@
 
 namespace cg {
 	class CfgRuleSet;
+	class CfgRule;
 	/**
 	 * @brief Represents a leaf node for the context free grammar
 	 *
@@ -52,6 +53,7 @@ namespace cg {
 			 * @brief Creates a closure containing a rule set
 			 */
 			static CfgLeaf cls(CfgRuleSet const &rule_set);
+			static CfgLeaf cls(CfgRule const &rule);
 
 			CfgLeaf(CfgLeaf const &other);
 			CfgLeaf(CfgLeaf &&other);
