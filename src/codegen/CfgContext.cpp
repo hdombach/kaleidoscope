@@ -198,32 +198,60 @@ namespace cg {
 	void CfgContext::_remove_cls() {
 		auto new_sets = std::vector<CfgRuleSet>();
 
-		for (auto &set : _cfg_rule_sets) {
-			uint32_t i = 0;
-			for (auto &rule : set.rules()) {
-				for (auto &leaf : rule.leaves()) {
+		for (auto i = 0; i < _cfg_rule_sets.size(); i++) {
+			auto const &set = _cfg_rule_sets[i];
+			int rule_idx = 0;
+			// Create copies because everything will be invalidated
+			for (auto const rule : set.rules()) {
+				int leaf_idx = 0;
+				for (auto const leaf : rule.leaves()) {
 					if (leaf.type() == CfgLeaf::Type::cls) {
-						auto name = util::f("_", set.name(), "_cls_", i++);
+						// Chop off the end of the rule and make a new rule.
+						// <foo> -> [<bar>] <rest>
+						// Turns into
+						// <foo> -> <_bar_cls_0>
+						// <bar_cls_0> -> <bar> <bar_cls_0>
+						// <bar_cls_0 -> <rest>
+						//
+						// We need to move rest to the new rule or else the parse won't
+						// correctly generate.
 
-						new_sets.push_back(CfgRuleSet(name));
 
-						//Construct new set
-						new_sets.back().add_rules(leaf.rule_set());
-						for (auto &rule : new_sets.back().rules()) {
-							rule = rule + CfgLeaf::var(name);
+						// Create the new rule
+						auto name = util::f("_", set.name(), "_cls_", rule_idx);
+
+						// Add rule that appends the rest
+						_add_rule_set(name, true);
+						auto &new_set = _cfg_rule_sets[_cfg_map[name]];
+						_closures.insert(name);
+
+						auto new_rule = CfgRule();
+						for (auto j = leaf_idx+1; j < rule.leaves().size(); j++) {
+							new_rule = new_rule + rule.leaves()[j];
 						}
-						new_sets.back().add_rule(empty());
+						if (leaf_idx+1 == rule.leaves().size()) {
+							new_rule = CfgLeaf();
+						}
+						new_set.add_rule(new_rule);
 
-						leaf = CfgLeaf::var(name);
+						// Add <bar> <ar_cls_0>
+						for (auto &sub_rule : leaf.rule_set()) {
+							new_set.add_rule(sub_rule + CfgLeaf::var(name));
+
+						}
+
+						// Update the original rule to include a reference to the end
+						CfgRule &rule_ref = _cfg_rule_sets[i].rules()[rule_idx];
+						rule_ref = CfgRule(); // clear rule
+						for (auto j = 0; j < leaf_idx; j++) {
+							rule_ref = rule_ref + rule.leaves()[j];
+						}
+						rule_ref = rule_ref + CfgLeaf::var(name);
 					}
+					leaf_idx++;
 				}
+				rule_idx++;
 			}
-		}
-
-		for (auto &s : new_sets) {
-			_add_rule_set(s.name(), true);
-			_cfg_rule_sets[_cfg_map[s.name()]] = s;
-			_closures.insert(s.name());
 		}
 	}
 

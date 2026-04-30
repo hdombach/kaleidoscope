@@ -211,10 +211,7 @@ namespace cg {
 			T::StmtB +
 			c["whitespace"] + T::EndFor +  c["whitespace"] +
 			T::StmtE;
-		c.prim("sfor") = c["sfrag_for"] + c["sfor_lines"];
-		c.prim("sfor_lines")
-			= c["line_single"] + c["sfor_lines"]
-			| c["sfrag_endfor"];
+		c.prim("sfor") = c["sfrag_for"] + c.cls(c["line_single"]) + c["sfrag_endfor"];
 
 
 		c.temp("sfrag_argdef_cls")
@@ -602,7 +599,7 @@ namespace cg {
 		TemplDict &args
 	) {
 		auto result = std::string();
-		AstNode *sfrag_for, *identifier, *iter_exp, *lines;
+		AstNode *sfrag_for, *identifier, *iter_exp;
 		std::string iter_name;
 
 		if (auto err = node.child_with_cfg("sfrag_for").move_or(sfrag_for)) {
@@ -614,9 +611,7 @@ namespace cg {
 		if (auto err = sfrag_for->child_with_cfg("exp").move_or(iter_exp)) {
 			return Error(ErrorType::ASSERT, "Could not parse for loop iterator expression", err.value());
 		}
-		if (auto err = node.child_with_cfg("sfor_lines").move_or(lines)) {
-			return Error(ErrorType::ASSERT, "Could not parse lines in for statement", err.value());
-		}
+		auto lines = node.children_with_cfg("line_single");
 
 		iter_name = identifier->tok().content();
 
@@ -641,10 +636,12 @@ namespace cg {
 			auto local_args = args;
 			local_args[iter_name] = i;
 			local_args["loop"] = loop;
-			if (auto v = _codegen(*lines, local_args)) {
-				result += v.value();
-			} else {
-				return Error(ErrorType::MISC, "Could not evaluate loop in for loop", v.error());
+			for (auto &line : lines) {
+				if (auto v = _codegen(*line, local_args)) {
+					result += v.value();
+				} else {
+					return Error(ErrorType::MISC, "Could not evaluate loop in for loop", v.error());
+				}
 			}
 			index++;
 		}

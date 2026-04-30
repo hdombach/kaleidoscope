@@ -81,6 +81,7 @@ namespace cg {
 	}
 
 	std::string const &CfgLeaf::var_name() const {
+		log_assert(_type == Type::var, "Must test type before getting var_name");
 		return _var_name;
 	}
 

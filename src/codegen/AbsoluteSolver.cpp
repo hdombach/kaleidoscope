@@ -10,6 +10,7 @@
 #include "Tokenizer.hpp"
 
 
+#include "util/Util.hpp"
 #include "util/log.hpp"
 #include "util/PrintTools.hpp"
 #include "util/NullStream.hpp"
@@ -142,7 +143,11 @@ namespace cg::abs {
 			}
 			uint32_t action = _table.lookup_tok(cur_state_id, cur_t);
 			if (action == 0) {
-				return Error(ErrorType::INVALID_PARSE, util::f("Unexpected token: ", *t, " at ", t->loc()));
+				return Error(ErrorType::INVALID_PARSE, util::f(
+						"Unexpected token: ", Token::type_str(t->type()),
+						" at ", t->loc(), "\n", util::debug_file_loc(std::string(str.str()), t->loc()), "\n"
+						"Currently parsing:\n", _table.row_state(cur_state_id).str()
+				));
 			}
 			log_abs() << "state_" << cur_state_id << "[" << Token::type_str(cur_t) << "] == " << _table.action_str(action) << std::endl;
 

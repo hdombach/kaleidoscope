@@ -9,6 +9,8 @@
 #include <glm/fwd.hpp>
 
 #include "format.hpp"
+#include "util/FileLocation.hpp"
+#include "util/lines_iterator.hpp"
 
 namespace util {
 	template<typename Contains, typename Element>
@@ -173,6 +175,26 @@ namespace util {
 			abbrev({rhs.begin() + i, rhs.end()}, length),
 			"\""
 		);
+	}
+
+	inline std::string debug_file_loc(
+		std::string const &str,
+		util::FileLocation const &loc
+	) {
+		int i = 1;
+		auto msg = std::string();
+		for (auto line : get_lines(str)) {
+			if (i > loc.line-4) {
+				msg += std::string(line) + "\n";
+			}
+			if (i == loc.line) {
+				msg += std::string(" ", loc.column);
+				msg += "^";
+				return msg;
+			}
+			i++;
+		}
+		return "UNKNOWN";
 	}
 
 	/**

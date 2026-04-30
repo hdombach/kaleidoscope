@@ -298,6 +298,10 @@ namespace cg::abs {
 		return s;
 	}
 
+	TableState const &AbsoluteTable::row_state(uint32_t state_id) const {
+		return _table_states[state_id];
+	}
+
 	uint32_t AbsoluteTable::_state_size() const {
 		return _ruleset_size + _token_size;
 	}

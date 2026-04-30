@@ -234,6 +234,10 @@ namespace cg::abs {
 			 */
 			std::string action_str(uint32_t action) const;
 
+			/**
+			 * @brief Gets the state for a current state id
+			 */
+			TableState const &row_state(uint32_t state_id) const;
 
 		private:
 			CfgContext const *_ctx = nullptr;

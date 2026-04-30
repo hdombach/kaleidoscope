@@ -43,7 +43,7 @@ namespace cg {
 				std::string const &src,
 				std::string const &expected
 			) {
-				auto filename = util::f("gen/test-output-", _variant, "-", _count++, ".gv");
+				auto filename = util::f("gen/test-output-", _count++, ".gv");
 				AstNode *node;
 				if (auto err = _parser->parse(util::StringRef(src.c_str(), filename.c_str()), _parser_ctx).move_or(node)) {
 					_test.fail("Could not parse provided expression", err.value());
@@ -250,5 +250,21 @@ namespace cg {
 		f.parse_err("{{}}", ErrorType::INVALID_PARSE);
 		f.parse_eq("{{194}}", "root ExpB num_list IntConstant ExpE EOF ");
 		f.parse_eq("{{1,402,215}}", "root ExpB num_list IntConstant Comma IntConstant Comma IntConstant ExpE EOF ");
+	}
+
+	TEST_F(ParserTest, for_loop) {
+		auto ctx = CfgContext::create();
+		auto &c = *ctx;
+		using T = Token::Type;
+
+		c.root("root") = c["for"] + T::Eof;
+		c.prim("sfrag_for") = T::StmtB + T::For + T::StmtE;
+		c.prim("sfrag_endfor") = T::StmtB + T::EndFor + T::StmtE;
+		c.prim("for") = c["sfrag_for"] + c["periods"] + c["sfrag_endfor"];
+		c.prim("periods") = c.cls(T::Period);
+
+		EXPECT(f.setup(std::move(ctx)));
+
+		f.parse_eq("{\%for%}{\%endfor%}", "root for sfrag_for StmtB For StmtE sfrag_endfor StmtB EndFor StmtE EOF ");
 	}
 }
