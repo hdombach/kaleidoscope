@@ -38,36 +38,22 @@ namespace cg {
 		auto &c = *context;
 		using T = Token::Type;
 
-		c.prim("whitespace")
-			= T::Pad + c["whitespace"]
-			| T::Newline + c["whitespace"]
-			| c.empty();
+		c.prim("whitespace") = c.cls(T::Pad | T::Newline);
 
-		c.prim("line_single")
+		c.prim("line")
 			= c["statement"]
 			| c["expression"]
 			| c["comment"]
 			| T::Pad
 			| T::Unmatched
 			| T::Newline;
-		c.prim("line")
-			= c["line_single"] + c["line"]
-			| c.empty();
 
-		c.prim("lines")
-			= c["line_single"] + c["lines"]
-			| c.empty();
+		c.prim("lines") = c.cls(c["line"]);
 
 		c.root("file") = c["lines"] + T::Eof;
 
-		c.temp("comment_cls")
-			= T::Pad + c["comment_cls"]
-			| T::Unmatched + c["comment_cls"]
-			| T::Newline + c["comment_cls"]
-			| c.empty();
-
 		c.prim("comment") =
-			T::CommentB + c["comment_cls"] + T::CommentE;
+			T::CommentB + c.cls(T::Pad | T::Newline | T::Unmatched) + T::CommentE;
 
 		c.prim("expression") =
 			T::ExpB +
@@ -83,17 +69,10 @@ namespace cg {
 
 		c.temp("exp_paran") = T::ParanOpen + c["whitespace"] + c["exp"] + T::ParanClose;
 
-		c.temp("exp1_cls")
-			= c["exp_member"] + c["exp1_cls"]
-			| c["exp_call"] + c["exp1_cls"]
-			| c.empty();
-		c.prim("exp1") = c["exp_sing"] + c["exp1_cls"];
+		c.prim("exp1") = c["exp_sing"] + c.cls(c["exp_member"] | c["exp_call"]);
 		c.prim("exp_member") = T::Period + c["whitespace"] + T::Ident;
-		c.temp("exp_call_args_cls")
-			= T::Comma + c["whitespace"] + c["exp"] + c["exp_call_args_cls"]
-			| c.empty();
 		c.temp("exp_call_args")
-			= c["exp"] + c["exp_call_args_cls"]
+			= c["exp"] + c.cls(T::Comma + c["whitespace"] + c["exp"])
 			| c.empty();
 		c.prim("exp_call") = T::ParanOpen + c["whitespace"] + c["exp_call_args"] + T::ParanClose + c["whitespace"];
 
@@ -107,66 +86,44 @@ namespace cg {
 		c.prim("exp_min") = T::Minus + c["whitespace"] + c["exp2"];
 		c.prim("exp_log_not") = T::Excl + c["whitespace"] + c["exp2"];
 
-		c.temp("exp3_cls")
-			= c["exp_mult"] + c["exp3_cls"]
-			| c["exp_div"] + c["exp3_cls"]
-			| c["exp_mod"] + c["exp3_cls"]
-			| c.empty();
-		c.prim("exp3") = c["exp2"] + c["exp3_cls"] + c["whitespace"];
+		c.prim("exp3") = c["exp2"] + c.cls(c["exp_mult"] | c["exp_div"] | c["exp_mod"]) + c["whitespace"];
 		c.prim("exp_mult") = T::Mult + c["whitespace"] + c["exp2"];
 		c.prim("exp_div")  = T::Div + c["whitespace"] + c["exp2"];
 		c.prim("exp_mod")  = T::Perc + c["whitespace"] + c["exp2"];
 
 
-		c.temp("exp4_cls")
-			= c["exp_add"] + c["exp4_cls"]
-			| c["exp_sub"] + c["exp4_cls"]
-			| c.empty();
-		c.prim("exp4") = c["exp3"] + c["exp4_cls"] + c["whitespace"];
+		c.prim("exp4") = c["exp3"] + c.cls(c["exp_add"] | c["exp_sub"]) + c["whitespace"];
 		c.prim("exp_add") = T::Plus + c["whitespace"] + c["exp3"];
 		c.prim("exp_sub") = T::Minus + c["whitespace"] + c["exp3"];
 
-		c.temp("exp6_cls")
-			= c["exp_comp_g"] + c["exp6_cls"]
-			| c["exp_comp_ge"] + c["exp6_cls"]
-			| c["exp_comp_l"] + c["exp6_cls"]
-			| c["exp_comp_le"] + c["exp6_cls"]
-			| c.empty();
-		c.prim("exp6") = c["exp4"] + c["exp6_cls"] + c["whitespace"];
+		c.prim("exp6") = c["exp4"] + c.cls(
+			c["exp_comp_g"]
+			| c["exp_comp_ge"]
+			| c["exp_comp_l"]
+			| c["exp_comp_le"]
+		) + c["whitespace"];
+
 		c.prim("exp_comp_g") = T::Great + c["whitespace"] + c["exp4"];
 		c.prim("exp_comp_ge") = T::GreatEq + c["whitespace"] + c["exp4"];
 		c.prim("exp_comp_l") = T::Less + c["whitespace"] + c["exp4"];
 		c.prim("exp_comp_le") = T::LessEq + c["whitespace"] + c["exp4"];
 
-		c.temp("exp7_cls")
-			= c["exp_comp_eq"] + c["exp7_cls"]
-			| c["exp_comp_neq"] + c["exp7_cls"]
-			| c.empty();
-		c.prim("exp7") = c["exp6"] + c["exp7_cls"] + c["whitespace"];
+		c.prim("exp7") = c["exp6"] + c.cls(c["exp_comp_eq"] | c["exp_comp_neq"]) + c["whitespace"];
 		c.prim("exp_comp_eq") = T::Equal + c["whitespace"] + c["exp6"];
 		c.prim("exp_comp_neq") = T::NotEqual + c["whitespace"] + c["exp6"];
 
-		c.temp("exp11_cls")
-			= c["exp_log_and"] + c["exp11_cls"]
-			| c.empty();
-		c.prim("exp11") = c["exp7"] + c["exp11_cls"] + c["whitespace"];
+		c.prim("exp11") = c["exp7"] + c.cls(c["exp_log_and"]) + c["whitespace"];
 		c.prim("exp_log_and") = T::LAnd + c["whitespace"] + c["exp7"];
 
-		c.temp("exp12_cls")
-			= c["exp_log_or"] + c["exp12_cls"]
-			| c.empty();
-		c.prim("exp12") = c["exp11"] + c["exp12_cls"] + c["whitespace"];
+		c.prim("exp12") = c["exp11"] + c.cls(c["exp_log_or"]) + c["whitespace"];
 		c.prim("exp_log_or") = T::LOr + c["whitespace"] + c["exp11"];
 
 		c.prim("exp_filter_frag")
 			= T::Ident + c["exp_call"]
 			| T::Ident;
 
-		c.temp("exp_filter_cls")
-			= T::Bar + c["exp_filter_frag"] + c["exp_filter_cls"]
-			| c.empty();
 		c.prim("exp_filter") =
-			c["exp12"] + c["exp_filter_cls"] +
+			c["exp12"] + c.cls(T::Bar + c["exp_filter_frag"]) +
 			c["whitespace"];
 
 		c.prim("exp") = c["exp_filter"];
@@ -188,18 +145,13 @@ namespace cg {
 			T::StmtB +
 			c["whitespace"] + T::Endif + c["whitespace"] +
 			T::StmtE;
-		c.prim("sif_start_chain") = c["sfrag_if"] + c["sif_start_chain_cls"];
-		c.temp("sif_start_chain_cls")
-			= c["line_single"] + c["sif_start_chain_cls"]
-			| c["sfrag_elif"] + c["sif_start_chain_cls"]
-			| c["sfrag_else"] + c["sif_else_chain_cls"]
+		c.temp("sif_start_chain")
+			= c["line"] + c["sif_start_chain"]
+			| c["sfrag_elif"] + c["sif_start_chain"]
+			| c["sfrag_else"] + c.cls(c["line"]) + c["sfrag_endif"]
 			| c["sfrag_endif"];
 
-		c.temp("sif_else_chain_cls")
-			= c["line_single"] + c["sif_else_chain_cls"]
-			| c["sfrag_endif"];
-		c.prim("sif") =
-			c["sif_start_chain"];
+		c.prim("sif") = c["sfrag_if"] + c["sif_start_chain"];
 
 		c.prim("sfrag_for") =
 			T::StmtB +
@@ -211,14 +163,11 @@ namespace cg {
 			T::StmtB +
 			c["whitespace"] + T::EndFor +  c["whitespace"] +
 			T::StmtE;
-		c.prim("sfor") = c["sfrag_for"] + c.cls(c["line_single"]) + c["sfrag_endfor"];
+		c.prim("sfor") = c["sfrag_for"] + c.cls(c["line"]) + c["sfrag_endfor"];
 
 
-		c.temp("sfrag_argdef_cls")
-			= T::Comma + c["whitespace"] + c["sfrag_argdef"] + c["sfrag_argdef_cls"]
-			| c.empty();
 		c.prim("sfrag_argdef_list")
-			= c["sfrag_argdef"] + c["sfrag_argdef_cls"]
+			= c["sfrag_argdef"] + c.cls(T::Comma + c["whitespace"] + c["sfrag_argdef"])
 			| c.empty();
 		c.prim("sfrag_argdef")
 			= T::Ident + c["whitespace"] + T::Assignment + c["whitespace"] + c["exp"]
@@ -234,11 +183,7 @@ namespace cg {
 			T::StmtB +
 			c["whitespace"] + T::Endmacro + c["whitespace"] +
 			T::StmtE;
-		c.prim("smacro") = c["sfrag_macro"] + c["smacro_lines"];
-
-		c.prim("smacro_lines")
-			= c["line_single"] + c["smacro_lines"]
-			| c["sfrag_endmacro"];
+		c.prim("smacro") = c["sfrag_macro"] + c.cls(c["line"]) + c["sfrag_endmacro"];
 
 		c.prim("sinclude") =
 			T::StmtB +
@@ -365,7 +310,7 @@ namespace cg {
 			return _cg_identifier(node, args);
 		} else if (node.cfg_rule() == "raw") {
 			return _cg_recursive(node, args);
-		} else if (node.cfg_rule() == "line_single") {
+		} else if (node.cfg_rule() == "line") {
 			return _cg_line(node, args);
 		} else if (node.cfg_rule() == "lines") {
 			return _cg_lines(node, args);
@@ -525,19 +470,14 @@ namespace cg {
 		auto result = std::string();
 		CG_ASSERT(node.cfg_rule() == "sif", "INTERNAL func can only parser sif nodes");
 
-		cg::AstNode *sif_chain;
-		if (auto n = node.child_with_cfg("sif_start_chain").move_or(sif_chain)) {
-			return Error(ErrorType::ASSERT, "Could not find sif_start_chain");
-		}
-
 		int i = 0;
 		bool cg_current_block = false;
 		TemplDict block_args;
 		//TODO
-		while (i < sif_chain->child_count()) {
-			auto &child = sif_chain->begin()[i];
+		while (i < node.child_count()) {
+			auto &child = node.begin()[i];
 			if (cg_current_block) {
-				if (child.cfg_rule() == "line_single") {
+				if (child.cfg_rule() == "line") {
 					if (auto s = _codegen(child, block_args)) {
 						result += s.value();
 					} else {
@@ -611,7 +551,7 @@ namespace cg {
 		if (auto err = sfrag_for->child_with_cfg("exp").move_or(iter_exp)) {
 			return Error(ErrorType::ASSERT, "Could not parse for loop iterator expression", err.value());
 		}
-		auto lines = node.children_with_cfg("line_single");
+		auto lines = node.children_with_cfg("line");
 
 		iter_name = identifier->tok().content();
 
@@ -653,7 +593,7 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args
 	) {
-		AstNode *arg_def, *content, *ident;
+		AstNode *arg_def, *ident;
 		std::string macro_name;
 
 		if (auto err = node.child_with_cfg("sfrag_macro").move_or(arg_def)) {
@@ -663,9 +603,7 @@ namespace cg {
 			return Error(ErrorType::ASSERT, "Could not find identifier token", err.value());
 		}
 		auto macro_arg_list = arg_def->child_with_cfg("sfrag_argdef_list").value(nullptr);
-		if (auto err = node.child_with_cfg("smacro_lines").move_or(content)) {
-			return Error(ErrorType::ASSERT, "Could not find smacro_lines", err.value());
-		}
+		auto lines = node.children_with_cfg("line");
 		macro_name = ident->tok().content();
 
 		if (args.contains(macro_name)) {
@@ -695,7 +633,7 @@ namespace cg {
 			}
 		}
 		
-		TemplFunc func = [this, macro_args, args, macro_name, content](TemplList l) -> TemplFuncRes {
+		TemplFunc func = [this, macro_args, args, macro_name, lines](TemplList l) -> TemplFuncRes {
 			auto local_args = args;
 			if (macro_args.size() < l.size()) {
 				return Error(ErrorType::SEMANTIC, util::f(
@@ -725,11 +663,15 @@ namespace cg {
 				}
 				i++;
 			}
-			if (auto str = _codegen(*content, local_args)) {
-				return {str.value()};
-			} else {
-				return {Error(ErrorType::MISC, "Problem evaluating content of macro", str.error())};
+			auto res = std::string();
+			for (auto line : lines) {
+				if (auto str = _codegen(*line, local_args)) {
+					res += str.value();
+				} else {
+					return {Error(ErrorType::MISC, "Problem evaluating content of macro", str.error())};
+				}
 			}
+			return {res};
 		};
 		args[macro_name] = func;
 		return {};
