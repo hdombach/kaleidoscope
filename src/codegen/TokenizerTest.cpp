@@ -172,6 +172,8 @@ namespace cg {
 			std::string _content;
 	};
 
+	using T = TestToken;
+
 	TEST(tokenizer, raw) {
 		auto src =
 			"Hello world\n"
@@ -462,6 +464,7 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, greater_equal) {
@@ -864,6 +867,245 @@ namespace cg {
 			TestToken::stmt_e(),
 			TestToken::eof(),
 		};
+		EXPECT_EQ(tokens, expected);
+	}
+
+	TEST(tokenizer, default_padding) {
+		auto src =
+			"{\% if true %}\n"
+			"\n"
+			"Hello world\n"
+			"{\% endif %}\n"
+			"";
+		auto tokens = simplify_tokens(tokenize(src));
+		auto expected = std::vector{
+			TestToken::stmt_b(),
+			TestToken::padding(),
+			TestToken::if_s(),
+			TestToken::padding(),
+			TestToken::identifier("true"),
+			TestToken::padding(),
+			TestToken::stmt_e(),
+			TestToken::newline(),
+			TestToken::unmatched("Hello"),
+			TestToken::padding(),
+			TestToken::unmatched("world"),
+			TestToken::newline(),
+			TestToken::stmt_b(),
+			TestToken::padding(),
+			TestToken::endif_s(),
+			TestToken::padding(),
+			TestToken::stmt_e(),
+			TestToken::eof()
+		};
+		EXPECT_EQ(tokens, expected);
+	}
+
+	TEST(tokenizer, leading_padding) {
+		auto src =
+			"\n"
+			"{\% if foo %}\n"
+			"-\n"
+			"{\% endif %}"
+			"";
+		auto tokens = simplify_tokens(tokenize(src));
+		auto expected = std::vector{
+			T::newline(),
+			T::stmt_b(),
+			T::padding(),
+			T::if_s(),
+			T::padding(),
+			T::identifier("foo"),
+			T::padding(),
+			T::stmt_e(),
+			T::unmatched("-"),
+			T::newline(),
+			T::stmt_b(),
+			T::padding(),
+			T::endif_s(),
+			T::padding(),
+			T::stmt_e(),
+			T::eof()
+		};
+		EXPECT_EQ(tokens, expected);
+	}
+
+	TEST(tokenizer, extra_padding) {
+		auto src =
+			"\n"
+			"\t {\% if foo %}  \n"
+			"\t oy\n"
+			"   {\% endif %}\t\n"
+			"";
+		auto tokens = simplify_tokens(tokenize(src));
+		auto expected = std::vector{
+			T::newline(),
+			T::stmt_b(),
+			T::padding(),
+			T::if_s(),
+			T::padding(),
+			T::identifier("foo"),
+			T::padding(),
+			T::stmt_e(),
+			T::padding("\t "),
+			T::unmatched("oy"),
+			T::newline(),
+			T::stmt_b(),
+			T::padding(),
+			T::endif_s(),
+			T::padding(),
+			T::stmt_e(),
+			T::eof()
+		};
+		EXPECT_EQ(tokens, expected);
+	}
+
+	TEST(tokenizer, remove_padding) {
+		auto src =
+			"\n\n"
+			"\t {\%- if foo -%}   \n"
+			"    hello\n"
+			"    world\n"
+			"{\%- endif -%}\n"
+			"";
+
+		auto tokens = simplify_tokens(tokenize(src));
+		auto expected = std::vector{
+			T::stmt_b("{\%-"),
+			T::padding(),
+			T::if_s(),
+			T::padding(),
+			T::identifier("foo"),
+			T::padding(),
+			T::stmt_e("-%}"),
+			T::unmatched("hello"),
+			T::newline(),
+			T::padding("    "),
+			T::unmatched("world"),
+			T::stmt_b("{\%-"),
+			T::padding(),
+			T::endif_s(),
+			T::padding(),
+			T::stmt_e("-%}"),
+			T::eof()
+		};
+		EXPECT_EQ(tokens, expected);
+	}
+
+	TEST(tokenizer, keep_padding) {
+		auto src =
+			"\n\n"
+			"\t {\%+ if foo +%}   \n"
+			"    hello\n"
+			"    world\n"
+			"{\%+ endif +%}\n"
+			"";
+
+		auto tokens = simplify_tokens(tokenize(src));
+		auto expected = std::vector{
+			T::newline(),
+			T::newline(),
+			T::padding("\t "),
+			T::stmt_b("{\%+"),
+			T::padding(),
+			T::if_s(),
+			T::padding(),
+			T::identifier("foo"),
+			T::padding(),
+			T::stmt_e("+%}"),
+			T::padding("   "),
+			T::newline(),
+			T::padding("    "),
+			T::unmatched("hello"),
+			T::newline(),
+			T::padding("    "),
+			T::unmatched("world"),
+			T::newline(),
+			T::stmt_b("{\%+"),
+			T::padding(),
+			T::endif_s(),
+			T::padding(),
+			T::stmt_e("+%}"),
+			T::newline(),
+			T::eof()
+		};
+		EXPECT_EQ(tokens, expected);
+	}
+
+	TEST(tokenizer, exp_default_padding) {
+		auto src =
+			"\n\n"
+			"  {{5}}\n"
+			"";
+
+		auto tokens = simplify_tokens(tokenize(src));
+		auto expected = std::vector{
+			T::newline(),
+			T::newline(),
+			T::padding("  "),
+			T::exp_b(),
+			T::int_const("5"),
+			T::exp_e(),
+			T::newline(),
+			T::eof()
+		};
+		EXPECT_EQ(tokens, expected);
+	}
+
+	TEST(tokenizer, exp_keep_padding) {
+		auto src =
+			"\n\n"
+			"  {{+5+}}\n"
+			"  \n"
+			"{{ +5 }}\n"
+			"";
+
+		auto tokens = simplify_tokens(tokenize(src));
+		auto expected = std::vector{
+			T::newline(),
+			T::newline(),
+			T::padding("  "),
+			T::exp_b("{{+"),
+			T::int_const("5"),
+			T::exp_e("+}}"),
+			T::newline(),
+			T::padding("  "),
+			T::newline(),
+			T::exp_b(),
+			T::padding(),
+			T::plus(),
+			T::int_const("5"),
+			T::padding(),
+			T::exp_e(),
+			T::newline(),
+			T::eof()
+		};
+		EXPECT_EQ(tokens, expected);
+	}
+
+	TEST(tokenizer, exp_remove_padding) {
+		auto src =
+			"\n\n"
+			"  {{-5-}}\n"
+			"  \n"
+			"{{ -5 }}\n"
+			"";
+
+		auto tokens = simplify_tokens(tokenize(src));
+		auto expected = std::vector{
+			T::exp_b("{{-"),
+			T::int_const("5"),
+			T::exp_e("-}}"),
+			T::exp_b(),
+			T::padding(),
+			T::minus(),
+			T::int_const("5"),
+			T::padding(),
+			T::exp_e(),
+			T::newline(),
+			T::eof()
+		};
+
 		EXPECT_EQ(tokens, expected);
 	}
 }

@@ -209,14 +209,14 @@ namespace cg {
 						skipped_pad++;
 						close_tag++;
 					}
-				} else if (t.content()[0] != '+' && is_sole_line) {
+				} else if (close_tag->content()[0] != '+' && is_sole_line) {
 					// Skip padding and one newline (default behavior)
 					close_tag++;
 					while ((close_tag->type() == T::Newline) || close_tag->type() == T::Pad) {
 						skipped_pad++;
-						close_tag++;
 						// Break after we find the first newline
 						if (close_tag->type() == T::Newline) break;
+						close_tag++;
 					}
 				}
 			}

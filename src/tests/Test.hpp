@@ -42,6 +42,7 @@ class Test {
 		std::string full_name() const;
 		size_t variant_count() const;
 		bool test_failed() const;
+		bool test_empty() const;
 		std::string const &suite_name() const;
 		std::string const &test_name() const;
 
@@ -65,6 +66,7 @@ class Test {
 			std::cout << std::endl;
 
 			_test_failed = true;
+			_test_empty = false;
 		}
 
 		void fail(
@@ -98,6 +100,7 @@ class Test {
 			std::vector<std::string> const &msgs = {},
 			util::FileLocation const &loc = std::source_location::current()
 		) {
+			_test_empty = false;
 			if (!val.has_value()) {
 				auto more_msgs = msgs;
 				more_msgs.push_back("Could not unwrap Result");
@@ -112,6 +115,7 @@ class Test {
 			std::vector<std::string> const &msgs = {},
 			util::FileLocation const &loc = std::source_location::current()
 		) {
+			_test_empty = false;
 			if (val.has_value()) {
 				auto more_msgs = msgs;
 				more_msgs.push_back(util::f(
@@ -130,6 +134,7 @@ class Test {
 			std::vector<std::string> const &msgs = {},
 			util::FileLocation const &loc = std::source_location::current()
 		) {
+			_test_empty = false;
 			if (lhs != rhs) {
 				auto more_msgs = msgs;
 				more_msgs.push_back(util::f("Lhs and rhs are not equal. (", util::abbrev_diff(util::f(lhs), util::f(rhs)), ")"));
@@ -146,6 +151,7 @@ class Test {
 			std::vector<std::string> const &msgs = {},
 			util::FileLocation const &loc = std::source_location::current()
 		) {
+			_test_empty = false;
 			int i;
 			auto s = std::min(lhs.size(), rhs.size());
 			auto m = msgs;
@@ -182,6 +188,7 @@ class Test {
 			std::vector<std::string> const &msgs = {},
 			util::FileLocation const &loc = std::source_location::current()
 		) {
+			_test_empty = false;
 			if (lhs.has_value()) {
 				return expect_eq(lhs.value(), rhs);
 			} else {
@@ -198,6 +205,7 @@ class Test {
 			std::vector<std::string> const &msgs = {},
 			util::FileLocation const &loc = std::source_location::current()
 		) {
+			_test_empty = false;
 			if (rhs.has_value()) {
 				return expect_eq(lhs, rhs.value());
 			} else {
@@ -213,6 +221,7 @@ class Test {
 		std::string _test_name = "";
 		size_t _variant_count = 1;
 		bool _test_failed = false;
+		bool _test_empty = true;
 };
 
 using TestSuite = std::map<std::string, Test>;

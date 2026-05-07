@@ -27,6 +27,10 @@ bool Test::test_failed() const {
 	return _test_failed;
 }
 
+bool Test::test_empty() const {
+	return _test_empty;
+}
+
 std::string const &Test::suite_name() const {
 	return _suite_name;
 }
@@ -37,6 +41,7 @@ std::string const &Test::test_name() const {
 
 void Test::operator()(Test &test, int variant_index) {
 	_test_failed = false;
+	_test_empty = true;
 	_callback(test, variant_index);
 }
 
@@ -71,7 +76,9 @@ int test_main(std::vector<std::string> const &filters) {
 				try {
 					log_trace() << "Starting test: " << test.first << ":" << i << std::endl;
 					test.second(test.second, i);
-					
+					if (test.second.test_empty()) {
+						log_warning() << "There are no checks that are done in " << test.second.full_name() << std::endl;
+					}
 					if (test.second.test_failed()) errors++;
 				} catch (...) {
 					test.second.fail("Exception was thrown");
