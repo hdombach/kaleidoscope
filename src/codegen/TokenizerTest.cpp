@@ -1,7 +1,19 @@
-#include "tests/Test.hpp"
+#include <iostream>
+
+namespace cg {
+	class TestToken;
+	class Token;
+}
+// Forward declare so plist and test_eq can work
+std::ostream &operator<<(std::ostream &os, cg::TestToken const &t);
+bool operator==(cg::TestToken const &lhs, cg::Token const &rhs);
+bool operator==(cg::Token const &lhs, cg::TestToken const &rhs);
+bool operator!=(cg::TestToken const &lhs, cg::Token const &rhs);
+bool operator!=(cg::Token const &lhs, cg::TestToken const &rhs);
+
+
 #include "Tokenizer.hpp"
-#include "util/PrintTools.hpp"
-#include "util/log.hpp"
+#include "tests/Test.hpp"
 
 
 namespace cg {
@@ -151,21 +163,14 @@ namespace cg {
 				return util::f("(", Token::type_str(_type), " \"", util::escape_str(_content), "\")");
 			}
 
+			bool matches(Token const &other) const {
+				return other.type() == type() && other.content() == content();
+			}
+
 		private:
 			Token::Type _type;
 			std::string _content;
 	};
-
-#define EXPECT_TOKEN(lhs, rhs) {\
-	EXPECT_EQ(lhs.size(), rhs.size()); \
-	if (lhs.size() == rhs.size()) { \
-		for (int i = 0; i < lhs.size(); i++) { \
-			EXPECT_EQ(lhs[i].type(), rhs[i].type()); \
-			EXPECT_EQ(lhs[i].content(), rhs[i].content()); \
-		} \
-	}  \
-}
-
 
 	TEST(tokenizer, raw) {
 		auto src =
@@ -184,7 +189,7 @@ namespace cg {
 			TestToken::eof(),
 		};
 		auto tokens = simplify_tokens(tokenize(src));
-		EXPECT_TOKEN(tokens, res);
+		EXPECT_EQ(tokens, res);
 	}
 
 	TEST(tokenizer, comment) {
@@ -207,7 +212,7 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 
 	}
 
@@ -230,7 +235,7 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, int_constants) {
@@ -253,7 +258,7 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 
 		src =
 			"{{023}}";
@@ -264,7 +269,7 @@ namespace cg {
 			TestToken::exp_e(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, paranthesis) {
@@ -285,7 +290,7 @@ namespace cg {
 			TestToken::exp_e(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, addition) {
@@ -310,7 +315,7 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, subtraction) {
@@ -335,7 +340,7 @@ namespace cg {
 			TestToken::exp_e(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 
@@ -357,7 +362,7 @@ namespace cg {
 			TestToken::exp_e(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, division) {
@@ -383,7 +388,7 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, modulus) {
@@ -405,7 +410,7 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, member) {
@@ -427,7 +432,7 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, args) {
@@ -477,7 +482,7 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, greater) {
@@ -498,7 +503,7 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, lesser_equal) {
@@ -517,7 +522,7 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, lesser) {
@@ -536,7 +541,7 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, equal) {
@@ -558,7 +563,7 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, not_equal) {
@@ -580,7 +585,7 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, logical_not) {
@@ -601,7 +606,7 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, logical_and) {
@@ -627,7 +632,7 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, logical_or) {
@@ -652,7 +657,7 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, filter) {
@@ -684,15 +689,15 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, if_statement) {
 		auto src =
 			"Welcome\n"
 			"{\%if is_admin() %}\n"
-			"<button action=\"delete_everything\">"
-			"{\%- endif +%}\n";
+			"<button action=\"delete_everything\">\n"
+			"{\% endif %}\n";
 		auto tokens = simplify_tokens(tokenize(src));
 		auto expected = std::vector{
 			TestToken::unmatched("Welcome"),
@@ -705,28 +710,27 @@ namespace cg {
 			TestToken::paran_close(),
 			TestToken::padding(),
 			TestToken::stmt_e(),
-			TestToken::newline(),
 			TestToken::unmatched("<button"),
 			TestToken::padding(),
 			TestToken::unmatched("action=\"delete_everything\">"),
-			TestToken::stmt_b("{\%-"),
+			TestToken::newline(),
+			TestToken::stmt_b(),
 			TestToken::padding(),
 			TestToken::endif_s(),
 			TestToken::padding(),
-			TestToken::stmt_e("+%}"),
-			TestToken::newline(),
+			TestToken::stmt_e(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, if_else_chain) {
 		auto src = ""
 			"{\% if value==3%}\n"
 			"- value=3\n"
-			"{\%+elif value==4+%}\n"
+			"{\%elif value==4%}\n"
 			"- value=4\n"
-			"{\% else %}"
+			"{\% else %}\n"
 			"- idk\n"
 			"{\% endif %}\n"
 			"";
@@ -740,19 +744,17 @@ namespace cg {
 			TestToken::equal(),
 			TestToken::int_const("3"),
 			TestToken::stmt_e(),
-			TestToken::newline(),
 			TestToken::unmatched("-"),
 			TestToken::padding(),
 			TestToken::unmatched("value=3"),
 			TestToken::newline(),
-			TestToken::stmt_b("{\%+"),
+			TestToken::stmt_b(),
 			TestToken::elif_s(),
 			TestToken::padding(),
 			TestToken::identifier("value"),
 			TestToken::equal(),
 			TestToken::int_const("4"),
-			TestToken::stmt_e("+%}"),
-			TestToken::newline(),
+			TestToken::stmt_e(),
 			TestToken::unmatched("-"),
 			TestToken::padding(),
 			TestToken::unmatched("value=4"),
@@ -771,10 +773,9 @@ namespace cg {
 			TestToken::endif_s(),
 			TestToken::padding(),
 			TestToken::stmt_e(),
-			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, for_loop) {
@@ -801,7 +802,6 @@ namespace cg {
 			TestToken::bar(),
 			TestToken::identifier("filter"),
 			TestToken::stmt_e(),
-			TestToken::newline(),
 			TestToken::unmatched("-"),
 			TestToken::padding(),
 			TestToken::exp_b(),
@@ -812,10 +812,9 @@ namespace cg {
 			TestToken::stmt_b(),
 			TestToken::endfor_s(),
 			TestToken::stmt_e(),
-			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, macro) {
@@ -837,7 +836,6 @@ namespace cg {
 			TestToken::paran_close(),
 			TestToken::padding(),
 			TestToken::stmt_e(),
-			TestToken::newline(),
 			TestToken::exp_b(),
 			TestToken::identifier("prefix"),
 			TestToken::exp_e(),
@@ -850,10 +848,9 @@ namespace cg {
 			TestToken::endmacro_s(),
 			TestToken::padding(),
 			TestToken::stmt_e(),
-			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
 
 	TEST(tokenizer, include) {
@@ -865,9 +862,28 @@ namespace cg {
 			TestToken::include_s(),
 			TestToken::str_const("test.cpp"),
 			TestToken::stmt_e(),
-			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_TOKEN(tokens, expected);
+		EXPECT_EQ(tokens, expected);
 	}
+}
+
+inline std::ostream &operator<<(std::ostream &os, cg::TestToken const &t) {
+	return os << t.str();
+}
+
+inline bool operator==(cg::Token const &lhs, cg::TestToken const &rhs) {
+	return rhs.matches(lhs);
+}
+
+inline bool operator==(cg::TestToken const &lhs, cg::Token const &rhs) {
+	return lhs.matches(rhs);
+}
+
+inline bool operator!=(cg::Token const &lhs, cg::TestToken const &rhs) {
+	return !rhs.matches(lhs);
+}
+
+inline bool operator!=(cg::TestToken const &lhs, cg::Token const &rhs) {
+	return !lhs.matches(rhs);
 }

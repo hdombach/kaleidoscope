@@ -5,7 +5,6 @@
 #include "util/format.hpp"
 #include "util/Util.hpp"
 #include "util/log.hpp"
-#include "util/PrintTools.hpp"
 
 namespace cg {
 	Token::Token(Type type, util::StringRef const &ref):
@@ -80,10 +79,6 @@ namespace cg {
 
 	bool Token::exists() const {
 		return !_str.empty();
-	}
-
-	Token::operator bool() const {
-		return exists();
 	}
 
 	Token &Token::operator+=(Token const &rhs) {
@@ -164,10 +159,69 @@ namespace cg {
 
 	std::vector<Token> simplify_tokens(const std::vector<Token> &tokens) {
 		auto result = std::vector<Token>();
+		using T = Token::Type;
 
 		bool in_statement = false;
 		auto cur_token = Token();
-		for (auto t : tokens) {
+		int skipped_pad = 0;
+		for (auto i = 0; i < tokens.size(); i++) {
+			auto &t = tokens[i];
+
+
+			//Handle remove padding before and after
+			if (t.type() == Token::ExpB || t.type() == Token::StmtB || t.type() == Token::CommentB) {
+				Token const *close_tag = &t;
+				while (close_tag->type() != T::StmtE && close_tag->type() != T::CommentE && close_tag->type() != T::ExpE) {
+					log_assert(close_tag->type() != T::Eof, "There must be an ending tag before Eof");
+					close_tag++;
+				}
+
+				// We want to keep padding while expressions and remove padding around
+				// statmenets and comments by default
+				bool is_sole_line = t.type() == Token::StmtB || t.type() == Token::CommentB;
+				if (i == 0) {
+				} else if (i >= 1 && tokens[i-1].type() == T::Newline) {
+				} else if (i >=2 && tokens[i-1].type() == T::Pad && tokens[i-2].type() == T::Newline) {
+				} else {
+					is_sole_line = false;
+				}
+
+				if (close_tag[1].type() == T::Newline) {
+				} else if (close_tag[1].type() == T::Pad && close_tag[2].type() == T::Newline) {
+				} else {
+					is_sole_line = false;
+				}
+
+				if (t.content()[2] == '-') {
+					while (!result.empty() && (result.back().type() == T::Newline || result.back().type() == T::Pad)) {
+						result.pop_back();
+					}
+				}
+				if (t.content()[2] == '\0' && is_sole_line) {
+					// Just skip previous padding
+					if (!result.empty() && result.back().type() == T::Pad) result.pop_back();
+				}
+
+				skipped_pad = 0;
+				if (close_tag->content()[0] == '-') {
+					close_tag++;
+					while (close_tag->type() == T::Newline || close_tag->type() == T::Pad) {
+						skipped_pad++;
+						close_tag++;
+					}
+				} else if (t.content()[0] != '+' && is_sole_line) {
+					// Skip padding and one newline (default behavior)
+					close_tag++;
+					while ((close_tag->type() == T::Newline) || close_tag->type() == T::Pad) {
+						skipped_pad++;
+						close_tag++;
+						// Break after we find the first newline
+						if (close_tag->type() == T::Newline) break;
+					}
+				}
+			}
+
+			// Handle making everything outside statements unmatched
 			if (in_statement) {
 				result.push_back(t);
 				if (
@@ -187,7 +241,11 @@ namespace cg {
 					if (cur_token.exists())
 						result.push_back(cur_token);
 					cur_token = Token();
-					result.push_back(t);
+					if (skipped_pad > 0 && (t.type() == T::Pad || t.type() == T::Newline)) {
+						skipped_pad--;
+					} else {
+						result.push_back(t);
+					}
 				} else if (
 					t.type() == Token::ExpB
 					|| t.type() == Token::StmtB

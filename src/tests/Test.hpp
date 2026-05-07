@@ -6,6 +6,8 @@
 #include <map>
 #include <iostream>
 
+#include "util/PrintTools.hpp"
+#include "util/format.hpp"
 #include "util/BaseError.hpp"
 #include "util/Env.hpp"
 #include "util/Util.hpp"
@@ -136,6 +138,42 @@ class Test {
 				fail(more_msgs, loc);
 			}
 		}
+
+		template<typename Lhs, typename Rhs>
+		void expect_eq(
+			std::vector<Lhs> const &lhs,
+			std::vector<Rhs> const &rhs,
+			std::vector<std::string> const &msgs = {},
+			util::FileLocation const &loc = std::source_location::current()
+		) {
+			int i;
+			auto s = std::min(lhs.size(), rhs.size());
+			auto m = msgs;
+			bool equal = true;
+			for (i = 0; i < s; i++) {
+				if (lhs[i] != rhs[i]) {
+					m.push_back(util::f("Lhs and rhs are not equal at index ", i, " (", lhs[i], " != ", rhs[i], ")"));
+					equal = false;
+					break;
+				}
+			}
+
+			if (equal) {
+				if (i < lhs.size()) {
+					m.push_back(util::f("Lhs is longer than rhs."));
+					equal = false;
+				} else if (i < rhs.size()) {
+					m.push_back(util::f("Rhs is longer than lhs."));
+				}
+			}
+
+			if (!equal) {
+				m.push_back(util::f("lhs: ", util::plist(lhs).str()));
+				m.push_back(util::f("rhs: ", util::plist(rhs).str()));
+				fail(m, loc);
+			}
+		}
+
 
 		template<typename LhsVal, typename LhsErr, typename Rhs>
 		void expect_eq(

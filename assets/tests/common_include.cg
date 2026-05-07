@@ -1,9 +1,8 @@
 Common Header
-
 {% macro say_hello() %}
 Hello World
-{% endmacro %}
+{%- endmacro -%}
 
-{% macro wrap(input) %}
+{%- macro wrap(input) %}
 < {{input}} >
-{% endmacro %}
+{%- endmacro -%}

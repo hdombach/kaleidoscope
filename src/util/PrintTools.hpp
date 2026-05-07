@@ -42,6 +42,12 @@ namespace util {
 					os << "]";
 					return os;
 				}
+
+				std::string const str() const {
+					auto ss = std::stringstream();
+					print(ss);
+					return ss.str();
+				}
 			private:
 				Container const &_c;
 		};

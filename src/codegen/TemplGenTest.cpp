@@ -90,9 +90,9 @@ namespace cg {
 		};
 
 		EXPECT_CG(
-			"Shopping list\n\n"
-			"- apple\n\n"
-			"- pears\n\n"
+			"Shopping list\n"
+			"- apple\n"
+			"- pears\n"
 		);
 	}
 
@@ -109,14 +109,14 @@ namespace cg {
 		};
 
 		EXPECT_CG(
-			"foo\n\n"
-			"bar\n\n"
+			"foo\n"
+			"bar\n"
 		);
 
 		args["add_bar"] = false;
 
 		EXPECT_CG(
-			"foo\n\n"
+			"foo\n"
 		);
 	}
 
@@ -135,15 +135,15 @@ namespace cg {
 		};
 
 		EXPECT_CG(
-			"reee\n\n"
-			"yes\n\n"
+			"reee\n"
+			"yes\n"
 		);
 
 		args["value"] = false;
 
 		EXPECT_CG(
-			"reee\n\n"
-			"no\n\n"
+			"reee\n"
+			"no\n"
 		);
 	}
 
@@ -161,8 +161,6 @@ namespace cg {
 
 		EXPECT_CG(
 			"foo\n"
-			"\n"
-			"\n"
 			"bar\n"
 		);
 	}
@@ -182,8 +180,6 @@ namespace cg {
 
 		EXPECT_CG(
 			"foo\n"
-			"\n"
-			"\n"
 			"bar\n"
 		);
 	}
@@ -205,8 +201,6 @@ namespace cg {
 
 		EXPECT_CG(
 			"foo\n"
-			"\n"
-			"\n"
 			"bar\n"
 		);
 
@@ -234,33 +228,25 @@ namespace cg {
 
 		EXPECT_CG(
 			"Do robots dream of electric sheep?\n"
-			"\n"
 			"Most indefinitely.\n"
-			"\n"
 		);
 
 		args["has_yes"] = false;
 		EXPECT_CG(
 			"Do robots dream of electric sheep?\n"
-			"\n"
 			"Of course not.\n"
-			"\n"
 		);
 
 		args["has_no"] = false;
 		EXPECT_CG(
 			"Do robots dream of electric sheep?\n"
-			"\n"
 			"Maybe its the electric sheep dreaming.\n"
-			"\n"
 		);
 
 		args["has_maybe"] = false;
 		EXPECT_CG(
 			"Do robots dream of electric sheep?\n"
-			"\n"
 			"I need sleep.\n"
-			"\n"
 		);
 	}
 
@@ -686,13 +672,13 @@ namespace cg {
 		EXPECT_CG(
 			"List length: 6\n"
 			"Is list empty: <false>\n"
-			"List elements:\n\n"
-			"- 5\n\n"
-			"- 3\n\n"
-			"- 91\n\n"
-			"- Totally an int\n\n"
-			"- 2\n\n"
-			"- -29\n\n"
+			"List elements:\n"
+			"- 5\n"
+			"- 3\n"
+			"- 91\n"
+			"- Totally an int\n"
+			"- 2\n"
+			"- -29\n"
 		);
 
 		args = TemplObj{
@@ -702,11 +688,11 @@ namespace cg {
 		EXPECT_CG(
 			"List length: 4\n"
 			"Is list empty: <false>\n"
-			"List elements:\n\n"
-			"- George\n\n"
-			"- Sally\n\n"
-			"- Neo\n\n"
-			"- Peter\n\n"
+			"List elements:\n"
+			"- George\n"
+			"- Sally\n"
+			"- Neo\n"
+			"- Peter\n"
 		);
 
 		args = TemplObj{
@@ -716,7 +702,7 @@ namespace cg {
 		EXPECT_CG(
 			"List length: 0\n"
 			"Is list empty: <true>\n"
-			"List elements:\n\n"
+			"List elements:\n"
 		);
 	}
 
@@ -891,10 +877,10 @@ namespace cg {
 		);
 
 		src =
-			"abs of expression is {{-10-2|abs}}\n";
+			"abs of expression is {{ -10-2|abs }}\n";
 
 		EXPECT_CG(
-			"abs of expression is 8\n"
+			"abs of expression is 12\n"
 		);
 	}
 
@@ -1077,14 +1063,13 @@ namespace cg {
 
 		auto src =
 			"{\% macro hello() %}\n"
-			"Hello World"
-			"{\% endmacro %}\n"
+			"Hello World\n"
+			"{\%- endmacro %}\n"
 			"{{hello()}}\n"
 			"{{hello()}}\n";
 
 		EXPECT_CG(
-			"\n\n"
-			"Hello World\n\n"
+			"Hello World\n"
 			"Hello World\n"
 		);
 	}
@@ -1101,7 +1086,6 @@ namespace cg {
 			"";
 
 		EXPECT_CG(
-			"\n\n"
 			"Hello Alex.\n"
 			"Your user id is 423.\n\n"
 		);
@@ -1142,7 +1126,6 @@ namespace cg {
 			"";
 
 		EXPECT_CG(
-			"\n\n"
 			"Hello Alex.\n"
 			"Your user id is 142.\n"
 			"Your role is Unknown.\n\n"
@@ -1158,7 +1141,6 @@ namespace cg {
 			"";
 
 		EXPECT_CG(
-			"\n\n"
 			"Hello Alex.\n"
 			"Your user id is 142.\n"
 			"Your role is Admin.\n\n"
@@ -1197,31 +1179,31 @@ namespace cg {
 			"";
 
 		EXPECT_CG(
-			"Here be the list.\n\n"
+			"Here be the list.\n"
 			"----\n"
 			"element: 152\n"
 			"index: 1\n"
 			"index0: 0\n"
 			"first: <true>\n"
-			"last: <false>\n\n"
+			"last: <false>\n"
 			"----\n"
 			"element: apple\n"
 			"index: 2\n"
 			"index0: 1\n"
 			"first: <false>\n"
-			"last: <false>\n\n"
+			"last: <false>\n"
 			"----\n"
 			"element: -3\n"
 			"index: 3\n"
 			"index0: 2\n"
 			"first: <false>\n"
-			"last: <false>\n\n"
+			"last: <false>\n"
 			"----\n"
 			"element: hash map\n"
 			"index: 4\n"
 			"index0: 3\n"
 			"first: <false>\n"
-			"last: <true>\n\n"
+			"last: <true>\n"
 		);
 	}
 
@@ -1235,10 +1217,8 @@ namespace cg {
 
 		EXPECT_CG(
 			"Common Header\n"
-			"\n\n\n\n\n\n"
 			"Hello World\n"
-			"\n\n"
-			"< reee >\n\n"
+			"< reee >\n"
 		);
 	}
 }

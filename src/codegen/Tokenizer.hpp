@@ -65,7 +65,6 @@ namespace cg {
 			void concat(Token const &t);
 
 			bool exists() const;
-			operator bool() const;
 
 			Token &operator+=(Token const &rhs);
 		private:
