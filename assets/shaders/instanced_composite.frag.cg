@@ -1,6 +1,6 @@
 #version 450
 
-{%include "assets/shaders/common.hpp.cg"%}
+{%include "assets/shaders/common.hpp.cg"-%}
 
 {{struct_decls()}}
 
@@ -16,7 +16,7 @@ struct Material{{material.id}} {
 	{{declaration(decl)}}
 	{% endfor %}
 
-	{% if material.declaration_padding > 0 %}
+	{%- if material.declaration_padding > 0 %}
 	uint _buf[{{material.declaration_padding}}];
 	{% endif %}
 };
@@ -39,7 +39,7 @@ layout(set = 0, binding = 3) uniform sampler2D uv_id_sampler;
 layout(set = 0, binding = 4) uniform sampler2D depth_sampler;
 
 {% for material in materials %}
-layout(set = 0, binding = 5) readonly buffer material_buffer{{material.id}}{
+layout(set = 0, binding = 5) readonly buffer material_buffer{{material.id}} {
 	Material{{material.id}} material{{material.id}}[];
 };
 {% endfor %}
@@ -90,14 +90,12 @@ bool intersect_nodes(
 
 
 {% for material in materials %}
-void material{{material.id}}_main(
-	inout vec4 out_color,
-	inout vec2 in_uv
-	{% for declaration in material.declarations %}
+void material{{material.id}}_main(inout vec4 out_color, inout vec2 in_uv
+	{%- for declaration in material.declarations -%}
 	, in {{declaration.arg_type}} {{declaration.name}}
-	{% endfor %}
+	{%- endfor -%}
 ) {
-	{{material.frag_src}}
+	{{material.frag_src|indent("\t") -}}
 }
 {% endfor %}
 
@@ -127,20 +125,17 @@ void main() {
 	switch (material_id) {
 		{% for material in materials %}
 		case {{material.id}}:
-			material{{material.id}}_main(
-				color,
-				material_uv	
-				{% for declaration in material.declarations %}
-				,
-				{% if declaration.is_texture %}
+			material{{material.id}}_main(color, material_uv
+				{%- for declaration in material.declarations -%}
+				, {{- " " -}}
+				{%- if declaration.is_texture -%}
 				textures[material{{material.id}}[node_id].{{declaration.name}}]
-				{% else %}
-				material{{material.id}}[node_id].{{declaration.name}}
-				{% endif %}
-				{% endfor %}
+				{%- else -%}
+				material{{material.id}}[node_id].{{declaration.name-}}
+				{%- endif -%}
+				{%- endfor -%}
 			);
 			break;
-
 		{% endfor %}
 	}
 

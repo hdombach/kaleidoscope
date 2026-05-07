@@ -281,6 +281,12 @@ namespace cg {
 					case '"':
 						s += '"';
 						break;
+					case 't':
+						s += '\t';
+						break;
+					case 'n':
+						s += '\n';
+						break;
 					default:
 						return Error(ErrorType::ASSERT, util::f("Unknown string escape sequence: \\", *c));
 				}
@@ -1157,7 +1163,7 @@ namespace cg {
 			if (auto r = _eval_exp_call(filter_func, *call.value(), l_args)) {
 				return r;
 			} else {
-				return Error(ErrorType::RUNTIME_CG, util::f("Could not call filter: '", node.str_src(), "'"));
+				return Error(ErrorType::RUNTIME_CG, util::f("Could not call filter: '", node.str_src(), "'"), r.error());
 			}
 		} else {
 			auto call_args = TemplList();

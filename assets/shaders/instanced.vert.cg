@@ -1,6 +1,6 @@
 #version 450
 
-{%include "assets/shaders/common.hpp.cg"%}
+{%include "assets/shaders/common.hpp.cg" -%}
 
 struct Node {
 	{% for decl in node_declaration %}

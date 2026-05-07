@@ -1,6 +1,6 @@
 #version 450
 
-{%include "assets/shaders/common.hpp.cg"%}
+{%include "assets/shaders/common.hpp.cg"-%}
 
 layout(location = 0) flat in uint inInstance;
 layout(location = 1) flat in uint inMaterial;

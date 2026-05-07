@@ -1,12 +1,12 @@
-{% macro declaration(decl) %}
+{% macro declaration(decl) -%}
 {{decl.uniform_type}} {{decl.name}};
-{% endmacro %}
+{%- endmacro -%}
 
-{% macro define(def) %}
+{%- macro define(def) %}
 #define {{def.name}} {{def.value}}
-{% endmacro %}
+{% endmacro -%}
 
-{% macro struct_decls() %}
+{%- macro struct_decls() %}
 struct Ray {
 	vec4 pos;
 	vec4 dir;
@@ -23,14 +23,14 @@ struct HitInfo {
 };
 
 float PI = 3.14159265358979;
-{% endmacro %}
+{%- endmacro -%}
 
-{% macro de_funcs() %}
+{%- macro de_funcs() -%}
 
 {% for mesh in meshes %}
 {% if mesh.is_de %}
 float de_{{mesh.id}}(vec3 pos) {
-	{{mesh.de_src}}
+	{{mesh.de_src|indent("\t")}}
 }
 {% endif %}
 {% endfor %}
@@ -88,4 +88,4 @@ bool intersect_de(
 	} while (true);
 	return false;
 }
-{% endmacro %}
+{% endmacro -%}
