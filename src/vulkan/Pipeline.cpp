@@ -12,7 +12,8 @@ namespace vulkan {
 		const Shader &vertex_shader,
 		const Shader &fragment_shader,
 		const RenderPass &render_pass,
-		const Attachments &attachments
+		const Attachments &attachments,
+		std::string const &debug_name
 	) {
 		auto pipeline = Pipeline();
 
@@ -158,6 +159,8 @@ namespace vulkan {
 			return Error(ErrorType::VULKAN, "Could not create pipeline layout", VkError(res));
 		}
 
+		Graphics::DEFAULT->set_debug_name(pipeline._pipeline_layout, debug_name);
+
 		log_trace() << "Created pipeline layout " << pipeline._pipeline_layout << std::endl;
 
 		auto depth_stencil = VkPipelineDepthStencilStateCreateInfo{};
@@ -212,7 +215,8 @@ namespace vulkan {
 
 	util::Result<Pipeline, Error> Pipeline::create_compute(
 		const Shader &compute_shader,
-		const Attachments &attachments
+		const Attachments &attachments,
+		std::string const &debug_name
 	) {
 		auto pipeline = Pipeline();
 
@@ -250,6 +254,8 @@ namespace vulkan {
 		if (res != VK_SUCCESS) {
 			return Error(ErrorType::VULKAN, "Could not create compute pipeline overlay", VkError(res));
 		}
+
+		Graphics::DEFAULT->set_debug_name(pipeline._pipeline_layout, debug_name);
 
 		auto pipeline_info = VkComputePipelineCreateInfo{};
 		pipeline_info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;

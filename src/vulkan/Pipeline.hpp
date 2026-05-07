@@ -28,12 +28,14 @@ namespace vulkan {
 				Shader const &vertex_shader,
 				Shader const &fragment_shader,
 				RenderPass const &render_pass,
-				Attachments const &attachments
+				Attachments const &attachments,
+				std::string const &debug_name
 			);
 
 			static util::Result<Pipeline, Error> create_compute(
 				Shader const &compute_shader,
-				Attachments const &attachments
+				Attachments const &attachments,
+				std::string const &debug_name
 			);
 
 			Pipeline(Pipeline const &pipeline) = delete;

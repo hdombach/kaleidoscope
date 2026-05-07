@@ -710,7 +710,8 @@ namespace vulkan {
 				vert_shader,
 				frag_shader,
 				_render_pass,
-				desc_attributes
+				desc_attributes,
+				"Instaced Preview Pipeline Layout"
 		).move_or(_pipeline)) {
 			return Error(ErrorType::MISC, "Could not create instanced pass pipeline", err.value());
 		}
@@ -779,7 +780,8 @@ namespace vulkan {
 					vert_shader,
 					frag_shader,
 					_composite_render_pass,
-					desc_attributes
+					desc_attributes,
+					"Composite Preview Pipeline Layout"
 			).move_or(_composite_pipeline)) {
 				return Error(ErrorType::MISC, "Could not create instanced pass composite pipeline", err.value());
 			}
@@ -815,7 +817,8 @@ namespace vulkan {
 
 		if (auto err = Pipeline::create_compute(
 				compute_shader.value(),
-				attachments
+				attachments,
+				"Overlay Preview Pipeline Layout"
 		).move_or(_overlay_pipeline)) {
 			return Error(ErrorType::VULKAN, "Could not create overlay pipeline", err.value());
 		}

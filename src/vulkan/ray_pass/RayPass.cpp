@@ -378,7 +378,7 @@ namespace vulkan {
 			if (t) {
 				result.push_back(t->image_view());
 			} else {
-				result.push_back(nullptr);
+				result.push_back(_scene->resource_manager().default_texture()->image_view());
 			}
 		}
 
@@ -512,7 +512,8 @@ namespace vulkan {
 
 		if (auto err = Pipeline::create_compute(
 				compute_shader.value(),
-				attachments
+				attachments,
+				"Ray Pass Pipeline Layout"
 		).move_or(_pipeline)) {
 			return Error(ErrorType::MISC, "Could not create compute pipeline for ray pass", err.value());
 		}

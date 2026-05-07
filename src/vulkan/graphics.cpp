@@ -189,6 +189,10 @@ namespace vulkan {
 		_set_debug_name(VK_OBJECT_TYPE_QUEUE, queue, name);
 	}
 
+	void Graphics::set_debug_name(VkPipelineLayout pipeline_layout, std::string const &name) {
+		_set_debug_name(VK_OBJECT_TYPE_PIPELINE_LAYOUT, pipeline_layout, name);
+	}
+
 	Graphics::Graphics():
 		_name(nullptr),
 		_window(nullptr),
