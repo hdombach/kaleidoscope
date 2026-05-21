@@ -17,6 +17,7 @@ namespace cg {
 	class ParserContext {
 		public:
 			ParserContext() = default;
+			ParserContext(Token::Config const &tok_config);
 
 			void destroy();
 
@@ -24,6 +25,8 @@ namespace cg {
 			AstNode &create_tok_node(Token const &token);
 			AstNode &create_rule_node(std::string const &cfg_name);
 			AstNode &create_node();
+
+			Token::Config const &tok_config() const;
 
 		private:
 			struct FileItem {
@@ -51,6 +54,8 @@ namespace cg {
 			 * @brief The allocated nodes
 			 */
 			std::vector<std::vector<AstNode>> _node_bank;
+
+			Token::Config const *_tok_config = nullptr;
 
 	};
 }

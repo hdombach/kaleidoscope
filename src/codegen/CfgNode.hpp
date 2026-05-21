@@ -32,8 +32,6 @@ namespace cg {
 				cls
 			};
 
-			using TType = Token::Type;
-			
 			/**
 			 * @brief Creates a leaf node that doesn't match anything
 			 */
@@ -42,7 +40,7 @@ namespace cg {
 			/**
 			 * @brief Creates a leaf node that matches a single token
 			 */
-			CfgLeaf(TType type);
+			CfgLeaf(int type);
 
 			/**
 			 * @brief Creates a reference to another rule set
@@ -62,7 +60,7 @@ namespace cg {
 
 			Type type() const;
 
-			Token::Type token_type() const;
+			int token_type() const;
 			/**
 			 * @brief Get the name of the variable referenced
 			 *
@@ -85,17 +83,17 @@ namespace cg {
 			/**
 			 * @brief Prints a debug representation of the leaf to an ostream
 			 */
-			std::ostream& print_debug(std::ostream &os) const;
+			std::ostream& print_debug(std::ostream &os, Token::Config const &tok_config) const;
 			/**
 			 * @breif Gets a debug representation of the leaf
 			 */
-			std::string str() const;
+			std::string str(Token::Config const &tok_config) const;
 
 			bool operator==(CfgLeaf const &other) const;
 			bool operator!=(CfgLeaf const &other) const;
 		private:
 			Type _type;
-			TType _token_type;
+			int _token_type;
 			std::string _var_name;
 			std::unique_ptr<CfgRuleSet> _rule_set;
 	};
@@ -124,9 +122,9 @@ namespace cg {
 			 */
 			CfgRule(std::vector<CfgLeaf> const &leaves);
 			/**
-			 * @brief Creates a CfgRule directly from a list of tokens
+			 * @brief Creates a CfgRule directly from a list of tokens types
 			 */
-			CfgRule(std::vector<Token::Type> const &tokens);
+			CfgRule(std::vector<int> const &tokens);
 
 			std::vector<CfgLeaf> const &leaves() const;
 			std::vector<CfgLeaf> &leaves();
@@ -146,11 +144,11 @@ namespace cg {
 			/**
 			 * @brief Prints the debug representation of the rule to an ostream
 			 */
-			std::ostream& print_debug(std::ostream &os) const;
+			std::ostream& print_debug(std::ostream &os, Token::Config const &tok_config) const;
 			/**
 			 * @brief Gets the debug representation of the rule
 			 */
-			std::string str() const;
+			std::string str(Token::Config const &tok_config) const;
 			bool operator==(CfgRule const &other) const;
 			bool operator!=(CfgRule const &other) const;
 		private:
@@ -211,6 +209,14 @@ namespace cg {
 			 */
 			CfgRuleSet& operator=(CfgLeaf const &leaf);
 
+			/**
+			 * @brief Sets the list of rules to a signle rule constructed from a type leaf
+			 *
+			 * It does not function like a normal assign operation in that the rule
+			 * set name remains the same
+			 */
+			CfgRuleSet& operator=(int const &leaf_type);
+
 			bool operator==(CfgRuleSet const &other) const;
 			bool operator!=(CfgRuleSet const &other) const;
 
@@ -248,11 +254,11 @@ namespace cg {
 			/**
 			 * @brief Prints a debug representation of the rule set to an ostream
 			 */
-			std::ostream& print_debug(std::ostream &os, bool multiline=false) const;
+			std::ostream& print_debug(std::ostream &os, Token::Config const &tok_config, bool multiline=false) const;
 			/**
 			 * @brief Gets a debug representaiton of the rule set
 			 */
-			std::string str(bool multiline=false) const;
+			std::string str(Token::Config const &tok_config, bool multiline=false) const;
 		private:
 			std::string _name;
 			std::vector<CfgRule> _rules;
@@ -283,20 +289,8 @@ namespace cg {
 
 	/******** CfgRule *********/
 
-	inline CfgRule operator + (Token::Type const &lhs, Token::Type const &rhs) {
-		return CfgRule(CfgLeaf(lhs), CfgLeaf(rhs));
-	}
-
-	inline CfgRule operator + (CfgLeaf const &lhs, Token::Type const &rhs) {
-		return CfgRule(lhs, CfgLeaf(rhs));
-	}
-
 	inline CfgRule operator + (CfgLeaf const &lhs, CfgLeaf const &rhs) {
 		return CfgRule(lhs, rhs);
-	}
-
-	inline CfgRule operator + (CfgRule const &lhs, Token::Type const &rhs) {
-		return CfgRule(lhs, CfgLeaf(rhs));
 	}
 
 	inline CfgRule operator + (CfgRule const &lhs, CfgLeaf const &rhs) {
@@ -305,34 +299,6 @@ namespace cg {
 
 
 	/******** Rule set ********/
-
-	inline CfgRuleSet operator | (Token::Type const &lhs, Token::Type const &rhs) {
-		auto set = CfgRuleSet();
-		set.add_rule(CfgLeaf(lhs));
-		set.add_rule(CfgLeaf(rhs));
-		return set;
-	}
-
-	inline CfgRuleSet operator | (Token::Type const &lhs, CfgLeaf const &rhs) {
-		auto set = CfgRuleSet();
-		set.add_rule(CfgLeaf(lhs));
-		set.add_rule(rhs);
-		return set;
-	}
-
-	inline CfgRuleSet operator | (Token::Type const &lhs, CfgRule const &rhs) {
-		auto set = CfgRuleSet();
-		set.add_rule(CfgLeaf(lhs));
-		set.add_rule(rhs);
-		return set;
-	}
-
-	inline CfgRuleSet operator | (CfgLeaf const &lhs, Token::Type const &rhs) {
-		auto set = CfgRuleSet();
-		set.add_rule(lhs);
-		set.add_rule(CfgLeaf(rhs));
-		return set;
-	}
 
 	inline CfgRuleSet operator | (CfgLeaf const &lhs, CfgLeaf const &rhs) {
 		auto set = CfgRuleSet();
@@ -362,12 +328,6 @@ namespace cg {
 		return set;
 	}
 
-	inline CfgRuleSet operator | (CfgRuleSet const &lhs, Token::Type const &rhs) {
-		auto r = lhs;
-		r.add_rule(CfgLeaf(rhs));
-		return r;
-	}
-
 	inline CfgRuleSet operator | (CfgRuleSet const &lhs, CfgLeaf const &rhs) {
 		auto r = lhs;
 		r.add_rule(rhs);
@@ -380,17 +340,5 @@ namespace cg {
 		return r;
 	}
 
-}
-
-inline std::ostream &operator<<(std::ostream &os, cg::CfgLeaf const &leaf) {
-	return leaf.print_debug(os);
-}
-
-inline std::ostream &operator<<(std::ostream &os, cg::CfgRule const &rule) {
-	return rule.print_debug(os);
-}
-
-inline std::ostream &operator<<(std::ostream &os, cg::CfgRuleSet const &set) {
-	return set.print_debug(os);
 }
 

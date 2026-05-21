@@ -85,7 +85,9 @@ namespace cg {
 		uint32_t i,
 		CfgRuleSet const &set
 	) {
-		log_trace() << "Parsing rule set: " << set << std::endl;
+		auto &os = log_trace() << "Parsing rule set: ";
+		set.print_debug(os, _cfg_ctx->tok_config()) << std::endl;
+
 		for (auto &rule : set.rules()) {
 			if (auto node = _parse(tokens, i, rule, set.name())) {
 				return node;
@@ -101,7 +103,8 @@ namespace cg {
 		CfgRule const &rule,
 		std::string const &set_name
 	) {
-		log_trace() << "Parsing rule: " << rule << std::endl;
+		auto &os = log_trace() << "Parsing rule: ";
+		rule.print_debug(os, _cfg_ctx->tok_config()) << std::endl;
 
 		auto &node = _parser_ctx->create_rule_node(set_name);
 		for (auto &leaf : rule.leaves()) {
@@ -137,18 +140,27 @@ namespace cg {
 
 		auto &token = tokens[i];
 
+		auto &tok_config = _cfg_ctx->tok_config();
+
 		if (leaf.token_type() == token.type()) {
-			log_trace()
-				<< "leaf " << leaf
-				<< " matched: \"" << token << "\"" << std::endl;
+			auto &os = log_trace();
+			os << "leaf ";
+			leaf.print_debug(os, tok_config);
+			os << " matched: \"" << token.debug_str(tok_config) << "\"" << std::endl;
+
 			return &_parser_ctx->create_tok_node(token);
 		} else {
-			log_trace() << "leaf " << leaf << " didn't match: " << "\"" << token << "\"" << std::endl;
+			auto &os = log_trace();
+			os << "leaf ";
+			leaf.print_debug(os, tok_config);
+			os << " didn't match: " << "\""
+				<< token.debug_str(tok_config) << "\"" << std::endl;
+
 			auto msg = util::f(
 				"Expected ",
-				leaf.str(),
+				leaf.str(tok_config),
 				" but got ",
-				token
+				token.debug_str(_cfg_ctx->tok_config())
 			);
 			return _set_failure(Error(ErrorType::INVALID_PARSE, msg));
 		}

@@ -69,7 +69,7 @@ namespace cg::abs {
 			} else {
 				str += " ";
 			}
-			str += leaf.str();
+			str += leaf.str(_ctx->tok_config());
 			i++;
 		}
 		if (_offset >= r.leaves().size()) {
@@ -190,7 +190,7 @@ namespace cg::abs {
 
 	AbsoluteTable::AbsoluteTable(CfgContext const &cfg) {
 		_ctx = &cfg;
-		_token_size = Token::Type::Eof - Token::Type::Unmatched + 1;
+		_token_size = cfg.tok_config().size();
 		_ruleset_size = _ctx->cfg_rule_sets().size();
 	}
 
@@ -200,8 +200,8 @@ namespace cg::abs {
 		auto label_row = std::vector<std::string>();
 		label_row.push_back("state");
 		label_row.push_back("current rules");
-		for (int i = Token::Type::Unmatched; i <= Token::Type::Eof; i++) {
-			label_row.push_back(Token::type_str(static_cast<Token::Type>(i)));
+		for (int i = 0; i < _ctx->tok_config().size(); i++) {
+			label_row.push_back(_ctx->tok_config().name_table[i]);
 		}
 		for (auto &rule : _ctx->cfg_rule_sets()) {
 			label_row.push_back(rule.name());
@@ -258,7 +258,7 @@ namespace cg::abs {
 
 	AbsoluteTable::Entry &AbsoluteTable::lookup_tok(
 		TableState const &r,
-		Token::Type t
+		int t
 	) {
 		log_assert(t < _token_size, util::f(t, " is not a valid token"));
 		return row(r).begin()[t];
@@ -266,7 +266,7 @@ namespace cg::abs {
 
 	AbsoluteTable::Entry &AbsoluteTable::lookup_tok(
 		uint32_t state_id,
-		Token::Type t
+		int t
 	) {
 		log_assert(t < _token_size, util::f(t, " is not a valid token"));
 		return row(state_id).begin()[t];

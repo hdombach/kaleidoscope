@@ -114,7 +114,7 @@ namespace cg::abs {
 		auto rule_strs = std::vector<std::string>();
 		for (auto &set : _ctx->cfg_rule_sets()) {
 			for (auto &rule : set.rules()) {
-				rule_strs.push_back("<" + set.name() + "> -> " + rule.str());
+				rule_strs.push_back("<" + set.name() + "> -> " + rule.str(_ctx->tok_config()));
 			}
 		}
 		os << util::plist_enumerated(rule_strs, true);
@@ -135,21 +135,23 @@ namespace cg::abs {
 		while (1) {
 			log_assert(stack.back().is_table_state(), "Stack must end with a state");
 			uint32_t cur_state_id = stack.back().table_state();
-			Token::Type cur_t;
+			int cur_t;
 			if (t >= tokens.end()) {
-				cur_t = Token::Type::Eof;
+				cur_t = int(Token::Type::Eof);
 			} else {
 				cur_t = t->type();
 			}
 			uint32_t action = _table.lookup_tok(cur_state_id, cur_t);
 			if (action == 0) {
 				return Error(ErrorType::INVALID_PARSE, util::f(
-						"Unexpected token: ", Token::type_str(t->type()),
+						"Unexpected token: ", parser_ctx.tok_config().name_table[t->type()],
 						" at ", t->loc(), "\n", util::debug_file_loc(std::string(str.str()), t->loc()), "\n"
 						"Currently parsing:\n", _table.row_state(cur_state_id).str()
 				));
 			}
-			log_abs() << "state_" << cur_state_id << "[" << Token::type_str(cur_t) << "] == " << _table.action_str(action) << std::endl;
+			log_abs() << "state_" << cur_state_id << "["
+				<< parser_ctx.tok_config().name_table[cur_t] << "] == "
+				<< _table.action_str(action) << std::endl;
 
 			if (action == AbsoluteTable::ACCEPT_ACTION) {
 				//stack.push_back(parser_ctx.create_tok_node(*t));
@@ -177,14 +179,15 @@ namespace cg::abs {
 					break;
 				}
 			} else {
-				if (cur_t == Token::Type::Eof) {
+				if (cur_t == int(Token::Type::Eof)) {
 					//return Error(ErrorType::UNEXPECTED_TOKEN, util::f("Reached EOF unexpectedly"));
 				}
 				//TODO: update source location
 				stack.push_back(StackElement(
 						parser_ctx.create_tok_node(*t)
 				));
-				log_abs() << "Added " << *t << " to stack. " << std::endl;
+				log_abs() << "Added " << t->debug_str(parser_ctx.tok_config())
+					<< " to stack. " << std::endl;
 				stack.push_back(StackElement(action)); // push back the next state
 				t++;
 			}
@@ -228,7 +231,9 @@ namespace cg::abs {
 		auto cur_rule_set = rule.set_id();
 		auto next_state_id = _table.lookup_ruleset(cur_state_id, cur_rule_set);
 
-		log_abs() << "Reducing using rule <" << new_node.cfg_rule() << "> <- " << rule << std::endl;
+		auto &os = log_abs();
+		os << "Reducing using rule <" << new_node.cfg_rule() << "> <- ";
+		rule.print_debug(os, parser_ctx.tok_config()) << std::endl;
 
 		stack.push_back(StackElement(new_node));
 		stack.push_back(StackElement(next_state_id));

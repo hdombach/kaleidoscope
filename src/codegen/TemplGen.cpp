@@ -8,6 +8,7 @@
 #include "util/log.hpp"
 #include "util/lines_iterator.hpp"
 #include "AstNodeIterator.hpp"
+#include "TemplTokenizer.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -34,9 +35,9 @@ namespace cg {
 	util::Result<void, Error> TemplGen::_setup_parser() {
 		if (_parser) return {};
 
-		auto context = CfgContext::create();
+		auto context = CfgContext::create(TEMPL_TOK_CONFIG);
 		auto &c = *context;
-		using T = Token::Type;
+		using T = TemplTokenType;
 
 		c.prim("whitespace") = c.cls(T::Pad | T::Newline);
 
@@ -302,6 +303,7 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args
 	) {
+		using T = TemplTokenType;
 		if (node.type() == AstNode::Type::Leaf) {
 			return node.tok().content();
 		} else if (node.type() == AstNode::Type::None) {
@@ -310,9 +312,9 @@ namespace cg {
 
 		if (node.cfg_rule() == "whitespace") {
 			return _cg_default(node, args);
-		} else if (node.tok().type() == Token::Type::Pad) {
+		} else if (node.tok().type() == int(T::Pad)) {
 			return _cg_recursive(node, args);
-		} else if (node.tok().type() == Token::Type::Ident) {
+		} else if (node.tok().type() == int(T::Ident)) {
 			return _cg_identifier(node, args);
 		} else if (node.cfg_rule() == "raw") {
 			return _cg_recursive(node, args);
@@ -434,16 +436,17 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args
 	) {
+		using T = TemplTokenType;
 		auto result = std::string();
 
 		for (auto &child : node) {
 			auto name = child.cfg_rule();
 			if (name == "whitespace") {
 				continue;
-			} else if (child.tok().type() == Token::Type::ExpB) {
+			} else if (child.tok().type() == int(T::ExpB)) {
 				//TODO: padding
 				continue;
-			} else if (child.tok().type() == Token::Type::ExpE) {
+			} else if (child.tok().type() == int(T::ExpE)) {
 				//TODO: padding
 				continue;
 			} else {
@@ -544,6 +547,7 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args
 	) {
+		using T = TemplTokenType;
 		auto result = std::string();
 		AstNode *sfrag_for, *identifier, *iter_exp;
 		std::string iter_name;
@@ -551,7 +555,7 @@ namespace cg {
 		if (auto err = node.child_with_cfg("sfrag_for").move_or(sfrag_for)) {
 			return Error(ErrorType::MISC, "Could not parse for statement", err.value());
 		}
-		if (auto err = sfrag_for->child_with_tok(Token::Type::Ident).move_or(identifier)) {
+		if (auto err = sfrag_for->child_with_tok(int(T::Ident)).move_or(identifier)) {
 			return Error(ErrorType::ASSERT, "Could not parse identifier statement in for statement", err.value());
 		}
 		if (auto err = sfrag_for->child_with_cfg("exp").move_or(iter_exp)) {
@@ -599,13 +603,14 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args
 	) {
+		using T = TemplTokenType;
 		AstNode *arg_def, *ident;
 		std::string macro_name;
 
 		if (auto err = node.child_with_cfg("sfrag_macro").move_or(arg_def)) {
 			return Error(ErrorType::ASSERT, "Could not parse sfrag_macro", err.value());
 		}
-		if (auto err = arg_def->child_with_tok(Token::Type::Ident).move_or(ident)) {
+		if (auto err = arg_def->child_with_tok(int(T::Ident)).move_or(ident)) {
 			return Error(ErrorType::ASSERT, "Could not find identifier token", err.value());
 		}
 		auto macro_arg_list = arg_def->child_with_cfg("sfrag_argdef_list").value(nullptr);
@@ -626,7 +631,7 @@ namespace cg {
 				AstNode *arg_name;
 				auto macro_arg_value = TemplObj();
 
-				if (auto err = macro_arg_node->child_with_tok(Token::Type::Ident).move_or(arg_name)) {
+				if (auto err = macro_arg_node->child_with_tok(int(T::Ident)).move_or(arg_name)) {
 					return Error(ErrorType::ASSERT, "Cannot find identifier in macro arg", err.value());
 				}
 				if (auto exp_node = macro_arg_node->child_with_cfg("exp")) {
@@ -687,10 +692,11 @@ namespace cg {
 		AstNode const &node,
 		TemplDict &args
 	) {
+		using T = TemplTokenType;
 		AstNode *file_url_node, *included_node;
 		std::string filename;
 
-		if (auto err = node.child_with_tok(Token::Type::StrConst).move_or(file_url_node)) {
+		if (auto err = node.child_with_tok(int(T::StrConst)).move_or(file_url_node)) {
 			return Error(ErrorType::ASSERT, "Could not filename node", err.value());
 		}
 		if (auto err =_unpack_str(file_url_node->tok().content()).move_or(filename)) {
@@ -757,6 +763,7 @@ namespace cg {
 		AstNode const &node,
 		TemplDict const &args
 	) {
+		using T = TemplTokenType;
 		CG_ASSERT(node.cfg_rule() == "exp_sing", "_eval_exp_sing must be used to parse exp_sing nodes");
 		CG_ASSERT(node.type() == AstNode::Type::Rule, "_eval_exp_sing must be of type Rule");
 		for (auto &child : node) {
@@ -765,15 +772,15 @@ namespace cg {
 			auto name = child.cfg_rule();
 			if (name == "whitespace") {
 				continue;
-			} else if (child.tok().type() == Token::Type::ParanOpen) {
+			} else if (child.tok().type() == int(T::ParanOpen)) {
 				continue;
-			} else if (child.tok().type() == Token::Type::ParanClose) {
+			} else if (child.tok().type() == int(T::ParanClose)) {
 				continue;
-			} else if (child.tok().type() == Token::Type::Ident) {
+			} else if (child.tok().type() == int(T::Ident)) {
 				return _eval_exp_id(child, args);
-			} else if (child.tok().type() == Token::Type::IntConst) {
+			} else if (child.tok().type() == int(T::IntConst)) {
 				return _eval_exp_int(child, args);
-			} else if (child.tok().type() == Token::Type::StrConst) {
+			} else if (child.tok().type() == int(T::StrConst)) {
 				return _eval_exp_str(child, args);
 			} else if (name == "exp") {
 				return _eval(child, args);
@@ -799,7 +806,8 @@ namespace cg {
 		AstNode const &node,
 		TemplDict const &args
 	) {
-		CG_ASSERT(node.tok().type() == Token::Type::IntConst, "IntConst must be passed to _eval_exp_int");
+		using T = TemplTokenType;
+		CG_ASSERT(node.tok().type() == int(T::IntConst), "IntConst must be passed to _eval_exp_int");
 		auto value = TemplInt(0);
 		for (auto c : node.consumed_all()) {
 			value = value * 10 + c - '0';
@@ -862,8 +870,9 @@ namespace cg {
 		AstNode const &node,
 		TemplDict const &args
 	) {
+		using T = TemplTokenType;
 		AstNode *ident_node;
-		if (auto err = node.child_with_tok(Token::Type::Ident).move_or(ident_node)) {
+		if (auto err = node.child_with_tok(int(T::Ident)).move_or(ident_node)) {
 			return Error(ErrorType::ASSERT, "Could not find member identifier", err.value());
 		}
 		return lhs.get_attribute(ident_node->tok().content());
@@ -1135,7 +1144,7 @@ namespace cg {
 			if (name == "exp_log_or") {
 				res = res || _eval(*temp_exp_node, args);
 			} else {
-				if (name.empty()) name = child.tok().debug_str();
+				if (name.empty()) name = child.tok().debug_str(*_tok_config);
 				return Error(ErrorType::ASSERT, util::f("Unknown child in _eval_exp12: ", name));
 			}
 		}
@@ -1147,11 +1156,12 @@ namespace cg {
 		AstNode const &node,
 		TemplDict const &args
 	) {
+		using T = TemplTokenType;
 		AstNode *filter_node;
 		TemplObj filter_func;
 		CG_ASSERT(node.cfg_rule() == "exp_filter_frag", "Must be an filter frag");
 		
-		if (auto err = node.child_with_tok(Token::Type::Ident).move_or(filter_node)) {
+		if (auto err = node.child_with_tok(int(T::Ident)).move_or(filter_node)) {
 			return Error(ErrorType::ASSERT, "Can't find name of the filter", err.value());
 		}
 		if (auto err = _eval_exp_id(*filter_node, args).move_or(filter_func)) {

@@ -5,70 +5,36 @@
 #include "util/FileLocation.hpp"
 #include "util/StringRef.hpp"
 
+
 namespace cg {
 	class Token {
 		public:
-			enum Type: int {
+			struct Config {
+				std::vector<std::string> name_table;
+				std::vector<std::regex> parse_table;
+
+				size_t size() const { return parse_table.size(); }
+			};
+
+			enum class Type: int {
 				Unmatched,
-				Pad,
-				Newline,
-				CommentB,
-				CommentE,
-				ExpB,
-				ExpE,
-				StmtB,
-				StmtE,
-				If,
-				Elif,
-				Else,
-				Endif,
-				For,
-				In,
-				EndFor,
-				Macro,
-				Endmacro,
-				Include,
-				Ident,
-				StrConst,
-				IntConst,
-				ParanOpen,
-				ParanClose,
-				Plus,
-				Minus,
-				Mult,
-				Div,
-				Perc,
-				Period,
-				Comma,
-				GreatEq,
-				Great,
-				LessEq,
-				Less,
-				Equal,
-				NotEqual,
-				Excl,
-				LAnd,
-				LOr,
-				Bar,
-				Assignment,
 				Eof,
 			};
 
 			Token() = default;
-			Token(Type type, util::StringRef const &ref);
+			Token(int type, util::StringRef const &ref);
 
-			Type type() const;
+			int type() const;
 			std::string content() const;
 			util::FileLocation loc() const;
-			std::string debug_str() const;
-			static const char *type_str(Type type);
+			std::string debug_str(Config const &config) const;
 			void concat(Token const &t);
 
 			bool exists() const;
 
 			Token &operator+=(Token const &rhs);
 		private:
-			Type _type=Type::Unmatched;
+			int _type=int(Type::Unmatched);
 			std::string _str;
 			util::FileLocation _loc;
 
@@ -86,19 +52,6 @@ namespace cg {
 		return result;
 	}
 
-	std::vector<Token> tokenize(util::StringRef str);
-
-	/**
-	 * Combines every token not in a statement into an unmatched token
-	 */
-	std::vector<Token> simplify_tokens(std::vector<Token> const &tokens);
-}
-
-inline std::ostream &operator<<(std::ostream &os, cg::Token const &t) {
-	return os << t.debug_str();
-}
-
-inline std::ostream &operator<<(std::ostream &os, cg::Token::Type const &t) {
-	return os << cg::Token::type_str(t);
+	std::vector<Token> tokenize(util::StringRef str, Token::Config const &config);
 }
 

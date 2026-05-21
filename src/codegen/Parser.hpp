@@ -17,9 +17,10 @@ namespace cg {
 			virtual ~Parser() {}
 
 			inline virtual util::Result<size_t, Error> match(
-				util::StringRef const &str
+				util::StringRef const &str,
+				Token::Config const &tok_config
 			) {
-				auto r = ParserContext();
+				auto r = ParserContext(tok_config);
 				if (auto consumed = parse(str, r)) {
 					return consumed.value()->consumed_all().size();
 				} else {

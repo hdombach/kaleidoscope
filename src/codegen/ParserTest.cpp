@@ -1,15 +1,17 @@
+#include <fstream>
+
 #include "Error.hpp"
 #include "codegen/CfgContext.hpp"
 #include "tests/Test.hpp"
 #include "SParser.hpp"
 #include "AbsoluteSolver.hpp"
 #include "util/log.hpp"
-#include <fstream>
+#include "TemplTokenizer.hpp"
 
 namespace cg {
 	class ParserTest: TestFixture {
 		public:
-			ParserTest(Test &test, size_t variant): TestFixture(test), _variant(variant) { }
+			ParserTest(Test &test, size_t variant): TestFixture(test), _variant(variant), _parser_ctx(TEMPL_TOK_CONFIG) { }
 
 			static size_t variant_count() { return 2; }
 
@@ -36,7 +38,7 @@ namespace cg {
 
 			util::Result<size_t, cg::Error> match(std::string const &str) {
 				auto filename = util::f("gen/test-output-", _variant, "-", _count++, ".gv");
-				return _parser->match(util::StringRef(str.c_str(), filename.c_str()));
+				return _parser->match(util::StringRef(str.c_str(), filename.c_str()), _parser_ctx.tok_config());
 			}
 
 			void parse_eq(
@@ -83,12 +85,12 @@ namespace cg {
 	};
 
 	TEST_F(ParserTest, match_literals) {
-		auto ctx = CfgContext::create();
+		auto ctx = CfgContext::create(TEMPL_TOK_CONFIG);
 		auto &c = *ctx;
-		using T = Token::Type;
+		using T = TemplTokenType;
 
 		c.root("root") = c["hello"] + T::Eof;
-		c.prim("hello") = T::Unmatched;
+		c.prim("hello") = int(T::Unmatched);
 
 		EXPECT(f.setup(std::move(ctx)));
 
@@ -96,9 +98,9 @@ namespace cg {
 	}
 
 	TEST_F(ParserTest, match_number) {
-		auto ctx = CfgContext::create();
+		auto ctx = CfgContext::create(TEMPL_TOK_CONFIG);
 		auto &c = *ctx;
-		using T = Token::Type;
+		using T = TemplTokenType;
 
 		c.root("root") = c["exp"] + T::Eof;
 		c.prim("integer") = T::IntConst | c.empty();
@@ -118,9 +120,9 @@ namespace cg {
 	}
 
 	TEST_F(ParserTest, match_math) {
-		auto ctx = CfgContext::create();
+		auto ctx = CfgContext::create(TEMPL_TOK_CONFIG);
 		auto &c = *ctx;
-		using T = Token::Type;
+		using T = TemplTokenType;
 
 		c.prim("decimal")
 			= T::IntConst + T::Period + T::IntConst
@@ -203,16 +205,16 @@ namespace cg {
 	}
 
 	TEST_F(ParserTest, simple_exp) {
-		auto ctx = CfgContext::create();
+		auto ctx = CfgContext::create(TEMPL_TOK_CONFIG);
 		auto &c = *ctx;
-		using T = Token::Type;
+		using T = TemplTokenType;
 
 		c.root("root") = c["S"] + T::Eof; 
 		c.prim("S") = T::ExpB + c["E"] + T::ExpE;
 		c.prim("E") = c["B"] + T::Mult + c["E"];
 		c.prim("E") = c["B"] + T::Plus + c["E"];
 		c.prim("E") = c["B"];
-		c.prim("B") = T::IntConst;
+		c.prim("B") = int(T::IntConst);
 
 		EXPECT(f.setup(std::move(ctx)));
 
@@ -220,9 +222,9 @@ namespace cg {
 	}
 
 	TEST_F(ParserTest, cls) {
-		auto ctx = CfgContext::create();
+		auto ctx = CfgContext::create(TEMPL_TOK_CONFIG);
 		auto &c = *ctx;
-		using T = Token::Type;
+		using T = TemplTokenType;
 
 		c.root("value") = c["morse"] + T::Eof;
 		c.prim("morse") = T::ExpB + c.cls(T::Period | T::Minus) + T::ExpE;
@@ -236,9 +238,9 @@ namespace cg {
 	}
 
 	TEST_F(ParserTest, cls_numbers) {
-		auto ctx = CfgContext::create();
+		auto ctx = CfgContext::create(TEMPL_TOK_CONFIG);
 		auto &c = *ctx;
-		using T = Token::Type;
+		using T = TemplTokenType;
 
 		c.root("root") = c["exp"] + T::Eof;
 		c.temp("exp") = T::ExpB + c["num_list"] + T::ExpE;
@@ -253,15 +255,15 @@ namespace cg {
 	}
 
 	TEST_F(ParserTest, for_loop) {
-		auto ctx = CfgContext::create();
+		auto ctx = CfgContext::create(TEMPL_TOK_CONFIG);
 		auto &c = *ctx;
-		using T = Token::Type;
+		using T = TemplTokenType;
 
 		c.root("root") = c["for"] + T::Eof;
 		c.prim("sfrag_for") = T::StmtB + T::For + T::StmtE;
 		c.prim("sfrag_endfor") = T::StmtB + T::EndFor + T::StmtE;
 		c.prim("for") = c["sfrag_for"] + c["periods"] + c["sfrag_endfor"];
-		c.prim("periods") = c.cls(T::Period);
+		c.prim("periods") = c.cls(int(T::Period));
 
 		EXPECT(f.setup(std::move(ctx)));
 

@@ -20,12 +20,14 @@ namespace cg {
 
 			CfgContext() = default;
 
-			static Ptr create();
+			CfgContext(Token::Config const &tok_config);
+
+			static Ptr create(Token::Config const &tok_config);
 
 			/**
 			 * @brief Wrapper around CfgLeaf::token
 			 */
-			CfgLeaf t(Token::Type t) const;
+			CfgLeaf t(int t) const;
 
 			/**
 			 * @brief Wrapper around CfgLeaf::empty
@@ -99,12 +101,15 @@ namespace cg {
 			 * - Removes optional fields by enumerating all combinations
 			 */
 			void simplify();
+
+			Token::Config const &tok_config() const;
 		private:
 			std::vector<CfgRuleSet> _cfg_rule_sets;
 			std::map<std::string, uint32_t> _cfg_map;
 			std::set<std::string> _prim_names;
 			std::set<std::string> _closures;
 			std::string _root_name;
+			Token::Config const *_tok_config = nullptr;
 
 		private:
 			void _remove_cls();

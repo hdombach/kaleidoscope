@@ -7,7 +7,7 @@
 namespace cg {
 	CfgLeaf::CfgLeaf(): _type(Type::empty) {}
 
-	CfgLeaf::CfgLeaf(TType type): _type(Type::token), _token_type(type) {}
+	CfgLeaf::CfgLeaf(int type): _type(Type::token), _token_type(type) {}
 
 	CfgLeaf CfgLeaf::var(std::string const &str) {
 		auto l = CfgLeaf();
@@ -76,7 +76,7 @@ namespace cg {
 		return _type;
 	}
 
-	Token::Type CfgLeaf::token_type() const {
+	int CfgLeaf::token_type() const {
 		return _token_type;
 	}
 
@@ -95,22 +95,28 @@ namespace cg {
 		return *_rule_set;
 	}
 
-	std::ostream& CfgLeaf::print_debug(std::ostream &os) const {
+	std::ostream& CfgLeaf::print_debug(
+		std::ostream &os,
+		Token::Config const &tok_config
+	) const {
 		switch (_type) {
 			case Type::empty:
 				return os << "Empty";
 			case Type::token:
-				return os << _token_type;
+				return os << tok_config.name_table[_token_type];
 			case Type::var:
 				return os << "<" << _var_name << ">";
 			case Type::cls:
-				return os << "[" << *_rule_set << "]";
+				os << "[";
+				_rule_set->print_debug(os, tok_config);
+				os << "]";
+				return os;
 		}
 	}
 
-	std::string CfgLeaf::str() const {
+	std::string CfgLeaf::str(Token::Config const &tok_config) const {
 		auto ss = std::stringstream();
-		print_debug(ss);
+		print_debug(ss, tok_config);
 		return ss.str();
 	}
 
@@ -155,7 +161,10 @@ namespace cg {
 		_set_id = id;
 	}
 
-	std::ostream& CfgRule::print_debug(std::ostream &os) const {
+	std::ostream& CfgRule::print_debug(
+		std::ostream &os,
+		Token::Config const &tok_config
+	) const {
 		bool is_first = true;
 		for (auto &leaf : _leaves) {
 			if (is_first) {
@@ -163,14 +172,14 @@ namespace cg {
 			} else {
 				os << " ";
 			}
-			os << leaf;
+			leaf.print_debug(os, tok_config);
 		}
 		return os;
 	}
 
-	std::string CfgRule::str() const {
+	std::string CfgRule::str(Token::Config const &tok_config) const {
 		auto ss = std::stringstream();
-		print_debug(ss);
+		print_debug(ss, tok_config);
 		return ss.str();
 	}
 
@@ -201,6 +210,11 @@ namespace cg {
 
 	CfgRuleSet& CfgRuleSet::operator=(CfgLeaf const &leaf) {
 		add_rule(leaf);
+		return *this;
+	}
+
+	CfgRuleSet& CfgRuleSet::operator=(int const &leaf_type) {
+		add_rule(CfgRule(leaf_type));
 		return *this;
 	}
 
@@ -238,7 +252,11 @@ namespace cg {
 		return _rules.end();
 	}
 
-	std::ostream& CfgRuleSet::print_debug(std::ostream &os, bool multiline) const {
+	std::ostream& CfgRuleSet::print_debug(
+		std::ostream &os,
+		Token::Config const &tok_config,
+		bool multiline
+	) const {
 		bool is_first = true;
 		os << name() << " -> ";
 		for (auto &rule : _rules) {
@@ -250,14 +268,17 @@ namespace cg {
 				}
 				os << " | ";
 			}
-			os << rule;
+			rule.print_debug(os, tok_config);
 		}
 		return os;
 	}
 
-	std::string CfgRuleSet::str(bool multiline) const {
+	std::string CfgRuleSet::str(
+		Token::Config const &tok_config,
+		bool multiline
+	) const {
 		auto ss = std::stringstream();
-		print_debug(ss, multiline);
+		print_debug(ss, tok_config, multiline);
 		return ss.str();
 	}
 

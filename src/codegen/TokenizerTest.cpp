@@ -13,13 +13,14 @@ bool operator!=(cg::Token const &lhs, cg::TestToken const &rhs);
 
 
 #include "Tokenizer.hpp"
+#include "TemplTokenizer.hpp"
 #include "tests/Test.hpp"
 
 
 namespace cg {
 	class TestToken {
 		public:
-			using Type = Token::Type;
+			using Type = TemplTokenType;
 			TestToken() = default;
 			TestToken(Type type, std::string content):
 				_type(type),
@@ -156,21 +157,77 @@ namespace cg {
 				return TestToken(Type::Eof, "");
 			}
 
-			Token::Type type() const { return _type; }
+			TemplTokenType type() const { return _type; }
 			std::string const &content() const { return _content; }
 
 			std::string str() const {
-				return util::f("(", Token::type_str(_type), " \"", util::escape_str(_content), "\")");
+				return util::f(
+					"(",
+					TEMPL_TOK_CONFIG.name_table[int(_type)],
+					" \"",
+					util::escape_str(_content),
+					"\")"
+				);
 			}
 
 			bool matches(Token const &other) const {
-				return other.type() == type() && other.content() == content();
+				return other.type() == int(type()) && other.content() == content();
 			}
 
 		private:
-			Token::Type _type;
+			TemplTokenType _type;
 			std::string _content;
 	};
+
+	void test_equal(
+		Test &test,
+		std::vector<Token> const &tokens,
+		std::vector<TestToken> const &test_tokens,
+		util::FileLocation const &loc = std::source_location::current()
+	) {
+		auto msgs = std::vector<std::string>();
+
+		auto s = std::min(tokens.size(), test_tokens.size());
+		for (auto i = 0; i < s; i++) {
+			if (tokens[i] != test_tokens[i]) {
+				msgs.push_back(util::f(
+					"Mismatch at index ", i, ": ", tokens[i].debug_str(TEMPL_TOK_CONFIG),
+					" != ", test_tokens[i].str()
+				));
+				break;
+			}
+		}
+
+		if (tokens.size() > s) {
+			msgs.push_back("Token list is smaller than expected list");
+		} else if (test_tokens.size() > s) {
+			msgs.push_back("Expected list is smaller than the token list");
+		}
+
+		if (!msgs.empty()) {
+			auto msg = std::string("lhs: ");
+			auto frag = "[";
+			for (auto &token : tokens) {
+				msg += frag;
+				frag = ", ";
+				msg += token.debug_str(TEMPL_TOK_CONFIG);
+			}
+			msgs.push_back(msg);
+
+			msg = std::string("rhs: ");
+			frag = "[";
+			for (auto &token : test_tokens) {
+				msg += frag;
+				frag = ", ";
+				msg += token.str();
+			}
+			msgs.push_back(msg);
+
+			test.fail(msgs, loc);
+		} else {
+			test.succeed();
+		}
+	}
 
 	using T = TestToken;
 
@@ -190,15 +247,15 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		auto tokens = simplify_tokens(tokenize(src));
-		EXPECT_EQ(tokens, res);
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
+		test_equal(_test, tokens, res);
 	}
 
 	TEST(tokenizer, comment) {
 		auto src =
 			"ahhh\n"
 			"first {# temp. #} time.\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("ahhh"),
 			TestToken::newline(),
@@ -214,14 +271,14 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 
 	}
 
 	TEST(tokenizer, str_constants) {
 		auto src =
 			"His name is {{ \"John Cena!\" }}\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("His"),
 			TestToken::padding(),
@@ -237,13 +294,13 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, int_constants) {
 		auto src =
 			"The age is {{ 69 }}.\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("The"),
 			TestToken::padding(),
@@ -260,24 +317,24 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 
 		src =
 			"{{023}}";
-		tokens = simplify_tokens(tokenize(src));
+		tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		expected = std::vector{
 			TestToken::exp_b(),
 			TestToken::int_const("023"),
 			TestToken::exp_e(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, paranthesis) {
 		auto src =
 			"{{((get_method()))()}}";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::exp_b(),
 			TestToken::paran_open(),
@@ -292,13 +349,13 @@ namespace cg {
 			TestToken::exp_e(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, addition) {
 		auto src =
 			"The sum is {{5 + weird}}\n\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("The"),
 			TestToken::padding(),
@@ -317,13 +374,13 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, subtraction) {
 		auto src =
 			"The sum is {{9-1  -  \t  2}}";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("The"),
 			TestToken::padding(),
@@ -342,14 +399,14 @@ namespace cg {
 			TestToken::exp_e(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 
 	TEST(tokenizer, multiplication) {
 		auto src =
 			"The product is {{501*prime}}";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("The"),
 			TestToken::padding(),
@@ -364,13 +421,13 @@ namespace cg {
 			TestToken::exp_e(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, division) {
 		auto src =
 			"Rounding down: \n\t{{ value / 10 }}\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("Rounding"),
 			TestToken::padding(),
@@ -390,13 +447,13 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, modulus) {
 		auto src =
 			"The mod is: {{sum%10}}\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("The"),
 			TestToken::padding(),
@@ -412,13 +469,13 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, member) {
 		auto src =
 			"cur_month={{date.month.raw()}}.\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("cur_month="),
 			TestToken::exp_b(),
@@ -434,14 +491,14 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, args) {
 		auto src =
 			"# Summary:\n"
 			"- Sum: {{sum(value1, value2,value3}}\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("#"),
 			TestToken::padding(),
@@ -464,13 +521,13 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, greater_equal) {
 		auto src =
 			"Can drink: {{age>=21}}!\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("Can"),
 			TestToken::padding(),
@@ -485,13 +542,13 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, greater) {
 		auto src =
 			"Can drink: {{age>20}}!\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("Can"),
 			TestToken::padding(),
@@ -506,13 +563,13 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, lesser_equal) {
 		auto src =
 			"Underage: {{age<=20}}!\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("Underage:"),
 			TestToken::padding(),
@@ -525,13 +582,13 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, lesser) {
 		auto src =
 			"Underage: {{age<21}}!\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("Underage:"),
 			TestToken::padding(),
@@ -544,13 +601,13 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, equal) {
 		auto src =
 			"Todays birthday?: {{age==date()}}\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("Todays"),
 			TestToken::padding(),
@@ -566,13 +623,13 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, not_equal) {
 		auto src =
 			"Todays non-birthday?: {{age!=date()}}\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("Todays"),
 			TestToken::padding(),
@@ -588,13 +645,13 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, logical_not) {
 		auto src =
 			"normal user: {{!!!is_admin}}\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("normal"),
 			TestToken::padding(),
@@ -609,13 +666,13 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, logical_and) {
 		auto src =
 			"test = {{test1 && (test2&&test3)}}\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("test"),
 			TestToken::padding(),
@@ -635,13 +692,13 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, logical_or) {
 		auto src =
 			"test = {{(test1)|| test2||test3}}\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("test"),
 			TestToken::padding(),
@@ -660,14 +717,14 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, filter) {
 		auto src =
 			"==quote of the day==\n"
 			"{{get_quote()|trim|indent(\"> \")}}\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("==quote"),
 			TestToken::padding(),
@@ -692,7 +749,7 @@ namespace cg {
 			TestToken::newline(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, if_statement) {
@@ -701,7 +758,7 @@ namespace cg {
 			"{\%if is_admin() %}\n"
 			"<button action=\"delete_everything\">\n"
 			"{\% endif %}\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("Welcome"),
 			TestToken::newline(),
@@ -724,7 +781,7 @@ namespace cg {
 			TestToken::stmt_e(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, if_else_chain) {
@@ -737,7 +794,7 @@ namespace cg {
 			"- idk\n"
 			"{\% endif %}\n"
 			"";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::stmt_b(),
 			TestToken::padding(),
@@ -778,7 +835,7 @@ namespace cg {
 			TestToken::stmt_e(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, for_loop) {
@@ -787,7 +844,7 @@ namespace cg {
 			"{\% for item in list|filter%}\n"
 			"- {{item}}.\n"
 			"{\%endfor%}\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::unmatched("Snooping"),
 			TestToken::padding(),
@@ -817,7 +874,7 @@ namespace cg {
 			TestToken::stmt_e(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, macro) {
@@ -825,7 +882,7 @@ namespace cg {
 			"{\% macro(say_hello,prefix=\"----\") %}\n"
 			"{{prefix}}{{say_hello}}\n"
 			"{\% endmacro %}\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::stmt_b(),
 			TestToken::padding(),
@@ -853,13 +910,13 @@ namespace cg {
 			TestToken::stmt_e(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, include) {
 		auto src =
 			"{\%include\"test.cpp\"%}\n";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::stmt_b(),
 			TestToken::include_s(),
@@ -867,7 +924,7 @@ namespace cg {
 			TestToken::stmt_e(),
 			TestToken::eof(),
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, default_padding) {
@@ -877,7 +934,7 @@ namespace cg {
 			"Hello world\n"
 			"{\% endif %}\n"
 			"";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			TestToken::stmt_b(),
 			TestToken::padding(),
@@ -898,7 +955,7 @@ namespace cg {
 			TestToken::stmt_e(),
 			TestToken::eof()
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, leading_padding) {
@@ -908,7 +965,7 @@ namespace cg {
 			"-\n"
 			"{\% endif %}"
 			"";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			T::newline(),
 			T::stmt_b(),
@@ -927,7 +984,7 @@ namespace cg {
 			T::stmt_e(),
 			T::eof()
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, extra_padding) {
@@ -937,7 +994,7 @@ namespace cg {
 			"\t oy\n"
 			"   {\% endif %}\t\n"
 			"";
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			T::newline(),
 			T::stmt_b(),
@@ -957,7 +1014,7 @@ namespace cg {
 			T::stmt_e(),
 			T::eof()
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, remove_padding) {
@@ -969,7 +1026,7 @@ namespace cg {
 			"{\%- endif -%}\n"
 			"";
 
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			T::stmt_b("{\%-"),
 			T::padding(),
@@ -989,7 +1046,7 @@ namespace cg {
 			T::stmt_e("-%}"),
 			T::eof()
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, keep_padding) {
@@ -1001,7 +1058,7 @@ namespace cg {
 			"{\%+ endif +%}\n"
 			"";
 
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			T::newline(),
 			T::newline(),
@@ -1029,7 +1086,7 @@ namespace cg {
 			T::newline(),
 			T::eof()
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, exp_default_padding) {
@@ -1038,7 +1095,7 @@ namespace cg {
 			"  {{5}}\n"
 			"";
 
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			T::newline(),
 			T::newline(),
@@ -1049,7 +1106,7 @@ namespace cg {
 			T::newline(),
 			T::eof()
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, exp_keep_padding) {
@@ -1060,7 +1117,7 @@ namespace cg {
 			"{{ +5 }}\n"
 			"";
 
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			T::newline(),
 			T::newline(),
@@ -1080,7 +1137,7 @@ namespace cg {
 			T::newline(),
 			T::eof()
 		};
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 
 	TEST(tokenizer, exp_remove_padding) {
@@ -1091,7 +1148,7 @@ namespace cg {
 			"{{ -5 }}\n"
 			"";
 
-		auto tokens = simplify_tokens(tokenize(src));
+		auto tokens = simplify_templ_tokens(tokenize(src, TEMPL_TOK_CONFIG));
 		auto expected = std::vector{
 			T::exp_b("{{-"),
 			T::int_const("5"),
@@ -1106,7 +1163,7 @@ namespace cg {
 			T::eof()
 		};
 
-		EXPECT_EQ(tokens, expected);
+		test_equal(_test, tokens, expected);
 	}
 }
 

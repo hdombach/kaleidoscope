@@ -18,6 +18,7 @@ namespace cg {
 	 */
 
 	class AstNodeIterator;
+	class ParserContext;
 	class AstNode {
 		public:
 			enum class Type {
@@ -38,14 +39,16 @@ namespace cg {
 			 */
 			static AstNode create_rule(
 				uint32_t id,
-				std::string const &cfg_name
+				std::string const &cfg_name,
+				ParserContext const &parser_ctx
 			);
 			/**
 			 * @brief Create an astnode containg a string literal
 			 */
 			static AstNode create_tok(
 				uint32_t id,
-				Token const &token
+				Token const &token,
+				ParserContext const &parser_ctx
 			);
 
 			Type type() const { return _type; }
@@ -65,7 +68,7 @@ namespace cg {
 
 			std::vector<AstNode*> children_with_cfg(std::string const &name) const;
 
-			util::Result<AstNode*, Error> child_with_tok(Token::Type type) const;
+			util::Result<AstNode*, Error> child_with_tok(int type) const;
 
 			/**
 			 * @brief The rule that was used to generate this node
@@ -114,6 +117,7 @@ namespace cg {
 			uint32_t _id;
 			std::string _cfg_rule;
 			Token const *_token=nullptr;
+			ParserContext const *_parser_ctx;
 
 			// Use linked list to reduce number of reallocations.
 			// All AstNodes are reserved in a pool in ParserContext to reduce fragmantation.

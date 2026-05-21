@@ -3,6 +3,7 @@
 #include "util/log.hpp"
 #include "util/PrintTools.hpp"
 #include "AstNodeIterator.hpp"
+#include "ParserContext.hpp"
 
 namespace cg {
 	Token _default_token;
@@ -21,6 +22,7 @@ namespace cg {
 		_id(other._id),
 		_cfg_rule(other._cfg_rule),
 		_token(other._token),
+		_parser_ctx(other._parser_ctx),
 		_sibling_prev(other._sibling_prev),
 		_sibling_next(other._sibling_next),
 		_child_head(other._child_head),
@@ -32,6 +34,7 @@ namespace cg {
 		_id(other._id),
 		_cfg_rule(std::move(other._cfg_rule)),
 		_token(other._token),
+		_parser_ctx(util::move_ptr(other._parser_ctx)),
 		_sibling_prev(other._sibling_prev),
 		_sibling_next(other._sibling_next),
 		_child_head(other._child_head),
@@ -51,6 +54,7 @@ namespace cg {
 		_id = other._id;
 		_cfg_rule = other._cfg_rule;
 		_token = other._token;
+		_parser_ctx = other._parser_ctx;
 		_sibling_prev = other._sibling_prev;
 		_sibling_next = other._sibling_next;
 		_child_head = other._child_head;
@@ -63,6 +67,7 @@ namespace cg {
 		_id = other._id;
 		_cfg_rule = std::move(other._cfg_rule);
 		_token = other._token;
+		_parser_ctx = util::move_ptr(other._parser_ctx);
 		_sibling_prev = other._sibling_prev;
 		_sibling_next = other._sibling_next;
 		_child_head = other._child_head;
@@ -80,23 +85,27 @@ namespace cg {
 
 	AstNode AstNode::create_rule(
 		uint32_t id,
-		std::string const &cfg_name
+		std::string const &cfg_name,
+		ParserContext const &parser_ctx
 	) {
 		AstNode r;
 		r._type = Type::Rule;
 		r._id = id;
 		r._cfg_rule = cfg_name;
+		r._parser_ctx = &parser_ctx;
 		return r;
 	}
 
 	AstNode AstNode::create_tok(
 		uint32_t id,
-		Token const &token
+		Token const &token,
+		ParserContext const &parser_ctx
 	) {
 		AstNode r;
 		r._type = Type::Leaf;
 		r._id = id;
 		r._token = &token;
+		r._parser_ctx = &parser_ctx;
 		return r;
 	}
 
@@ -152,7 +161,7 @@ namespace cg {
 		return result;
 	}
 
-	util::Result<AstNode*, Error> AstNode::child_with_tok(Token::Type type) const {
+	util::Result<AstNode*, Error> AstNode::child_with_tok(int type) const {
 		for (auto &child : *this) {
 			if (child.tok().type() == type) {
 				return &child;
@@ -257,7 +266,7 @@ namespace cg {
 	std::ostream &AstNode::print_debug(std::ostream &os) const {
 		std::string str;
 		if (_type == Type::Leaf) {
-			if (tok().type() == Token::Type::Eof) {
+			if (tok().type() == int(Token::Type::Eof)) {
 				str = "EOF";
 			} else {
 				str = util::escape_str(tok().content());
@@ -278,7 +287,7 @@ namespace cg {
 
 	std::ostream &AstNode::print_pre_order(std::ostream &os) const {
 		if (_type == Type::Leaf) {
-			os << tok().type();
+			os << _parser_ctx->tok_config().name_table[tok().type()];
 		} else {
 			os << _cfg_rule;
 		}

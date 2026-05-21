@@ -94,6 +94,10 @@ class Test {
 			std::cout << util::indented(err.str(), "\t") << std::endl;
 		}
 
+		void succeed() {
+			_test_empty = false;
+		}
+
 		template<typename Val, typename Err>
 		void expect(
 			util::Result<Val, Err> const &val,

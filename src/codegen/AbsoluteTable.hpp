@@ -203,7 +203,7 @@ namespace cg::abs {
 			 * @param[in] c
 			 * @returns id of the new state
 			 */
-			Entry &lookup_tok(TableState const &row, Token::Type t);
+			Entry &lookup_tok(TableState const &row, int t);
 
 			/**
 			 * @brief Looks up a cell for a corresponding row and token
@@ -211,7 +211,7 @@ namespace cg::abs {
 			 * @param[in] c
 			 * @returns id of the new state
 			 */
-			Entry &lookup_tok(uint32_t state_id, Token::Type t);
+			Entry &lookup_tok(uint32_t state_id, int t);
 
 			/**
 			 * @brief Gets the next state for a given set

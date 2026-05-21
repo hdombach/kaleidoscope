@@ -5,10 +5,13 @@
 
 
 namespace cg {
-	CfgContext::Ptr CfgContext::create() {
-		return std::make_unique<CfgContext>();
+	CfgContext::CfgContext(Token::Config const &tok_config):
+		_tok_config(&tok_config)
+	{}
+	CfgContext::Ptr CfgContext::create(Token::Config const &tok_config) {
+		return std::make_unique<CfgContext>(tok_config);
 	}
-	CfgLeaf CfgContext::t(Token::Type t) const {
+	CfgLeaf CfgContext::t(int t) const {
 		return CfgLeaf(t);
 	}
 	CfgLeaf CfgContext::empty() const {
@@ -73,7 +76,7 @@ namespace cg {
 
 	void CfgContext::debug_print(std::ostream &os) const {
 		for (auto &set : _cfg_rule_sets) {
-			os << set.str(true) << std::endl;
+			os << set.str(*_tok_config, true) << std::endl;
 		}
 	}
 
@@ -91,7 +94,7 @@ namespace cg {
 						}
 					} else if (leaf.type() == CfgLeaf::Type::empty) {
 						if (rule.leaves().size() != 1) {
-							return Error(ErrorType::INTERNAL, util::f("The empty leaf must be in it's own rule:\n", set.str(true)));
+							return Error(ErrorType::INTERNAL, util::f("The empty leaf must be in it's own rule:\n", set.str(*_tok_config, true)));
 						}
 					}
 				}
@@ -117,7 +120,7 @@ namespace cg {
 			if (rule.leaves().back().type() != CfgLeaf::Type::token) {
 				return Error(ErrorType::INTERNAL, msg);
 			}
-			if (rule.leaves().back().token_type() != Token::Type::Eof) {
+			if (rule.leaves().back().token_type() != int(Token::Type::Eof)) {
 				return Error(ErrorType::INTERNAL, msg);
 			}
 		}
@@ -130,6 +133,10 @@ namespace cg {
 	void CfgContext::simplify() {
 		_remove_cls();
 		_remove_empty();
+	}
+
+	Token::Config const &CfgContext::tok_config() const {
+		return *_tok_config;
 	}
 
 	std::set<std::string> get_empty_sets(CfgContext &ctx) {

@@ -9,6 +9,7 @@
 #include "AstNode.hpp"
 #include "Parser.hpp"
 #include "AbsoluteSolver.hpp"
+#include "codegen/TemplTokenizer.hpp"
 #include "util/result.hpp"
 
 namespace cg {
@@ -42,7 +43,8 @@ namespace cg {
 		private:
 			static util::Result<void, Error> _setup_parser();
 			static Parser::Ptr _parser;
-			ParserContext _parser_result;
+			ParserContext _parser_result = ParserContext(TEMPL_TOK_CONFIG);
+			Token::Config const *_tok_config = &TEMPL_TOK_CONFIG;
 
 		private:
 			using CodegenRes = util::Result<std::string, Error>;
