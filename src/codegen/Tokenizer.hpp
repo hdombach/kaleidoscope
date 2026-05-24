@@ -12,6 +12,7 @@ namespace cg {
 			struct Config {
 				std::vector<std::string> name_table;
 				std::vector<std::regex> parse_table;
+				bool simplify = false;
 
 				size_t size() const { return parse_table.size(); }
 			};
@@ -53,5 +54,32 @@ namespace cg {
 	}
 
 	std::vector<Token> tokenize(util::StringRef str, Token::Config const &config);
+
+	struct plist_tok {
+		public:
+			using Container = std::vector<Token>;
+			plist_tok(Container const &tok, Token::Config const &config):
+				_c(tok),
+				_config(config)
+			{}
+
+			std::ostream &print(std::ostream &os) const {
+				auto frag = "[";
+				for (auto &t : _c) {
+					os << frag;
+					os << t.debug_str(_config);
+					frag = ", ";
+				}
+				return os;
+			}
+
+		private:
+			Container const &_c;
+			Token::Config const &_config;
+	};
+}
+
+inline std::ostream &operator<<(std::ostream &os, cg::plist_tok const &plist) {
+	return plist.print(os);
 }
 

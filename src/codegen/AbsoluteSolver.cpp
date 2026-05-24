@@ -127,6 +127,7 @@ namespace cg::abs {
 		ParserContext &parser_ctx
 	) {
 		auto &tokens = parser_ctx.get_tokens(str);
+		log_assert(!tokens.empty(), "Tokens must be non-empty");
 		uint32_t node_id=0;
 		// uint32_t is the current state
 		auto stack = std::vector<StackElement>();

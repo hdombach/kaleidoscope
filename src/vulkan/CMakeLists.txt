@@ -27,6 +27,9 @@ set(VULKAN_SRC
 	${CMAKE_CURRENT_SOURCE_DIR}/ray_pass/RayPassMaterial.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/ray_pass/RayPassMesh.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/ray_pass/RayPassNode.cpp
+
+	"${CMAKE_BINARY_DIR}/imgui_impl_vulkan.cpp"
+	"${CMAKE_BINARY_DIR}/imgui_impl_glfw.cpp"
 )
 
 add_library(vulkan OBJECT ${VULKAN_SRC})

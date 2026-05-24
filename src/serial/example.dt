@@ -1,0 +1,52 @@
+/* Example Document Template File */
+/* Comments require opeening and closing */
+
+/* Other files can be included with "include file.dt" */
+
+/* Root element must be a version block */
+
+version 0.0.1 {
+	/* Can define enums */
+	/* Enums are always u64 */
+	/* However, they can be created via their string representatives */
+
+	enum NodeType {
+		Unknown = 0;
+		Mesh; /* If an integer is provided, it is automatically incrimented by 1 */
+		Camera = 5; /* Can skip integers as long as you are increasing in value */
+	}
+
+	/* Is based on u64 */
+	/* You cannot provide custom values for the bitfield */
+	/* Bitmasks over u64 are not currently supported */
+	bitfield NodeFlags {
+		Locked;
+		Synched;
+	}
+
+	struct Node {
+		/* Primitives include strings, integers, floating point boolean*/
+		string name;
+		Type type;
+		u32 id;
+		Flags flags;
+		float pos_x;
+		float pos_y;
+		double value;
+
+		/* Shows both array generics and recursive definitions */
+		array<Node> children;
+	}
+
+	struct Scene {
+		/*
+		 * You can manually mark a field as optional
+		 * If they appear in only some vesions though, they will be automatically
+		 * made optional
+		 */
+		optional<Node> camera;
+
+		/* Enclosed struct must have a u32 id field */
+		uidlist<Node> roots;
+	}
+}

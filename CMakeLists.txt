@@ -55,8 +55,6 @@ file(GLOB_RECURSE HEADERS "src/*.h")
 set(SOURCES
 	src/App.cpp
 	src/main.cpp
-	"${CMAKE_BINARY_DIR}/imgui_impl_vulkan.cpp"
-	"${CMAKE_BINARY_DIR}/imgui_impl_glfw.cpp"
 )
 
 set(INCLUDE_DIRS
@@ -72,6 +70,7 @@ add_subdirectory(src/util)
 add_subdirectory(src/vulkan)
 add_subdirectory(src/tests)
 add_subdirectory(src/codegen)
+add_subdirectory(src/serial)
 
 add_executable(kaleidoscope ${SOURCES})
 target_include_directories(kaleidoscope PRIVATE ${INCLUDE_DIRS})

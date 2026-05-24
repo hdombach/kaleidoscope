@@ -1,5 +1,6 @@
 #include "ParserContext.hpp"
 #include "codegen/TemplTokenizer.hpp"
+#include "codegen/Tokenizer.hpp"
 #include "util/log.hpp"
 
 namespace cg {
@@ -15,10 +16,14 @@ namespace cg {
 	}
 
 	std::vector<Token> const &ParserContext::get_tokens(util::StringRef str) {
+		log_assert(_tok_config, "Tok config must be initiallized before calling get_tokens");
 		auto &item = _items[str.location().file_name];
 		if (item.source.empty()) {
 			item.source = str.str();
-			item.tokens = simplify_templ_tokens(tokenize({item.source.c_str(), str.location().file_name.c_str()}, *_tok_config));
+			item.tokens = tokenize({item.source.c_str(), str.location().file_name.c_str()}, *_tok_config);
+			if (_tok_config->simplify) {
+				item.tokens = simplify_templ_tokens(item.tokens);
+			}
 		}
 		return item.tokens;
 	}

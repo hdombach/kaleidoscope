@@ -92,8 +92,8 @@ namespace cg {
 			std::regex("\\|\\|"), // LOr
 			std::regex("\\|"), // Bar
 			std::regex("="), // Assignment
-
-		}
+		},
+		true,
 	};
 
 	std::vector<Token> simplify_templ_tokens(std::vector<Token> const &tokens) {
