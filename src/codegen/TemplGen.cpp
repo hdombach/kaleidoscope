@@ -4,6 +4,7 @@
 #include "codegen/SParser.hpp"
 #include "codegen/TemplObj.hpp"
 #include "util/IterAdapter.hpp"
+#include "util/Util.hpp"
 #include "util/file.hpp"
 #include "util/log.hpp"
 #include "util/lines_iterator.hpp"
@@ -263,40 +264,6 @@ namespace cg {
 			return Error(ErrorType::MISC, "Could not add builtin identifiers", err.value());
 		}
 		return t._codegen(*node, l_args);
-	}
-
-	util::Result<std::string, Error> _unpack_str(std::string const &str) {
-		auto s = std::string();
-		auto c = str.c_str();
-
-		CG_ASSERT(*c == '"', "String literal must start with '\"'");
-		c++;
-		while (*c != '"') {
-			if (*c == '\0') {
-				return Error(ErrorType::INTERNAL, "Unexpected end to string sequence");
-			}
-
-			if (*c == '\\') {
-				c++;
-				switch (*c) {
-					case '"':
-						s += '"';
-						break;
-					case 't':
-						s += '\t';
-						break;
-					case 'n':
-						s += '\n';
-						break;
-					default:
-						return Error(ErrorType::ASSERT, util::f("Unknown string escape sequence: \\", *c));
-				}
-			} else {
-				s += *c;
-			}
-			c++;
-		}
-		return s;
 	}
 
 	util::Result<std::string, Error> TemplGen::_codegen(
@@ -699,7 +666,7 @@ namespace cg {
 		if (auto err = node.child_with_tok(int(T::StrConst)).move_or(file_url_node)) {
 			return Error(ErrorType::ASSERT, "Could not filename node", err.value());
 		}
-		if (auto err =_unpack_str(file_url_node->tok().content()).move_or(filename)) {
+		if (auto err = util::unescape_str(file_url_node->tok().content()).move_or(filename)) {
 			return Error(ErrorType::ASSERT, "Could not unpack filename string", err.value());
 		}
 		auto include_src = util::readEnvFile(filename);
@@ -820,11 +787,11 @@ namespace cg {
 		AstNode const &node,
 		TemplDict const &args
 	) {
-		if (auto str = _unpack_str(node.consumed_all())) {
-			return TemplObj(str.value()).set_location(node.location());
-		} else {
-			return str.error();
+		auto str = std::string();
+		if (auto err = util::unescape_str(node.consumed_all()).move_or(str)) {
+			return Error(ErrorType::INVALID_PARSE, util::f("Could not properly evaluate string: ", node.consumed_all()), err.value());
 		}
+		return TemplObj(str).set_location(node.location());
 	}
 
 	TemplGen::EvalRes TemplGen::_eval_exp1(

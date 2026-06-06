@@ -53,6 +53,7 @@ namespace cg {
 		// pass it around everywhere as a property.
 		// Should be fine since can't call multiple parses at same time.
 		instance._last_failure = Error(ErrorType::UNKNOWN);
+		log_trace() << "Token list: " << plist_tok(tokens, cfg_ctx.tok_config()) << std::endl;
 		//TODO: error handling for root
 		auto node = instance._parse(tokens, 0, *instance._cfg_ctx->get_root());
 		if (!node.has_value()) return node;

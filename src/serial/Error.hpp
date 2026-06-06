@@ -5,7 +5,9 @@
 namespace serial {
 	enum class ErrorType {
 		UNKNOWN,
-		PARSE_ERROR
+		PARSE_ERROR,
+		INVALID_STATE,
+		VALIDATE_ERROR,
 	};
 }
 

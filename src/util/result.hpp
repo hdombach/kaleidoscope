@@ -2,7 +2,6 @@
 
 #include "format.hpp"
 #include "util/BaseError.hpp"
-#include "util/Util.hpp"
 #include "util/log.hpp"
 #include <optional>
 #include <stdexcept>

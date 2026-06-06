@@ -11,6 +11,8 @@
 #include "format.hpp"
 #include "util/FileLocation.hpp"
 #include "util/lines_iterator.hpp"
+#include "util/result.hpp"
+#include "util/BaseError.hpp"
 
 namespace util {
 	template<typename Contains, typename Element>
@@ -116,6 +118,43 @@ namespace util {
 			}
 		}
 		return res;
+	}
+
+	inline util::Result<std::string, BaseError> unescape_str(std::string const &str) {
+		auto s = std::string();
+		auto c = str.c_str();
+
+		if (*c != '"') {
+			return BaseError("String literal must start with '\"'");
+		}
+		c++;
+		while (*c != '"') {
+			if (*c == '\0') {
+				return BaseError("Unexpected end to string sequence");
+			}
+
+			if (*c == '\\') {
+				c++;
+				switch (*c) {
+					case '"':
+						s += '"';
+						break;
+					case 't':
+						s += '\t';
+						break;
+					case 'n':
+						s += '\n';
+						break;
+					default:
+						return BaseError(util::f("Unknown string escape sequence: \\", *c));
+				}
+			} else {
+				s += *c;
+			}
+			c++;
+		}
+		return s;
+
 	}
 
 	inline std::string get_str_line(std::string const &str) {

@@ -9,7 +9,6 @@
 #include "util/FileLocation.hpp"
 #include "util/IterAdapter.hpp"
 #include "util/log.hpp"
-#include "util/result.hpp"
 
 namespace util {
 	struct ErrorFrag {

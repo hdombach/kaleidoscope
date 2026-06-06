@@ -2,11 +2,15 @@
 
 #include <filesystem>
 #include <fstream>
+#include <queue>
 
 #include "Tokenizer.hpp"
 #include "codegen/ParserContext.hpp"
+#include "codegen/TemplGen.hpp"
 #include "serial/Args.hpp"
+#include "util/Util.hpp"
 #include "util/file.hpp"
+#include "util/lines_iterator.hpp"
 #include "util/log.hpp"
 
 namespace serial {
@@ -101,12 +105,26 @@ namespace serial {
 			return Error(ErrorType::PARSE_ERROR, "Could not setup parser", *err);
 		}
 
-		for (auto &filename : files) {
-			if (_roots.count(filename) > 0) {
-				log_warning() << "File " << filename << " was already parsed." << std::endl;
+		while (1) {
+			auto filename = std::string();
+			for (auto &f : files) {
+				if (!_roots.contains(f)) {
+					filename = f;
+					break;
+				}
 			}
+			for (auto &i : _doc.includes()) {
+				if (!_roots.contains(i)) {
+					filename = i;
+					break;
+				}
+			}
+
+			if (filename.empty()) break;
+
 			auto src = util::readEnvFile(filename);
 			cg::AstNode *node;
+
 			if (auto err = _parser->parse({src.c_str(), filename.c_str()}, _parser_ctx).move_or(node)) {
 				return Error(
 					ErrorType::PARSE_ERROR,
@@ -126,7 +144,24 @@ namespace serial {
 			}
 
 			_roots[filename] = node;
+
+			if (auto err = _doc.add_file(*node).move_or()) {
+				return Error(
+					ErrorType::VALIDATE_ERROR,
+					util::f("Could not validate file ", filename),
+					err.value()
+				);
+			}
+
 		}
+
+		auto templ_src = util::readEnvFile("assets/serial/Template.hpp.cg");
+		auto generated = std::string();
+		if (auto err = cg::TemplGen::codegen(templ_src, _doc.templ_obj(), "example.cg").move_or(generated)) {
+			return Error(ErrorType::PARSE_ERROR, "Could not generate code", err.value());
+		}
+
+		log_info() << util::add_strnum(generated) << std::endl;
 
 		return {};
 	}

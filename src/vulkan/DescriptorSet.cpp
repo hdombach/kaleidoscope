@@ -1,4 +1,5 @@
 #include "DescriptorSet.hpp"
+#include "util/Util.hpp"
 #include "util/log.hpp"
 
 #include <vulkan/vulkan_core.h>

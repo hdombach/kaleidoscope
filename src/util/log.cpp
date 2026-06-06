@@ -20,7 +20,7 @@ namespace util {
 		std::cout << "[";
 
 		if (importance & INFO) {
-			std::cout << "EVENT";
+			std::cout << "INFO";
 		} else if (importance & WARNING) {
 			std::cout << color::YELLOW << "WARNING";
 		} else if (importance & ERROR) {

@@ -1,0 +1,40 @@
+#pragma once
+
+namespace serial {
+	{% for version in versions %}
+	namespace {{version.namespace_str}} {
+		{% for e in version.enums %}
+		/**** {{e.name}} ****/
+		enum class {{e.name}}: uint8_t {
+			{% for enumerator in e.enumerators %}
+			{% if enumerator.has_value %}
+			{{enumerator.name}} = {{enumerator.value}};
+			{% else %}
+			{{enumerator.name}};
+			{% endif %}
+			{% endfor %}
+		};
+
+		const char *{{e.name}}_str({{e.name}} val) {
+			switch (val) {
+				{% for enumerator in e.enumerators %}
+				case {{enumerator.name}}:
+					return "{{enumerator.name}}";
+				{% endfor %}
+				default:
+					return "_UNKNOWN_";
+			}
+		};
+		{% endfor %}
+
+		{% for b in version.bitfields %}
+		/**** {{b.name}} ****/
+		namespace {{b.name}} {
+			{% for f in b.fields %}
+			uint64_t {{f.name}} = 1 >> {{f.index}};
+			{% endfor %}
+		}
+		{% endfor %}
+	}
+	{% endfor %}
+}

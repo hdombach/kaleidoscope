@@ -67,6 +67,7 @@ namespace cg {
 			util::Result<AstNode*, Error> child_with_cfg(std::string const &name) const;
 
 			std::vector<AstNode*> children_with_cfg(std::string const &name) const;
+			std::vector<AstNode*> children_with_tok(int type) const;
 
 			util::Result<AstNode*, Error> child_with_tok(int type) const;
 
@@ -77,6 +78,9 @@ namespace cg {
 			std::string const &cfg_rule() const { return _cfg_rule; }
 
 			Token const &tok() const;
+			/**
+			 * @brief Returns the characters that were used to generate this and any child nodes
+			 */
 			std::string consumed_all() const;
 
 			/**
@@ -107,8 +111,17 @@ namespace cg {
 			std::ostream &print_src(std::ostream &os) const;
 			std::ostream &print_dot(std::ostream &os, std::string const &name) const;
 
+			/**
+			 * @brief Debug string
+			 */
 			std::string str() const;
+			/**
+			 * @brief Source code representation
+			 */
 			std::string str_src() const;
+			/**
+			 * @brief Pre-order representation
+			 */
 			std::string str_pre_order() const;
 
 		private:

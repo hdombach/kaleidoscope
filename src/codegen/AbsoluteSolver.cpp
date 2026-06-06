@@ -127,6 +127,7 @@ namespace cg::abs {
 		ParserContext &parser_ctx
 	) {
 		auto &tokens = parser_ctx.get_tokens(str);
+		log_trace() << "Token list is " << plist_tok(tokens, parser_ctx.tok_config()) << std::endl;
 		log_assert(!tokens.empty(), "Tokens must be non-empty");
 		uint32_t node_id=0;
 		// uint32_t is the current state

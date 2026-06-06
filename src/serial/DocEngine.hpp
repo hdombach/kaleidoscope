@@ -7,6 +7,7 @@
 #include "Tokenizer.hpp"
 #include "util/result.hpp"
 #include "Error.hpp"
+#include "Validate.hpp"
 
 namespace serial {
 	class DocEngine {
@@ -24,5 +25,6 @@ namespace serial {
 
 			cg::ParserContext _parser_ctx = cg::ParserContext(TOK_CONFIG);
 			std::map<std::string, cg::AstNode*> _roots;
+			Document _doc;
 	};
 }

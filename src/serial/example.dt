@@ -11,7 +11,7 @@ version 0.0.1 {
 	/* However, they can be created via their string representatives */
 
 	enum NodeType {
-		Unknown = 0;
+		Unknown = 0; /* 0 will be the default value if an invalid enum is passed */
 		Mesh; /* If an integer is provided, it is automatically incrimented by 1 */
 		Camera = 5; /* Can skip integers as long as you are increasing in value */
 	}

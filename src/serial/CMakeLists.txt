@@ -4,6 +4,7 @@ set(DOC_ENGINE_SRC
 	${CMAKE_CURRENT_SOURCE_DIR}/Error.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/Tokenizer.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/Validate.cpp
 )
 
 add_executable(doc_engine ${DOC_ENGINE_SRC})

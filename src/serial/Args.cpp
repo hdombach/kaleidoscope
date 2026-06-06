@@ -27,6 +27,7 @@ namespace serial {
 		} else if (strcmp(argv[0], "-v") == 0) {
 			g_args.verbosity_level++;
 			util::g_log_flags |= Importance::INFO;
+			util::g_log_flags |= Importance::TRACE;
 			return 1;
 		} else {
 			if (argv[0][0] == '-') {

@@ -161,6 +161,16 @@ namespace cg {
 		return result;
 	}
 
+	std::vector<AstNode*> AstNode::children_with_tok(int type) const {
+		auto result = std::vector<AstNode*>();
+		for (auto &child : *this) {
+			if (child.tok().type() == type) {
+				result.push_back(&child);
+			}
+		}
+		return result;
+	}
+
 	util::Result<AstNode*, Error> AstNode::child_with_tok(int type) const {
 		for (auto &child : *this) {
 			if (child.tok().type() == type) {
