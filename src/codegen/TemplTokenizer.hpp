@@ -6,14 +6,6 @@ namespace cg {
 	enum class TemplTokenType: int {
 		Unmatched = int(Token::Type::Unmatched),
 		Eof = int(Token::Type::Eof),
-		Pad,
-		Newline,
-		CommentB,
-		CommentE,
-		ExpB,
-		ExpE,
-		StmtB,
-		StmtE,
 		If,
 		Elif,
 		Else,
@@ -29,11 +21,8 @@ namespace cg {
 		IntConst,
 		ParanOpen,
 		ParanClose,
-		Plus,
-		Minus,
 		Mult,
 		Div,
-		Perc,
 		Period,
 		Comma,
 		GreatEq,
@@ -47,15 +36,23 @@ namespace cg {
 		LOr,
 		Bar,
 		Assignment,
+		ExpE,
+		StmtE,
+		Plus,
+		Minus,
+		Perc,
+		CommentE,
+		Pad,
+		Newline,
+		ExpB,
+		StmtB,
+		CommentB,
+		Raw,
 	};
 
 	extern const Token::Config TEMPL_TOK_CONFIG;
 
-	/**
-	 * Combines every token not in a statement into an unmatched token
-	 * Removes padding before and after statements and comments
-	 */
-	std::vector<Token> simplify_templ_tokens(std::vector<Token> const &tokens);
+	std::vector<Token> tokenize_templ(util::StringRef str);
 
 	class CfgLeaf;
 	class CfgRule;

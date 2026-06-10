@@ -49,6 +49,7 @@ namespace cg {
 				AstNode *node;
 				if (auto err = _parser->parse(util::StringRef(src.c_str(), filename.c_str()), _parser_ctx).move_or(node)) {
 					_test.fail("Could not parse provided expression", err.value());
+					return;
 				}
 
 				node->compress(_parser->cfg().prim_names());
@@ -90,11 +91,11 @@ namespace cg {
 		using T = TemplTokenType;
 
 		c.root("root") = c["hello"] + T::Eof;
-		c.prim("hello") = int(T::Unmatched);
+		c.prim("hello") = int(T::Raw);
 
 		EXPECT(f.setup(std::move(ctx)));
 
-		f.parse_eq("UnmatchedToken", "root hello Unmatched EOF ");
+		f.parse_eq("UnmatchedToken", "root hello Raw EOF ");
 	}
 
 	TEST_F(ParserTest, match_number) {

@@ -126,6 +126,7 @@ namespace cg::abs {
 		util::StringRef const &str,
 		ParserContext &parser_ctx
 	) {
+		log_trace() << "Starting AbsoluteSolver" << std::endl;
 		auto &tokens = parser_ctx.get_tokens(str);
 		log_trace() << "Token list is " << plist_tok(tokens, parser_ctx.tok_config()) << std::endl;
 		log_assert(!tokens.empty(), "Tokens must be non-empty");

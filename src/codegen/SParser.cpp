@@ -43,6 +43,7 @@ namespace cg {
 		CfgContext const &cfg_ctx,
 		ParserContext &parser_ctx
 	) {
+		log_trace() << "Starting SParser" << std::endl;
 		auto instance = SParserInstance();
 		instance._cfg_ctx = &cfg_ctx;
 		instance._parser_ctx = &parser_ctx;

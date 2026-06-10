@@ -47,7 +47,7 @@ namespace cg {
 			| c["expression"]
 			| c["comment"]
 			| T::Pad
-			| T::Unmatched
+			| T::Raw
 			| T::Newline;
 
 		c.prim("lines") = c.cls(c["line"]);
@@ -55,7 +55,7 @@ namespace cg {
 		c.root("file") = c["lines"] + T::Eof;
 
 		c.prim("comment") =
-			T::CommentB + c.cls(T::Pad | T::Newline | T::Unmatched) + T::CommentE;
+			T::CommentB + c.cls(T::Pad | T::Newline | T::Raw) + T::CommentE;
 
 		c.prim("expression") =
 			T::ExpB +

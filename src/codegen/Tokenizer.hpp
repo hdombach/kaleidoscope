@@ -12,7 +12,7 @@ namespace cg {
 			struct Config {
 				std::vector<std::string> name_table;
 				std::vector<std::regex> parse_table;
-				bool simplify = false;
+				bool templ = false;
 
 				size_t size() const { return parse_table.size(); }
 			};

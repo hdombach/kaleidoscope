@@ -1,19 +1,15 @@
 #include "TemplTokenizer.hpp"
 #include "codegen/CfgNode.hpp"
+#include "codegen/Error.hpp"
+#include "util/log.hpp"
+
+#include <regex>
 
 namespace cg {
 	const Token::Config TEMPL_TOK_CONFIG = {
 		{
 			"Unmatched",
 			"EOF",
-			"Padding",
-			"Newline",
-			"CommentB",
-			"CommentE",
-			"ExpB",
-			"ExpE",
-			"StmtB",
-			"StmtE",
 			"If",
 			"Elif",
 			"Else",
@@ -29,11 +25,8 @@ namespace cg {
 			"IntConstant",
 			"ParanOpen",
 			"ParanClose",
-			"Plus",
-			"Minus",
 			"Multiply",
 			"Divide",
-			"Percentage",
 			"Period",
 			"Comma",
 			"GreaterEqual",
@@ -47,18 +40,22 @@ namespace cg {
 			"LogicalOr",
 			"Bar",
 			"Assignment",
+			"ExpE",
+			"StmtE",
+			"Plus",
+			"Minus",
+			"Percentage",
+			"CommentE",
+			"Padding",
+			"Newline",
+			"ExpB",
+			"StmtB",
+			"CommentB",
+			"Raw",
 		},
 		{
 			std::regex(""), // Unmatched
 			std::regex(""), // Eof,
-			std::regex("([ \\t])+"), // Pad
-			std::regex("\\n"), // Newline
-			std::regex("\\{#(-|\\+)?"), // CommentB
-			std::regex("(-|\\+)?#\\}"), // CommentE
-			std::regex("\\{\\{(-|\\+)?"), // ExpB
-			std::regex("(-|\\+)?\\}\\}"), // ExpE
-			std::regex("\\{%(-|\\+)?"), // StmtB
-			std::regex("(-|\\+)?%\\}"), // StmtE
 			std::regex("if(?![\\w])"),
 			std::regex("elif(?![\\w])"),
 			std::regex("else(?![\\w])"),
@@ -74,11 +71,8 @@ namespace cg {
 			std::regex("\\d+"), // IntConst
 			std::regex("\\("), // ParanOpen
 			std::regex("\\)"), // ParanClose
-			std::regex("\\+"), // Plus
-			std::regex("\\-"), // Minus
 			std::regex("\\*"), // Mult
 			std::regex("\\/"), // Div
-			std::regex("%"), // Perc
 			std::regex("\\."), // Period
 			std::regex(","), // Comma
 			std::regex(">="), // GreatEq
@@ -92,11 +86,35 @@ namespace cg {
 			std::regex("\\|\\|"), // LOr
 			std::regex("\\|"), // Bar
 			std::regex("="), // Assignment
+			std::regex("(-|\\+)?\\}\\}"), // ExpE
+			std::regex("(-|\\+)?%\\}"), // StmtE
+			std::regex("\\+"), // Plus
+			std::regex("\\-"), // Minus
+			std::regex("%"), // Perc
+			std::regex("(-|\\+)?#\\}"), // CommentE
+			std::regex("([ \\t])+"), // Pad
+			std::regex("\\n"), // Newline
+			std::regex("\\{\\{(-|\\+)?"), // ExpB
+			std::regex("\\{%(-|\\+)?"), // StmtB
+			std::regex("\\{#(-|\\+)?"), // CommentB
+			std::regex("([^\\s\\{]|(\\{[^\\{#%]))+"), // Raw
 		},
 		true,
 	};
 
-	std::vector<Token> simplify_templ_tokens(std::vector<Token> const &tokens) {
+	bool _is_b_type(int type) {
+		return type >= int(TemplTokenType::ExpB) && type <= int(TemplTokenType::CommentB);
+	}
+
+	bool _is_e_type(int type) {
+		return type >= int(TemplTokenType::ExpE) && type <= int(TemplTokenType::CommentE);
+	}
+
+	/**
+	 * Combines every token not in a statement into an unmatched token
+	 * Removes padding before and after statements and comments
+	 */
+	std::vector<Token> _simplify_templ_tokens(std::vector<Token> const &tokens) {
 		auto result = std::vector<Token>();
 		using T = TemplTokenType;
 
@@ -107,9 +125,9 @@ namespace cg {
 			auto &t = tokens[i];
 
 			//Handle remove padding before and after
-			if (t.type() == int(T::ExpB) || t.type() == int(T::StmtB) || t.type() == int(T::CommentB)) {
+			if (_is_b_type(t.type())) {
 				Token const *close_tag = &t;
-				while (close_tag->type() != int(T::StmtE) && close_tag->type() != int(T::CommentE) && close_tag->type() != int(T::ExpE)) {
+				while (!_is_e_type(close_tag->type())) {
 					log_assert(close_tag->type() != int(TemplTokenType::Eof), "There must be an ending tag before Eof");
 					close_tag++;
 				}
@@ -159,48 +177,67 @@ namespace cg {
 				}
 			}
 
-			// Handle making everything outside statements unmatched
-			if (in_statement) {
-				result.push_back(t);
-				if (
-					t.type() == int(T::ExpE)
-					|| t.type() == int(T::StmtE)
-				) {
-					in_statement = false;
-				}
+			if (!in_statement && skipped_pad > 0 && (t.type() == int(T::Pad) || t.type() == int(T::Newline))) {
+				skipped_pad--;
 			} else {
-				if (
-					t.type() == int(T::Pad)
-					|| t.type() == int(T::Newline)
-					|| t.type() == int(T::Eof)
-					|| t.type() == int(T::CommentB)
-					|| t.type() == int(T::CommentE)
-				) {
-					if (cur_token.exists())
-						result.push_back(cur_token);
-					cur_token = Token();
-					if (skipped_pad > 0 && (t.type() == int(T::Pad) || t.type() == int(T::Newline))) {
-						skipped_pad--;
-					} else {
-						result.push_back(t);
-					}
-				} else if (
-					t.type() == int(T::ExpB)
-					|| t.type() == int(T::StmtB)
-				) {
-					in_statement = true;
-					if (cur_token.exists())
-						result.push_back(cur_token);
-					cur_token = Token();
-					result.push_back(t);
-				} else {
-					cur_token += t;
-				}
+				result.push_back(t);
+			}
+
+			if (_is_b_type(t.type())) {
+				in_statement = true;
+			}
+
+			if (_is_e_type(t.type())) {
+				in_statement = false;
 			}
 		}
 
 		return result;
 	}
+
+	std::vector<Token> tokenize_templ(util::StringRef c) {
+		auto result = std::vector<Token>();
+		auto &config = TEMPL_TOK_CONFIG;
+		bool syntax_mode = false;
+		while (*c) {
+			int min, max;
+			if (syntax_mode) {
+				min = int(TemplTokenType::If);
+				max = int(TemplTokenType::Newline);
+			} else {
+				min = int(TemplTokenType::CommentE);
+				max = int(TemplTokenType::Raw);
+			}
+			int type;
+			for (type = min; type <= max; type++) {
+				auto &rule = config.parse_table[type];
+				auto match = std::cmatch();
+				auto flags = std::regex_constants::match_continuous
+					| std::regex_constants::match_not_null;
+				if (std::regex_search(c.str().begin(), c.str().end(), match, rule, flags)) {
+					result.push_back(Token(type, c.substr(0, match.length())));
+					c += match.length();
+					break;
+				}
+			}
+			if (type > max) {
+				//TODO: throw an error
+				log_error() << "Couldn't recognize token " << c.substr(0, 5).str() << "..." << std::endl;
+				break;
+			} else if (type == int(TemplTokenType::ExpB) || type == int(TemplTokenType::StmtB)) {
+				// Don't switch to syntax mode for comments
+				syntax_mode = true;
+			} else if (type == int(TemplTokenType::ExpE) || type == int(TemplTokenType::StmtE)) {
+				syntax_mode = false;
+			}
+		}
+		result.push_back(Token(int(Token::Type::Eof), c));
+
+		result = _simplify_templ_tokens(result);
+
+		return result;
+	}
+
 }
 
 namespace cg {

@@ -20,9 +20,10 @@ namespace cg {
 		auto &item = _items[str.location().file_name];
 		if (item.source.empty()) {
 			item.source = str.str();
-			item.tokens = tokenize({item.source.c_str(), str.location().file_name.c_str()}, *_tok_config);
-			if (_tok_config->simplify) {
-				item.tokens = simplify_templ_tokens(item.tokens);
+			if (_tok_config->templ) {
+				item.tokens = tokenize_templ({item.source.c_str(), str.location().file_name.c_str()});
+			} else {
+				item.tokens = tokenize({item.source.c_str(), str.location().file_name.c_str()}, *_tok_config);
 			}
 		}
 		return item.tokens;

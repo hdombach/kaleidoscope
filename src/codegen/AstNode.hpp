@@ -126,11 +126,11 @@ namespace cg {
 
 		private:
 			friend class AstNodeIterator;
-			Type _type;
-			uint32_t _id;
+			Type _type = Type::None;
+			uint32_t _id = 0;
 			std::string _cfg_rule;
 			Token const *_token=nullptr;
-			ParserContext const *_parser_ctx;
+			ParserContext const *_parser_ctx = nullptr;
 
 			// Use linked list to reduce number of reallocations.
 			// All AstNodes are reserved in a pool in ParserContext to reduce fragmantation.
