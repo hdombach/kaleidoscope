@@ -1168,6 +1168,52 @@ namespace cg {
 
 		test_equal(_test, tokens, expected);
 	}
+
+	TEST(tokenizer, indented_loop) {
+		auto src =
+			"namespace {\n"
+			"\t{\% for name in names %}\n"
+			"uint8_t {{name}};\n"
+			"\t{\% endfor %}\n"
+			"}\n"
+			"";
+
+		auto tokens = tokenize_templ(src);
+		auto expected = std::vector{
+			T::raw("namespace"),
+			T::padding(),
+			T::raw("{"),
+			T::newline(),
+			T::stmt_b(),
+			T::padding(),
+			T::for_s(),
+			T::padding(),
+			T::identifier("name"),
+			T::padding(),
+			T::in_s(),
+			T::padding(),
+			T::identifier("names"),
+			T::padding(),
+			T::stmt_e(),
+			T::raw("uint8_t"),
+			T::padding(),
+			T::exp_b(),
+			T::identifier("name"),
+			T::exp_e(),
+			T::raw(";"),
+			T::newline(),
+			T::stmt_b(),
+			T::padding(),
+			T::endfor_s(),
+			T::padding(),
+			T::stmt_e(),
+			T::raw("}"),
+			T::newline(),
+			T::eof(),
+		};
+
+		test_equal(_test, tokens, expected);
+	}
 }
 
 inline std::ostream &operator<<(std::ostream &os, cg::TestToken const &t) {

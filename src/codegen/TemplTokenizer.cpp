@@ -97,7 +97,7 @@ namespace cg {
 			std::regex("\\{\\{(-|\\+)?"), // ExpB
 			std::regex("\\{%(-|\\+)?"), // StmtB
 			std::regex("\\{#(-|\\+)?"), // CommentB
-			std::regex("([^\\s\\{]|(\\{[^\\{#%]))+"), // Raw
+			std::regex("([^\\s\\{]|(\\{[^\\{#%\\s])|(\\{(?=\\s)))+"), // Raw
 		},
 		true,
 	};
