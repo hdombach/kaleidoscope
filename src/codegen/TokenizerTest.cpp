@@ -1214,6 +1214,30 @@ namespace cg {
 
 		test_equal(_test, tokens, expected);
 	}
+
+	TEST(tokenizer, string_format) {
+		auto src =
+			"auto value = \"{{value}}\";\n";
+
+		auto tokens = tokenize_templ(src);
+		auto expected = std::vector{
+			T::raw("auto"),
+			T::padding(),
+			T::raw("value"),
+			T::padding(),
+			T::raw("="),
+			T::padding(),
+			T::raw("\""),
+			T::exp_b(),
+			T::identifier("value"),
+			T::exp_e(),
+			T::raw("\";"),
+			T::padding("\n"),
+			T::eof(),
+		};
+
+		test_equal(_test, tokens, expected);
+	}
 }
 
 inline std::ostream &operator<<(std::ostream &os, cg::TestToken const &t) {

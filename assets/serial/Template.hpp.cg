@@ -31,9 +31,24 @@ namespace serial {
 		/**** {{b.name}} ****/
 		namespace {{b.name}} {
 			{% for f in b.fields %}
-			uint64_t {{f.name}} = 1 >> {{f.index}};
+			constexpr uint64_t {{f.name}} = 1 >> {{f.index}};
 			{% endfor %}
 		}
+
+		std::ostream &print_{{b.name}}(std::ostream &os, {{b.name}} val) {
+			const char *frag = "";
+			{% for f in b.fields %}
+			if (val & {{b.name}}::{{f.name}}) {
+				os << frag << "{{f.name}}";
+				frag = " | ";
+				val &= ~{{b.name}}::{{f.name}};
+			}
+			{% endfor %}
+			if (val) {
+				os << frag << "UNKNOWN";
+			}
+			return os;
+		};
 		{% endfor %}
 	}
 	{% endfor %}

@@ -170,6 +170,7 @@ namespace serial {
 				return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate field of bitfield ", b._name), err.value());
 			}
 			b._fields.push_back(field);
+			i++;
 		}
 
 		log_trace() << "Created bitfield " << b._name << std::endl;
@@ -235,8 +236,7 @@ namespace serial {
 		if (auto err = node.child_with_cfg("version-frag").move_or(value_node)) {
 			return Error(ErrorType::INVALID_STATE, "version-decl does not contain a version-frag child node", err.value());
 		}
-		auto value = VersionValue();
-		if (auto err = VersionValue::create(*value_node).move_or(value)) {
+		if (auto err = VersionValue::create(*value_node).move_or(v._value)) {
 			return Error(ErrorType::VALIDATE_ERROR, "Could not validate version fragment", err.value());
 		}
 
@@ -249,7 +249,7 @@ namespace serial {
 			if (child.cfg_rule() == "enum-decl") {
 				auto e = Enum();
 				if (auto err = Enum::create(child).move_or(e)) {
-					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate enum in version ", value.namespace_str()), err.value());
+					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate enum in version ", v._value.namespace_str()), err.value());
 				}
 				if (auto err = v._check_identifier(e.name()).move_or()) {
 					return err.value();
@@ -258,7 +258,7 @@ namespace serial {
 			} else if (child.cfg_rule() == "bitfield-decl") {
 				auto b = Bitfield();
 				if (auto err = Bitfield::create(child).move_or(b)) {
-					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate bitfield in version ", value.namespace_str()), err.value());
+					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate bitfield in version ", v._value.namespace_str()), err.value());
 				}
 				if (auto err = v._check_identifier(b.name()).move_or()) {
 					return err.value();
