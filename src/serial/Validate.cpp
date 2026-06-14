@@ -3,6 +3,7 @@
 #include "Tokenizer.hpp"
 #include "codegen/AstNode.hpp"
 #include "codegen/AstNodeIterator.hpp"
+#include "codegen/TemplObj.hpp"
 #include "util/Util.hpp"
 #include "util/log.hpp"
 #include <cstddef>
@@ -193,6 +194,163 @@ namespace serial {
 		return _name;
 	}
 
+	const char *_get_cpp_str_frag(cg::Token const &tok) {
+		switch (T(tok.type())) {
+			case T::Float:
+				return "float";
+			case T::Double:
+				return "double";
+			case T::U8:
+				return "uint8_t";
+			case T::U16:
+				return "uint16_t";
+			case T::U32:
+				return "uint32_t";
+			case T::U64:
+				return "uint64_t";
+			case T::I8:
+				return "int8_t";
+			case T::I16:
+				return "int16_t";
+			case T::I32:
+				return "int32_t";
+			case T::I64:
+				return "int64_t";
+			case T::Array:
+				return "::std::vector";
+			case T::Optional:
+				return "::std::optional";
+			case T::UIDList:
+				return "::util::UIDList";
+			case T::Identifier:
+				return tok.content().c_str();
+			default:
+				return "UNKNOWN";
+		}
+	}
+
+	util::Result<FieldType, Error> FieldType::create(Node const &node) {
+		log_assert(node.cfg_rule() == "field-type", "Must pass field-type to TypeSpec::create");
+
+		auto t = FieldType();
+
+		if (node.child_count() == 1) {
+			t._cpp_str_frag = _get_cpp_str_frag(node.begin()->tok());
+		} else if (node.child_count() == 4) {
+			t._cpp_str_frag = _get_cpp_str_frag(node.begin()->tok());
+			Node *enclosed_node;
+			if (auto err = node.child_with_cfg("field-type").move_or(enclosed_node)) {
+				return Error(ErrorType::PARSE_ERROR, "Expecting field-type node in generic type spec", err.value());
+			}
+			auto enclosed = FieldType();
+			if (auto err = FieldType::create(*enclosed_node).move_or(enclosed)) {
+				return Error(ErrorType::PARSE_ERROR, "Cannot parse enclosed generic type spec", err.value());
+			}
+			t._enclosing_type = std::make_unique<FieldType>(std::move(enclosed));
+		} else {
+			return Error(ErrorType::PARSE_ERROR, "Expecting 1 or four child nodes");
+		}
+
+		return t;
+	}
+
+	FieldType::FieldType(FieldType const &other) {
+		_cpp_str_frag = other._cpp_str_frag;
+		if (other._enclosing_type) {
+			_enclosing_type = std::make_unique<FieldType>(*other._enclosing_type);
+		}
+	}
+
+	FieldType &FieldType::operator=(FieldType const &other) {
+		_cpp_str_frag = other._cpp_str_frag;
+		if (other._enclosing_type) {
+			_enclosing_type = std::make_unique<FieldType>(*other._enclosing_type);
+		}
+		return *this;
+	}
+
+	std::string FieldType::cpp_str() const {
+		if (_is_generic()) {
+			return util::f(_cpp_str_frag, "<", _enclosing_type->cpp_str(), ">");
+		} else {
+			return _cpp_str_frag;
+		}
+	}
+
+	bool FieldType::_is_generic() const {
+		return _enclosing_type.get() != nullptr;
+	}
+
+	util::Result<StructField, Error> StructField::create(Node const &node) {
+		log_assert(node.cfg_rule() == "struct-field", "Must pass property to TypeDef::create");
+
+		auto f = StructField();
+		Node *spec_node;
+		if (auto err = node.child_with_cfg("field-type").move_or(spec_node)) {
+			return Error(ErrorType::PARSE_ERROR, "property doesn't have child node of type field-type", err.value());
+		}
+		if (auto err = FieldType::create(*spec_node).move_or(f._spec)) {
+			return Error(ErrorType::PARSE_ERROR, "Couldn't parse property type", err.value());
+		}
+
+		Node *name_node;
+		if (auto err = node.child_with_tok(int(T::Identifier)).move_or(name_node)) {
+			return Error(ErrorType::PARSE_ERROR, "Couldn't find child with type identifier", err.value());
+		}
+		f._name = name_node->consumed_all();
+
+		return std::move(f);
+	}
+
+	TemplObj StructField::templ_obj() const {
+		return {
+			{"type_str", _spec.cpp_str()},
+			{"name", _name},
+		};
+	}
+
+	std::string const &StructField::name() const { return _name; }
+
+	FieldType const &StructField::spec() const { return _spec; }
+
+	util::Result<StructDef, Error> StructDef::create(Node const &node) {
+		log_assert(node.cfg_rule() == "struct-def", "Must pass struct-def to StructDef::create");
+
+		auto s = StructDef();
+
+		Node *name_node;
+		if (auto err = node.child_with_tok(int(T::Identifier)).move_or(name_node)) {
+			return Error(ErrorType::PARSE_ERROR, "Expecting struct-def to have identifier child node");
+		}
+		s._name = name_node->consumed_all();
+
+		for (auto field_node : node.children_with_cfg("struct-field")) {
+			auto field = StructField();
+			if (auto err = StructField::create(*field_node).move_or(field)) {
+				return Error(ErrorType::PARSE_ERROR, "Couldn't parse struct field", err.value());
+			}
+			s._fields[field.name()] = std::move(field);
+		}
+
+		return s;
+	}
+
+	TemplObj StructDef::templ_obj() const {
+		auto fields = cg::TemplList();
+		for (auto &[name, f] : _fields) {
+			fields.push_back(f.templ_obj());
+		}
+		log_assert(!_name.empty(), "StructDef must be setup before calling templ_obj");
+		return {
+			{"name", _name},
+			{"fields", fields}
+		};
+	}
+
+	std::string const &StructDef::name() const {
+		return _name;
+	}
+
 	util::Result<VersionValue, Error> VersionValue::create(Node const &node) {
 		log_assert(node.cfg_rule() == "version-frag", "Must pass version-frag to VersionValue::create");
 
@@ -264,8 +422,12 @@ namespace serial {
 					return err.value();
 				}
 				v._bitfields[b.name()] = b;
-			} else if (child.cfg_rule() == "struct-decl") {
-				log_warning() << "TODO" << std::endl;
+			} else if (child.cfg_rule() == "struct-def") {
+				auto s = StructDef();
+				if (auto err = StructDef::create(child).move_or(s)) {
+					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate struct-def in version ", v._value.namespace_str()), err.value());
+				}
+				v._structs[s.name()] = s;
 			}
 		}
 
@@ -283,10 +445,16 @@ namespace serial {
 			bitfields.push_back(b.templ_obj());
 		}
 
+		auto structs = cg::TemplList();
+		for (auto &[name, s] : _structs) {
+			structs.push_back(s.templ_obj());
+		}
+
 		return {
 			{"namespace_str", _value.namespace_str()},
 			{"enums", enums},
-			{"bitfields", bitfields}
+			{"bitfields", bitfields},
+			{"structs", structs},
 		};
 	}
 

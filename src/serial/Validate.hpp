@@ -71,6 +71,61 @@ namespace serial {
 			std::vector<BFField> _fields;
 	};
 
+	class FieldType {
+		public:
+			FieldType() = default;
+			static util::Result<FieldType, Error> create(Node const &node);
+
+			FieldType(FieldType const &other);
+			FieldType(FieldType &&other) = default;
+			FieldType &operator=(FieldType const &other);
+			FieldType &operator=(FieldType &&other) = default;
+
+			/**
+			 * @brief Gets the cpp string representation
+			 */
+			std::string cpp_str() const;
+
+		private:
+			std::string _cpp_str_frag = "";
+			std::unique_ptr<FieldType> _enclosing_type = nullptr;
+
+		private:
+
+			bool _is_generic() const;
+	};
+
+	class StructField {
+		public:
+			StructField() = default;
+
+			static util::Result<StructField, Error> create(Node const &node);
+
+			TemplObj templ_obj() const;
+
+			std::string const &name() const;
+
+			FieldType const &spec() const;
+		private:
+			std::string _name;
+			FieldType _spec;
+	};
+
+	class StructDef {
+		public:
+			StructDef() = default;
+			static util::Result<StructDef, Error> create(Node const &node);
+
+			TemplObj templ_obj() const;
+
+			std::string const &name() const;
+
+			std::map<std::string, StructField> const &fields() const;
+		private:
+			std::string _name;
+			std::map<std::string, StructField> _fields;
+	};
+
 	struct VersionValue {
 		public:
 			VersionValue() = default;
@@ -103,6 +158,7 @@ namespace serial {
 			VersionValue _value;
 			std::map<std::string, Enum> _enums;
 			std::map<std::string, Bitfield> _bitfields;
+			std::map<std::string, StructDef> _structs;
 	};
 	
 	class Document {

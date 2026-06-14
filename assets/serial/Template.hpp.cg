@@ -50,6 +50,21 @@ namespace serial {
 			return os;
 		};
 		{% endfor %}
+
+		{% for s in version.structs %}
+		class {{s.name}} {
+			public:
+			{% for f in s.fields %}
+				{{f.type_str}} const &{{f.name}}() const;
+			{% endfor %}
+
+			private:
+			{% for f in s.fields %}
+				{{f.type_str}} _{{f.name}};
+			{% endfor %}
+		};
+
+		{% endfor %}
 	}
 	{% endfor %}
 }

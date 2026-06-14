@@ -26,7 +26,7 @@ namespace cg {
 			Token(int type, util::StringRef const &ref);
 
 			int type() const;
-			std::string content() const;
+			std::string const &content() const;
 			util::FileLocation loc() const;
 			std::string debug_str(Config const &config) const;
 			void concat(Token const &t);

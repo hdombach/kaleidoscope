@@ -13,7 +13,7 @@ namespace cg {
 	{}
 
 	int Token::type() const { return _type; }
-	std::string Token::content() const { return _str; }
+	std::string const &Token::content() const { return _str; }
 	util::FileLocation Token::loc() const { return _loc; }
 	std::string Token::debug_str(Config const &config) const {
 		const char *name = "UNKNOWN";

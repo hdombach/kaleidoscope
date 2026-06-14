@@ -45,7 +45,7 @@ namespace serial {
 			| T::Comment
 			| c["enum-decl"]
 			| c["bitfield-decl"]
-			| c["struct-decl"]
+			| c["struct-def"]
 		);
 
 		c.prim("enum-decl") = T::Enum + c["whitespace"] + T::Identifier
@@ -62,15 +62,15 @@ namespace serial {
 		c.temp("bitfield-blck") = c.cls(T::Whitespace | T::Comment | c["bitfield-field"]);
 		c.prim("bitfield-field") = T::Identifier + T::Semicolon;
 
-		c.prim("struct-decl") = T::Struct + c["whitespace"] + T::Identifier
+		c.prim("struct-def") = T::Struct + c["whitespace"] + T::Identifier
 			+ c["whitespace"] + T::OpenCurly + c["struct-blck"] + T::CloseCurly;
 
-		c.temp("struct-blck") = c.cls(T::Whitespace | T::Comment | c["property"]);
-		c.prim("property") = c["property-type"] + c["whitespace"] + T::Identifier
+		c.temp("struct-blck") = c.cls(T::Whitespace | T::Comment | c["struct-field"]);
+		c.prim("struct-field") = c["field-type"] + c["whitespace"] + T::Identifier
 			+ c["whitespace"] + T::Semicolon;
 
 		c.temp("generics") = T::Array | T::Optional | T::UIDList;
-		c.prim("property-type")
+		c.prim("field-type")
 			= T::Float
 			| T::Double
 			| T::Boolean
@@ -83,7 +83,7 @@ namespace serial {
 			| T::I32
 			| T::I64
 			| T::Identifier
-			| c["generics"] + T::Less + T::Identifier + T::Greater;
+			| c["generics"] + T::Less + c["field-type"] + T::Greater;
 
 		if (auto err = c.prep().move_or()) {
 			return Error(ErrorType::PARSE_ERROR, "Could not prepare parser", err.value());
