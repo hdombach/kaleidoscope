@@ -19,10 +19,10 @@ namespace serial {
 	using Node = cg::AstNode;
 	using TemplObj = cg::TemplObj;
 
-	class Enumerator {
+	class VEnumerator {
 		public:
-			Enumerator() = default;
-			static util::Result<Enumerator, Error> create(Node const &node);
+			VEnumerator() = default;
+			static util::Result<VEnumerator, Error> create(Node const &node);
 
 			TemplObj templ_obj() const;
 
@@ -32,23 +32,23 @@ namespace serial {
 			std::optional<uint64_t> _value = std::nullopt;
 	};
 
-	class Enum {
+	class VEnum {
 		public:
-			Enum() = default;
-			static util::Result<Enum, Error> create(Node const &node);
+			VEnum() = default;
+			static util::Result<VEnum, Error> create(Node const &node);
 
 			TemplObj templ_obj() const;
 
 			std::string const &name() const;
 		private:
 			std::string _name;
-			std::vector<Enumerator> _enumerators;
+			std::vector<VEnumerator> _enumerators;
 	};
 
-	class BFField {
+	class VBFField {
 		public:
-			BFField() = default;
-			static util::Result<BFField, Error> create(Node const &node, uint8_t index);
+			VBFField() = default;
+			static util::Result<VBFField, Error> create(Node const &node, uint8_t index);
 
 			TemplObj templ_obj() const;
 
@@ -58,28 +58,28 @@ namespace serial {
 			uint8_t _index;
 	};
 
-	class Bitfield {
+	class VBitfield {
 		public:
-			Bitfield() = default;
-			static util::Result<Bitfield, Error> create(Node const &node);
+			VBitfield() = default;
+			static util::Result<VBitfield, Error> create(Node const &node);
 
 			TemplObj templ_obj() const;
 
 			std::string const &name() const;
 		private:
 			std::string _name;
-			std::vector<BFField> _fields;
+			std::vector<VBFField> _fields;
 	};
 
-	class FieldType {
+	class VFieldType {
 		public:
-			FieldType() = default;
-			static util::Result<FieldType, Error> create(Node const &node);
+			VFieldType() = default;
+			static util::Result<VFieldType, Error> create(Node const &node);
 
-			FieldType(FieldType const &other);
-			FieldType(FieldType &&other) = default;
-			FieldType &operator=(FieldType const &other);
-			FieldType &operator=(FieldType &&other) = default;
+			VFieldType(VFieldType const &other);
+			VFieldType(VFieldType &&other) = default;
+			VFieldType &operator=(VFieldType const &other);
+			VFieldType &operator=(VFieldType &&other) = default;
 
 			/**
 			 * @brief Gets the cpp string representation
@@ -88,48 +88,48 @@ namespace serial {
 
 		private:
 			std::string _cpp_str_frag = "";
-			std::unique_ptr<FieldType> _enclosing_type = nullptr;
+			std::unique_ptr<VFieldType> _enclosing_type = nullptr;
 
 		private:
 
 			bool _is_generic() const;
 	};
 
-	class StructField {
+	class VStructField {
 		public:
-			StructField() = default;
+			VStructField() = default;
 
-			static util::Result<StructField, Error> create(Node const &node);
+			static util::Result<VStructField, Error> create(Node const &node);
 
 			TemplObj templ_obj() const;
 
 			std::string const &name() const;
 
-			FieldType const &spec() const;
+			VFieldType const &spec() const;
 		private:
 			std::string _name;
-			FieldType _spec;
+			VFieldType _spec;
 	};
 
-	class StructDef {
+	class VStructDef {
 		public:
-			StructDef() = default;
-			static util::Result<StructDef, Error> create(Node const &node);
+			VStructDef() = default;
+			static util::Result<VStructDef, Error> create(Node const &node);
 
 			TemplObj templ_obj() const;
 
 			std::string const &name() const;
 
-			std::map<std::string, StructField> const &fields() const;
+			std::map<std::string, VStructField> const &fields() const;
 		private:
 			std::string _name;
-			std::map<std::string, StructField> _fields;
+			std::map<std::string, VStructField> _fields;
 	};
 
-	struct VersionValue {
+	struct VVersionValue {
 		public:
-			VersionValue() = default;
-			static util::Result<VersionValue, Error> create(Node const &node);
+			VVersionValue() = default;
+			static util::Result<VVersionValue, Error> create(Node const &node);
 
 			uint64_t vanity;
 			uint64_t major;
@@ -137,33 +137,33 @@ namespace serial {
 
 			std::string namespace_str() const;
 
-			bool operator<(VersionValue const &other) const;
+			bool operator<(VVersionValue const &other) const;
 	};
 
-	class Version {
+	class VVersion {
 		public:
-			Version() = default;
+			VVersion() = default;
 
-			static util::Result<Version, Error> create(Node const &node);
+			static util::Result<VVersion, Error> create(Node const &node);
 
 			TemplObj templ_obj() const;
 
-			VersionValue const &value() const;
+			VVersionValue const &value() const;
 		private:
 			util::Result<void, Error> _check_identifier(
 				std::string const &name,
 				util::FileLocation floc=std::source_location::current()
 			) const;
 
-			VersionValue _value;
-			std::map<std::string, Enum> _enums;
-			std::map<std::string, Bitfield> _bitfields;
-			std::map<std::string, StructDef> _structs;
+			VVersionValue _value;
+			std::map<std::string, VEnum> _enums;
+			std::map<std::string, VBitfield> _bitfields;
+			std::map<std::string, VStructDef> _structs;
 	};
 	
-	class Document {
+	class VDocument {
 		public:
-			Document() = default;
+			VDocument() = default;
 
 			util::Result<void, Error> add_file(Node const &node);
 
@@ -173,6 +173,6 @@ namespace serial {
 
 		private:
 			std::vector<std::string> _includes;
-			std::map<VersionValue, Version> _versions;
+			std::map<VVersionValue, VVersion> _versions;
 	};
 }

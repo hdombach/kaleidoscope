@@ -10,13 +10,13 @@
 
 namespace serial {
 	using T = TokenType;
-	util::Result<Enumerator, Error> Enumerator::create(const Node &node) {
+	util::Result<VEnumerator, Error> VEnumerator::create(const Node &node) {
 		log_assert(
 			node.cfg_rule() == "enumerator",
 			"Must pass enumerator AstNode to Enumerator::create"
 		);
 		
-		auto e = Enumerator();
+		auto e = VEnumerator();
 		Node const *child;
 		if (auto err = node.child_with_tok(int(T::Identifier)).move_or(child)) {
 			return Error(
@@ -52,7 +52,7 @@ namespace serial {
 		return e;
 	}
 
-	TemplObj Enumerator::templ_obj() const {
+	TemplObj VEnumerator::templ_obj() const {
 		return {
 			{"name", _name},
 			{"value", cg::TemplInt(_value.value_or(0))},
@@ -60,17 +60,17 @@ namespace serial {
 		};
 	}
 
-	std::string const &Enumerator::name() const {
+	std::string const &VEnumerator::name() const {
 		return _name;
 	}
 
-	util::Result<Enum, Error> Enum::create(Node const &node) {
+	util::Result<VEnum, Error> VEnum::create(Node const &node) {
 		log_assert(
 			node.cfg_rule() == "enum-decl",
 			"Must pass enum-decl AstNode to Enum::create"
 		);
 
-		auto e = Enum();
+		auto e = VEnum();
 		Node const *child;
 		if (auto err =  node.child_with_tok(int(T::Identifier)).move_or(child)) {
 			return Error(ErrorType::INVALID_STATE, "Expecting Identifier in enum-decl", err.value());
@@ -78,8 +78,8 @@ namespace serial {
 		e._name = child->consumed_all();
 
 		for (auto c : node.children_with_cfg("enumerator")) {
-			Enumerator en;
-			if (auto err = Enumerator::create(*c).move_or(en)) {
+			VEnumerator en;
+			if (auto err = VEnumerator::create(*c).move_or(en)) {
 				return Error(
 					ErrorType::VALIDATE_ERROR,
 					util::f("Couldn't validate enumerator of ", e._name),
@@ -93,7 +93,7 @@ namespace serial {
 		return e;
 	}
 
-	TemplObj Enum::templ_obj() const {
+	TemplObj VEnum::templ_obj() const {
 		auto enumerators = cg::TemplList();
 
 		for (auto &e : _enumerators) {
@@ -106,18 +106,18 @@ namespace serial {
 		};
 	}
 
-	std::string const &Enum::name() const {
+	std::string const &VEnum::name() const {
 		return _name;
 	}
 
-	util::Result<BFField, Error> BFField::create(Node const &node, uint8_t index) {
+	util::Result<VBFField, Error> VBFField::create(Node const &node, uint8_t index) {
 		log_assert(
 			node.cfg_rule() == "bitfield-field",
 			"Must pass bitfield-field to BFField::create"
 		);
 		log_assert(index > 0, "BFField index must be greater than 0");
 
-		auto b = BFField();
+		auto b = VBFField();
 		b._index = index;
 		
 		Node const *child;
@@ -135,24 +135,24 @@ namespace serial {
 		return b;
 	}
 
-	TemplObj BFField::templ_obj() const {
+	TemplObj VBFField::templ_obj() const {
 		return {
 			{"name", _name},
 			{"index", _index}
 		};
 	}
 
-	std::string const &BFField::name() const {
+	std::string const &VBFField::name() const {
 		return _name;
 	}
 
-	util::Result<Bitfield, Error> Bitfield::create(Node const &node) {
+	util::Result<VBitfield, Error> VBitfield::create(Node const &node) {
 		log_assert(
 			node.cfg_rule() == "bitfield-decl",
 			"Must pass bitfield-decl to Bitfield::create"
 		);
 
-		auto b = Bitfield();
+		auto b = VBitfield();
 
 		Node const *child;
 		if (auto err = node.child_with_tok(int(T::Identifier)).move_or(child)) {
@@ -166,8 +166,8 @@ namespace serial {
 
 		auto i = 1;
 		for (auto f : node.children_with_cfg("bitfield-field")) {
-			BFField field;
-			if (auto err = BFField::create(*f, i).move_or(field)) {
+			VBFField field;
+			if (auto err = VBFField::create(*f, i).move_or(field)) {
 				return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate field of bitfield ", b._name), err.value());
 			}
 			b._fields.push_back(field);
@@ -178,7 +178,7 @@ namespace serial {
 		return b;
 	}
 
-	TemplObj Bitfield::templ_obj() const {
+	TemplObj VBitfield::templ_obj() const {
 		auto fields = cg::TemplList();
 		for (auto &f : _fields) {
 			fields.push_back(f.templ_obj());
@@ -190,7 +190,7 @@ namespace serial {
 		};
 	}
 
-	std::string const &Bitfield::name() const {
+	std::string const &VBitfield::name() const {
 		return _name;
 	}
 
@@ -229,10 +229,10 @@ namespace serial {
 		}
 	}
 
-	util::Result<FieldType, Error> FieldType::create(Node const &node) {
+	util::Result<VFieldType, Error> VFieldType::create(Node const &node) {
 		log_assert(node.cfg_rule() == "field-type", "Must pass field-type to TypeSpec::create");
 
-		auto t = FieldType();
+		auto t = VFieldType();
 
 		if (node.child_count() == 1) {
 			t._cpp_str_frag = _get_cpp_str_frag(node.begin()->tok());
@@ -242,11 +242,11 @@ namespace serial {
 			if (auto err = node.child_with_cfg("field-type").move_or(enclosed_node)) {
 				return Error(ErrorType::PARSE_ERROR, "Expecting field-type node in generic type spec", err.value());
 			}
-			auto enclosed = FieldType();
-			if (auto err = FieldType::create(*enclosed_node).move_or(enclosed)) {
+			auto enclosed = VFieldType();
+			if (auto err = VFieldType::create(*enclosed_node).move_or(enclosed)) {
 				return Error(ErrorType::PARSE_ERROR, "Cannot parse enclosed generic type spec", err.value());
 			}
-			t._enclosing_type = std::make_unique<FieldType>(std::move(enclosed));
+			t._enclosing_type = std::make_unique<VFieldType>(std::move(enclosed));
 		} else {
 			return Error(ErrorType::PARSE_ERROR, "Expecting 1 or four child nodes");
 		}
@@ -254,22 +254,22 @@ namespace serial {
 		return t;
 	}
 
-	FieldType::FieldType(FieldType const &other) {
+	VFieldType::VFieldType(VFieldType const &other) {
 		_cpp_str_frag = other._cpp_str_frag;
 		if (other._enclosing_type) {
-			_enclosing_type = std::make_unique<FieldType>(*other._enclosing_type);
+			_enclosing_type = std::make_unique<VFieldType>(*other._enclosing_type);
 		}
 	}
 
-	FieldType &FieldType::operator=(FieldType const &other) {
+	VFieldType &VFieldType::operator=(VFieldType const &other) {
 		_cpp_str_frag = other._cpp_str_frag;
 		if (other._enclosing_type) {
-			_enclosing_type = std::make_unique<FieldType>(*other._enclosing_type);
+			_enclosing_type = std::make_unique<VFieldType>(*other._enclosing_type);
 		}
 		return *this;
 	}
 
-	std::string FieldType::cpp_str() const {
+	std::string VFieldType::cpp_str() const {
 		if (_is_generic()) {
 			return util::f(_cpp_str_frag, "<", _enclosing_type->cpp_str(), ">");
 		} else {
@@ -277,19 +277,19 @@ namespace serial {
 		}
 	}
 
-	bool FieldType::_is_generic() const {
+	bool VFieldType::_is_generic() const {
 		return _enclosing_type.get() != nullptr;
 	}
 
-	util::Result<StructField, Error> StructField::create(Node const &node) {
+	util::Result<VStructField, Error> VStructField::create(Node const &node) {
 		log_assert(node.cfg_rule() == "struct-field", "Must pass property to TypeDef::create");
 
-		auto f = StructField();
+		auto f = VStructField();
 		Node *spec_node;
 		if (auto err = node.child_with_cfg("field-type").move_or(spec_node)) {
 			return Error(ErrorType::PARSE_ERROR, "property doesn't have child node of type field-type", err.value());
 		}
-		if (auto err = FieldType::create(*spec_node).move_or(f._spec)) {
+		if (auto err = VFieldType::create(*spec_node).move_or(f._spec)) {
 			return Error(ErrorType::PARSE_ERROR, "Couldn't parse property type", err.value());
 		}
 
@@ -302,21 +302,21 @@ namespace serial {
 		return std::move(f);
 	}
 
-	TemplObj StructField::templ_obj() const {
+	TemplObj VStructField::templ_obj() const {
 		return {
 			{"type_str", _spec.cpp_str()},
 			{"name", _name},
 		};
 	}
 
-	std::string const &StructField::name() const { return _name; }
+	std::string const &VStructField::name() const { return _name; }
 
-	FieldType const &StructField::spec() const { return _spec; }
+	VFieldType const &VStructField::spec() const { return _spec; }
 
-	util::Result<StructDef, Error> StructDef::create(Node const &node) {
+	util::Result<VStructDef, Error> VStructDef::create(Node const &node) {
 		log_assert(node.cfg_rule() == "struct-def", "Must pass struct-def to StructDef::create");
 
-		auto s = StructDef();
+		auto s = VStructDef();
 
 		Node *name_node;
 		if (auto err = node.child_with_tok(int(T::Identifier)).move_or(name_node)) {
@@ -325,8 +325,8 @@ namespace serial {
 		s._name = name_node->consumed_all();
 
 		for (auto field_node : node.children_with_cfg("struct-field")) {
-			auto field = StructField();
-			if (auto err = StructField::create(*field_node).move_or(field)) {
+			auto field = VStructField();
+			if (auto err = VStructField::create(*field_node).move_or(field)) {
 				return Error(ErrorType::PARSE_ERROR, "Couldn't parse struct field", err.value());
 			}
 			s._fields[field.name()] = std::move(field);
@@ -335,7 +335,7 @@ namespace serial {
 		return s;
 	}
 
-	TemplObj StructDef::templ_obj() const {
+	TemplObj VStructDef::templ_obj() const {
 		auto fields = cg::TemplList();
 		for (auto &[name, f] : _fields) {
 			fields.push_back(f.templ_obj());
@@ -347,14 +347,14 @@ namespace serial {
 		};
 	}
 
-	std::string const &StructDef::name() const {
+	std::string const &VStructDef::name() const {
 		return _name;
 	}
 
-	util::Result<VersionValue, Error> VersionValue::create(Node const &node) {
+	util::Result<VVersionValue, Error> VVersionValue::create(Node const &node) {
 		log_assert(node.cfg_rule() == "version-frag", "Must pass version-frag to VersionValue::create");
 
-		auto v = VersionValue();
+		auto v = VVersionValue();
 		auto nums = node.children_with_tok(int(T::IntConst));
 		if (nums.size() != 3) {
 			return Error(ErrorType::INVALID_STATE, "version-frag must contain 3 child IntConsts");
@@ -372,11 +372,11 @@ namespace serial {
 		return v;
 	}
 
-	std::string VersionValue::namespace_str() const {
+	std::string VVersionValue::namespace_str() const {
 		return util::f("v", vanity, "_", major, "_", minor);
 	}
 
-	bool VersionValue::operator<(VersionValue const &other) const {
+	bool VVersionValue::operator<(VVersionValue const &other) const {
 		if (vanity != other.vanity) {
 			return vanity < other.vanity;
 		}
@@ -386,15 +386,15 @@ namespace serial {
 		return minor < other.minor;
 	}
 
-	util::Result<Version, Error> Version::create(Node const &node) {
-		Version v;
+	util::Result<VVersion, Error> VVersion::create(Node const &node) {
+		VVersion v;
 		log_assert(node.cfg_rule() == "version-decl", "Must pass version-decl AstNode to Version::create");
 
 		Node *value_node;
 		if (auto err = node.child_with_cfg("version-frag").move_or(value_node)) {
 			return Error(ErrorType::INVALID_STATE, "version-decl does not contain a version-frag child node", err.value());
 		}
-		if (auto err = VersionValue::create(*value_node).move_or(v._value)) {
+		if (auto err = VVersionValue::create(*value_node).move_or(v._value)) {
 			return Error(ErrorType::VALIDATE_ERROR, "Could not validate version fragment", err.value());
 		}
 
@@ -405,8 +405,8 @@ namespace serial {
 
 		for (auto &child : *blck) {
 			if (child.cfg_rule() == "enum-decl") {
-				auto e = Enum();
-				if (auto err = Enum::create(child).move_or(e)) {
+				auto e = VEnum();
+				if (auto err = VEnum::create(child).move_or(e)) {
 					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate enum in version ", v._value.namespace_str()), err.value());
 				}
 				if (auto err = v._check_identifier(e.name()).move_or()) {
@@ -414,8 +414,8 @@ namespace serial {
 				}
 				v._enums[e.name()] = e;
 			} else if (child.cfg_rule() == "bitfield-decl") {
-				auto b = Bitfield();
-				if (auto err = Bitfield::create(child).move_or(b)) {
+				auto b = VBitfield();
+				if (auto err = VBitfield::create(child).move_or(b)) {
 					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate bitfield in version ", v._value.namespace_str()), err.value());
 				}
 				if (auto err = v._check_identifier(b.name()).move_or()) {
@@ -423,8 +423,8 @@ namespace serial {
 				}
 				v._bitfields[b.name()] = b;
 			} else if (child.cfg_rule() == "struct-def") {
-				auto s = StructDef();
-				if (auto err = StructDef::create(child).move_or(s)) {
+				auto s = VStructDef();
+				if (auto err = VStructDef::create(child).move_or(s)) {
 					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate struct-def in version ", v._value.namespace_str()), err.value());
 				}
 				v._structs[s.name()] = s;
@@ -434,7 +434,7 @@ namespace serial {
 		return {v};
 	}
 
-	TemplObj Version::templ_obj() const {
+	TemplObj VVersion::templ_obj() const {
 		auto enums = cg::TemplList();
 		for (auto &[name, e] : _enums) {
 			enums.push_back(e.templ_obj());
@@ -458,11 +458,11 @@ namespace serial {
 		};
 	}
 
-	VersionValue const &Version::value() const {
+	VVersionValue const &VVersion::value() const {
 		return _value;
 	}
 
-	util::Result<void, Error> Version::_check_identifier(
+	util::Result<void, Error> VVersion::_check_identifier(
 		std::string const &name,
 		util::FileLocation floc
 	) const {
@@ -483,7 +483,7 @@ namespace serial {
 		return {};
 	}
 
-	util::Result<void, Error> Document::add_file(Node const &node) {
+	util::Result<void, Error> VDocument::add_file(Node const &node) {
 		log_assert(node.cfg_rule() == "root", "Must pass root AstNode to Document::add_file");
 
 		Node *doc_node;
@@ -503,8 +503,8 @@ namespace serial {
 				}
 				_includes.push_back(str);
 			} else if (child.cfg_rule() == "version-decl") {
-				Version v;
-				if (auto err = Version::create(child).move_or(v)) {
+				VVersion v;
+				if (auto err = VVersion::create(child).move_or(v)) {
 					return Error(ErrorType::PARSE_ERROR, "Could not parse version", err.value());
 				}
 				_versions[v.value()] = v;
@@ -513,11 +513,11 @@ namespace serial {
 		return {};
 	}
 
-	std::vector<std::string> const &Document::includes() const {
+	std::vector<std::string> const &VDocument::includes() const {
 		return _includes;
 	}
 
-	TemplObj Document::templ_obj() const {
+	TemplObj VDocument::templ_obj() const {
 		auto versions = cg::TemplList();
 		for (auto &[name, v] : _versions) {
 			versions.push_back(v.templ_obj());
