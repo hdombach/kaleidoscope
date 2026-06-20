@@ -27,9 +27,9 @@ version 0.0.1 {
 	struct Node {
 		/* Primitives include strings, integers, floating point boolean*/
 		string name;
-		Type type;
+		NodeType type;
 		u32 id;
-		Flags flags;
+		NodeFlags flags;
 		float pos_x;
 		float pos_y;
 		double value;

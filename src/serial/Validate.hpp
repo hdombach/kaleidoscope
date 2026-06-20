@@ -35,13 +35,16 @@ namespace serial {
 	class VEnum {
 		public:
 			VEnum() = default;
-			static util::Result<VEnum, Error> create(Node const &node);
+			static util::Result<VEnum, Error> create(Node const &node, std::string const &name);
 
 			TemplObj templ_obj() const;
 
 			std::string const &name() const;
+
+			std::string const &filename() const;
 		private:
 			std::string _name;
+			std::string _filename;
 			std::vector<VEnumerator> _enumerators;
 	};
 
@@ -61,13 +64,16 @@ namespace serial {
 	class VBitfield {
 		public:
 			VBitfield() = default;
-			static util::Result<VBitfield, Error> create(Node const &node);
+			static util::Result<VBitfield, Error> create(Node const &node, std::string const &filename);
 
 			TemplObj templ_obj() const;
 
 			std::string const &name() const;
+
+			std::string const &filename() const;
 		private:
 			std::string _name;
+			std::string _filename;
 			std::vector<VBFField> _fields;
 	};
 
@@ -114,15 +120,18 @@ namespace serial {
 	class VStructDef {
 		public:
 			VStructDef() = default;
-			static util::Result<VStructDef, Error> create(Node const &node);
+			static util::Result<VStructDef, Error> create(Node const &node, std::string const &filename);
 
 			TemplObj templ_obj() const;
 
 			std::string const &name() const;
 
+			std::string const &filename() const;
+
 			std::map<std::string, VStructField> const &fields() const;
 		private:
 			std::string _name;
+			std::string _filename;
 			std::map<std::string, VStructField> _fields;
 	};
 
@@ -144,9 +153,9 @@ namespace serial {
 		public:
 			VVersion() = default;
 
-			static util::Result<VVersion, Error> create(Node const &node);
+			static util::Result<VVersion, Error> create(Node const &node, std::string const &filename);
 
-			TemplObj templ_obj() const;
+			TemplObj templ_obj(std::string const &filename) const;
 
 			VVersionValue const &value() const;
 		private:
@@ -165,11 +174,11 @@ namespace serial {
 		public:
 			VDocument() = default;
 
-			util::Result<void, Error> add_file(Node const &node);
+			util::Result<void, Error> add_file(Node const &node, std::string const &filename);
 
 			std::vector<std::string> const &includes() const;
 
-			TemplObj templ_obj() const;
+			TemplObj templ_obj(std::string const &filename) const;
 
 		private:
 			std::vector<std::string> _includes;

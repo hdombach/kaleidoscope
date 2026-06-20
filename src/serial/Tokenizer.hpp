@@ -33,6 +33,7 @@ namespace serial {
 		I16,
 		I32,
 		I64,
+		String,
 		Array,
 		Optional,
 		UIDList,

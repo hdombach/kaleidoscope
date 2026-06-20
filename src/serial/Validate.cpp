@@ -64,7 +64,7 @@ namespace serial {
 		return _name;
 	}
 
-	util::Result<VEnum, Error> VEnum::create(Node const &node) {
+	util::Result<VEnum, Error> VEnum::create(Node const &node, std::string const &filename) {
 		log_assert(
 			node.cfg_rule() == "enum-decl",
 			"Must pass enum-decl AstNode to Enum::create"
@@ -76,6 +76,7 @@ namespace serial {
 			return Error(ErrorType::INVALID_STATE, "Expecting Identifier in enum-decl", err.value());
 		}
 		e._name = child->consumed_all();
+		e._filename = filename;
 
 		for (auto c : node.children_with_cfg("enumerator")) {
 			VEnumerator en;
@@ -108,6 +109,10 @@ namespace serial {
 
 	std::string const &VEnum::name() const {
 		return _name;
+	}
+
+	std::string const &VEnum::filename() const {
+		return _filename;
 	}
 
 	util::Result<VBFField, Error> VBFField::create(Node const &node, uint8_t index) {
@@ -146,7 +151,7 @@ namespace serial {
 		return _name;
 	}
 
-	util::Result<VBitfield, Error> VBitfield::create(Node const &node) {
+	util::Result<VBitfield, Error> VBitfield::create(Node const &node, std::string const &filename) {
 		log_assert(
 			node.cfg_rule() == "bitfield-decl",
 			"Must pass bitfield-decl to Bitfield::create"
@@ -163,6 +168,7 @@ namespace serial {
 			);
 		}
 		b._name = child->consumed_all();
+		b._filename = filename;
 
 		auto i = 1;
 		for (auto f : node.children_with_cfg("bitfield-field")) {
@@ -194,6 +200,10 @@ namespace serial {
 		return _name;
 	}
 
+	std::string const &VBitfield::filename() const {
+		return _filename;
+	}
+
 	const char *_get_cpp_str_frag(cg::Token const &tok) {
 		switch (T(tok.type())) {
 			case T::Float:
@@ -216,8 +226,10 @@ namespace serial {
 				return "int32_t";
 			case T::I64:
 				return "int64_t";
+			case T::String:
+				return "::std::string";
 			case T::Array:
-				return "::std::vector";
+				return "::serial::Vector";
 			case T::Optional:
 				return "::std::optional";
 			case T::UIDList:
@@ -313,7 +325,7 @@ namespace serial {
 
 	VFieldType const &VStructField::spec() const { return _spec; }
 
-	util::Result<VStructDef, Error> VStructDef::create(Node const &node) {
+	util::Result<VStructDef, Error> VStructDef::create(Node const &node, std::string const &filename) {
 		log_assert(node.cfg_rule() == "struct-def", "Must pass struct-def to StructDef::create");
 
 		auto s = VStructDef();
@@ -323,6 +335,7 @@ namespace serial {
 			return Error(ErrorType::PARSE_ERROR, "Expecting struct-def to have identifier child node");
 		}
 		s._name = name_node->consumed_all();
+		s._filename = filename;
 
 		for (auto field_node : node.children_with_cfg("struct-field")) {
 			auto field = VStructField();
@@ -349,6 +362,10 @@ namespace serial {
 
 	std::string const &VStructDef::name() const {
 		return _name;
+	}
+
+	std::string const &VStructDef::filename() const {
+		return _filename;
 	}
 
 	util::Result<VVersionValue, Error> VVersionValue::create(Node const &node) {
@@ -386,7 +403,7 @@ namespace serial {
 		return minor < other.minor;
 	}
 
-	util::Result<VVersion, Error> VVersion::create(Node const &node) {
+	util::Result<VVersion, Error> VVersion::create(Node const &node, std::string const &filename) {
 		VVersion v;
 		log_assert(node.cfg_rule() == "version-decl", "Must pass version-decl AstNode to Version::create");
 
@@ -406,7 +423,7 @@ namespace serial {
 		for (auto &child : *blck) {
 			if (child.cfg_rule() == "enum-decl") {
 				auto e = VEnum();
-				if (auto err = VEnum::create(child).move_or(e)) {
+				if (auto err = VEnum::create(child, filename).move_or(e)) {
 					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate enum in version ", v._value.namespace_str()), err.value());
 				}
 				if (auto err = v._check_identifier(e.name()).move_or()) {
@@ -415,7 +432,7 @@ namespace serial {
 				v._enums[e.name()] = e;
 			} else if (child.cfg_rule() == "bitfield-decl") {
 				auto b = VBitfield();
-				if (auto err = VBitfield::create(child).move_or(b)) {
+				if (auto err = VBitfield::create(child, filename).move_or(b)) {
 					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate bitfield in version ", v._value.namespace_str()), err.value());
 				}
 				if (auto err = v._check_identifier(b.name()).move_or()) {
@@ -424,7 +441,7 @@ namespace serial {
 				v._bitfields[b.name()] = b;
 			} else if (child.cfg_rule() == "struct-def") {
 				auto s = VStructDef();
-				if (auto err = VStructDef::create(child).move_or(s)) {
+				if (auto err = VStructDef::create(child, filename).move_or(s)) {
 					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate struct-def in version ", v._value.namespace_str()), err.value());
 				}
 				v._structs[s.name()] = s;
@@ -434,19 +451,22 @@ namespace serial {
 		return {v};
 	}
 
-	TemplObj VVersion::templ_obj() const {
+	TemplObj VVersion::templ_obj(std::string const &filename) const {
 		auto enums = cg::TemplList();
 		for (auto &[name, e] : _enums) {
+			if (e.filename() != filename) continue;
 			enums.push_back(e.templ_obj());
 		}
 
 		auto bitfields = cg::TemplList();
 		for (auto &[name, b] : _bitfields) {
+			if (b.filename() != filename) continue;
 			bitfields.push_back(b.templ_obj());
 		}
 
 		auto structs = cg::TemplList();
 		for (auto &[name, s] : _structs) {
+			if (s.filename() != filename) continue;
 			structs.push_back(s.templ_obj());
 		}
 
@@ -483,7 +503,7 @@ namespace serial {
 		return {};
 	}
 
-	util::Result<void, Error> VDocument::add_file(Node const &node) {
+	util::Result<void, Error> VDocument::add_file(Node const &node, std::string const &filename) {
 		log_assert(node.cfg_rule() == "root", "Must pass root AstNode to Document::add_file");
 
 		Node *doc_node;
@@ -504,7 +524,7 @@ namespace serial {
 				_includes.push_back(str);
 			} else if (child.cfg_rule() == "version-decl") {
 				VVersion v;
-				if (auto err = VVersion::create(child).move_or(v)) {
+				if (auto err = VVersion::create(child, filename).move_or(v)) {
 					return Error(ErrorType::PARSE_ERROR, "Could not parse version", err.value());
 				}
 				_versions[v.value()] = v;
@@ -517,10 +537,10 @@ namespace serial {
 		return _includes;
 	}
 
-	TemplObj VDocument::templ_obj() const {
+	TemplObj VDocument::templ_obj(std::string const &filename) const {
 		auto versions = cg::TemplList();
 		for (auto &[name, v] : _versions) {
-			versions.push_back(v.templ_obj());
+			versions.push_back(v.templ_obj(filename));
 		}
 		return {
 			{"versions", versions}

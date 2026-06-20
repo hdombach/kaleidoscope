@@ -82,6 +82,7 @@ namespace serial {
 			| T::I16
 			| T::I32
 			| T::I64
+			| T::String
 			| T::Identifier
 			| c["generics"] + T::Less + c["field-type"] + T::Greater;
 
@@ -145,7 +146,7 @@ namespace serial {
 
 			_roots[filename] = node;
 
-			if (auto err = _doc.add_file(*node).move_or()) {
+			if (auto err = _doc.add_file(*node, filename).move_or()) {
 				return Error(
 					ErrorType::VALIDATE_ERROR,
 					util::f("Could not validate file ", filename),
@@ -155,13 +156,23 @@ namespace serial {
 
 		}
 
-		auto templ_src = util::readEnvFile("assets/serial/Template.hpp.cg");
-		auto generated = std::string();
-		if (auto err = cg::TemplGen::codegen(templ_src, _doc.templ_obj(), "example.cg").move_or(generated)) {
-			return Error(ErrorType::PARSE_ERROR, "Could not generate code", err.value());
-		}
+		std::filesystem::create_directory(g_args.out_dir);
 
-		log_info() << util::add_strnum(generated) << std::endl;
+		for (auto &[filename, node] : _roots) {
+			auto templ_src = util::readEnvFile("assets/serial/Template.hpp.cg");
+			auto generated = std::string();
+			if (auto err = cg::TemplGen::codegen(templ_src, _doc.templ_obj(filename), "example.cg").move_or(generated)) {
+				return Error(ErrorType::PARSE_ERROR, "Could not generate code", err.value());
+			}
+
+			auto path = std::filesystem::path(filename);
+			auto out_filename = util::f(g_args.out_dir, "/", path.stem().string(), ".hpp");
+
+			log_trace() << util::add_strnum(generated) << std::endl;
+
+			std::ofstream file(out_filename);
+			file << generated;
+		}
 
 		return {};
 	}
