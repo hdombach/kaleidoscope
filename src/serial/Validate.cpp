@@ -539,11 +539,18 @@ namespace serial {
 
 	TemplObj VDocument::templ_obj(std::string const &filename) const {
 		auto versions = cg::TemplList();
+
+		auto filepath = std::filesystem::path(filename);
+		auto source_path = util::f(filepath.stem().c_str(), ".cpp");
+		auto header_path = util::f(filepath.stem().c_str(), ".hpp");
+
 		for (auto &[name, v] : _versions) {
 			versions.push_back(v.templ_obj(filename));
 		}
 		return {
-			{"versions", versions}
+			{"versions", versions},
+			{"source_path", source_path},
+			{"header_path", header_path},
 		};
 	}
 }

@@ -21,16 +21,7 @@ namespace serial {
 			{% endfor %}
 		};
 
-		const char *{{e.name}}_str({{e.name}} val) {
-			switch (val) {
-				{% for enumerator in e.enumerators %}
-				case {{e.name}}::{{enumerator.name}}:
-					return "{{enumerator.name}}";
-				{% endfor %}
-				default:
-					return "_UNKNOWN_";
-			}
-		};
+		const char *{{e.name}}_str({{e.name}} val);
 		{% endfor %}
 
 		{% for b in version.bitfields %}
@@ -41,16 +32,7 @@ namespace serial {
 			{% endfor %}
 		};
 
-		std::ostream &print_{{b.name}}(std::ostream &os, {{b.name}} const &val) {
-			const char *frag = "";
-			{% for f in b.fields %}
-			if (val.{{f.name}}) {
-				os << frag << "{{f.name}}";
-				frag = " | ";
-			}
-			{% endfor %}
-			return os;
-		};
+		std::ostream &print_{{b.name}}(std::ostream &os, {{b.name}} const &val);
 		{% endfor %}
 
 		{% for s in version.structs %}
@@ -67,6 +49,6 @@ namespace serial {
 		};
 
 		{% endfor %}
-	}
+	} /* {{version.namespace_str}} */
 	{% endfor %}
 }

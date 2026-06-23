@@ -159,19 +159,27 @@ namespace serial {
 		std::filesystem::create_directory(g_args.out_dir);
 
 		for (auto &[filename, node] : _roots) {
-			auto templ_src = util::readEnvFile("assets/serial/Template.hpp.cg");
-			auto generated = std::string();
-			if (auto err = cg::TemplGen::codegen(templ_src, _doc.templ_obj(filename), "example.cg").move_or(generated)) {
+			auto header_templ_src = util::readEnvFile("assets/serial/Template.hpp.cg");
+			auto source_templ_src = util::readEnvFile("assets/serial/Template.cpp.cg");
+			auto header_generated = std::string();
+			auto source_generated = std::string();
+
+			if (auto err = cg::TemplGen::codegen(header_templ_src, _doc.templ_obj(filename), "Template.hpp.cg").move_or(header_generated)) {
+				return Error(ErrorType::PARSE_ERROR, "Could not generate code", err.value());
+			}
+			if (auto err = cg::TemplGen::codegen(source_templ_src, _doc.templ_obj(filename), "Template.cpp.cg").move_or(source_generated)) {
 				return Error(ErrorType::PARSE_ERROR, "Could not generate code", err.value());
 			}
 
 			auto path = std::filesystem::path(filename);
-			auto out_filename = util::f(g_args.out_dir, "/", path.stem().string(), ".hpp");
+			auto hpp_filename = util::f(g_args.out_dir, "/", path.stem().string(), ".hpp");
+			auto cpp_filename = util::f(g_args.out_dir, "/", path.stem().string(), ".cpp");
 
-			log_trace() << util::add_strnum(generated) << std::endl;
+			std::ofstream header_file(hpp_filename);
+			header_file << header_generated;
 
-			std::ofstream file(out_filename);
-			file << generated;
+			std::ofstream source_file(cpp_filename);
+			source_file << source_generated;
 		}
 
 		return {};

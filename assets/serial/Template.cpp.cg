@@ -1,0 +1,45 @@
+#include "{{header_path}}"
+
+namespace serial {
+	{% for version in versions %}
+	namespace {{version.namespace_str}} {
+		{% for e in version.enums %}
+		/**** {{e.name}} ****/
+
+		const char *{{e.name}}_str({{e.name}} val) {
+			switch (val) {
+				{% for enumerator in e.enumerators %}
+				case {{e.name}}::{{enumerator.name}}:
+					return "{{enumerator.name}}";
+				{% endfor %}
+				default:
+					return "_UNKNOWN_";
+			}
+		};
+		{% endfor %}
+
+		{% for b in version.bitfields %}
+		/**** {{b.name}} ****/
+
+		std::ostream &print_{{b.name}}(std::ostream &os, {{b.name}} const &val) {
+			const char *frag = "";
+			{% for f in b.fields %}
+			if (val.{{f.name}}) {
+				os << frag << "{{f.name}}";
+				frag = " | ";
+			}
+			{% endfor %}
+			return os;
+		};
+		{% endfor %}
+
+		{% for s in version.structs %}
+		{% for f in s.fields %}
+		{{f.type_str}} const &{{s.name}}::{{f.name}}() const {
+			return _{{f.name}};
+		}
+		{% endfor %}
+		{% endfor %}
+	} /* {{version.namespace_str}} */
+	{% endfor %}
+}
