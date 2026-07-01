@@ -2,24 +2,15 @@
 
 # Compiling For Release
 ```
-conan install . --output-folder=build --build=missing
-cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Release
-cmake --build build
+./setup.sh Release
+meson compile -C build
 ```
 
 # Compiling For Debug 
 ```
-conan install . --output-folder=build --build=missing --profile=debug
-cmake -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_BUILD_TYPE=Debug
-cmake --build build
+./setup.sh Debug
+meson compile -C build
 ```
-
-# Compiling
-Or you can just use `setup.sh`
-If you want to specify which compiler to use, you can define
-- `KALEIDOSCOPE_CC`
-- `KALEIDOSCOPE_CXX`
-
 
 # Overview
 This will be the successor of Fractal Renderer (https://github.com/hdombach/Fractal-Renderer/tree/main).
