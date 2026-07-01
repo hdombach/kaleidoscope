@@ -14,7 +14,7 @@
 #include "util/log.hpp"
 #include "util/result.hpp"
 
-struct Test;
+class Test;
 
 class TestFixture {
 	public:

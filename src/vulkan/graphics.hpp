@@ -31,6 +31,9 @@ namespace vulkan {
 			static void init_default(const char *name);
 			static void delete_default();
 
+			Graphics(Graphics const &other) = delete;
+			Graphics &operator=(Graphics const &other) = delete;
+
 			~Graphics();
 
 			void wait_idle() const;
@@ -188,23 +191,23 @@ namespace vulkan {
 			void _set_debug_name(VkObjectType type, void *addr, std::string const &name);
 
 		private:
-			const char *_name;
-			GLFWwindow* _window;
-			VkInstance _instance;
-			VkDebugUtilsMessengerEXT _debug_messenger;
-			VkPhysicalDevice _physical_device;
-			VkDevice _device;
-			VkQueue _graphics_queue;
-			VkQueue _present_queue;
-			VkQueue _compute_queue;
-			VkSurfaceKHR _surface;
-			VkDescriptorPool _descriptor_pool;
-			VkCommandPool _command_pool;
+			const char *_name = nullptr;
+			GLFWwindow* _window = nullptr;
+			VkInstance _instance = nullptr;
+			VkDebugUtilsMessengerEXT _debug_messenger = nullptr;
+			VkPhysicalDevice _physical_device = nullptr;
+			VkDevice _device = nullptr;
+			VkQueue _graphics_queue = nullptr;
+			VkQueue _present_queue = nullptr;
+			VkQueue _compute_queue = nullptr;
+			VkSurfaceKHR _surface = nullptr;
+			VkDescriptorPool _descriptor_pool = nullptr;
+			VkCommandPool _command_pool = nullptr;
 			uint32_t _mip_levels;
 			Sampler _main_sampler;
 			Sampler _near_sampler;
 			SwapchainSupportDetails _swapchain_support_details;
-			PFN_vkSetDebugUtilsObjectNameEXT _set_obj_name;
+			PFN_vkSetDebugUtilsObjectNameEXT _set_obj_name = nullptr;
 
 			//imgui stuff
 			bool _framebuffer_resized = false;

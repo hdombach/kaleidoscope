@@ -225,9 +225,11 @@ namespace vulkan {
 		if (auto err = _create_instance().move_or()) {
 			log_fatal_error(err.value());
 		}
+		log_assert(_instance, "Instance must be initialized");
 		_set_obj_name = reinterpret_cast<PFN_vkSetDebugUtilsObjectNameEXT>(
 			vkGetInstanceProcAddr(_instance, "vkSetDebugUtilsObjectNameEXT")
 		);
+		log_assert(_set_obj_name, "Could not setup set_obj_name");
 		if (auto err = _setup_debug_messenger().move_or()) {
 			log_fatal_error(err.value());
 		}
@@ -314,6 +316,7 @@ namespace vulkan {
 	}
 
 	void Graphics::_destroy() {
+		log_trace() << "Destroying graphics" << std::endl;
 		_main_sampler.destroy();
 		_near_sampler.destroy();
 
@@ -353,9 +356,7 @@ namespace vulkan {
 		const char** glfwExtensions;
 		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-		if (ENABLE_VALIDATION_LAYERS) {
-			extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-		}
+		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 		extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 		return extensions;
 	}
@@ -994,6 +995,8 @@ namespace vulkan {
 	}
 
 	void Graphics::_set_debug_name(VkObjectType type, void *addr, std::string const &name) {
+		log_assert(_set_obj_name, "_set_obj_name must be set up");
+
 		auto name_info = VkDebugUtilsObjectNameInfoEXT{
 			.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
 			.pNext = nullptr,

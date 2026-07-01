@@ -68,7 +68,7 @@ namespace types {
 			i++;
 		}
 
-		assert(_textures.insert(std::move(texture)));
+		log_assert(_textures.insert(std::move(texture)), "Couldn't insert texture");
 
 		return  {id};
 	}

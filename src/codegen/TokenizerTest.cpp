@@ -1232,7 +1232,7 @@ namespace cg {
 			T::identifier("value"),
 			T::exp_e(),
 			T::raw("\";"),
-			T::padding("\n"),
+			T::newline(),
 			T::eof(),
 		};
 

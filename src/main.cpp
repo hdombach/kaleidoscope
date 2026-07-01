@@ -14,7 +14,7 @@ int parse_args(int argc, char **argv) {
 		util::g_log_flags |= util::Importance::DEBUG | util::Importance::INFO;
 		return 1;
 	} else if (strcmp(argv[0], "-vv") == 0) {
-		util::g_log_flags |= util::Importance::DEBUG | util::Importance::INFO | util::Importance::TRACE;
+		util::g_log_flags |= util::Importance::DEBUG | util::Importance::INFO | util::Importance::TRACE | util::Importance::MEMORY;
 		return 1;
 	} else {
 		log_fatal_error() << "Unknown arg: " << argv[0] << std::endl;

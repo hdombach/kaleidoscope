@@ -10,29 +10,21 @@ elif [ $# -eq 1 ]; then
 BUILD_TYPE="$1"
 fi
 
+echo "Installing dependencies"
 mkdir build
 conan install . --output-folder=build --build=missing -s build_type=Debug
 conan install . --output-folder=build --build=missing -s build_type=Release
 
-echo "Build type is $BUILD_TYPE"
+if [ -n "$KALEIDOSCOPE_CXX" ]; then
+	CXX="$KALEIDOSCOPE_CXX"
+fi
 
-CMAKE_FLAGS="-DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE"
-CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -G Ninja"
+echo "Setting up build system"
 
 if [ "$BUILD_TYPE" = "Debug" ]; then
-	CMAKE_FLAGS"$CMAKE_FLAGS -O0"
+	meson setup --native-file build/conan_meson_native.ini --buildtype debug build
 else
-	CMAKE_FLAGS"$CMAKE_FLAGS -O2"
-
+	meson setup --native-file build/conan_meson_native.ini build
 fi
 
-if [ -n "$KALEIDOSCOPE_CC" ]; then
-	CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_C_COMPILER=$KALEIDOSCOPE_CC"
-fi
-
-if [ -n "$KALEIDOSCOPE_CXX" ]; then
-	CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_CXX_COMPILER=$KALEIDOSCOPE_CXX"
-fi
-
-
-cmake -B build $CMAKE_FLAGS
+echo "Run \"meson compile -C build\" to compile"

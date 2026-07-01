@@ -1,9 +1,10 @@
 from conan import ConanFile
 from conan.tools.files import copy
-from conan.tools.cmake import cmake_layout
+from conan.tools.build import check_min_cppstd
 
 class MainRecipe(ConanFile):
-    generators = "CMakeToolchain", "CMakeDeps"
+    generators = "MesonToolchain", "PkgConfigDeps"
+
     settings = "os", "compiler", "build_type", "arch"
 
     def requirements(self):
@@ -21,3 +22,7 @@ class MainRecipe(ConanFile):
         for dep in self.dependencies.values():
             for srcdir in dep.cpp_info.srcdirs:
                 copy(self, "*", srcdir, self.build_folder)
+
+
+    def validate(self):
+        check_min_cppstd(self, "20")
