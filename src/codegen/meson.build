@@ -36,7 +36,7 @@ codegen_libs = [
 codegen = static_library(
 	'codegen',
 	codegen_sources,
-	include_directories: [root_include],
+	include_directories: [src_include],
 	dependencies: codegen_deps,
 	link_with: codegen_libs,
 )

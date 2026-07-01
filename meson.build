@@ -6,7 +6,8 @@ project(
 )
 
 
-root_include = include_directories('src')
+root_include = include_directories('.')
+src_include = include_directories('src')
 
 glm = dependency('glm')
 glfw3 = dependency('glfw3')
@@ -49,7 +50,7 @@ libs = [
 project_target = executable(
 	meson.project_name(),
 	source_files,
-	include_directories: [root_include],
+	include_directories: [src_include],
 	dependencies: dependencies,
 	link_with: libs
 )
@@ -57,12 +58,7 @@ project_target = executable(
 executable(
 	'cfg_tests',
   cfg_test_sources,
-  include_directories: [root_include],
+  include_directories: [src_include],
 	dependencies: codegen_deps,
 	link_with: codegen,
-)
-
-executable(
-	'doc_engine',
-	link_with: doc_engine,
 )

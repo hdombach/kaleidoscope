@@ -21,6 +21,6 @@ util_deps = [
 util = static_library(
 	'util',
 	util_sources,
-  include_directories: [root_include],
+  include_directories: [src_include],
 	dependencies: util_deps,
 )

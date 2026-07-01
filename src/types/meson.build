@@ -14,7 +14,7 @@ type_sources = [
 types = static_library(
 	'types',
 	type_sources,
-  include_directories: [root_include],
+  include_directories: [src_include],
 	dependencies: [
 		glm,
 		glfw3,

@@ -20,10 +20,19 @@ serial_libs = [
 	ui,
 ]
 
-doc_engine = static_library(
+doc_engine = executable(
 	'doc_engine',
 	serial_sources,
-	include_directories: [root_include],
+	include_directories: [src_include],
 	dependencies: serial_deps,
 	link_with: serial_libs,
+)
+
+example_serial = custom_target(
+	'example_serial',
+	input: 'example.dt',
+	output: ['example.cpp', 'example.hpp'],
+	command: [doc_engine, '@INPUT@', '-d', 'gen', '-o', '@OUTDIR@'],
+	env: {'KALEIDOSCOPE_PATH': meson.project_source_root()},
+	build_by_default: true,
 )

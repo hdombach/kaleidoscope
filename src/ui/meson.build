@@ -16,7 +16,7 @@ ui_deps = [
 ui = static_library(
 	'ui',
 	ui_sources,
-	include_directories: [root_include],
+	include_directories: [src_include],
 	dependencies: ui_deps,
 	link_with: [vulkan_wrap],
 )

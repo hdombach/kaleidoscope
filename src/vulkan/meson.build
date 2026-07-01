@@ -45,7 +45,7 @@ vulkan_deps = [
 vulkan_wrap = static_library(
 	'vulkan_wrap',
 	vulkan_sources,
-  include_directories: [root_include],
+  include_directories: [src_include],
 	dependencies: vulkan_deps,
   link_with: util
 )
