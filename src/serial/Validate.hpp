@@ -18,6 +18,7 @@
 namespace serial {
 	using Node = cg::AstNode;
 	using TemplObj = cg::TemplObj;
+	class VVersion;
 
 	class VEnumerator {
 		public:
@@ -80,7 +81,7 @@ namespace serial {
 	class VFieldType {
 		public:
 			VFieldType() = default;
-			static util::Result<VFieldType, Error> create(Node const &node);
+			static util::Result<VFieldType, Error> create(Node const &node, VVersion &version);
 
 			VFieldType(VFieldType const &other);
 			VFieldType(VFieldType &&other) = default;
@@ -92,7 +93,12 @@ namespace serial {
 			 */
 			std::string cpp_str() const;
 
+			bool is_prim() const;
+			bool is_opt() const;
+
 		private:
+			bool _is_prim;
+			bool _is_opt;
 			std::string _cpp_str_frag = "";
 			std::unique_ptr<VFieldType> _enclosing_type = nullptr;
 
@@ -105,13 +111,15 @@ namespace serial {
 		public:
 			VStructField() = default;
 
-			static util::Result<VStructField, Error> create(Node const &node);
+			static util::Result<VStructField, Error> create(Node const &node, VVersion &version);
 
 			TemplObj templ_obj() const;
 
 			std::string const &name() const;
 
 			VFieldType const &spec() const;
+
+			std::string transaction_name() const;
 		private:
 			std::string _name;
 			VFieldType _spec;
@@ -120,7 +128,7 @@ namespace serial {
 	class VStructDef {
 		public:
 			VStructDef() = default;
-			static util::Result<VStructDef, Error> create(Node const &node, std::string const &filename);
+			static util::Result<VStructDef, Error> create(Node const &node, VVersion &version, std::string const &filename);
 
 			TemplObj templ_obj() const;
 
@@ -130,6 +138,7 @@ namespace serial {
 
 			std::map<std::string, VStructField> const &fields() const;
 		private:
+			VVersion *_version = nullptr;
 			std::string _name;
 			std::string _filename;
 			std::map<std::string, VStructField> _fields;
@@ -151,13 +160,17 @@ namespace serial {
 
 	class VVersion {
 		public:
+			using Ptr = std::unique_ptr<VVersion>;
+
+		public:
 			VVersion() = default;
 
-			static util::Result<VVersion, Error> create(Node const &node, std::string const &filename);
+			static util::Result<Ptr, Error> create(Node const &node, std::string const &filename);
 
 			TemplObj templ_obj(std::string const &filename) const;
 
 			VVersionValue const &value() const;
+			bool is_prim(std::string const &name) const;
 		private:
 			util::Result<void, Error> _check_identifier(
 				std::string const &name,
@@ -182,6 +195,6 @@ namespace serial {
 
 		private:
 			std::vector<std::string> _includes;
-			std::map<VVersionValue, VVersion> _versions;
+			std::map<VVersionValue, VVersion::Ptr> _versions;
 	};
 }

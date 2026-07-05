@@ -20,6 +20,11 @@ serial_libs = [
 	ui,
 ]
 
+serial_files = [
+	meson.project_source_root() + '/assets/serial/Template.cpp.cg',
+	meson.project_source_root() + '/assets/serial/Template.hpp.cg',
+]
+
 doc_engine = executable(
 	'doc_engine',
 	serial_sources,
@@ -32,7 +37,16 @@ example_serial = custom_target(
 	'example_serial',
 	input: 'example.dt',
 	output: ['example.cpp', 'example.hpp'],
+	depend_files: serial_files,
 	command: [doc_engine, '@INPUT@', '-d', 'gen', '-o', '@OUTDIR@'],
 	env: {'KALEIDOSCOPE_PATH': meson.project_source_root()},
 	build_by_default: true,
+)
+
+lib_example_serial = static_library(
+	'example_serial',
+	example_serial,
+	include_directories: [src_include],
+	dependencies: serial_deps,
+	link_with: serial_libs,
 )

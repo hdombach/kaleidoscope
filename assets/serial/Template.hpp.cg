@@ -5,6 +5,7 @@
 
 #include "serial/Container.hpp"
 #include "util/UIDList.hpp"
+#include "serial/Object.hpp"
 
 namespace serial {
 	{% for version in versions %}
@@ -35,13 +36,55 @@ namespace serial {
 		std::ostream &print_{{b.name}}(std::ostream &os, {{b.name}} const &val);
 		{% endfor %}
 
+
+		/**** Objects ****/
+
 		{% for s in version.structs %}
-		class {{s.name}} {
+		/**** {{s.name}} ****/
+		class {{s.name}}: public Object {
 			public:
+				static const uint32_t TYPE_ID = 1; // TODO
+
+			{% for f in s.fields %}
+			{% if f.is_primitive %}
+				class {{f.transaction_name}}: public Transaction {
+					public:
+						{{f.transaction_name}}({{f.type_str}} value);
+
+						static Ptr create({{f.type_str}} value);
+
+						Ptr apply(Object &obj);
+
+					private:
+						{{f.type_str}} _value;
+				};
+			{% else %}
+				class {{f.transaction_name}}: public Transaction {
+					public:
+						{{f.transaction_name}}(Transaction::Ptr &&child_t);
+
+						static Ptr create(Transaction::Ptr &&child_t);
+
+						Ptr apply(Object &obj);
+
+					private:
+						Transaction::Ptr _child_t;
+				};
+			{% endif %}
+			{% endfor %}
+			public:
+				uint32_t type_id() const;
+				const char *type_str() const;
+
 			{% for f in s.fields %}
 				{{f.type_str}} const &{{f.name}}() const;
-			{% endfor %}
+				{% if f.is_primitive %}
+				void set_{{f.name}}({{f.type_str}} const &value);
+				{% else %}
+				{{f.type_str}} &{{f.name}}();
+				{% endif %}
 
+			{% endfor %}
 			private:
 			{% for f in s.fields %}
 				{{f.type_str}} _{{f.name}};

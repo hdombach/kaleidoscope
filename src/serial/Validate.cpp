@@ -241,10 +241,39 @@ namespace serial {
 		}
 	}
 
-	util::Result<VFieldType, Error> VFieldType::create(Node const &node) {
+	inline bool _is_primitive(cg::Token const &tok, VVersion &v) {
+		switch (T(tok.type())) {
+			case T::Float:
+			case T::Double:
+			case T::U8:
+			case T::U16:
+			case T::U32:
+			case T::U64:
+			case T::I8:
+			case T::I16:
+			case T::I32:
+			case T::I64:
+			case T::String:
+				return true;
+			case T::Array:
+			case T::Optional:
+			case T::UIDList:
+				return false;
+			case T::Identifier:
+				return v.is_prim(tok.content());
+			default:
+				log_warning() << "Unrecognized token: " << tok.type() << std::endl;
+				return false;
+		}
+	}
+
+	util::Result<VFieldType, Error> VFieldType::create(Node const &node, VVersion &version) {
 		log_assert(node.cfg_rule() == "field-type", "Must pass field-type to TypeSpec::create");
 
 		auto t = VFieldType();
+
+		t._is_prim = _is_primitive(node.begin()->tok(), version);
+		t._is_opt = T(node.begin()->tok().type()) == T::Optional;
 
 		if (node.child_count() == 1) {
 			t._cpp_str_frag = _get_cpp_str_frag(node.begin()->tok());
@@ -255,7 +284,7 @@ namespace serial {
 				return Error(ErrorType::PARSE_ERROR, "Expecting field-type node in generic type spec", err.value());
 			}
 			auto enclosed = VFieldType();
-			if (auto err = VFieldType::create(*enclosed_node).move_or(enclosed)) {
+			if (auto err = VFieldType::create(*enclosed_node, version).move_or(enclosed)) {
 				return Error(ErrorType::PARSE_ERROR, "Cannot parse enclosed generic type spec", err.value());
 			}
 			t._enclosing_type = std::make_unique<VFieldType>(std::move(enclosed));
@@ -263,11 +292,20 @@ namespace serial {
 			return Error(ErrorType::PARSE_ERROR, "Expecting 1 or four child nodes");
 		}
 
+		if (t._is_opt) {
+			log_assert(t._enclosing_type.get(), "Optional type must contain an enclosing type");
+			if (t._enclosing_type->is_opt()) {
+				return Error(ErrorType::PARSE_ERROR, "Cannot nest optional.", node.location());
+			}
+		}
+
 		return t;
 	}
 
 	VFieldType::VFieldType(VFieldType const &other) {
 		_cpp_str_frag = other._cpp_str_frag;
+		_is_prim = other._is_prim;
+		_is_opt = other._is_opt;
 		if (other._enclosing_type) {
 			_enclosing_type = std::make_unique<VFieldType>(*other._enclosing_type);
 		}
@@ -275,6 +313,8 @@ namespace serial {
 
 	VFieldType &VFieldType::operator=(VFieldType const &other) {
 		_cpp_str_frag = other._cpp_str_frag;
+		_is_prim = other._is_prim;
+		_is_opt = other._is_opt;
 		if (other._enclosing_type) {
 			_enclosing_type = std::make_unique<VFieldType>(*other._enclosing_type);
 		}
@@ -289,11 +329,19 @@ namespace serial {
 		}
 	}
 
+	bool VFieldType::is_prim() const {
+		return _is_prim;
+	}
+
+	bool VFieldType::is_opt() const {
+		return _is_opt;
+	}
+
 	bool VFieldType::_is_generic() const {
 		return _enclosing_type.get() != nullptr;
 	}
 
-	util::Result<VStructField, Error> VStructField::create(Node const &node) {
+	util::Result<VStructField, Error> VStructField::create(Node const &node, VVersion &version) {
 		log_assert(node.cfg_rule() == "struct-field", "Must pass property to TypeDef::create");
 
 		auto f = VStructField();
@@ -301,7 +349,7 @@ namespace serial {
 		if (auto err = node.child_with_cfg("field-type").move_or(spec_node)) {
 			return Error(ErrorType::PARSE_ERROR, "property doesn't have child node of type field-type", err.value());
 		}
-		if (auto err = VFieldType::create(*spec_node).move_or(f._spec)) {
+		if (auto err = VFieldType::create(*spec_node, version).move_or(f._spec)) {
 			return Error(ErrorType::PARSE_ERROR, "Couldn't parse property type", err.value());
 		}
 
@@ -317,7 +365,10 @@ namespace serial {
 	TemplObj VStructField::templ_obj() const {
 		return {
 			{"type_str", _spec.cpp_str()},
+			{"is_primitive", _spec.is_prim()},
+			{"is_optional", _spec.is_opt()},
 			{"name", _name},
+			{"transaction_name", transaction_name()},
 		};
 	}
 
@@ -325,7 +376,15 @@ namespace serial {
 
 	VFieldType const &VStructField::spec() const { return _spec; }
 
-	util::Result<VStructDef, Error> VStructDef::create(Node const &node, std::string const &filename) {
+	std::string VStructField::transaction_name() const {
+		if (_spec.is_prim()) {
+			return util::f("TSet_", _name);
+		} else {
+			return util::f("TModify_", _name);
+		}
+	}
+
+	util::Result<VStructDef, Error> VStructDef::create(Node const &node, VVersion &version, std::string const &filename) {
 		log_assert(node.cfg_rule() == "struct-def", "Must pass struct-def to StructDef::create");
 
 		auto s = VStructDef();
@@ -336,10 +395,11 @@ namespace serial {
 		}
 		s._name = name_node->consumed_all();
 		s._filename = filename;
+		s._version = &version;
 
 		for (auto field_node : node.children_with_cfg("struct-field")) {
 			auto field = VStructField();
-			if (auto err = VStructField::create(*field_node).move_or(field)) {
+			if (auto err = VStructField::create(*field_node, version).move_or(field)) {
 				return Error(ErrorType::PARSE_ERROR, "Couldn't parse struct field", err.value());
 			}
 			s._fields[field.name()] = std::move(field);
@@ -403,15 +463,15 @@ namespace serial {
 		return minor < other.minor;
 	}
 
-	util::Result<VVersion, Error> VVersion::create(Node const &node, std::string const &filename) {
-		VVersion v;
+	util::Result<VVersion::Ptr, Error> VVersion::create(Node const &node, std::string const &filename) {
+		Ptr v = std::make_unique<VVersion>();
 		log_assert(node.cfg_rule() == "version-decl", "Must pass version-decl AstNode to Version::create");
 
 		Node *value_node;
 		if (auto err = node.child_with_cfg("version-frag").move_or(value_node)) {
 			return Error(ErrorType::INVALID_STATE, "version-decl does not contain a version-frag child node", err.value());
 		}
-		if (auto err = VVersionValue::create(*value_node).move_or(v._value)) {
+		if (auto err = VVersionValue::create(*value_node).move_or(v->_value)) {
 			return Error(ErrorType::VALIDATE_ERROR, "Could not validate version fragment", err.value());
 		}
 
@@ -424,31 +484,31 @@ namespace serial {
 			if (child.cfg_rule() == "enum-decl") {
 				auto e = VEnum();
 				if (auto err = VEnum::create(child, filename).move_or(e)) {
-					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate enum in version ", v._value.namespace_str()), err.value());
+					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate enum in version ", v->_value.namespace_str()), err.value());
 				}
-				if (auto err = v._check_identifier(e.name()).move_or()) {
+				if (auto err = v->_check_identifier(e.name()).move_or()) {
 					return err.value();
 				}
-				v._enums[e.name()] = e;
+				v->_enums[e.name()] = e;
 			} else if (child.cfg_rule() == "bitfield-decl") {
 				auto b = VBitfield();
 				if (auto err = VBitfield::create(child, filename).move_or(b)) {
-					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate bitfield in version ", v._value.namespace_str()), err.value());
+					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate bitfield in version ", v->_value.namespace_str()), err.value());
 				}
-				if (auto err = v._check_identifier(b.name()).move_or()) {
+				if (auto err = v->_check_identifier(b.name()).move_or()) {
 					return err.value();
 				}
-				v._bitfields[b.name()] = b;
+				v->_bitfields[b.name()] = b;
 			} else if (child.cfg_rule() == "struct-def") {
 				auto s = VStructDef();
-				if (auto err = VStructDef::create(child, filename).move_or(s)) {
-					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate struct-def in version ", v._value.namespace_str()), err.value());
+				if (auto err = VStructDef::create(child, *v, filename).move_or(s)) {
+					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate struct-def in version ", v->_value.namespace_str()), err.value());
 				}
-				v._structs[s.name()] = s;
+				v->_structs[s.name()] = s;
 			}
 		}
 
-		return {v};
+		return {std::move(v)};
 	}
 
 	TemplObj VVersion::templ_obj(std::string const &filename) const {
@@ -480,6 +540,10 @@ namespace serial {
 
 	VVersionValue const &VVersion::value() const {
 		return _value;
+	}
+
+	bool VVersion::is_prim(std::string const &name) const {
+		return _enums.contains(name) || _bitfields.contains(name);
 	}
 
 	util::Result<void, Error> VVersion::_check_identifier(
@@ -523,11 +587,11 @@ namespace serial {
 				}
 				_includes.push_back(str);
 			} else if (child.cfg_rule() == "version-decl") {
-				VVersion v;
+				VVersion::Ptr v;
 				if (auto err = VVersion::create(child, filename).move_or(v)) {
 					return Error(ErrorType::PARSE_ERROR, "Could not parse version", err.value());
 				}
-				_versions[v.value()] = v;
+				_versions[v->value()] = std::move(v);
 			}
 		}
 		return {};
@@ -545,7 +609,7 @@ namespace serial {
 		auto header_path = util::f(filepath.stem().c_str(), ".hpp");
 
 		for (auto &[name, v] : _versions) {
-			versions.push_back(v.templ_obj(filename));
+			versions.push_back(v->templ_obj(filename));
 		}
 		return {
 			{"versions", versions},
