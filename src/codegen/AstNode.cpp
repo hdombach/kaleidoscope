@@ -173,7 +173,7 @@ namespace cg {
 
 	util::Result<AstNode*, Error> AstNode::child_with_tok(int type) const {
 		for (auto &child : *this) {
-			if (child.tok().type() == type) {
+			if (child.type() == Type::Leaf && child.tok().type() == type) {
 				return &child;
 			}
 		}
@@ -181,6 +181,7 @@ namespace cg {
 	}
 
 	Token const &AstNode::tok() const {
+		log_assert(_type == Type::Leaf, "Can only call tok for leaf AstNodes");
 		return *_token;
 	}
 

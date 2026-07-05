@@ -47,9 +47,9 @@ namespace serial {
 
 			{% for f in s.fields %}
 			{% if f.is_primitive %}
-				class {{f.transaction_name}}: public Transaction {
+				class {{f.set_trans_name}}: public Transaction {
 					public:
-						{{f.transaction_name}}({{f.type_str}} value);
+						{{f.set_trans_name}}({{f.type_str}} value);
 
 						static Ptr create({{f.type_str}} value);
 
@@ -59,9 +59,9 @@ namespace serial {
 						{{f.type_str}} _value;
 				};
 			{% else %}
-				class {{f.transaction_name}}: public Transaction {
+				class {{f.mod_trans_name}}: public Transaction {
 					public:
-						{{f.transaction_name}}(Transaction::Ptr &&child_t);
+						{{f.mod_trans_name}}(Transaction::Ptr &&child_t);
 
 						static Ptr create(Transaction::Ptr &&child_t);
 

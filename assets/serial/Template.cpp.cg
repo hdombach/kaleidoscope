@@ -37,13 +37,13 @@ namespace serial {
 		/**** Transactions for {{s.name}} ****/
 		{% for f in s.fields %}
 		{% if f.is_primitive %}
-		{{s.name}}::{{f.transaction_name}}::{{f.transaction_name}}({{f.type_str}} value): _value(value) {}
+		{{s.name}}::{{f.set_trans_name}}::{{f.set_trans_name}}({{f.type_str}} value): _value(value) {}
 
-		Transaction::Ptr {{s.name}}::{{f.transaction_name}}::create({{f.type_str}} value) {
-			return Ptr(new {{f.transaction_name}}(value));
+		Transaction::Ptr {{s.name}}::{{f.set_trans_name}}::create({{f.type_str}} value) {
+			return Ptr(new {{f.set_trans_name}}(value));
 		}
 
-		Transaction::Ptr {{s.name}}::{{f.transaction_name}}::apply(Object &obj) {
+		Transaction::Ptr {{s.name}}::{{f.set_trans_name}}::apply(Object &obj) {
 			log_assert(
 				obj.type_id() == TYPE_ID,
 				util::f("Expecting object of type {{f.type_str}} but got ", obj.type_str())
@@ -55,16 +55,16 @@ namespace serial {
 			cast_obj.set_{{f.name}}(_value);
 			cast_obj._ignore_end();
 
-			return {{f.transaction_name}}::create(old_value);
+			return {{f.set_trans_name}}::create(old_value);
 		}
 		{% else %}
-		{{s.name}}::{{f.transaction_name}}::{{f.transaction_name}}(Transaction::Ptr &&child_t): _child_t(std::move(child_t)) {}
+		{{s.name}}::{{f.mod_trans_name}}::{{f.mod_trans_name}}(Transaction::Ptr &&child_t): _child_t(std::move(child_t)) {}
 
-		Transaction::Ptr {{s.name}}::{{f.transaction_name}}::create(Transaction::Ptr &&child_t) {
-			return Ptr(new {{f.transaction_name}}(std::move(child_t)));
+		Transaction::Ptr {{s.name}}::{{f.mod_trans_name}}::create(Transaction::Ptr &&child_t) {
+			return Ptr(new {{f.mod_trans_name}}(std::move(child_t)));
 		}
 
-		Transaction::Ptr {{s.name}}::{{f.transaction_name}}::apply(Object &obj) {
+		Transaction::Ptr {{s.name}}::{{f.mod_trans_name}}::apply(Object &obj) {
 			log_assert(
 				obj.type_id() == TYPE_ID,
 				util::f("Expecting object of type {{f.type_str}} but got ", obj.type_str())
@@ -72,7 +72,7 @@ namespace serial {
 
 			{{s.name}} &cast_obj = static_cast<{{s.name}}&>(obj);
 			cast_obj._ignore_start();
-			//auto t = {{f.transaction_name}}::create(_child_t->apply(cast_obj.{{f.name}}()));
+			//auto t = {{f.mod_trans_name}}::create(_child_t->apply(cast_obj.{{f.name}}()));
 			cast_obj._ignore_end();
 
 			//return t;
@@ -98,7 +98,7 @@ namespace serial {
 		{% if f.is_primitive %}
 		void {{s.name}}::set_{{f.name}}({{f.type_str}} const &value) {
 			_implicit_start();
-			_add_transaction({{f.transaction_name}}::create(_{{f.name}}));
+			_add_transaction({{f.set_trans_name}}::create(_{{f.name}}));
 			_{{f.name}} = value;
 			_implicit_end();
 		}

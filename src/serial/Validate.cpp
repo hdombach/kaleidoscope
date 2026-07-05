@@ -241,39 +241,14 @@ namespace serial {
 		}
 	}
 
-	inline bool _is_primitive(cg::Token const &tok, VVersion &v) {
-		switch (T(tok.type())) {
-			case T::Float:
-			case T::Double:
-			case T::U8:
-			case T::U16:
-			case T::U32:
-			case T::U64:
-			case T::I8:
-			case T::I16:
-			case T::I32:
-			case T::I64:
-			case T::String:
-				return true;
-			case T::Array:
-			case T::Optional:
-			case T::UIDList:
-				return false;
-			case T::Identifier:
-				return v.is_prim(tok.content());
-			default:
-				log_warning() << "Unrecognized token: " << tok.type() << std::endl;
-				return false;
-		}
-	}
-
 	util::Result<VFieldType, Error> VFieldType::create(Node const &node, VVersion &version) {
 		log_assert(node.cfg_rule() == "field-type", "Must pass field-type to TypeSpec::create");
 
 		auto t = VFieldType();
 
-		t._is_prim = _is_primitive(node.begin()->tok(), version);
 		t._is_opt = T(node.begin()->tok().type()) == T::Optional;
+		t._tok = &node.begin()->tok();
+		t._version = &version;
 
 		if (node.child_count() == 1) {
 			t._cpp_str_frag = _get_cpp_str_frag(node.begin()->tok());
@@ -303,8 +278,9 @@ namespace serial {
 	}
 
 	VFieldType::VFieldType(VFieldType const &other) {
+		_version = other._version;
+		_tok = other._tok;
 		_cpp_str_frag = other._cpp_str_frag;
-		_is_prim = other._is_prim;
 		_is_opt = other._is_opt;
 		if (other._enclosing_type) {
 			_enclosing_type = std::make_unique<VFieldType>(*other._enclosing_type);
@@ -312,8 +288,9 @@ namespace serial {
 	}
 
 	VFieldType &VFieldType::operator=(VFieldType const &other) {
+		_version = other._version;
+		_tok = other._tok;
 		_cpp_str_frag = other._cpp_str_frag;
-		_is_prim = other._is_prim;
 		_is_opt = other._is_opt;
 		if (other._enclosing_type) {
 			_enclosing_type = std::make_unique<VFieldType>(*other._enclosing_type);
@@ -330,8 +307,33 @@ namespace serial {
 	}
 
 	bool VFieldType::is_prim() const {
-		return _is_prim;
-	}
+		log_assert(_tok, "_tok must be set");
+		log_assert(_version, "_version must be set");
+		switch (T(_tok->type())) {
+			case T::Float:
+			case T::Double:
+			case T::U8:
+			case T::U16:
+			case T::U32:
+			case T::U64:
+			case T::I8:
+			case T::I16:
+			case T::I32:
+			case T::I64:
+			case T::String:
+				return true;
+			case T::Optional:
+				log_assert(_enclosing_type.get(), "Enclosing type must be set for optional type");
+				return _enclosing_type->is_prim();
+			case T::Array:
+			case T::UIDList:
+				return false;
+			case T::Identifier:
+				return _version->is_prim(_tok->content());
+			default:
+				log_warning() << "Unrecognized token: " << _tok->type() << std::endl;
+				return false;
+		}	}
 
 	bool VFieldType::is_opt() const {
 		return _is_opt;
@@ -368,21 +370,14 @@ namespace serial {
 			{"is_primitive", _spec.is_prim()},
 			{"is_optional", _spec.is_opt()},
 			{"name", _name},
-			{"transaction_name", transaction_name()},
+			{"set_trans_name", util::f("TSet_", _name)},
+			{"mod_trans_name", util::f("TModify_", _name)},
 		};
 	}
 
 	std::string const &VStructField::name() const { return _name; }
 
 	VFieldType const &VStructField::spec() const { return _spec; }
-
-	std::string VStructField::transaction_name() const {
-		if (_spec.is_prim()) {
-			return util::f("TSet_", _name);
-		} else {
-			return util::f("TModify_", _name);
-		}
-	}
 
 	util::Result<VStructDef, Error> VStructDef::create(Node const &node, VVersion &version, std::string const &filename) {
 		log_assert(node.cfg_rule() == "struct-def", "Must pass struct-def to StructDef::create");

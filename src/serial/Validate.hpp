@@ -78,6 +78,15 @@ namespace serial {
 			std::vector<VBFField> _fields;
 	};
 
+	/**
+	 * @brief The type descrption that is provided for a struct field
+	 *
+	 * There are three types of types. Primitives, compound, and optional.
+	 * Primitive types will trigger transactions that set the value
+	 * Compound types will trigger transactions that modify an underlying type
+	 * Optional types will have the same transactions as the enclosing type with
+	 * an extra transaction added for setting to null.
+	 */
 	class VFieldType {
 		public:
 			VFieldType() = default;
@@ -97,7 +106,9 @@ namespace serial {
 			bool is_opt() const;
 
 		private:
-			bool _is_prim;
+			// Used to identify what type it is based off of tok type
+			cg::Token const *_tok = nullptr;
+			VVersion const *_version = nullptr;
 			bool _is_opt;
 			std::string _cpp_str_frag = "";
 			std::unique_ptr<VFieldType> _enclosing_type = nullptr;
@@ -118,8 +129,6 @@ namespace serial {
 			std::string const &name() const;
 
 			VFieldType const &spec() const;
-
-			std::string transaction_name() const;
 		private:
 			std::string _name;
 			VFieldType _spec;

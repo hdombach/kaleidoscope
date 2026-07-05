@@ -279,10 +279,12 @@ namespace cg {
 
 		if (node.cfg_rule() == "whitespace") {
 			return _cg_default(node, args);
-		} else if (node.tok().type() == int(T::Pad)) {
-			return _cg_recursive(node, args);
-		} else if (node.tok().type() == int(T::Ident)) {
-			return _cg_identifier(node, args);
+		} else if (node.type() == AstNode::Type::Leaf) {
+			if (node.tok().type() == int(T::Pad)) {
+				return _cg_recursive(node, args);
+			} else if (node.tok().type() == int(T::Ident)) {
+				return _cg_identifier(node, args);
+			}
 		} else if (node.cfg_rule() == "raw") {
 			return _cg_recursive(node, args);
 		} else if (node.cfg_rule() == "line") {
@@ -316,9 +318,8 @@ namespace cg {
 			return {""};
 		} else if (node.cfg_rule() == "sfrag_endfor") {
 			return {""};
-		} else {
-			return Error(ErrorType::INTERNAL, util::f("Unimplimented AstNode type: ", std::string(node.cfg_rule())));
 		}
+		return Error(ErrorType::INTERNAL, util::f("Unimplimented AstNode type: ", std::string(node.cfg_rule())));
 	}
 
 	void TemplGen::_trim_padding() {
@@ -410,10 +411,10 @@ namespace cg {
 			auto name = child.cfg_rule();
 			if (name == "whitespace") {
 				continue;
-			} else if (child.tok().type() == int(T::ExpB)) {
+			} else if (child.type() == AstNode::Type::Leaf && child.tok().type() == int(T::ExpB)) {
 				//TODO: padding
 				continue;
-			} else if (child.tok().type() == int(T::ExpE)) {
+			} else if (child.type() == AstNode::Type::Leaf && child.tok().type() == int(T::ExpE)) {
 				//TODO: padding
 				continue;
 			} else {
@@ -739,16 +740,20 @@ namespace cg {
 			auto name = child.cfg_rule();
 			if (name == "whitespace") {
 				continue;
-			} else if (child.tok().type() == int(T::ParanOpen)) {
-				continue;
-			} else if (child.tok().type() == int(T::ParanClose)) {
-				continue;
-			} else if (child.tok().type() == int(T::Ident)) {
-				return _eval_exp_id(child, args);
-			} else if (child.tok().type() == int(T::IntConst)) {
-				return _eval_exp_int(child, args);
-			} else if (child.tok().type() == int(T::StrConst)) {
-				return _eval_exp_str(child, args);
+			} else if (child.type() == AstNode::Type::Leaf) {
+				if (child.tok().type() == int(T::ParanOpen)) {
+					continue;
+				} else if (child.tok().type() == int(T::ParanClose)) {
+					continue;
+				} else if (child.tok().type() == int(T::Ident)) {
+					return _eval_exp_id(child, args);
+				} else if (child.tok().type() == int(T::IntConst)) {
+					return _eval_exp_int(child, args);
+				} else if (child.tok().type() == int(T::StrConst)) {
+					return _eval_exp_str(child, args);
+				} else {
+					return Error(ErrorType::INTERNAL, util::f("Unknown node passed to _eval_exp_sing: ", child.str()));
+				}
 			} else if (name == "exp") {
 				return _eval(child, args);
 			} else {
