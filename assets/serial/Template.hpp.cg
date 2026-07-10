@@ -77,6 +77,9 @@ namespace serial {
 				const char *type_str() const;
 
 			{% for f in s.fields %}
+				{% if f.is_optional %}
+				bool has_{{f.name}}() const;
+				{% endif %}
 				{{f.type_str}} const &{{f.name}}() const;
 				{% if f.is_primitive %}
 				void set_{{f.name}}({{f.type_str}} const &value);

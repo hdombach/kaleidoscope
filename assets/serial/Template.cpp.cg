@@ -36,6 +36,11 @@ namespace serial {
 		{% for s in version.structs %}
 		/**** Transactions for {{s.name}} ****/
 		{% for f in s.fields %}
+		{% if f.is_optional %}
+		bool {{s.name}}::has_{{f.name}}() const {
+			return _{{f.name}}.has_value();
+		}
+		{% endif %}
 		{% if f.is_primitive %}
 		{{s.name}}::{{f.set_trans_name}}::{{f.set_trans_name}}({{f.type_str}} value): _value(value) {}
 
@@ -72,7 +77,12 @@ namespace serial {
 
 			{{s.name}} &cast_obj = static_cast<{{s.name}}&>(obj);
 			cast_obj._ignore_start();
-			//auto t = {{f.mod_trans_name}}::create(_child_t->apply(cast_obj.{{f.name}}()));
+			{% if f.is_optional %}
+			log_assert(cast_obj._{{f.name}}.has_value(), "Must call has_{{f.name}} before accessing {{f.name}}");
+			//auto t = {{f.mod_trans_name}}::create(_child_t->apply(cast_obj._{{f.name}}.value()));
+			{% else %}
+			//auto t = {{f.mod_trans_name}}::create(_child_t->apply(cast_obj._{{f.name}}));
+			{% endif %}
 			cast_obj._ignore_end();
 
 			//return t;
