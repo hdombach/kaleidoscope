@@ -1,10 +1,12 @@
 #pragma once
 
+#include <concepts>
 #include <vector>
 #include "Object.hpp"
 #include "Document.hpp"
 #include "util/log.hpp"
 #include "util/Util.hpp"
+#include "util/UIDList.hpp"
 
 namespace serial {
 	template<typename T>
@@ -24,10 +26,10 @@ namespace serial {
 
 			class TRemove: public Transaction {
 				public:
-					TRemove(size_type idx): _idx(idx) {}
+					TRemove(size_type id): _id(id) {}
 
-					static Ptr create(size_type idx) {
-						return new TRemove(idx);
+					static Ptr create(size_type id) {
+						return new TRemove(id);
 					}
 
 					Ptr apply(Object &obj) {
@@ -35,15 +37,15 @@ namespace serial {
 						Vector<T> &vobj = obj;
 
 						vobj._ignore_start();
-						auto element = std::move(vobj[_idx]);
-						vobj.remove(_idx);
+						auto element = std::move(vobj[_id]);
+						vobj.remove(_id);
 						vobj._ignore_end();
 
-						return TInsert::create(_idx, std::move(element));
+						return TInsert::create(_id, std::move(element));
 					}
 
 				private:
-					size_type _idx = 0;
+					size_type _id = 0;
 			};
 
 			class TInsert: public Transaction {
@@ -120,5 +122,113 @@ namespace serial {
 
 		private:
 			Container _v;
+	};
+
+	template<std::derived_from<Object> T>
+	class UIDList: public Object {
+		public:
+			static const uint32_t TYPE_ID = 1;
+
+			class TRemove: public Transaction {
+				public:
+					TRemove(size_t id): _id(id) {}
+
+					static Ptr create(size_t id) {
+						return new TRemove(id);
+					}
+
+					Ptr apply(Object &obj) {
+						log_assert(obj.type_id() == TYPE_ID, util::f("Expecting object of type UIDList but got ", obj.type_str()));
+
+						UIDList<T> &cast_obj = obj;
+
+						cast_obj._ignore_start();
+						auto element = std::move(cast_obj[_id]);
+						//TODO: remove to allow reusing ids
+						cast_obj._ignore_end();
+
+						return TInsert::create(_id, std::move(element));
+					}
+
+				private:
+					size_t _id = 0;
+			};
+
+			class TInsert: public Transaction {
+				public:
+					TInsert(size_t id, T &&value): _id(id), _value(std::move(value)) {}
+
+					static Ptr create(size_t id, T &&value) {
+						return new TInsert(id, value);
+					}
+
+					Ptr apply(Object &obj) {
+						log_assert(obj.type_id() == TYPE_ID, util::f("Expecting object of type UIDList but got ", obj.type_str()));
+						UIDList<T> &cast_obj = obj;
+
+						auto id = Container::IdTrait()(_value);
+
+						cast_obj._ignore_start();
+						cast_obj.insert(std::move(_value));
+						cast_obj._ignore_end();
+
+						return TRemove(id);
+					}
+
+				private:
+					size_t _id;
+					T _value;
+			};
+
+		public:
+			using Container = ::util::UIDList<T>;
+			using Element = Container::Element;
+			using iterator = Container::iterator;
+			using const_iterator = Container::const_iterator;
+
+		public:
+			uint32_t type_id() const { return TYPE_ID; }
+			const char *type_str() const { return "UIDList"; }
+
+			iterator begin() {
+				return _list.begin();
+			}
+			iterator end() {
+				return _list.end();
+			}
+
+			const_iterator begin() const {
+				return _list.begin();
+			}
+			const_iterator end() const {
+				return _list.end();
+			}
+
+			Element &operator[](uint32_t id) { return _list[id]; }
+			Element const &operator[](uint32_t id) const { return _list[id]; }
+
+			uint32_t get_id() const {
+				return _list.get_id();
+			}
+
+			bool insert(T &&element) {
+				_implicit_start();
+				auto id = Container::IdTrait()(element);
+				auto r = _list.insert(std::move(element));
+				_implicit_end();
+
+				return TRemove(id);
+			}
+
+			void remove(uint32_t id) {
+				_implicit_start();
+				//TODO: make sure uidlist can resuse id
+				auto e = std::move(_list[id]);
+				_add_transaction(TInsert(id, std::move(e)));
+				_implicit_end();
+			}
+
+		private:
+			Container _list;
 	};
 }
