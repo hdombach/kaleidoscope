@@ -127,7 +127,7 @@ namespace serial {
 	template<std::derived_from<Object> T>
 	class UIDList: public Object {
 		public:
-			static const uint32_t TYPE_ID = 1;
+			static const uint32_t TYPE_ID = 2;
 
 			class TRemove: public Transaction {
 				public:
@@ -159,7 +159,7 @@ namespace serial {
 					TInsert(size_t id, T &&value): _id(id), _value(std::move(value)) {}
 
 					static Ptr create(size_t id, T &&value) {
-						return new TInsert(id, value);
+						return new TInsert(id, std::move(value));
 					}
 
 					Ptr apply(Object &obj) {
@@ -172,7 +172,7 @@ namespace serial {
 						cast_obj.insert(std::move(_value));
 						cast_obj._ignore_end();
 
-						return TRemove(id);
+						return TRemove::create(id);
 					}
 
 				private:
@@ -217,7 +217,9 @@ namespace serial {
 				auto r = _list.insert(std::move(element));
 				_implicit_end();
 
-				return TRemove(id);
+				_add_transaction(TRemove::create(id));
+
+				return r;
 			}
 
 			void remove(uint32_t id) {
