@@ -233,7 +233,7 @@ namespace serial {
 			case T::Optional:
 				return "::std::optional";
 			case T::UIDList:
-				return "::util::UIDList";
+				return "::serial::UIDList";
 			case T::Identifier:
 				return tok.content().c_str();
 			default:
