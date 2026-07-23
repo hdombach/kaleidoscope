@@ -50,14 +50,20 @@ namespace serial {
 
 			class TInsert: public Transaction {
 				public:
-					TInsert(size_type idx, T &&value): _idx(idx), _value(std::move(value)) {}
+					TInsert(size_type idx, T &&value):
+						_idx(idx),
+						_value(std::move(value))
+					{}
 
 					static Ptr create(size_type idx, T &&value) {
 						return new TInsert(idx, std::move(value));
 					}
 
 					Ptr apply(Object &obj) {
-						log_assert(obj.type_id() == TYPE_ID, util::f("Expecting object of type  Vector but got ", obj.type_str()));
+						log_assert(
+							obj.type_id() == TYPE_ID,
+							util::f("Expecting object of type  Vector but got ", obj.type_str())
+						);
 						Vector<T> &vobj = obj;
 
 						vobj._ignore_start();
@@ -70,6 +76,36 @@ namespace serial {
 				private:
 					size_type _idx;
 					T _value;
+			};
+
+			class TModify: public Transaction {
+				public:
+					TModify(size_t idx, Transaction::Ptr &&child_t):
+						_idx(idx),
+						_child_t(std::move(child_t))
+					{}
+
+					static Ptr create(size_t idx, Transaction::Ptr &&child_t) {
+						return new TModify(idx, std::move(child_t));
+					}
+
+					Ptr apply(Object &obj) {
+						log_assert(
+							obj.type_id() == TYPE_ID,
+							util::f("Expecting object of type Vector but got ", obj.type_str())
+						);
+						Vector<T> &vobj = obj;
+
+						vobj._ignore_start();
+						auto reverse = _child_t->apply(vobj[_idx]);
+						vobj._ignore_end();
+
+						return TModify::create(_idx, reverse);
+					}
+
+				private:
+					size_t _idx;
+					Transaction::Ptr _child_t;
 			};
 
 		public:
