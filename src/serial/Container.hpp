@@ -216,6 +216,35 @@ namespace serial {
 					T _value;
 			};
 
+			class TModify: public Transaction {
+				public:
+					TModify(size_t idx, Transaction::Ptr &&child_t):
+						_id(idx),
+						_child_t(std::move(child_t))
+					{}
+
+					static Ptr create(size_t idx, Transaction::Ptr &&child_t) {
+						return new TModify(idx, std::move(child_t));
+					}
+
+					Ptr apply(Object &obj) {
+						log_assert(
+							obj.type_id() == TYPE_ID,
+							util::f("Expecting object of type UIDList but got ", obj.type_str())
+						);
+						UIDList<T> &vobj = obj;
+
+						vobj._ignore_start();
+						auto reverse = _child_t->apply(vobj[_id]);
+						vobj._ignore_end();
+
+						return TModify::create(_id, reverse);
+					}
+				private:
+					size_t _id;
+					Transaction::Ptr _child_t;
+			};
+
 		public:
 			using Container = ::util::UIDList<T>;
 			using Element = Container::Element;
