@@ -26,7 +26,6 @@ namespace util {
 				_begin = _end;
 				if (*_begin != '\0') {
 					_begin++;
-					_end++;
 					_next_newline();
 				}
 				return *this;
