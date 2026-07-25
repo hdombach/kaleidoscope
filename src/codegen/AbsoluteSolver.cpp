@@ -147,9 +147,11 @@ namespace cg::abs {
 			uint32_t action = _table.lookup_tok(cur_state_id, cur_t);
 			if (action == 0) {
 				return Error(ErrorType::INVALID_PARSE, util::f(
-						"Unexpected token: ", parser_ctx.tok_config().name_table[t->type()],
-						" at ", t->loc(), "\n", util::debug_file_loc(std::string(str.str()), t->loc()), "\n"
-						"Currently parsing:\n", _table.row_state(cur_state_id).str()
+						"Unexpected token: ", t->debug_str(parser_ctx.tok_config()),
+						" at ", t->loc(), "\n",
+						util::debug_file_loc(std::string(str.str()), t->loc()), "\n"
+						"Currently parsing:\n",
+						_table.row_state(cur_state_id).str()
 				));
 			}
 			log_abs() << "state_" << cur_state_id << "["
