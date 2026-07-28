@@ -5,6 +5,10 @@
 namespace serial {
 	class Document {
 		public:
+			virtual ~Document() = default;
+
+			virtual uint32_t type_id() const = 0;
+			virtual const char *type_str() const = 0;
 
 			void start_transaction();
 			void end_transaction();

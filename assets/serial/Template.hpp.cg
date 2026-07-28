@@ -41,7 +41,7 @@ namespace serial {
 
 		{% for s in version.structs %}
 		/**** {{s.name}} ****/
-		class {{s.name}}: public Object {
+		class {{s.name}}: public {{s.base_class}} {
 			public:
 				static const uint32_t TYPE_ID = 1; // TODO
 
