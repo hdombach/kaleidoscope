@@ -380,7 +380,7 @@ namespace serial {
 	VFieldType const &VStructField::spec() const { return _spec; }
 
 	util::Result<VStructDef, Error> VStructDef::create(Node const &node, VVersion &version, std::string const &filename) {
-		log_assert(node.cfg_rule() == "struct-def", "Must pass struct-def to StructDef::create");
+		log_assert(node.cfg_rule() == "struct-def", "Must pass struct-def or document-def to StructDef::create");
 
 		auto s = VStructDef();
 
@@ -411,7 +411,9 @@ namespace serial {
 		log_assert(!_name.empty(), "StructDef must be setup before calling templ_obj");
 		return {
 			{"name", _name},
-			{"fields", fields}
+			{"fields", fields},
+			{"is_document", _is_document},
+			{"base_class", _is_document ? "Document" : "Object"},
 		};
 	}
 
@@ -498,6 +500,12 @@ namespace serial {
 				auto s = VStructDef();
 				if (auto err = VStructDef::create(child, *v, filename).move_or(s)) {
 					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate struct-def in version ", v->_value.namespace_str()), err.value());
+				}
+				v->_structs[s.name()] = s;
+			} else if (child.cfg_rule() == "document-def") {
+				auto s = VStructDef();
+				if (auto err = VStructDef::create(child, *v, filename).move_or(s)) {
+					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate document-def in version ", v->_value.namespace_str()), err.value());
 				}
 				v->_structs[s.name()] = s;
 			}

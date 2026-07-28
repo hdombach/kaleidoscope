@@ -20,6 +20,7 @@ namespace serial {
 		StrConst,
 		Divide,
 		Struct,
+		Document,
 		Enum,
 		Bitfield,
 		Float,

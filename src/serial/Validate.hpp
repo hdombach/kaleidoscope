@@ -134,6 +134,9 @@ namespace serial {
 			VFieldType _spec;
 	};
 
+	/**
+	 * @brief A struct def or a document def
+	 */
 	class VStructDef {
 		public:
 			VStructDef() = default;
@@ -147,6 +150,7 @@ namespace serial {
 
 			std::map<std::string, VStructField> const &fields() const;
 		private:
+			bool _is_document;
 			VVersion *_version = nullptr;
 			std::string _name;
 			std::string _filename;

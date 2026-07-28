@@ -46,6 +46,7 @@ namespace serial {
 			| c["enum-decl"]
 			| c["bitfield-decl"]
 			| c["struct-def"]
+			| c["document-def"]
 		);
 
 		c.prim("enum-decl") = T::Enum + c["whitespace"] + T::Identifier
@@ -63,6 +64,9 @@ namespace serial {
 		c.prim("bitfield-field") = T::Identifier + T::Semicolon;
 
 		c.prim("struct-def") = T::Struct + c["whitespace"] + T::Identifier
+			+ c["whitespace"] + T::OpenCurly + c["struct-blck"] + T::CloseCurly;
+
+		c.prim("document-def") = T::Document + c["whitespace"] + T::Identifier
 			+ c["whitespace"] + T::OpenCurly + c["struct-blck"] + T::CloseCurly;
 
 		c.temp("struct-blck") = c.cls(T::Whitespace | T::Comment | c["struct-field"]);
