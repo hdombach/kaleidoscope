@@ -149,6 +149,9 @@ namespace serial {
 			std::string const &filename() const;
 
 			std::map<std::string, VStructField> const &fields() const;
+
+			bool is_document() const;
+
 		private:
 			bool _is_document;
 			VVersion *_version = nullptr;
@@ -190,15 +193,17 @@ namespace serial {
 				util::FileLocation floc=std::source_location::current()
 			) const;
 
+			std::vector<std::string> _get_order() const;
+
 			VVersionValue _value;
 			std::map<std::string, VEnum> _enums;
 			std::map<std::string, VBitfield> _bitfields;
 			std::map<std::string, VStructDef> _structs;
 	};
 	
-	class VDocument {
+	class VRoot {
 		public:
-			VDocument() = default;
+			VRoot() = default;
 
 			util::Result<void, Error> add_file(Node const &node, std::string const &filename);
 
