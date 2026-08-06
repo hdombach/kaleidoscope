@@ -4,6 +4,7 @@
 #include "codegen/AstNode.hpp"
 #include "codegen/AstNodeIterator.hpp"
 #include "codegen/TemplObj.hpp"
+#include "util/IterAdapter.hpp"
 #include "util/Util.hpp"
 #include "util/log.hpp"
 #include <cstddef>
@@ -308,7 +309,6 @@ namespace serial {
 
 	bool VFieldType::is_prim() const {
 		log_assert(_tok, "_tok must be set");
-		log_assert(_version, "_version must be set");
 		switch (T(_tok->type())) {
 			case T::Float:
 			case T::Double:
@@ -425,6 +425,14 @@ namespace serial {
 		return _filename;
 	}
 
+	std::map<std::string, VStructField> const &VStructDef::fields() const {
+		return _fields;
+	}
+
+	bool VStructDef::is_document() const {
+		return _is_document;
+	}
+
 	util::Result<VVersionValue, Error> VVersionValue::create(Node const &node) {
 		log_assert(node.cfg_rule() == "version-frag", "Must pass version-frag to VersionValue::create");
 
@@ -528,7 +536,8 @@ namespace serial {
 		}
 
 		auto structs = cg::TemplList();
-		for (auto &[name, s] : _structs) {
+		for (auto &name : _get_order()) {
+			auto &s = _structs.at(name);
 			if (s.filename() != filename) continue;
 			structs.push_back(s.templ_obj());
 		}
@@ -570,7 +579,56 @@ namespace serial {
 		return {};
 	}
 
-	util::Result<void, Error> VDocument::add_file(Node const &node, std::string const &filename) {
+	std::vector<std::string> VVersion::_get_order() const {
+		auto v = std::vector<std::string>();
+		auto documents = std::vector<std::string>();
+
+		for (auto &[name, def] : _structs) {
+			documents.push_back(name);
+		}
+
+		for (auto &d : documents) {
+			auto visited = std::set<std::string>();
+			auto func = std::function<bool(std::string const &)>();
+
+			func = [&](std::string const &name) {
+				// Exit early if the field is not actually a struct
+				if (!_structs.contains(name)) return true;
+
+				if (visited.contains(name)) {
+					log_error() << name << " is used in one of its child classes. (Recursive definitions)." << std::endl;
+					return false;
+				}
+				visited.insert(name);
+
+				for (auto &[_, field] : _structs.at(name).fields()) {
+					if (!func(field.name())) {
+						return false;
+					}
+				}
+
+				bool found = false;
+				for (auto &n : v) {
+					if (n == name) {
+						found = true;
+						break;
+					}
+				}
+
+				if (!found) {
+					v.push_back(name);
+				}
+
+				return true;
+			};
+
+			func(d);
+		}
+
+		return v;
+	}
+
+	util::Result<void, Error> VRoot::add_file(Node const &node, std::string const &filename) {
 		log_assert(node.cfg_rule() == "root", "Must pass root AstNode to Document::add_file");
 
 		Node *doc_node;
@@ -600,11 +658,11 @@ namespace serial {
 		return {};
 	}
 
-	std::vector<std::string> const &VDocument::includes() const {
+	std::vector<std::string> const &VRoot::includes() const {
 		return _includes;
 	}
 
-	TemplObj VDocument::templ_obj(std::string const &filename) const {
+	TemplObj VRoot::templ_obj(std::string const &filename) const {
 		auto versions = cg::TemplList();
 
 		auto filepath = std::filesystem::path(filename);
