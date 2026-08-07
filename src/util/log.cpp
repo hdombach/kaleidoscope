@@ -55,6 +55,17 @@ void log_assert(
 	}
 }
 
+std::ostream &log_assert(
+	bool test,
+	util::FileLocation loc
+) {
+	if (!test) {
+		util::breakpoint();
+		return log(util::Importance::FATAL_ERROR, loc);
+	}
+	return util::null_stream;
+}
+
 std::ostream &_log_every_n(
 	uint32_t &_counter,
 	Importance importance,
