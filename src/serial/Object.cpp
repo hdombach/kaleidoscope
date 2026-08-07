@@ -58,6 +58,10 @@ namespace serial {
 			_parent->_add_transaction(std::move(t));
 	}
 
+	void Object::_update_parent(Object *child, Object *parent) {
+		child->_parent = parent;
+	}
+
 	void Document::start_transaction() {
 		if (_ignoring_t) {
 			log_error() << "You somehow started a transaction in the middle of calling undo or redo" << std::endl;

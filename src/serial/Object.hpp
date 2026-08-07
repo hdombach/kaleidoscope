@@ -114,8 +114,9 @@ namespace serial {
 			 */
 			virtual void _add_transaction(Transaction::Ptr &&t);
 
+			void _update_parent(Object *child, Object *parent);
+
 		protected:
-			uint32_t _uid;
 			Object *_parent = nullptr;
 	};
 

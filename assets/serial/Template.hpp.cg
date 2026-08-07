@@ -73,6 +73,12 @@ namespace serial {
 			{% endif %}
 			{% endfor %}
 			public:
+				{{s.name}}() = default;
+				{{s.name}}({{s.name}} const &other);
+				{{s.name}}({{s.name}} &&other);
+				{{s.name}} &operator=({{s.name}} const &other);
+				{{s.name}} &operator=({{s.name}} &&other);
+
 				uint32_t type_id() const;
 				const char *type_str() const;
 
