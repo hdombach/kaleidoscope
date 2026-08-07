@@ -108,8 +108,43 @@ namespace serial {
 			};
 
 		public:
+			Vector() = default;
 			Vector(std::vector<T> const &v): _v(v) {};
 			Vector(std::vector<T> &&v): _v(v) {};
+
+			Vector(Vector const &other) {
+				_v = other._v;
+				//for (auto &child : _v) {
+				//	_update_parent(&child, this);
+				//}
+			}
+
+			Vector(Vector &&other) {
+				_v = std::move(other._v);
+				//for (auto &child : _v) {
+				//	_update_parent(&child, this);
+				//}
+			}
+
+			Vector &operator=(Vector const &other) {
+				_v = other._v;
+				//for (auto &child : _v) {
+				//	_update_parent(&child, this);
+				//}
+				return *this;
+			}
+
+			Vector &operator=(Vector &&other) {
+				_v = std::move(other._v);
+				//for (auto &child : _v) {
+				//	_update_parent(&child, this);
+				//}
+				return *this;
+			}
+
+			bool has_value() const {
+				return !_v.empty();
+			}
 
 			uint32_t type_id() const { return TYPE_ID; }
 			const char *type_str() const { return "Vector"; }
@@ -251,6 +286,41 @@ namespace serial {
 			using const_iterator = Container::const_iterator;
 
 		public:
+			UIDList() = default;
+
+			UIDList(UIDList const &other) {
+				_list = other._list;
+				//for (auto &child : _list) {
+				//	_update_parent(&child, this);
+				//}
+			}
+
+			UIDList(UIDList &&other) {
+				_list = std::move(other._list);
+				//for (auto &child : _list) {
+				//	_update_parent(&child, this);
+				//}
+			}
+
+			UIDList &operator=(UIDList const &other) {
+				_list = other._list;
+				//for (auto &child : _list) {
+				//	_update_parent(&child, this);
+				//}
+				return *this;
+			}
+
+			UIDList &operator=(UIDList &&other) {
+				_list = std::move(other._list);
+				//for (auto &child : _list) {
+				//	_update_parent(&child, this);
+				//}
+			}
+
+			bool has_value() const {
+				return !_list.empty();
+			}
+
 			uint32_t type_id() const { return TYPE_ID; }
 			const char *type_str() const { return "UIDList"; }
 

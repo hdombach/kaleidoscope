@@ -6,6 +6,7 @@ serial_sources = [
 	'Tokenizer.cpp',
 	'main.cpp',
 	'Validate.cpp',
+  'Object.cpp',
 	]
 
 serial_deps = [

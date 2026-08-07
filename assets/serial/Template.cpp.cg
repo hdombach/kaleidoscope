@@ -92,6 +92,49 @@ namespace serial {
 
 		{% endfor %}
 
+		{%- macro set_elements(struct, should_move) %}
+			{% for f in struct.fields %}
+			{% if should_move %}
+			_{{f.name}} = std::move(other._{{f.name}});
+			{% else %}
+			_{{f.name}} = other._{{f.name}};
+			{% endif %}
+			{% endfor %}
+
+			{% for f in s.fields %}
+			{% if !f.is_primitive %}
+			{% if f.is_optional %}
+			if (_{{f.name}}) {
+				_update_parent(&_{{f.name}}.value(), this);
+			}
+			{% else %}
+			_update_parent(&_{{f.name}}, this);
+			{% endif %}
+			{% endif %}
+			{% endfor %}
+		{% endmacro%}
+
+		{{s.name}}::{{s.name}}({{s.name}} const &other) {
+{{ set_elements(s, false) }}
+		}
+
+		{{s.name}}::{{s.name}}({{s.name}} &&other) {
+{{ set_elements(s, true) }}
+		}
+
+		{{s.name}} &{{s.name}}::operator=({{s.name}} const &other) {
+{{ set_elements(s, false) }}
+
+			return *this;
+		}
+
+		{{s.name}} &{{s.name}}::operator=({{s.name}} &&other) {
+{{ set_elements(s, true) }}
+
+			return *this;
+		}
+
+
 		uint32_t {{s.name}}::type_id() const {
 			return TYPE_ID;
 		}
