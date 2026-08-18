@@ -237,7 +237,7 @@ namespace vulkan {
 		}
 
 		_nodes[id]->parent()->remove_child(id);
-		_nodes[id].reset();
+		_nodes.remove(id);
 		return {};
 	}
 

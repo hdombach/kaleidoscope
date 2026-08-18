@@ -450,7 +450,7 @@ namespace vulkan {
 	}
 
 	void RayPass::node_remove(uint32_t id) {
-		_nodes[id].destroy();
+		_nodes.remove(id);
 		_node_dirty_bit = true;
 	}
 

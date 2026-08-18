@@ -25,7 +25,7 @@ namespace vulkan {
 	class Scene {
 		public:
 			using Ptr = std::unique_ptr<Scene>;
-			using Container = util::UIDList<Node::Ptr, util::has_value, util::id_deref_trait>;
+			using Container = util::UIDList<Node::Ptr, util::id_deref_trait>;
 			using iterator = Container::iterator;
 			using const_iterator = Container::const_iterator;
 
