@@ -441,7 +441,7 @@ namespace vulkan {
 
 	void InstancedPass::mesh_remove(uint32_t id) {
 		log_trace() << "Removing instance pass mesh handler " << id << std::endl;
-		_meshes[id].destroy();
+		_meshes.remove(id);
 	}
 
 	void InstancedPass::node_create(uint32_t id) {

@@ -10,6 +10,7 @@
 
 
 namespace vulkan {
+
 	using NodeVImpl = InstancedPassMesh::NodeVImpl;
 
 	NodeVImpl::NodeVImpl():

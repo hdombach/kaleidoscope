@@ -24,11 +24,11 @@ namespace types {
 	 */
 	class ResourceManager {
 		public:
-			using TextureContainer = util::UIDList<vulkan::Texture::Ptr, util::has_value, util::id_deref_trait>;
+			using TextureContainer = util::UIDList<vulkan::Texture::Ptr, util::id_deref_trait>;
 
-			using MeshContainer = util::UIDList<Mesh::Ptr, util::has_value, util::id_deref_trait>;
+			using MeshContainer = util::UIDList<Mesh::Ptr, util::id_deref_trait>;
 
-			using MaterialContainer = util::UIDList<Material::Ptr, util::has_value, util::id_deref_trait>;
+			using MaterialContainer = util::UIDList<Material::Ptr, util::id_deref_trait>;
 
 			enum class ErrorType {
 				VULKAN,
