@@ -114,31 +114,31 @@ namespace serial {
 
 			Vector(Vector const &other) {
 				_v = other._v;
-				//for (auto &child : _v) {
-				//	_update_parent(&child, this);
-				//}
+				for (auto &child : _v) {
+					_adopt_child(&child);
+				}
 			}
 
 			Vector(Vector &&other) {
 				_v = std::move(other._v);
-				//for (auto &child : _v) {
-				//	_update_parent(&child, this);
-				//}
+				for (auto &child : _v) {
+					_adopt_child(&child);
+				}
 			}
 
 			Vector &operator=(Vector const &other) {
 				_v = other._v;
-				//for (auto &child : _v) {
-				//	_update_parent(&child, this);
-				//}
+				for (auto &child : _v) {
+					_adopt_child(&child);
+				}
 				return *this;
 			}
 
 			Vector &operator=(Vector &&other) {
 				_v = std::move(other._v);
-				//for (auto &child : _v) {
-				//	_update_parent(&child, this);
-				//}
+				for (auto &child : _v) {
+					_adopt_child(&child);
+				}
 				return *this;
 			}
 
@@ -290,31 +290,31 @@ namespace serial {
 
 			UIDList(UIDList const &other) {
 				_list = other._list;
-				//for (auto &child : _list) {
-				//	_update_parent(&child, this);
-				//}
+				for (auto &child : _list) {
+					_adopt_child(&child);
+				}
 			}
 
 			UIDList(UIDList &&other) {
 				_list = std::move(other._list);
-				//for (auto &child : _list) {
-				//	_update_parent(&child, this);
-				//}
+				for (auto &child : _list) {
+					_adopt_child(&child);
+				}
 			}
 
 			UIDList &operator=(UIDList const &other) {
 				_list = other._list;
-				//for (auto &child : _list) {
-				//	_update_parent(&child, this);
-				//}
+				for (auto &child : _list) {
+					_adopt_child(&child);
+				}
 				return *this;
 			}
 
 			UIDList &operator=(UIDList &&other) {
 				_list = std::move(other._list);
-				//for (auto &child : _list) {
-				//	_update_parent(&child, this);
-				//}
+				for (auto &child : _list) {
+					_adopt_child(&child);
+				}
 			}
 
 			bool has_value() const {

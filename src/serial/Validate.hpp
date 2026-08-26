@@ -90,7 +90,7 @@ namespace serial {
 	class VFieldType {
 		public:
 			VFieldType() = default;
-			static util::Result<VFieldType, Error> create(Node const &node, VVersion &version);
+			static util::Result<VFieldType, Error> create(Node const &node, VVersion const &version);
 
 			VFieldType(VFieldType const &other);
 			VFieldType(VFieldType &&other) = default;
@@ -101,6 +101,8 @@ namespace serial {
 			 * @brief Gets the cpp string representation
 			 */
 			std::string cpp_str() const;
+
+			VFieldType const *enclosed_type() const;
 
 			bool is_prim() const;
 			bool is_opt() const;
@@ -122,7 +124,7 @@ namespace serial {
 		public:
 			VStructField() = default;
 
-			static util::Result<VStructField, Error> create(Node const &node, VVersion &version);
+			static util::Result<VStructField, Error> create(Node const &node, VVersion const &version, size_t idx);
 
 			TemplObj templ_obj() const;
 
@@ -131,6 +133,11 @@ namespace serial {
 			VFieldType const &spec() const;
 		private:
 			std::string _name;
+			std::string _idx_name;
+			/**
+			 * @brief Index in the parent object
+			 */
+			uint32_t _idx;
 			VFieldType _spec;
 	};
 

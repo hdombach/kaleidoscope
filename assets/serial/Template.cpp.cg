@@ -41,10 +41,12 @@ namespace serial {
 			return _{{f.name}}.has_value();
 		}
 		{% endif %}
-		{% if f.is_primitive %}
-		{{s.name}}::{{f.set_trans_name}}::{{f.set_trans_name}}({{f.type_str}} value): _value(value) {}
 
-		Transaction::Ptr {{s.name}}::{{f.set_trans_name}}::create({{f.type_str}} value) {
+
+		{% if f.is_primitive || f.is_optional %}
+		{{s.name}}::{{f.set_trans_name}}::{{f.set_trans_name}}({{f.type_str}} const &value): _value(value) {}
+
+		Transaction::Ptr {{s.name}}::{{f.set_trans_name}}::create({{f.type_str}} const &value) {
 			return Ptr(new {{f.set_trans_name}}(value));
 		}
 
@@ -62,7 +64,8 @@ namespace serial {
 
 			return {{f.set_trans_name}}::create(old_value);
 		}
-		{% else %}
+		{% endif %}
+		{% if !f.is_primitive %}
 		{{s.name}}::{{f.mod_trans_name}}::{{f.mod_trans_name}}(Transaction::Ptr &&child_t): _child_t(std::move(child_t)) {}
 
 		Transaction::Ptr {{s.name}}::{{f.mod_trans_name}}::create(Transaction::Ptr &&child_t) {
@@ -105,14 +108,23 @@ namespace serial {
 			{% if !f.is_primitive %}
 			{% if f.is_optional %}
 			if (_{{f.name}}) {
-				_update_parent(&_{{f.name}}.value(), this);
+				_adopt_child(&_{{f.name}}.value());
 			}
 			{% else %}
-			_update_parent(&_{{f.name}}, this);
+			_adopt_child(&_{{f.name}});
 			{% endif %}
 			{% endif %}
 			{% endfor %}
+			//Leave idx unchaged as the object is still at same index in parent
 		{% endmacro%}
+
+		{{s.name}}::{{s.name}}() {
+			{% for f in s.fields %}
+			{% if !f.is_primitive && !f.is_optional%}
+			_set_idx(&_{{f.name}}, {{f.idx_name}});
+			{% endif %}
+			{% endfor %}
+		}
 
 		{{s.name}}::{{s.name}}({{s.name}} const &other) {
 {{ set_elements(s, false) }}
@@ -144,22 +156,45 @@ namespace serial {
 		}
 
 		/**** Properties for {{s.name}} ****/
+
 		{% for f in s.fields %}
-		{{f.type_str}} const &{{s.name}}::{{f.name}}() const {
+		{{f.non_opt_type_str}} const &{{s.name}}::{{f.name}}() const {
+			{% if f.is_optional %}
+			log_assert(_{{f.name}}.has_value(), "You must call has_{{f.name}} before getting it.");
+			return _{{f.name}}.value();
+			{% else %}
 			return _{{f.name}};
+			{% endif %}
 		}
-		{% if f.is_primitive %}
+
+		{% if !f.is_primitive %}
+		{{f.non_opt_type_str}} &{{s.name}}::{{f.name}}() {
+			{% if f.is_optional %}
+			log_assert(_{{f.name}}.has_value(), "You must call has_{{f.name}} before getting it.");
+			return _{{f.name}}.value();
+			{% else %}
+			return _{{f.name}};
+			{% endif %}
+		}
+		{% endif %}
+
+		{% if f.is_primitive || f.is_optional %}
 		void {{s.name}}::set_{{f.name}}({{f.type_str}} const &value) {
 			_implicit_start();
 			_add_transaction({{f.set_trans_name}}::create(_{{f.name}}));
 			_{{f.name}} = value;
 			_implicit_end();
 		}
-		{% else %}
-		{{f.type_str}} &{{s.name}}::{{f.name}}() {
-			return _{{f.name}};
+		{% endif %}
+		{% if !f.is_primitive && f.is_optional %}
+		void {{s.name}}::set_{{f.name}}({{f.non_opt_type_str}} &&value) {
+			_implicit_start();
+			_add_transaction({{f.set_trans_name}}::create(_{{f.name}}));
+			_{{f.name}} = std::move(value);
+			_implicit_end();
 		}
 		{% endif %}
+
 		{% endfor %}
 		{% endfor %}
 	} /* {{version.namespace_str}} */
