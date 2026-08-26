@@ -114,10 +114,13 @@ namespace serial {
 			 */
 			virtual void _add_transaction(Transaction::Ptr &&t);
 
-			void _update_parent(Object *child, Object *parent);
+			void _adopt_child(Object *child);
+
+			void _set_idx(Object *child, uint32_t idx);
 
 		protected:
 			Object *_parent = nullptr;
+			uint32_t _idx = 0;
 	};
 
 	class Document : public Object {

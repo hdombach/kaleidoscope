@@ -242,7 +242,7 @@ namespace serial {
 		}
 	}
 
-	util::Result<VFieldType, Error> VFieldType::create(Node const &node, VVersion &version) {
+	util::Result<VFieldType, Error> VFieldType::create(Node const &node, VVersion const &version) {
 		log_assert(node.cfg_rule() == "field-type", "Must pass field-type to TypeSpec::create");
 
 		auto t = VFieldType();
@@ -307,6 +307,10 @@ namespace serial {
 		}
 	}
 
+	VFieldType const *VFieldType::enclosed_type() const {
+		return _enclosing_type.get();
+	}
+
 	bool VFieldType::is_prim() const {
 		log_assert(_tok, "_tok must be set");
 		switch (T(_tok->type())) {
@@ -343,7 +347,7 @@ namespace serial {
 		return _enclosing_type.get() != nullptr;
 	}
 
-	util::Result<VStructField, Error> VStructField::create(Node const &node, VVersion &version) {
+	util::Result<VStructField, Error> VStructField::create(Node const &node, VVersion const &version, size_t idx) {
 		log_assert(node.cfg_rule() == "struct-field", "Must pass property to TypeDef::create");
 
 		auto f = VStructField();
@@ -361,15 +365,24 @@ namespace serial {
 		}
 		f._name = name_node->consumed_all();
 
+		f._idx = idx;
+		auto n = f._name;
+
+		std::transform(n.begin(), n.end(), n.begin(), ::toupper);
+		f._idx_name = util::f(n, "_IDX");
+
 		return std::move(f);
 	}
 
 	TemplObj VStructField::templ_obj() const {
 		return {
 			{"type_str", _spec.cpp_str()},
+			{"non_opt_type_str", _spec.is_opt() ? _spec.enclosed_type()->cpp_str() : _spec.cpp_str()},
 			{"is_primitive", _spec.is_prim()},
 			{"is_optional", _spec.is_opt()},
 			{"name", _name},
+			{"idx_name", _idx_name},
+			{"idx", _idx},
 			{"set_trans_name", util::f("TSet_", _name)},
 			{"mod_trans_name", util::f("TModify_", _name)},
 		};
@@ -392,9 +405,10 @@ namespace serial {
 		s._filename = filename;
 		s._version = &version;
 
+		size_t idx = 0;
 		for (auto field_node : node.children_with_cfg("struct-field")) {
 			auto field = VStructField();
-			if (auto err = VStructField::create(*field_node, version).move_or(field)) {
+			if (auto err = VStructField::create(*field_node, version, idx++).move_or(field)) {
 				return Error(ErrorType::PARSE_ERROR, "Couldn't parse struct field", err.value());
 			}
 			s._fields[field.name()] = std::move(field);

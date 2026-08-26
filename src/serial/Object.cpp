@@ -58,8 +58,12 @@ namespace serial {
 			_parent->_add_transaction(std::move(t));
 	}
 
-	void Object::_update_parent(Object *child, Object *parent) {
-		child->_parent = parent;
+	void Object::_adopt_child(Object *object) {
+		object->_parent = this;
+	}
+
+	void Object::_set_idx(Object *child, uint32_t idx) {
+		child->_idx = idx;
 	}
 
 	void Document::start_transaction() {
