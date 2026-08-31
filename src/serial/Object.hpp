@@ -44,6 +44,20 @@ namespace serial {
 			std::vector<Ptr> _children;
 	};
 
+	class ModifyTransaction: public Transaction {
+		public:
+			ModifyTransaction() = default;
+
+			static Ptr create(uint32_t property_idx, Ptr &&child_t);
+
+			~ModifyTransaction() = default;
+
+			Transaction::Ptr apply(Object &obj) override;
+		private:
+			uint32_t _property_idx;
+			Ptr _child_t;
+	};
+
 	/**
 	 * @brief A Generic abstract class for objects that can be serialized
 	 */
@@ -62,6 +76,13 @@ namespace serial {
 			 * @brief A string representation for the type
 			 */
 			virtual const char *type_str() const = 0;
+
+			/**
+			 * @brief Gets the compound property at the corresponding index
+			 *
+			 * @returns Object if idx is valid, nullptr if it is invalid or property is primitive
+			 */
+			virtual Object *compound_property(uint32_t idx) { return nullptr; }
 
 			/**
 			 * @brief Starts recording a transaction
@@ -117,6 +138,8 @@ namespace serial {
 			void _adopt_child(Object *child);
 
 			void _set_idx(Object *child, uint32_t idx);
+
+			friend ModifyTransaction;
 
 		protected:
 			Object *_parent = nullptr;
