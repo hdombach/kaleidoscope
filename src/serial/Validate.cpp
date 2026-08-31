@@ -384,7 +384,6 @@ namespace serial {
 			{"idx_name", _idx_name},
 			{"idx", _idx},
 			{"set_trans_name", util::f("TSet_", _name)},
-			{"mod_trans_name", util::f("TModify_", _name)},
 		};
 	}
 

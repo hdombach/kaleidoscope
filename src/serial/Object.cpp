@@ -26,6 +26,26 @@ namespace serial {
 		return CompoundTransaction::create(std::move(result));
 	}
 
+	ModifyTransaction::Ptr ModifyTransaction::create(
+		uint32_t property_idx,
+		Ptr &&child_t
+	) {
+		auto ptr = std::make_unique<ModifyTransaction>();
+		ptr->_property_idx = property_idx;
+		ptr->_child_t = std::move(child_t);
+		return ptr;
+	}
+
+	Transaction::Ptr ModifyTransaction::apply(Object &obj) {
+		auto child = obj.compound_property(_property_idx);
+		log_assert(child) << "Expecting ModifyTransaction to reference a valid child property." << std::endl;
+		child->_ignore_start();
+		auto t = ModifyTransaction::create(_property_idx, _child_t->apply(*child));
+		child->_ignore_end();
+
+		return t;
+	}
+
 	void Object::start_transaction() {
 		if (_parent)
 			_parent->start_transaction();
@@ -54,8 +74,9 @@ namespace serial {
 	}
 
 	void Object::_add_transaction(Transaction::Ptr &&t) {
+		log_assert(_parent);
 		if (_parent)
-			_parent->_add_transaction(std::move(t));
+			_parent->_add_transaction(ModifyTransaction::create(_idx, std::move(t)));
 	}
 
 	void Object::_adopt_child(Object *object) {

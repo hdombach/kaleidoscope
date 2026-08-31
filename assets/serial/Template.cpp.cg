@@ -65,34 +65,6 @@ namespace serial {
 			return {{f.set_trans_name}}::create(old_value);
 		}
 		{% endif %}
-		{% if !f.is_primitive %}
-		{{s.name}}::{{f.mod_trans_name}}::{{f.mod_trans_name}}(Transaction::Ptr &&child_t): _child_t(std::move(child_t)) {}
-
-		Transaction::Ptr {{s.name}}::{{f.mod_trans_name}}::create(Transaction::Ptr &&child_t) {
-			return Ptr(new {{f.mod_trans_name}}(std::move(child_t)));
-		}
-
-		Transaction::Ptr {{s.name}}::{{f.mod_trans_name}}::apply(Object &obj) {
-			log_assert(
-				obj.type_id() == TYPE_ID,
-				util::f("Expecting object of type {{f.type_str}} but got ", obj.type_str())
-			);
-
-			{{s.name}} &cast_obj = static_cast<{{s.name}}&>(obj);
-			cast_obj._ignore_start();
-			{% if f.is_optional %}
-			log_assert(cast_obj._{{f.name}}.has_value(), "Must call has_{{f.name}} before accessing {{f.name}}");
-			//auto t = {{f.mod_trans_name}}::create(_child_t->apply(cast_obj._{{f.name}}.value()));
-			{% else %}
-			//auto t = {{f.mod_trans_name}}::create(_child_t->apply(cast_obj._{{f.name}}));
-			{% endif %}
-			cast_obj._ignore_end();
-
-			//return t;
-			return nullptr;
-		}
-		{% endif %}
-
 		{% endfor %}
 
 		{%- macro set_elements(struct, should_move) %}
@@ -155,6 +127,27 @@ namespace serial {
 		return "{{s.name}}";
 		}
 
+		Object *{{s.name}}::compound_property(uint32_t idx) {
+			switch (idx) {
+				{% for f in s.fields %}
+				{% if !f.is_primitive %}
+				case {{f.idx_name}}:
+					{% if f.is_optional %}
+					if (_{{f.name}}.has_value()) {
+						return &_{{f.name}}.value();
+					} else {
+						return nullptr;
+					}
+					{% else %}
+					return &_{{f.name}};
+					{% endif %}
+				{% endif %}
+				{% endfor %}
+				default:
+					return nullptr;
+			}
+		}
+
 		/**** Properties for {{s.name}} ****/
 
 		{% for f in s.fields %}
@@ -181,7 +174,7 @@ namespace serial {
 		{% if f.is_primitive || f.is_optional %}
 		void {{s.name}}::set_{{f.name}}({{f.type_str}} const &value) {
 			_implicit_start();
-			_add_transaction({{f.set_trans_name}}::create(_{{f.name}}));
+			_add_transaction(ModifyTransaction::create(_idx, {{f.set_trans_name}}::create(_{{f.name}})));
 			_{{f.name}} = value;
 			_implicit_end();
 		}
@@ -189,7 +182,7 @@ namespace serial {
 		{% if !f.is_primitive && f.is_optional %}
 		void {{s.name}}::set_{{f.name}}({{f.non_opt_type_str}} &&value) {
 			_implicit_start();
-			_add_transaction({{f.set_trans_name}}::create(_{{f.name}}));
+			_add_transaction(ModifyTransaction::create(_idx, {{f.set_trans_name}}::create(_{{f.name}})));
 			_{{f.name}} = std::move(value);
 			_implicit_end();
 		}
