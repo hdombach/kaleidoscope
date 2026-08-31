@@ -90,7 +90,7 @@ namespace serial {
 	class VFieldType {
 		public:
 			VFieldType() = default;
-			static util::Result<VFieldType, Error> create(Node const &node, VVersion &version);
+			static util::Result<VFieldType, Error> create(Node const &node, VVersion const &version);
 
 			VFieldType(VFieldType const &other);
 			VFieldType(VFieldType &&other) = default;
@@ -101,6 +101,8 @@ namespace serial {
 			 * @brief Gets the cpp string representation
 			 */
 			std::string cpp_str() const;
+
+			VFieldType const *enclosed_type() const;
 
 			bool is_prim() const;
 			bool is_opt() const;
@@ -122,7 +124,7 @@ namespace serial {
 		public:
 			VStructField() = default;
 
-			static util::Result<VStructField, Error> create(Node const &node, VVersion &version);
+			static util::Result<VStructField, Error> create(Node const &node, VVersion const &version, size_t idx);
 
 			TemplObj templ_obj() const;
 
@@ -131,9 +133,17 @@ namespace serial {
 			VFieldType const &spec() const;
 		private:
 			std::string _name;
+			std::string _idx_name;
+			/**
+			 * @brief Index in the parent object
+			 */
+			uint32_t _idx;
 			VFieldType _spec;
 	};
 
+	/**
+	 * @brief A struct def or a document def
+	 */
 	class VStructDef {
 		public:
 			VStructDef() = default;
@@ -146,7 +156,11 @@ namespace serial {
 			std::string const &filename() const;
 
 			std::map<std::string, VStructField> const &fields() const;
+
+			bool is_document() const;
+
 		private:
+			bool _is_document;
 			VVersion *_version = nullptr;
 			std::string _name;
 			std::string _filename;
@@ -186,15 +200,17 @@ namespace serial {
 				util::FileLocation floc=std::source_location::current()
 			) const;
 
+			std::vector<std::string> _get_order() const;
+
 			VVersionValue _value;
 			std::map<std::string, VEnum> _enums;
 			std::map<std::string, VBitfield> _bitfields;
 			std::map<std::string, VStructDef> _structs;
 	};
 	
-	class VDocument {
+	class VRoot {
 		public:
-			VDocument() = default;
+			VRoot() = default;
 
 			util::Result<void, Error> add_file(Node const &node, std::string const &filename);
 

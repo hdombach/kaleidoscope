@@ -20,6 +20,7 @@ namespace serial {
 			"StrConst",
 			"Divide",
 			"Struct",
+			"Document",
 			"Enum",
 			"Bitfield",
 			"Float",
@@ -57,6 +58,7 @@ namespace serial {
 			std::regex("\"([^\\\\\"]|(\\\\.))*\""), // StrConst
 			std::regex("\\/"),
 			std::regex("struct"),
+			std::regex("document"),
 			std::regex("enum"),
 			std::regex("bitfield"),
 			std::regex("float"),

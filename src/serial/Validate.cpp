@@ -4,6 +4,7 @@
 #include "codegen/AstNode.hpp"
 #include "codegen/AstNodeIterator.hpp"
 #include "codegen/TemplObj.hpp"
+#include "util/IterAdapter.hpp"
 #include "util/Util.hpp"
 #include "util/log.hpp"
 #include <cstddef>
@@ -241,7 +242,7 @@ namespace serial {
 		}
 	}
 
-	util::Result<VFieldType, Error> VFieldType::create(Node const &node, VVersion &version) {
+	util::Result<VFieldType, Error> VFieldType::create(Node const &node, VVersion const &version) {
 		log_assert(node.cfg_rule() == "field-type", "Must pass field-type to TypeSpec::create");
 
 		auto t = VFieldType();
@@ -306,9 +307,12 @@ namespace serial {
 		}
 	}
 
+	VFieldType const *VFieldType::enclosed_type() const {
+		return _enclosing_type.get();
+	}
+
 	bool VFieldType::is_prim() const {
 		log_assert(_tok, "_tok must be set");
-		log_assert(_version, "_version must be set");
 		switch (T(_tok->type())) {
 			case T::Float:
 			case T::Double:
@@ -343,7 +347,7 @@ namespace serial {
 		return _enclosing_type.get() != nullptr;
 	}
 
-	util::Result<VStructField, Error> VStructField::create(Node const &node, VVersion &version) {
+	util::Result<VStructField, Error> VStructField::create(Node const &node, VVersion const &version, size_t idx) {
 		log_assert(node.cfg_rule() == "struct-field", "Must pass property to TypeDef::create");
 
 		auto f = VStructField();
@@ -361,17 +365,25 @@ namespace serial {
 		}
 		f._name = name_node->consumed_all();
 
+		f._idx = idx;
+		auto n = f._name;
+
+		std::transform(n.begin(), n.end(), n.begin(), ::toupper);
+		f._idx_name = util::f(n, "_IDX");
+
 		return std::move(f);
 	}
 
 	TemplObj VStructField::templ_obj() const {
 		return {
 			{"type_str", _spec.cpp_str()},
+			{"non_opt_type_str", _spec.is_opt() ? _spec.enclosed_type()->cpp_str() : _spec.cpp_str()},
 			{"is_primitive", _spec.is_prim()},
 			{"is_optional", _spec.is_opt()},
 			{"name", _name},
+			{"idx_name", _idx_name},
+			{"idx", _idx},
 			{"set_trans_name", util::f("TSet_", _name)},
-			{"mod_trans_name", util::f("TModify_", _name)},
 		};
 	}
 
@@ -380,7 +392,7 @@ namespace serial {
 	VFieldType const &VStructField::spec() const { return _spec; }
 
 	util::Result<VStructDef, Error> VStructDef::create(Node const &node, VVersion &version, std::string const &filename) {
-		log_assert(node.cfg_rule() == "struct-def", "Must pass struct-def to StructDef::create");
+		log_assert(node.cfg_rule() == "struct-def", "Must pass struct-def or document-def to StructDef::create");
 
 		auto s = VStructDef();
 
@@ -392,9 +404,10 @@ namespace serial {
 		s._filename = filename;
 		s._version = &version;
 
+		size_t idx = 0;
 		for (auto field_node : node.children_with_cfg("struct-field")) {
 			auto field = VStructField();
-			if (auto err = VStructField::create(*field_node, version).move_or(field)) {
+			if (auto err = VStructField::create(*field_node, version, idx++).move_or(field)) {
 				return Error(ErrorType::PARSE_ERROR, "Couldn't parse struct field", err.value());
 			}
 			s._fields[field.name()] = std::move(field);
@@ -411,7 +424,9 @@ namespace serial {
 		log_assert(!_name.empty(), "StructDef must be setup before calling templ_obj");
 		return {
 			{"name", _name},
-			{"fields", fields}
+			{"fields", fields},
+			{"is_document", _is_document},
+			{"base_class", _is_document ? "Document" : "Object"},
 		};
 	}
 
@@ -421,6 +436,14 @@ namespace serial {
 
 	std::string const &VStructDef::filename() const {
 		return _filename;
+	}
+
+	std::map<std::string, VStructField> const &VStructDef::fields() const {
+		return _fields;
+	}
+
+	bool VStructDef::is_document() const {
+		return _is_document;
 	}
 
 	util::Result<VVersionValue, Error> VVersionValue::create(Node const &node) {
@@ -500,6 +523,12 @@ namespace serial {
 					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate struct-def in version ", v->_value.namespace_str()), err.value());
 				}
 				v->_structs[s.name()] = s;
+			} else if (child.cfg_rule() == "document-def") {
+				auto s = VStructDef();
+				if (auto err = VStructDef::create(child, *v, filename).move_or(s)) {
+					return Error(ErrorType::VALIDATE_ERROR, util::f("Could not validate document-def in version ", v->_value.namespace_str()), err.value());
+				}
+				v->_structs[s.name()] = s;
 			}
 		}
 
@@ -520,7 +549,8 @@ namespace serial {
 		}
 
 		auto structs = cg::TemplList();
-		for (auto &[name, s] : _structs) {
+		for (auto &name : _get_order()) {
+			auto &s = _structs.at(name);
 			if (s.filename() != filename) continue;
 			structs.push_back(s.templ_obj());
 		}
@@ -562,7 +592,56 @@ namespace serial {
 		return {};
 	}
 
-	util::Result<void, Error> VDocument::add_file(Node const &node, std::string const &filename) {
+	std::vector<std::string> VVersion::_get_order() const {
+		auto v = std::vector<std::string>();
+		auto documents = std::vector<std::string>();
+
+		for (auto &[name, def] : _structs) {
+			documents.push_back(name);
+		}
+
+		for (auto &d : documents) {
+			auto visited = std::set<std::string>();
+			auto func = std::function<bool(std::string const &)>();
+
+			func = [&](std::string const &name) {
+				// Exit early if the field is not actually a struct
+				if (!_structs.contains(name)) return true;
+
+				if (visited.contains(name)) {
+					log_error() << name << " is used in one of its child classes. (Recursive definitions)." << std::endl;
+					return false;
+				}
+				visited.insert(name);
+
+				for (auto &[_, field] : _structs.at(name).fields()) {
+					if (!func(field.name())) {
+						return false;
+					}
+				}
+
+				bool found = false;
+				for (auto &n : v) {
+					if (n == name) {
+						found = true;
+						break;
+					}
+				}
+
+				if (!found) {
+					v.push_back(name);
+				}
+
+				return true;
+			};
+
+			func(d);
+		}
+
+		return v;
+	}
+
+	util::Result<void, Error> VRoot::add_file(Node const &node, std::string const &filename) {
 		log_assert(node.cfg_rule() == "root", "Must pass root AstNode to Document::add_file");
 
 		Node *doc_node;
@@ -592,11 +671,11 @@ namespace serial {
 		return {};
 	}
 
-	std::vector<std::string> const &VDocument::includes() const {
+	std::vector<std::string> const &VRoot::includes() const {
 		return _includes;
 	}
 
-	TemplObj VDocument::templ_obj(std::string const &filename) const {
+	TemplObj VRoot::templ_obj(std::string const &filename) const {
 		auto versions = cg::TemplList();
 
 		auto filepath = std::filesystem::path(filename);

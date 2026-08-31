@@ -41,51 +41,59 @@ namespace serial {
 
 		{% for s in version.structs %}
 		/**** {{s.name}} ****/
-		class {{s.name}}: public Object {
+		class {{s.name}}: public {{s.base_class}} {
 			public:
 				static const uint32_t TYPE_ID = 1; // TODO
 
 			{% for f in s.fields %}
-			{% if f.is_primitive %}
+			{% if f.is_primitive || f.is_optional %}
 				class {{f.set_trans_name}}: public Transaction {
 					public:
-						{{f.set_trans_name}}({{f.type_str}} value);
+						{{f.set_trans_name}}({{f.type_str}} const &value);
 
-						static Ptr create({{f.type_str}} value);
+						static Ptr create({{f.type_str}} const &value);
 
 						Ptr apply(Object &obj);
 
 					private:
 						{{f.type_str}} _value;
 				};
-			{% else %}
-				class {{f.mod_trans_name}}: public Transaction {
-					public:
-						{{f.mod_trans_name}}(Transaction::Ptr &&child_t);
-
-						static Ptr create(Transaction::Ptr &&child_t);
-
-						Ptr apply(Object &obj);
-
-					private:
-						Transaction::Ptr _child_t;
-				};
 			{% endif %}
 			{% endfor %}
+
+			{% for f in s.fields %}
+				static constexpr uint32_t {{f.idx_name}} = {{f.idx}};
+			{% endfor %}
+
 			public:
-				uint32_t type_id() const;
-				const char *type_str() const;
+				{{s.name}}();
+				{{s.name}}({{s.name}} const &other);
+				{{s.name}}({{s.name}} &&other);
+				{{s.name}} &operator=({{s.name}} const &other);
+				{{s.name}} &operator=({{s.name}} &&other);
+
+				uint32_t type_id() const override;
+				const char *type_str() const override;
+
+				Object *compound_property(uint32_t idx) override;
 
 			{% for f in s.fields %}
 				{% if f.is_optional %}
 				bool has_{{f.name}}() const;
 				{% endif %}
-				{{f.type_str}} const &{{f.name}}() const;
-				{% if f.is_primitive %}
-				void set_{{f.name}}({{f.type_str}} const &value);
-				{% else %}
-				{{f.type_str}} &{{f.name}}();
+
+				{{f.non_opt_type_str}} const &{{f.name}}() const;
+				{% if !f.is_primitive %}
+				{{f.non_opt_type_str}} &{{f.name}}();
 				{% endif %}
+
+				{% if f.is_primitive || f.is_optional %}
+				void set_{{f.name}}({{f.type_str}} const &value);
+				{% endif %}
+				{% if !f.is_primitive && f.is_optional %}
+				void set_{{f.name}}({{f.non_opt_type_str}} &&value);
+				{% endif %}
+
 
 			{% endfor %}
 			private:

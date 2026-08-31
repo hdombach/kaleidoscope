@@ -59,6 +59,11 @@ void log_assert(
 	util::FileLocation=std::source_location::current()
 );
 
+std::ostream &log_assert(
+	bool test,
+	util::FileLocation=std::source_location::current()
+);
+
 #define log_every_n(...) \
 	static uint32_t __counter = 0; \
 	_log_every_n(__counter, __VA_ARGS__)\

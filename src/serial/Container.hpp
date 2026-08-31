@@ -3,7 +3,6 @@
 #include <concepts>
 #include <vector>
 #include "Object.hpp"
-#include "Document.hpp"
 #include "util/log.hpp"
 #include "util/Util.hpp"
 #include "util/UIDList.hpp"
@@ -50,14 +49,20 @@ namespace serial {
 
 			class TInsert: public Transaction {
 				public:
-					TInsert(size_type idx, T &&value): _idx(idx), _value(std::move(value)) {}
+					TInsert(size_type idx, T &&value):
+						_idx(idx),
+						_value(std::move(value))
+					{}
 
 					static Ptr create(size_type idx, T &&value) {
 						return new TInsert(idx, std::move(value));
 					}
 
 					Ptr apply(Object &obj) {
-						log_assert(obj.type_id() == TYPE_ID, util::f("Expecting object of type  Vector but got ", obj.type_str()));
+						log_assert(
+							obj.type_id() == TYPE_ID,
+							util::f("Expecting object of type  Vector but got ", obj.type_str())
+						);
 						Vector<T> &vobj = obj;
 
 						vobj._ignore_start();
@@ -72,9 +77,74 @@ namespace serial {
 					T _value;
 			};
 
+			class TModify: public Transaction {
+				public:
+					TModify(size_t idx, Transaction::Ptr &&child_t):
+						_idx(idx),
+						_child_t(std::move(child_t))
+					{}
+
+					static Ptr create(size_t idx, Transaction::Ptr &&child_t) {
+						return new TModify(idx, std::move(child_t));
+					}
+
+					Ptr apply(Object &obj) {
+						log_assert(
+							obj.type_id() == TYPE_ID,
+							util::f("Expecting object of type Vector but got ", obj.type_str())
+						);
+						Vector<T> &vobj = obj;
+
+						vobj._ignore_start();
+						auto reverse = _child_t->apply(vobj[_idx]);
+						vobj._ignore_end();
+
+						return TModify::create(_idx, reverse);
+					}
+
+				private:
+					size_t _idx;
+					Transaction::Ptr _child_t;
+			};
+
 		public:
+			Vector() = default;
 			Vector(std::vector<T> const &v): _v(v) {};
 			Vector(std::vector<T> &&v): _v(v) {};
+
+			Vector(Vector const &other) {
+				_v = other._v;
+				for (auto &child : _v) {
+					_adopt_child(&child);
+				}
+			}
+
+			Vector(Vector &&other) {
+				_v = std::move(other._v);
+				for (auto &child : _v) {
+					_adopt_child(&child);
+				}
+			}
+
+			Vector &operator=(Vector const &other) {
+				_v = other._v;
+				for (auto &child : _v) {
+					_adopt_child(&child);
+				}
+				return *this;
+			}
+
+			Vector &operator=(Vector &&other) {
+				_v = std::move(other._v);
+				for (auto &child : _v) {
+					_adopt_child(&child);
+				}
+				return *this;
+			}
+
+			bool has_value() const {
+				return !_v.empty();
+			}
 
 			uint32_t type_id() const { return TYPE_ID; }
 			const char *type_str() const { return "Vector"; }
@@ -180,6 +250,35 @@ namespace serial {
 					T _value;
 			};
 
+			class TModify: public Transaction {
+				public:
+					TModify(size_t idx, Transaction::Ptr &&child_t):
+						_id(idx),
+						_child_t(std::move(child_t))
+					{}
+
+					static Ptr create(size_t idx, Transaction::Ptr &&child_t) {
+						return new TModify(idx, std::move(child_t));
+					}
+
+					Ptr apply(Object &obj) {
+						log_assert(
+							obj.type_id() == TYPE_ID,
+							util::f("Expecting object of type UIDList but got ", obj.type_str())
+						);
+						UIDList<T> &vobj = obj;
+
+						vobj._ignore_start();
+						auto reverse = _child_t->apply(vobj[_id]);
+						vobj._ignore_end();
+
+						return TModify::create(_id, reverse);
+					}
+				private:
+					size_t _id;
+					Transaction::Ptr _child_t;
+			};
+
 		public:
 			using Container = ::util::UIDList<T>;
 			using Element = Container::Element;
@@ -187,6 +286,41 @@ namespace serial {
 			using const_iterator = Container::const_iterator;
 
 		public:
+			UIDList() = default;
+
+			UIDList(UIDList const &other) {
+				_list = other._list;
+				for (auto &child : _list) {
+					_adopt_child(&child);
+				}
+			}
+
+			UIDList(UIDList &&other) {
+				_list = std::move(other._list);
+				for (auto &child : _list) {
+					_adopt_child(&child);
+				}
+			}
+
+			UIDList &operator=(UIDList const &other) {
+				_list = other._list;
+				for (auto &child : _list) {
+					_adopt_child(&child);
+				}
+				return *this;
+			}
+
+			UIDList &operator=(UIDList &&other) {
+				_list = std::move(other._list);
+				for (auto &child : _list) {
+					_adopt_child(&child);
+				}
+			}
+
+			bool has_value() const {
+				return !_list.empty();
+			}
+
 			uint32_t type_id() const { return TYPE_ID; }
 			const char *type_str() const { return "UIDList"; }
 

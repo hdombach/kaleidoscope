@@ -49,4 +49,8 @@ version 0.0.1 {
 		/* Enclosed struct must have a u32 id field */
 		uidlist<Node> roots;
 	}
+
+	/* document Project {
+		Scene scene;
+	} */
 }

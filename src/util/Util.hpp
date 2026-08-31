@@ -11,6 +11,7 @@
 #include "format.hpp"
 #include "util/FileLocation.hpp"
 #include "util/lines_iterator.hpp"
+#include "util/log.hpp"
 #include "util/result.hpp"
 #include "util/BaseError.hpp"
 
@@ -227,13 +228,22 @@ namespace util {
 				msg += std::string(line) + "\n";
 			}
 			if (i == loc.line) {
-				msg += std::string(" ", loc.column);
+				for (auto c = 0; c < loc.column-1; c++) {
+					if (line[c] == '\t') {
+						msg += "\t";
+					} else {
+						msg += " ";
+					}
+				}
 				msg += "^";
 				return msg;
 			}
 			i++;
 		}
-		return "UNKNOWN";
+		if (msg.empty()) {
+			msg = "Error loading line preview.";
+		}
+		return msg;
 	}
 
 	/**

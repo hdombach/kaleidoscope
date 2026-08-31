@@ -25,6 +25,6 @@ namespace serial {
 
 			cg::ParserContext _parser_ctx = cg::ParserContext(TOK_CONFIG);
 			std::map<std::string, cg::AstNode*> _roots;
-			VDocument _doc;
+			VRoot _doc;
 	};
 }
