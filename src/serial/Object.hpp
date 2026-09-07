@@ -82,7 +82,7 @@ namespace serial {
 			 *
 			 * @returns Object if idx is valid, nullptr if it is invalid or property is primitive
 			 */
-			virtual Object *compound_property(uint32_t idx) { return nullptr; }
+			virtual Object *compound_property(uint32_t idx) = 0;
 
 			/**
 			 * @brief Starts recording a transaction
@@ -137,7 +137,14 @@ namespace serial {
 
 			void _adopt_child(Object *child);
 
-			void _set_idx(Object *child, uint32_t idx);
+			void _set_idx(Object &child, uint32_t idx);
+
+			template<std::derived_from<Object> T>
+				void _set_idx(std::optional<T> &child, uint32_t idx) {
+					if (child.has_value()) {
+						_set_idx(child.value(), idx);
+					}
+				}
 
 			friend ModifyTransaction;
 
@@ -163,14 +170,13 @@ namespace serial {
 			void _ignore_start() override;
 			void _ignore_end() override;
 
-			void _add_transaction(Transaction::Ptr &&t) override = 0;
 			/**
 			 * @brief Add the transaction as the root document
 			 *
 			 * Adds the transaction to a list of pending transactions which is then
 			 * added to the final list once a transaction is finished.
 			 */
-			void _add_transaction_final(Transaction::Ptr &&t);
+			void _add_transaction(Transaction::Ptr &&t) override;
 
 		private:
 			int _recording_t = 0;

@@ -236,6 +236,15 @@ namespace vulkan {
 			observer->obs_remove(id);
 		}
 
+		if (_active_camera == id) {
+			_camera_dirty_bit = true;
+			_active_camera = 0;
+		}
+
+		if (_selected_node == id) {
+			_selected_node = 0;
+		}
+
 		_nodes[id]->parent()->remove_child(id);
 		_nodes.remove(id);
 		return {};

@@ -228,7 +228,7 @@ namespace util {
 				msg += std::string(line) + "\n";
 			}
 			if (i == loc.line) {
-				for (auto c = 0; c < loc.column-1; c++) {
+				for (auto c = 0; c < std::max(loc.column, 1u)-1; c++) {
 					if (line[c] == '\t') {
 						msg += "\t";
 					} else {
