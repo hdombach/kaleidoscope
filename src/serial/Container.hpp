@@ -28,7 +28,7 @@ namespace serial {
 					TRemove(size_type id): _id(id) {}
 
 					static Ptr create(size_type id) {
-						return new TRemove(id);
+						return std::make_unique(id);
 					}
 
 					Ptr apply(Object &obj) {
@@ -55,7 +55,7 @@ namespace serial {
 					{}
 
 					static Ptr create(size_type idx, T &&value) {
-						return new TInsert(idx, std::move(value));
+						return std::make_unique(idx, std::move(value));
 					}
 
 					Ptr apply(Object &obj) {
@@ -77,36 +77,6 @@ namespace serial {
 					T _value;
 			};
 
-			class TModify: public Transaction {
-				public:
-					TModify(size_t idx, Transaction::Ptr &&child_t):
-						_idx(idx),
-						_child_t(std::move(child_t))
-					{}
-
-					static Ptr create(size_t idx, Transaction::Ptr &&child_t) {
-						return new TModify(idx, std::move(child_t));
-					}
-
-					Ptr apply(Object &obj) {
-						log_assert(
-							obj.type_id() == TYPE_ID,
-							util::f("Expecting object of type Vector but got ", obj.type_str())
-						);
-						Vector<T> &vobj = obj;
-
-						vobj._ignore_start();
-						auto reverse = _child_t->apply(vobj[_idx]);
-						vobj._ignore_end();
-
-						return TModify::create(_idx, reverse);
-					}
-
-				private:
-					size_t _idx;
-					Transaction::Ptr _child_t;
-			};
-
 		public:
 			Vector() = default;
 			Vector(std::vector<T> const &v): _v(v) {};
@@ -114,30 +84,50 @@ namespace serial {
 
 			Vector(Vector const &other) {
 				_v = other._v;
+				size_t idx = 0;
 				for (auto &child : _v) {
-					_adopt_child(&child);
+					if constexpr (std::derived_from<T, Object>) {
+						_adopt_child(&child);
+						_set_idx(child, idx);
+					}
+					idx++;
 				}
 			}
 
 			Vector(Vector &&other) {
 				_v = std::move(other._v);
+				size_t idx = 0;
 				for (auto &child : _v) {
-					_adopt_child(&child);
+					if constexpr (std::derived_from<T, Object>) {
+						_adopt_child(&child);
+						_set_idx(child, idx);
+					}
+					idx++;
 				}
 			}
 
 			Vector &operator=(Vector const &other) {
 				_v = other._v;
+				size_t idx = 0;
 				for (auto &child : _v) {
-					_adopt_child(&child);
+					if constexpr (std::derived_from<T, Object>) {
+						_adopt_child(&child);
+						_set_idx(child, idx);
+					}
+					idx++;
 				}
 				return *this;
 			}
 
 			Vector &operator=(Vector &&other) {
 				_v = std::move(other._v);
+				size_t idx = 0;
 				for (auto &child : _v) {
-					_adopt_child(&child);
+					if constexpr (std::derived_from<T, Object>) {
+						_adopt_child(&child);
+						_set_idx(child, idx);
+					}
+					idx++;
 				}
 				return *this;
 			}
@@ -148,6 +138,12 @@ namespace serial {
 
 			uint32_t type_id() const { return TYPE_ID; }
 			const char *type_str() const { return "Vector"; }
+
+			Object *compound_property(uint32_t idx) {
+				if constexpr (std::derived_from<T, Object>) {
+					return static_cast<Object*>(&_v[idx]);
+				}
+			}
 
 			reference operator[](size_type pos) { return _v[pos]; }
 			const_reference operator[](size_type pos) const { return _v[pos]; }
@@ -166,6 +162,9 @@ namespace serial {
 
 			void push_back(T &&value) {
 				insert(_v.size(), std::move(value));
+
+				if constexpr (std::is_base_of_v<Object, T>) {
+				}
 			}
 
 			void pop_back() {
@@ -204,7 +203,7 @@ namespace serial {
 					TRemove(size_t id): _id(id) {}
 
 					static Ptr create(size_t id) {
-						return new TRemove(id);
+						return std::make_unique<TRemove>(id);
 					}
 
 					Ptr apply(Object &obj) {
@@ -214,7 +213,7 @@ namespace serial {
 
 						cast_obj._ignore_start();
 						auto element = std::move(cast_obj[_id]);
-						//TODO: remove to allow reusing ids
+						cast_obj._list.remove(_id);
 						cast_obj._ignore_end();
 
 						return TInsert::create(_id, std::move(element));
@@ -250,35 +249,6 @@ namespace serial {
 					T _value;
 			};
 
-			class TModify: public Transaction {
-				public:
-					TModify(size_t idx, Transaction::Ptr &&child_t):
-						_id(idx),
-						_child_t(std::move(child_t))
-					{}
-
-					static Ptr create(size_t idx, Transaction::Ptr &&child_t) {
-						return new TModify(idx, std::move(child_t));
-					}
-
-					Ptr apply(Object &obj) {
-						log_assert(
-							obj.type_id() == TYPE_ID,
-							util::f("Expecting object of type UIDList but got ", obj.type_str())
-						);
-						UIDList<T> &vobj = obj;
-
-						vobj._ignore_start();
-						auto reverse = _child_t->apply(vobj[_id]);
-						vobj._ignore_end();
-
-						return TModify::create(_id, reverse);
-					}
-				private:
-					size_t _id;
-					Transaction::Ptr _child_t;
-			};
-
 		public:
 			using Container = ::util::UIDList<T>;
 			using Element = Container::Element;
@@ -290,31 +260,52 @@ namespace serial {
 
 			UIDList(UIDList const &other) {
 				_list = other._list;
+				int idx = 0;
 				for (auto &child : _list) {
-					_adopt_child(&child);
+					if constexpr (std::derived_from<T, Object>) {
+						_adopt_child(&child);
+						_set_idx(child, idx);
+					}
+					idx++;
 				}
 			}
 
 			UIDList(UIDList &&other) {
 				_list = std::move(other._list);
+				int idx = 0;
 				for (auto &child : _list) {
-					_adopt_child(&child);
+					if constexpr (std::derived_from<T, Object>) {
+						_adopt_child(&child);
+						_set_idx(child, idx);
+					}
+					idx++;
 				}
 			}
 
 			UIDList &operator=(UIDList const &other) {
 				_list = other._list;
+				int idx = 0;
 				for (auto &child : _list) {
-					_adopt_child(&child);
+					if constexpr (std::derived_from<T, Object>) {
+						_adopt_child(&child);
+						_set_idx(child, idx);
+					}
+					idx++;
 				}
 				return *this;
 			}
 
 			UIDList &operator=(UIDList &&other) {
 				_list = std::move(other._list);
+				int idx = 0;
 				for (auto &child : _list) {
-					_adopt_child(&child);
+					if constexpr (std::derived_from<T, Object>) {
+						_adopt_child(&child);
+						_set_idx(child, idx);
+					}
+					idx++;
 				}
+				return *this;
 			}
 
 			bool has_value() const {
@@ -327,6 +318,13 @@ namespace serial {
 			iterator begin() {
 				return _list.begin();
 			}
+
+			Object *compound_property(uint32_t idx) {
+				if constexpr(std::derived_from<T, Object>) {
+					return static_cast<Object*>(&_list[idx]);
+				}
+			}
+
 			iterator end() {
 				return _list.end();
 			}

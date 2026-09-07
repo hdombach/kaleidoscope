@@ -392,9 +392,12 @@ namespace serial {
 	VFieldType const &VStructField::spec() const { return _spec; }
 
 	util::Result<VStructDef, Error> VStructDef::create(Node const &node, VVersion &version, std::string const &filename) {
-		log_assert(node.cfg_rule() == "struct-def", "Must pass struct-def or document-def to StructDef::create");
+		auto is_doc = node.cfg_rule() == "document-def";
+		auto is_struct = node.cfg_rule() == "struct-def";
+		log_assert(is_doc || is_struct, "VStructDef must be passed document-def or struct-def");
 
 		auto s = VStructDef();
+		s._is_document = is_doc;
 
 		Node *name_node;
 		if (auto err = node.child_with_tok(int(T::Identifier)).move_or(name_node)) {
@@ -615,7 +618,7 @@ namespace serial {
 				visited.insert(name);
 
 				for (auto &[_, field] : _structs.at(name).fields()) {
-					if (!func(field.name())) {
+					if (!func(field.spec().cpp_str())) {
 						return false;
 					}
 				}
@@ -635,7 +638,9 @@ namespace serial {
 				return true;
 			};
 
-			func(d);
+			if (!func(d)) {
+				return {};
+			}
 		}
 
 		return v;

@@ -2,6 +2,7 @@
 
 #include <vector>
 #include "log.hpp"
+#include "serial/Object.hpp"
 #include "util/filter_iterator.hpp"
 #include "util/Util.hpp"
 
@@ -151,7 +152,7 @@ namespace util {
 
 				_elements[id] = element;
 
-				// Remove item from element
+				// Remove item from empty
 				for (int i = 0; i < _empty.size(); i++) {
 					if (_empty[i] == id) {
 						_empty.erase(_empty.begin() + i);
@@ -234,7 +235,10 @@ namespace util {
 
 			size_t size() const { return _elements.size(); }
 
-			void clear() { _elements.clear(); }
+			void clear() {
+				_elements.clear();
+				_empty.clear();
+			}
 
 		private:
 			// Container of elements. Element 0 is reserved for an invalid element.

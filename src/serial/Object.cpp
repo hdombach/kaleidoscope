@@ -83,8 +83,8 @@ namespace serial {
 		object->_parent = this;
 	}
 
-	void Object::_set_idx(Object *child, uint32_t idx) {
-		child->_idx = idx;
+	void Object::_set_idx(Object &child, uint32_t idx) {
+		child._idx = idx;
 	}
 
 	void Document::start_transaction() {
@@ -103,8 +103,8 @@ namespace serial {
 		}
 		if (!_recording_t) {
 			log_warning() << "Cannot stop a serial transaction if not none are running." << std::endl;
-			_implicit_end();
 		}
+		_implicit_end();
 	}
 
 	void Document::_implicit_start() {
@@ -135,7 +135,7 @@ namespace serial {
 		_ignoring_t--;
 	}
 
-	void Document::_add_transaction_final(Transaction::Ptr &&t) {
+	void Document::_add_transaction(Transaction::Ptr &&t) {
 		// Can either be null, a standalone transaction, or a compound.
 		//
 		if (_pending_transactions == nullptr) {

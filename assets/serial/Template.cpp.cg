@@ -58,7 +58,11 @@ namespace serial {
 
 			{{s.name}} &cast_obj = static_cast<{{s.name}}&>(obj);
 			cast_obj._ignore_start();
+			{% if f.is_optional %}
+			auto old_value = cast_obj.has_{{f.name}}() ? std::optional(cast_obj.{{f.name}}()) : std::nullopt;
+			{% else %}
 			auto old_value = cast_obj.{{f.name}}();
+			{% endif %}
 			cast_obj.set_{{f.name}}(_value);
 			cast_obj._ignore_end();
 
@@ -85,15 +89,22 @@ namespace serial {
 			{% else %}
 			_adopt_child(&_{{f.name}});
 			{% endif %}
+			_set_idx(_{{f.name}}, {{f.idx_name}});
 			{% endif %}
 			{% endfor %}
-			//Leave idx unchaged as the object is still at same index in parent
 		{% endmacro%}
 
 		{{s.name}}::{{s.name}}() {
 			{% for f in s.fields %}
 			{% if !f.is_primitive && !f.is_optional%}
-			_set_idx(&_{{f.name}}, {{f.idx_name}});
+			_set_idx(_{{f.name}}, {{f.idx_name}});
+			{% if f.is_optional %}
+			if (_{{f.name}}) {
+				_adopt_child(&_{{f.name}}.value());
+			}
+			{% else %}
+			_adopt_child(&_{{f.name}});
+			{% endif %}
 			{% endif %}
 			{% endfor %}
 		}
@@ -174,7 +185,7 @@ namespace serial {
 		{% if f.is_primitive || f.is_optional %}
 		void {{s.name}}::set_{{f.name}}({{f.type_str}} const &value) {
 			_implicit_start();
-			_add_transaction(ModifyTransaction::create(_idx, {{f.set_trans_name}}::create(_{{f.name}})));
+			_add_transaction({{f.set_trans_name}}::create(_{{f.name}}));
 			_{{f.name}} = value;
 			_implicit_end();
 		}
@@ -182,7 +193,7 @@ namespace serial {
 		{% if !f.is_primitive && f.is_optional %}
 		void {{s.name}}::set_{{f.name}}({{f.non_opt_type_str}} &&value) {
 			_implicit_start();
-			_add_transaction(ModifyTransaction::create(_idx, {{f.set_trans_name}}::create(_{{f.name}})));
+			_add_transaction({{f.set_trans_name}}::create(_{{f.name}}));
 			_{{f.name}} = std::move(value);
 			_implicit_end();
 		}
