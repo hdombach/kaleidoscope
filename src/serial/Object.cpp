@@ -79,8 +79,8 @@ namespace serial {
 			_parent->_add_transaction(ModifyTransaction::create(_idx, std::move(t)));
 	}
 
-	void Object::_adopt_child(Object *object) {
-		object->_parent = this;
+	void Object::_adopt_child(Object &object) {
+		object._parent = this;
 	}
 
 	void Object::_set_idx(Object &child, uint32_t idx) {
@@ -120,6 +120,11 @@ namespace serial {
 		}
 
 		_recording_t--;
+
+		if (_recording_t == 0) {
+			//TODO: add transactions to transaction list
+			_pending_transactions.reset();
+		}
 	}
 
 	void Document::_ignore_start() {
@@ -136,8 +141,9 @@ namespace serial {
 	}
 
 	void Document::_add_transaction(Transaction::Ptr &&t) {
+		if (_ignoring_t > 0) return;
+
 		// Can either be null, a standalone transaction, or a compound.
-		//
 		if (_pending_transactions == nullptr) {
 			// No transaction currently being recorded
 			_pending_transactions = std::move(t);

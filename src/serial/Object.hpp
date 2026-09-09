@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <memory>
 #include <vector>
+#include <optional>
+#include <concepts>
 
 namespace serial {
 	class Document;
@@ -135,7 +137,14 @@ namespace serial {
 			 */
 			virtual void _add_transaction(Transaction::Ptr &&t);
 
-			void _adopt_child(Object *child);
+			void _adopt_child(Object &child);
+
+			template<std::derived_from<Object> T>
+				void _adopt_child(std::optional<T> &child) {
+					if (child.has_value()) {
+						_adopt_child(child.value());
+					}
+				}
 
 			void _set_idx(Object &child, uint32_t idx);
 

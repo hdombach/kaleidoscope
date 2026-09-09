@@ -82,13 +82,7 @@ namespace serial {
 
 			{% for f in s.fields %}
 			{% if !f.is_primitive %}
-			{% if f.is_optional %}
-			if (_{{f.name}}) {
-				_adopt_child(&_{{f.name}}.value());
-			}
-			{% else %}
-			_adopt_child(&_{{f.name}});
-			{% endif %}
+			_adopt_child(_{{f.name}});
 			_set_idx(_{{f.name}}, {{f.idx_name}});
 			{% endif %}
 			{% endfor %}
@@ -98,13 +92,7 @@ namespace serial {
 			{% for f in s.fields %}
 			{% if !f.is_primitive && !f.is_optional%}
 			_set_idx(_{{f.name}}, {{f.idx_name}});
-			{% if f.is_optional %}
-			if (_{{f.name}}) {
-				_adopt_child(&_{{f.name}}.value());
-			}
-			{% else %}
-			_adopt_child(&_{{f.name}});
-			{% endif %}
+			_adopt_child(_{{f.name}});
 			{% endif %}
 			{% endfor %}
 		}
@@ -187,6 +175,10 @@ namespace serial {
 			_implicit_start();
 			_add_transaction({{f.set_trans_name}}::create(_{{f.name}}));
 			_{{f.name}} = value;
+			{% if f.is_optional %}
+			_adopt_child(_{{f.name}});
+			_set_idx(_{{f.name}}, {{f.idx_name}});
+			{% endif %}
 			_implicit_end();
 		}
 		{% endif %}
