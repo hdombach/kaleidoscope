@@ -615,6 +615,7 @@ namespace serial {
 					log_error() << name << " is used in one of its child classes. (Recursive definitions)." << std::endl;
 					return false;
 				}
+
 				visited.insert(name);
 
 				for (auto &[_, field] : _structs.at(name).fields()) {
@@ -623,6 +624,9 @@ namespace serial {
 					}
 				}
 
+				visited.erase(name);
+
+				// Make esure there are no duplicates
 				bool found = false;
 				for (auto &n : v) {
 					if (n == name) {

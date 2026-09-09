@@ -87,7 +87,7 @@ namespace serial {
 				size_t idx = 0;
 				for (auto &child : _v) {
 					if constexpr (std::derived_from<T, Object>) {
-						_adopt_child(&child);
+						_adopt_child(child);
 						_set_idx(child, idx);
 					}
 					idx++;
@@ -99,7 +99,7 @@ namespace serial {
 				size_t idx = 0;
 				for (auto &child : _v) {
 					if constexpr (std::derived_from<T, Object>) {
-						_adopt_child(&child);
+						_adopt_child(child);
 						_set_idx(child, idx);
 					}
 					idx++;
@@ -111,7 +111,7 @@ namespace serial {
 				size_t idx = 0;
 				for (auto &child : _v) {
 					if constexpr (std::derived_from<T, Object>) {
-						_adopt_child(&child);
+						_adopt_child(child);
 						_set_idx(child, idx);
 					}
 					idx++;
@@ -124,7 +124,7 @@ namespace serial {
 				size_t idx = 0;
 				for (auto &child : _v) {
 					if constexpr (std::derived_from<T, Object>) {
-						_adopt_child(&child);
+						_adopt_child(child);
 						_set_idx(child, idx);
 					}
 					idx++;
@@ -141,8 +141,12 @@ namespace serial {
 
 			Object *compound_property(uint32_t idx) {
 				if constexpr (std::derived_from<T, Object>) {
+					if (idx >= _v.size()) {
+						return nullptr;
+					}
 					return static_cast<Object*>(&_v[idx]);
 				}
+				return nullptr;
 			}
 
 			reference operator[](size_type pos) { return _v[pos]; }
@@ -164,6 +168,8 @@ namespace serial {
 				insert(_v.size(), std::move(value));
 
 				if constexpr (std::is_base_of_v<Object, T>) {
+					_adopt_child(_v.back());
+					_set_idx(_v.back(), _v.size() - 1);
 				}
 			}
 
@@ -263,7 +269,7 @@ namespace serial {
 				int idx = 0;
 				for (auto &child : _list) {
 					if constexpr (std::derived_from<T, Object>) {
-						_adopt_child(&child);
+						_adopt_child(child);
 						_set_idx(child, idx);
 					}
 					idx++;
@@ -275,7 +281,7 @@ namespace serial {
 				int idx = 0;
 				for (auto &child : _list) {
 					if constexpr (std::derived_from<T, Object>) {
-						_adopt_child(&child);
+						_adopt_child(child);
 						_set_idx(child, idx);
 					}
 					idx++;
@@ -287,7 +293,7 @@ namespace serial {
 				int idx = 0;
 				for (auto &child : _list) {
 					if constexpr (std::derived_from<T, Object>) {
-						_adopt_child(&child);
+						_adopt_child(child);
 						_set_idx(child, idx);
 					}
 					idx++;
@@ -300,7 +306,7 @@ namespace serial {
 				int idx = 0;
 				for (auto &child : _list) {
 					if constexpr (std::derived_from<T, Object>) {
-						_adopt_child(&child);
+						_adopt_child(child);
 						_set_idx(child, idx);
 					}
 					idx++;
@@ -321,7 +327,12 @@ namespace serial {
 
 			Object *compound_property(uint32_t idx) {
 				if constexpr(std::derived_from<T, Object>) {
+					if (!_list.contains(idx)) {
+						return nullptr;
+					}
 					return static_cast<Object*>(&_list[idx]);
+				} else {
+					return nullptr;
 				}
 			}
 
