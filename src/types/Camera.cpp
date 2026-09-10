@@ -30,7 +30,7 @@ namespace types {
 
 		result->name() = "Camera " + std::to_string(id);
 
-		return std::move(result);
+		return result;
 	}
 
 	bool Camera::operator==(const Camera &other) const {

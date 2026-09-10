@@ -38,7 +38,7 @@ namespace types {
 			"}\n"
 			"orbitLife = orbitLife / iterations;\n"
 			"return 0.5 * log(r) * r / dr;\n";
-		return std::move(result);
+		return result;
 	}
 
 	void MandelbulbMesh::destroy() { }

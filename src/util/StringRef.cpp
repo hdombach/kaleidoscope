@@ -3,21 +3,21 @@
 
 namespace util {
 	StringRef::StringRef():
-		_str(nullptr),
-		_filename(nullptr),
 		_start(0),
 		_end(0),
 		_line(1),
-		_column(0)
+		_column(0),
+		_str(nullptr),
+		_filename(nullptr)
 	{}
 
 	StringRef::StringRef(const char *str, const char *filename):
-		_str(str),
-		_filename(filename),
 		_start(0),
 		_end(0),
 		_line(1),
-		_column(1)
+		_column(1),
+		_str(str),
+		_filename(filename)
 	{}
 
 	StringRef::StringRef(
@@ -26,12 +26,12 @@ namespace util {
 		uint32_t end,
 		const char *filename
 	):
-		_str(str),
-		_filename(filename),
 		_start(0),
 		_end(0),
 		_line(1),
-		_column(1)
+		_column(1),
+		_str(str),
+		_filename(filename)
 	{
 		inc(start);
 		//TODO: validation

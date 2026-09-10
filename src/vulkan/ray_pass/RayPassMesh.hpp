@@ -10,7 +10,7 @@
 
 namespace vulkan {
 	class RayPass;
-	class BVNode;
+	struct BVNode;
 	/**
 	 * @brief Contains reference to a BVNode buffer in the RayPass
 	 */
@@ -51,7 +51,7 @@ namespace vulkan {
 
 		private:
 			const types::Mesh *_mesh;
-			const RayPass *_ray_pass;
+			[[maybe_unused]] const RayPass *_ray_pass;
 
 			uint32_t _bvnode_id;
 	};

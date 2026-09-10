@@ -314,7 +314,6 @@ namespace vulkan {
 	}
 
 	Scene::camera_iterator Scene::cameras_begin() {
-		auto test = _nodes.begin();
 		using M = util::map_iterator<Scene::iterator, types::Camera *>;
 		return camera_iterator(
 			M(_nodes.begin(), _cam_cast),

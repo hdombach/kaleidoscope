@@ -38,7 +38,7 @@ namespace types {
 			"}\n"
 			"float r = length(pos);\n"
 			"return r / abs(dr) / 8;\n";
-		return std::move(result);
+		return result;
 	}
 
 	void MandelboxMesh::destroy() {

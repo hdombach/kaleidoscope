@@ -20,7 +20,7 @@ namespace cg {
 		if (_type < 0 || _type >= config.name_table.size()) {
 			name = config.name_table[_type].c_str();
 		}
-		return util::f("(", config.name_table[_type], " \"", util::escape_str(content()), "\")");
+		return util::f("(", name, " \"", util::escape_str(content()), "\")");
 	}
 
 	void Token::concat(Token const &t) {

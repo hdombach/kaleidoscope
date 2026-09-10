@@ -15,14 +15,14 @@ namespace vulkan {
 		result->set_mesh(mesh);
 		result->set_material(material);
 
-		return std::move(result);
+		return result;
 	}
 
 	Node::Ptr Node::create_virtual(uint32_t id) {
 		auto result = Ptr(new Node(id, Type::Virtual));
 		//The default name
 		result->name() = "Node " + std::to_string(id);
-		return std::move(result);
+		return result;
 	}
 
 	std::string const &Node::name() const {

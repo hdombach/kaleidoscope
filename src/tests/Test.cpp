@@ -63,8 +63,6 @@ int test_main(std::vector<std::string> const &filters) {
 	uint32_t total = 0;
 	for (auto &suite : suites) {
 		log_trace() << "Starting test suite: " << suite.first << std::endl;
-		uint32_t suite_total = 0;
-		uint32_t suite_passed = 0;
 		for (auto &test : suite.second) {
 			if (!_in_filter(test.second.full_name(), filters)) {
 				log_trace() << "Skipping test: " << test.second.full_name() << std::endl;

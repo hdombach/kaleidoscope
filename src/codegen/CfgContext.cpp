@@ -202,6 +202,8 @@ namespace cg {
 		}
 	}
 
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wrange-loop-construct"
 	void CfgContext::_remove_cls() {
 		auto new_sets = std::vector<CfgRuleSet>();
 
@@ -261,6 +263,7 @@ namespace cg {
 			}
 		}
 	}
+	#pragma GCC diagnostic pop
 
 	void CfgContext::_remove_empty() {
 		auto empty_sets = get_empty_sets(*this);

@@ -59,8 +59,7 @@ namespace util {
 
 		uint32_t y = 0, x = 0;
 		for (auto &row : _table) {
-			x = 0;
-			for (auto &cell : row) {
+			for (x = 0; x < row.size(); x++) {
 				auto size = str_rect(_table[y][x]);
 				if (size.w > widths[x]) {
 					widths[x] = size.w;
@@ -69,8 +68,6 @@ namespace util {
 				if (size.h > heights[y]) {
 					heights[y] = size.h;
 				}
-
-				x++;
 			}
 			y++;
 		}

@@ -296,7 +296,7 @@ namespace vulkan {
 		if (vkBeginCommandBuffer(_command_buffer, &begin_info) != VK_SUCCESS) {
 			log_error() << "Couldn't begin command buffer" << std::endl;
 		}
-		VkClearColorValue clear_color = {0.0, 0.0, 0.0, 0.0};
+		VkClearColorValue clear_color = {{0.0, 0.0, 0.0, 0.0}};
 		VkImageSubresourceRange range;
 
 		if (_clear_accumulator) {
@@ -630,13 +630,9 @@ namespace vulkan {
 		for (auto &mesh : _meshes) {
 			mesh.build(bvnodes, vertices);
 		}
-		for (auto &bvnode : bvnodes) {
-		}
 		if (vertices.empty()) {
 			//make sure buffer isn't empty because vulkan
 			vertices.push_back(vulkan::Vertex());
-		}
-		for (auto &vertex : vertices) {
 		}
 
 		if (auto buffer = StaticBuffer::create(vertices)) {

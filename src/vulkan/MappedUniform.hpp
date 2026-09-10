@@ -11,10 +11,10 @@ namespace vulkan {
 	class Uniform {
 		public:
 			Uniform():
+				_buffer_s(0),
 				_buffer(nullptr),
 				_buffer_memory(nullptr),
-				_uniform_buffer_mapped(nullptr),
-				_buffer_s(0)
+				_uniform_buffer_mapped(nullptr)
 			{}
 
 			static util::Result<Uniform, Error> create(size_t buffer_s) {
