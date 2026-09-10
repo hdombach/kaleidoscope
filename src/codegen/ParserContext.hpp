@@ -45,7 +45,7 @@ namespace cg {
 			/**
 			 * @brief The size of a single node bank
 			 */
-			uint32_t _bank_count=100;
+			[[maybe_unused]] uint32_t _bank_count=100;
 			/**
 			 * @brief The parsed tokens across all files
 			 */

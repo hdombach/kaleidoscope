@@ -206,7 +206,6 @@ namespace vulkan {
 		_surface(nullptr),
 		_descriptor_pool(nullptr),
 		_command_pool(nullptr),
-		_mip_levels(0),
 		_swapchain_support_details()
 	{}
 
@@ -1023,7 +1022,7 @@ namespace vulkan {
 	}
 
 	void Graphics::_framebuffer_resize_callback(GLFWwindow* window, int width, int height) {
-		auto graphics = reinterpret_cast<Graphics*>(glfwGetWindowUserPointer(window));
+
 	}
 
 	VkResult Graphics::_create_debug_utils_messenger_EXT(

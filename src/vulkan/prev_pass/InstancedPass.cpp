@@ -971,7 +971,7 @@ namespace vulkan {
 			FrameAttachment::create(_material_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
 			FrameAttachment::create(_node_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
 			FrameAttachment::create(_uv_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
-			FrameAttachment::create(_depth_buf_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL).set_clear_value({{1.0f, 0}}),
+			FrameAttachment::create(_depth_buf_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL).set_clear_value({{{1.0f, 0}}}),
 			FrameAttachment::create(_depth_image).set_depth(),
 		};
 	}

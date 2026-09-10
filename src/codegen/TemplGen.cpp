@@ -6,7 +6,6 @@
 #include "util/IterAdapter.hpp"
 #include "util/Util.hpp"
 #include "util/file.hpp"
-#include "util/log.hpp"
 #include "util/lines_iterator.hpp"
 #include "AstNodeIterator.hpp"
 #include "TemplTokenizer.hpp"

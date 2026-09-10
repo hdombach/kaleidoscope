@@ -16,29 +16,29 @@ namespace vulkan {
 			case VK_FORMAT_D32_SFLOAT_S8_UINT:
 			case VK_FORMAT_D24_UNORM_S8_UINT:
 			case VK_FORMAT_R32_SFLOAT:
-				attachment._clear_color = {1.0f, 0};
+				attachment._clear_color = {{{1.0f, 0}}};
 				break;
 			case VK_FORMAT_R16_UINT:
-				attachment._clear_color = {0};
+				attachment._clear_color = {{{0}}};
 				break;
 			case VK_FORMAT_R8_SRGB:
-				attachment._clear_color = {0};
+				attachment._clear_color = {{{0}}};
 				break;
 			case VK_FORMAT_R32G32_SFLOAT:
-				attachment._clear_color = {0.0, 0.0};
+				attachment._clear_color = {{{0.0, 0.0}}};
 				break;
 			case VK_FORMAT_R32G32B32_SFLOAT:
-				attachment._clear_color = {0.0, 0.0, 0.0};
+				attachment._clear_color = {{{0.0, 0.0, 0.0}}};
 				break;
 			case VK_FORMAT_R32G32B32A32_SFLOAT:
-				attachment._clear_color = {0.0, 0.0, 0.0, 1.0};
+				attachment._clear_color = {{{0.0, 0.0, 0.0, 1.0}}};
 				break;
 			case VK_FORMAT_R8G8B8A8_SRGB:
 			case VK_FORMAT_R8G8B8A8_UNORM:
-				attachment._clear_color = {0, 0, 0, 1};
+				attachment._clear_color = {{{0, 0, 0, 1}}};
 				break;
 			case VK_FORMAT_R8G8_SRGB:
-				attachment._clear_color = {0.0, 0.0};
+				attachment._clear_color = {{{0.0, 0.0}}};
 				break;
 			default:
 				log_error() << "Unimplimented image format: " << image.format() << std::endl;

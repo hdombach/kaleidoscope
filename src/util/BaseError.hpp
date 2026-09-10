@@ -221,6 +221,8 @@ template<>
 				return "VK_ERROR_INCOMPATIBLE_SHADER_BINARY_EXT";
 			case VK_RESULT_MAX_ENUM:
 				return "VK_RESULT_MAX_ENUM";
+			default:
+				return "UNKNOWN";
 		}
 	}
 

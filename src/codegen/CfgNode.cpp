@@ -223,7 +223,7 @@ namespace cg {
 	}
 
 	bool CfgRuleSet::operator!=(CfgRuleSet const &other) const {
-		return *this != other;
+		return !(*this == other);
 	}
 
 	void CfgRuleSet::add_rule(CfgRule const &rule) {

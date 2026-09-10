@@ -16,8 +16,7 @@ namespace cg {
 	class TemplGenTest: public TestFixture {
 		public:
 			TemplGenTest(Test &test, size_t variant):
-				TestFixture(test),
-				_should_simplify(variant)
+				TestFixture(test)
 			{
 			}
 
@@ -43,7 +42,6 @@ namespace cg {
 
 		private:
 			Test _test;
-			bool _should_simplify = true;
 			int count=0;
 	};
 
@@ -282,7 +280,8 @@ namespace cg {
 	}
 
 	TEST_F(TemplGenTest, call_member_chain) {
-		auto get_abs_sec = [](TemplList l) {
+		//TODO: use abs_sec
+		[[maybe_unused]] auto get_abs_sec = [](TemplList l) {
 			return l[0].get_attribute("seconds")->integer().value()
 				+ l[0].get_attribute("minutes")->integer().value() * 60
 				+ l[0].get_attribute("hours")->integer().value() * 60 * 60;
@@ -297,7 +296,7 @@ namespace cg {
 					{"seconds", 57},
 					{"minutes", 13},
 					{"hours", 2},
-					{ "get_self", TemplFunc(get_date) }
+					{ "get_self", TemplFunc(get_date) },
 				}
 			}
 		};

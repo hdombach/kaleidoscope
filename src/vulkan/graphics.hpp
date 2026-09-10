@@ -203,14 +203,9 @@ namespace vulkan {
 			VkSurfaceKHR _surface = nullptr;
 			VkDescriptorPool _descriptor_pool = nullptr;
 			VkCommandPool _command_pool = nullptr;
-			uint32_t _mip_levels;
 			Sampler _main_sampler;
 			Sampler _near_sampler;
 			SwapchainSupportDetails _swapchain_support_details;
 			PFN_vkSetDebugUtilsObjectNameEXT _set_obj_name = nullptr;
-
-			//imgui stuff
-			bool _framebuffer_resized = false;
-			uint32_t _current_frame = 0;
 	};
 }

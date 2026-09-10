@@ -152,8 +152,6 @@ namespace ui {
 	}
 
 	void NodesView(vulkan::Scene &scene, State &state) {
-		char name_buf[128];
-		char *name;
 		//float width = 250;
 		ImGui::BeginChild("Node List", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true);
 		float width = (ImGui::GetWindowSize().x - ImGui::GetFrameHeightWithSpacing()) / 2;
@@ -217,18 +215,18 @@ namespace ui {
 		}
 
 
-		bool show_children = ImGui::TreeNodeEx(node.name().data(), tree_flags);
+		bool show_children = ImGui::TreeNodeEx(name, tree_flags);
 		if (ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen()) {
 			if (state.selected_item == node.id()) {
 				state.selected_item = State::SELECTED_NONE;
 			} else {
 				state.selected_item = node.id();
-				state.selected_name = node.name();
+				state.selected_name = name;
 			}
 		}
 		if (node.id() != scene.root()->id() && ImGui::BeginDragDropSource()) {
 			ImGui::SetDragDropPayload("NodeItems", &node, sizeof(vulkan::Node));
-			ImGui::Text("%s", node.name().data());
+			ImGui::Text("%s", name);
 			ImGui::EndDragDropSource();
 		}
 		if (ImGui::BeginDragDropTarget()) {
@@ -430,7 +428,6 @@ namespace ui {
 			types::ResourceManager &resources,
 			State &state)
 	{
-		float width = 250;
 		ImGui::Text("Shader Resources");
 		if (ImGui::BeginTable("Shader Resource", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
 			for (auto r : shader_resources.get()) {

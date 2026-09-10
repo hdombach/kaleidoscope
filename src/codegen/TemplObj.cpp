@@ -81,7 +81,7 @@ namespace cg {
 		_builtins = nullptr;
 	}
 
-	TemplObj::TemplObj(const char *str): _v(str), _builtins(_str_builtins()) {}
+	TemplObj::TemplObj(const char *str): _builtins(_str_builtins()), _v(str) {}
 
 	TemplFuncRes TemplObj::unary_plus(TemplFuncRes const &val) {
 		auto type = val->type();

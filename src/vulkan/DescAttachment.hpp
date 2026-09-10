@@ -166,7 +166,6 @@ namespace vulkan {
 			std::optional<Error> _error = std::nullopt;
 			Type _type;
 
-			VkFormat _image_format = VK_FORMAT_UNDEFINED;
 			VkShaderStageFlags _shader_stage;
 			uint32_t _descriptor_count = 1; // currently used for multiple images
 

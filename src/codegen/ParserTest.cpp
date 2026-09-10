@@ -11,7 +11,7 @@
 namespace cg {
 	class ParserTest: TestFixture {
 		public:
-			ParserTest(Test &test, size_t variant): TestFixture(test), _variant(variant), _parser_ctx(TEMPL_TOK_CONFIG) { }
+			ParserTest(Test &test, size_t variant): TestFixture(test), _parser_ctx(TEMPL_TOK_CONFIG), _variant(variant) { }
 
 			static size_t variant_count() { return 2; }
 
