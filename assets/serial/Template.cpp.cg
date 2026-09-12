@@ -4,7 +4,7 @@ namespace serial {
 	{% for version in versions %}
 	namespace {{version.namespace_str}} {
 		{% for e in version.enums %}
-		/**** {{e.name}} ****/
+		/************************** Enum {{e.name}} *******************************/
 
 		const char *{{e.name}}_str({{e.name}} val) {
 			switch (val) {
@@ -19,7 +19,7 @@ namespace serial {
 		{% endfor %}
 
 		{% for b in version.bitfields %}
-		/**** {{b.name}} ****/
+		/************************* Bitfield {{b.name}} ****************************/
 
 		std::ostream &print_{{b.name}}(std::ostream &os, {{b.name}} const &val) {
 			const char *frag = "";
@@ -34,14 +34,8 @@ namespace serial {
 		{% endfor %}
 
 		{% for s in version.structs %}
-		/**** Transactions for {{s.name}} ****/
 		{% for f in s.fields %}
-		{% if f.is_optional %}
-		bool {{s.name}}::has_{{f.name}}() const {
-			return _{{f.name}}.has_value();
-		}
-		{% endif %}
-
+		/************ Transactions {{s.name}}::{{f.set_trans_name}} ***************/
 
 		{% if f.is_primitive || f.is_optional %}
 		{{s.name}}::{{f.set_trans_name}}::{{f.set_trans_name}}({{f.type_str}} const &value): _value(value) {}
@@ -97,6 +91,8 @@ namespace serial {
 			{% endfor %}
 		}
 
+		/************************* Object {{s.name}} ******************************/
+
 		{{s.name}}::{{s.name}}({{s.name}} const &other) {
 {{ set_elements(s, false) }}
 		}
@@ -147,9 +143,15 @@ namespace serial {
 			}
 		}
 
-		/**** Properties for {{s.name}} ****/
-
 		{% for f in s.fields %}
+
+		{% if f.is_optional %}
+		bool {{s.name}}::has_{{f.name}}() const {
+			return _{{f.name}}.has_value();
+		}
+		{% endif %}
+
+
 		{{f.non_opt_type_str}} const &{{s.name}}::{{f.name}}() const {
 			{% if f.is_optional %}
 			log_assert(_{{f.name}}.has_value(), "You must call has_{{f.name}} before getting it.");

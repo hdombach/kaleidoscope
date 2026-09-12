@@ -11,7 +11,7 @@ namespace serial {
 	{% for version in versions %}
 	namespace {{version.namespace_str}} {
 		{% for e in version.enums %}
-		/**** {{e.name}} ****/
+		/************************** Enum {{e.name}} *******************************/
 		enum class {{e.name}}: uint8_t {
 			{% for enumerator in e.enumerators %}
 			{% if enumerator.has_value %}
@@ -26,7 +26,7 @@ namespace serial {
 		{% endfor %}
 
 		{% for b in version.bitfields %}
-		/**** {{b.name}} ****/
+		/************************* Bitfield {{b.name}} ****************************/
 		struct {{b.name}} {
 			{% for f in b.fields %}
 			bool {{f.name}}: 1;
@@ -37,10 +37,8 @@ namespace serial {
 		{% endfor %}
 
 
-		/**** Objects ****/
-
 		{% for s in version.structs %}
-		/**** {{s.name}} ****/
+		/************************* Object {{s.name}} ******************************/
 		class {{s.name}}: public {{s.base_class}} {
 			public:
 				static const uint32_t TYPE_ID = 1; // TODO
