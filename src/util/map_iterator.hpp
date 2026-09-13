@@ -13,6 +13,15 @@ namespace util {
 			//gets around the fact that you cannot get reference to a computed
 			//value
 			using reference = ToValue;
+			using difference_type = std::ptrdiff_t;
+
+			map_iterator() = default;
+			map_iterator(map_iterator const &other): _begin(other._begin), _func(other._func) {}
+			map_iterator& operator=(map_iterator const &other) {
+				_begin = other._begin;
+				_func = other._func;
+				return *this;
+			}
 
 			explicit map_iterator(FromIter begin, Func func):
 				_begin(begin),

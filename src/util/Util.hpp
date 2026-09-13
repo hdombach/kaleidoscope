@@ -261,7 +261,7 @@ namespace util {
 	 */
 	struct has_value {
 		template<typename T>
-		bool operator()(T const &v) {
+		bool operator()(T const &v) const {
 			return static_cast<bool>(v);
 		}
 	};

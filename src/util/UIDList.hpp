@@ -24,6 +24,11 @@ namespace util {
 		}
 	};
 
+	template<typename GetId, typename Element>
+	concept IdTrait = requires(Element const &el) {
+		{ GetId()(el) } -> std::convertible_to<uint32_t>;
+	};
+
 	/**
 	 * @brief A list of unique id's
 	 * The caller is in charge of setting the unique id's however
@@ -33,7 +38,7 @@ namespace util {
 	 * The element class needs to either contain an id function or impliment trait
 	 * to retrieve id
 	 */
-	template<typename E, typename I = id_trait>
+	template<std::default_initializable E, IdTrait<E> I = id_trait>
 	class UIDList {
 		private:
 			/**
@@ -42,12 +47,12 @@ namespace util {
 			 *   - false: Free to use or reserved at id 0
 			 */
 			struct Pred {
-				UIDList<E, I> const &_list;
+				UIDList<E, I> const *_list = nullptr;
 
-				bool operator()(E const &el) {
-					auto id = &el - _list._elements.data();
+				bool operator()(E const &el) const {
+					auto id = &el - _list->_elements.data();
 					if (id == 0) return false;
-					for (auto &e : _list._empty) {
+					for (auto &e : _list->_empty) {
 						if (e == id) {
 							return false;
 						} else if (e > id) {
@@ -68,17 +73,17 @@ namespace util {
 		public:
 
 			iterator begin() {
-				return iterator(_elements.begin(), _elements.end(), Pred(*this));
+				return iterator(_elements.begin(), _elements.end(), Pred(this));
 			}
 			iterator end() {
-				return iterator(_elements.end(), _elements.end(), Pred(*this));
+				return iterator(_elements.end(), _elements.end(), Pred(this));
 			}
 
 			const_iterator begin() const {
-				return const_iterator(_elements.begin(), _elements.end(), Pred(*this));
+				return const_iterator(_elements.begin(), _elements.end(), Pred(this));
 			}
 			const_iterator end() const {
-				return const_iterator(_elements.end(), _elements.end(), Pred(*this));
+				return const_iterator(_elements.end(), _elements.end(), Pred(this));
 			}
 
 			Container &raw() { return _elements; }
@@ -100,7 +105,7 @@ namespace util {
 					return false;
 				}
 
-				return Pred(*this)(_elements[id]);
+				return Pred(this)(_elements[id]);
 			}
 
 			/**
