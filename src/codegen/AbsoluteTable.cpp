@@ -1,6 +1,5 @@
 #include "AbsoluteTable.hpp"
 #include "util/PrintTools.hpp"
-#include "util/IterAdapter.hpp"
 #include "util/Util.hpp"
 #include "util/log.hpp"
 
@@ -246,7 +245,7 @@ namespace cg::abs {
 	}
 
 	AbsoluteTable::Row AbsoluteTable::row(Entry const &state_id) {
-		return util::Adapt(
+		return std::ranges::subrange(
 			&_states[state_id * _state_size()],
 			&_states[(state_id + 1) * _state_size()]
 		);

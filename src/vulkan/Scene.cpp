@@ -5,7 +5,6 @@
 #include "util/Util.hpp"
 #include "Scene.hpp"
 #include "Uniforms.hpp"
-#include "util/map_iterator.hpp"
 
 namespace vulkan {
 	using util::f;

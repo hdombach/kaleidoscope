@@ -6,7 +6,6 @@
 
 #include "util/FileLocation.hpp" // Needed for operator resolution
 #include "codegen/CfgContext.hpp"
-#include "util/IterAdapter.hpp"
 #include "util/result.hpp"
 #include "AstNode.hpp"
 #include "AbsoluteTable.hpp"
@@ -88,7 +87,7 @@ namespace cg::abs {
 			CfgContext &cfg() override;
 
 		public:
-			using State = util::IterAdapter<uint32_t*>;
+			using State = std::ranges::subrange<uint32_t *, uint32_t *>;
 
 			struct RuleGroup {
 				CfgLeaf leaf;

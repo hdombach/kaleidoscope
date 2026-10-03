@@ -3,7 +3,6 @@
 #include "codegen/CfgContext.hpp"
 #include "codegen/SParser.hpp"
 #include "codegen/TemplObj.hpp"
-#include "util/IterAdapter.hpp"
 #include "util/Util.hpp"
 #include "util/file.hpp"
 #include "util/lines_iterator.hpp"
@@ -816,7 +815,7 @@ namespace cg {
 
 		auto start = node.begin();
 		start++;
-		auto children = util::Adapt(start, node.end());
+		auto children = std::ranges::subrange(start, node.end());
 		for (auto const &child : children) {
 			//TODO
 			//if (child.type() == AstNode::Type::Token) continue;
