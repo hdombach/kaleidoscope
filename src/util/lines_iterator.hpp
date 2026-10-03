@@ -1,6 +1,5 @@
 #pragma once
 
-#include "util/IterAdapter.hpp"
 #include <string_view>
 #include <string>
 

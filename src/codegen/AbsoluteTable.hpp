@@ -2,7 +2,6 @@
 
 #include <vector>
 
-#include "util/IterAdapter.hpp"
 #include "util/result.hpp"
 #include "CfgContext.hpp"
 
@@ -152,7 +151,7 @@ namespace cg::abs {
 	 */
 	class AbsoluteTable {
 		public:
-			using Row = util::IterAdapter<uint32_t*>;
+			using Row = std::ranges::subrange<uint32_t *, uint32_t *>;
 			/**
 			 * @brief An entry in the table
 			 * 

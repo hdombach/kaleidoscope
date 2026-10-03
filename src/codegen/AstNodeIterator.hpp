@@ -6,9 +6,13 @@ namespace cg {
 		public:
 			using reference = AstNode&;
 			using const_reference = const AstNode&;
+			using difference_type = std::ptrdiff_t;
 			
 			using pointer = AstNode*;
 			using const_pointer = const AstNode*;
+
+		public:
+			AstNodeIterator() = default;
 
 			AstNodeIterator(AstNode *node): _node(node) {}
 
@@ -49,4 +53,7 @@ namespace cg {
 		private:
 			AstNode *_node=nullptr;;
 	};
+
+	static_assert(std::input_or_output_iterator<AstNodeIterator>);
+	static_assert(std::sentinel_for<AstNodeIterator, AstNodeIterator>);
 };

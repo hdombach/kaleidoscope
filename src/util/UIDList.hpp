@@ -2,10 +2,8 @@
 
 #include <ranges>
 #include <vector>
-#include <iterator>
 #include "log.hpp"
 #include "serial/Object.hpp"
-#include "util/filter_iterator.hpp"
 #include "util/Util.hpp"
 #include "util/get_iterator.hpp"
 
@@ -78,19 +76,6 @@ namespace util {
 		public:
 
 			iterator begin() {
-<<<<<<< HEAD
-				return iterator(_elements.begin(), _elements.end(), Pred(this));
-			}
-			iterator end() {
-				return iterator(_elements.end(), _elements.end(), Pred(this));
-			}
-
-			const_iterator begin() const {
-				return const_iterator(_elements.begin(), _elements.end(), Pred(this));
-			}
-			const_iterator end() const {
-				return const_iterator(_elements.end(), _elements.end(), Pred(this));
-=======
 				return (_elements | std::views::filter(Pred(*this))).begin();
 			}
 			iterator end() {
@@ -102,7 +87,6 @@ namespace util {
 			}
 			const_iterator end() const {
 				return (_elements | std::views::filter(Pred(*this))).end();
->>>>>>> f875ced (Started using ranges)
 			}
 
 			Container &raw() { return _elements; }

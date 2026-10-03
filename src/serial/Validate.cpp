@@ -4,7 +4,6 @@
 #include "codegen/AstNode.hpp"
 #include "codegen/AstNodeIterator.hpp"
 #include "codegen/TemplObj.hpp"
-#include "util/IterAdapter.hpp"
 #include "util/Util.hpp"
 #include "util/log.hpp"
 #include <cstddef>

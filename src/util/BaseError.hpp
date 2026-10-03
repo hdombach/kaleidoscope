@@ -3,11 +3,11 @@
 #include <vector>
 #include <string>
 #include <ostream>
+#include <ranges>
 
 #include <vulkan/vulkan_core.h>
 
 #include "util/FileLocation.hpp"
-#include "util/IterAdapter.hpp"
 #include "util/log.hpp"
 
 namespace util {
@@ -62,7 +62,7 @@ class BaseError {
 		util::FileLocation loc() const { return _frags.back().location; }
 
 		std::ostream &print(std::ostream &os) const {
-			for (auto &f : util::reverse(_frags)) {
+			for (auto &f : _frags | std::views::reverse) {
 				os << "[";
 				if (!f.type.empty()) {
 					os << f.type << ":";
