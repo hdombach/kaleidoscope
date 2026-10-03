@@ -1,10 +1,13 @@
 #pragma once
 
+#include <ranges>
 #include <vector>
+#include <iterator>
 #include "log.hpp"
 #include "serial/Object.hpp"
 #include "util/filter_iterator.hpp"
 #include "util/Util.hpp"
+#include "util/get_iterator.hpp"
 
 namespace util {
 	/**
@@ -67,12 +70,15 @@ namespace util {
 			using Element = E;
 			using IdTrait = I;
 			using Container = std::vector<Element>;
-			using iterator = util::filter_iterator<typename Container::iterator, Pred>;
-			using const_iterator = util::filter_iterator<typename Container::const_iterator, Pred>;
+			using View = std::ranges::filter_view<std::ranges::ref_view<Container>, Pred>;
+			using ConstView = std::ranges::filter_view<std::ranges::ref_view<const Container>, Pred>;
+			using iterator = util::get_iterator<View>;
+			using const_iterator = util::get_iterator<ConstView>;
 
 		public:
 
 			iterator begin() {
+<<<<<<< HEAD
 				return iterator(_elements.begin(), _elements.end(), Pred(this));
 			}
 			iterator end() {
@@ -84,6 +90,19 @@ namespace util {
 			}
 			const_iterator end() const {
 				return const_iterator(_elements.end(), _elements.end(), Pred(this));
+=======
+				return (_elements | std::views::filter(Pred(*this))).begin();
+			}
+			iterator end() {
+				return (_elements | std::views::filter(Pred(*this))).end();
+			}
+
+			const_iterator begin() const {
+				return (_elements | std::views::filter(Pred(*this))).begin();
+			}
+			const_iterator end() const {
+				return (_elements | std::views::filter(Pred(*this))).end();
+>>>>>>> f875ced (Started using ranges)
 			}
 
 			Container &raw() { return _elements; }

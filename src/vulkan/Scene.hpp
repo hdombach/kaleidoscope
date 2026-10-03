@@ -8,7 +8,6 @@
 #include "util/result.hpp"
 #include "util/Observer.hpp"
 #include "util/Util.hpp"
-#include "util/map_iterator.hpp"
 #include "util/IterAdapter.hpp"
 #include "types/ResourceManager.hpp"
 #include "types/Camera.hpp"
@@ -29,7 +28,11 @@ namespace vulkan {
 			using iterator = Container::iterator;
 			using const_iterator = Container::const_iterator;
 
-			using camera_iterator = util::filter_iterator<util::map_iterator<iterator, types::Camera*>>;
+			struct CameraCast {
+				types::Camera *operator()(std::unique_ptr<Node> &node);
+			};
+
+			using CameraView = std::ranges::filter_view<std::ranges::transform_view<std::ranges::ref_view<Container>, CameraCast>, util::has_value>;
 
 			Scene(const Scene& other) = delete;
 			Scene(Scene &&other) = default;
@@ -93,11 +96,7 @@ namespace vulkan {
 			const_iterator begin() const;
 			const_iterator end() const;
 
-			camera_iterator cameras_begin();
-			camera_iterator cameras_end();
-			inline auto cameras() {
-				return util::Adapt(cameras_begin(), cameras_end());
-			}
+			CameraView cameras();
 
 		private:
 			Scene() = default;

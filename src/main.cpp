@@ -1,6 +1,7 @@
 #include <iostream>
 #include <exception>
 #include <cstdlib>
+#include <ranges>
 
 #include "App.hpp"
 #include "util/Env.hpp"

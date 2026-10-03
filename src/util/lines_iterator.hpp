@@ -8,6 +8,9 @@ namespace util {
 	class lines_iterator {
 		public:
 			using value_type = std::string_view;
+			using difference_type = std::ptrdiff_t;
+
+			lines_iterator() = default;
 
 			static lines_iterator begin(std::string const &str) {
 				lines_iterator r;
@@ -61,8 +64,6 @@ namespace util {
 			const char *_end;
 
 		private:
-			lines_iterator() = default;
-
 			void _next_newline() {
 				while (*_end != '\0') {
 					_end++;
@@ -71,7 +72,10 @@ namespace util {
 			}
 	};
 
+	static_assert(std::input_or_output_iterator<lines_iterator>);
+	static_assert(std::sentinel_for<lines_iterator, lines_iterator>);
+
 	inline auto get_lines(std::string const &str) {
-		return Adapt(lines_iterator::begin(str), lines_iterator::end(str));
+		return std::ranges::subrange{lines_iterator::begin(str), lines_iterator::end(str)};
 	}
 }

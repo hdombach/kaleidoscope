@@ -10,6 +10,12 @@
 namespace vulkan {
 	using util::f;
 
+	types::Camera *Scene::CameraCast::operator()(std::unique_ptr<Node> &node) {
+		if (node == nullptr) return nullptr;
+		if (node->type() != Node::Type::Camera) return nullptr;
+		return static_cast<types::Camera *>(node.get());
+	}
+
 	util::Result<Scene::Ptr, Error> Scene::create(
 			types::ResourceManager &resource_manager)
 	{
@@ -313,19 +319,7 @@ namespace vulkan {
 		return static_cast<types::Camera *>((*node).get());
 	}
 
-	Scene::camera_iterator Scene::cameras_begin() {
-		using M = util::map_iterator<Scene::iterator, types::Camera *>;
-		return camera_iterator(
-			M(_nodes.begin(), _cam_cast),
-			M(_nodes.end(), _cam_cast)
-		);
-	}
-
-	Scene::camera_iterator Scene::cameras_end() {
-		using M = util::map_iterator<Scene::iterator, types::Camera *>;
-		return camera_iterator(
-			M(_nodes.end(), _cam_cast),
-			M(_nodes.end(), _cam_cast)
-		);
+	Scene::CameraView Scene::cameras() {
+		return _nodes | std::views::transform(CameraCast()) | std::views::filter(util::has_value());
 	}
 }
