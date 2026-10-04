@@ -41,7 +41,7 @@ namespace util {
 	 */
 	template<std::default_initializable E, IdTrait<E> I = id_trait>
 	class UIDList {
-		private:
+		public:
 			/**
 			 * @brief Is the specified element being used at the moment.
 			 *   - true: In use
@@ -49,6 +49,9 @@ namespace util {
 			 */
 			struct Pred {
 				UIDList<E, I> const *_list = nullptr;
+
+				Pred() = default;
+				Pred(UIDList<E, I> const *list): _list(list) {}
 
 				bool operator()(E const &el) const {
 					auto id = &el - _list->_elements.data();
@@ -76,17 +79,17 @@ namespace util {
 		public:
 
 			iterator begin() {
-				return (_elements | std::views::filter(Pred(*this))).begin();
+				return (_elements | std::views::filter(Pred(this))).begin();
 			}
 			iterator end() {
-				return (_elements | std::views::filter(Pred(*this))).end();
+				return (_elements | std::views::filter(Pred(this))).end();
 			}
 
 			const_iterator begin() const {
-				return (_elements | std::views::filter(Pred(*this))).begin();
+				return (_elements | std::views::filter(Pred(this))).begin();
 			}
 			const_iterator end() const {
-				return (_elements | std::views::filter(Pred(*this))).end();
+				return (_elements | std::views::filter(Pred(this))).end();
 			}
 
 			Container &raw() { return _elements; }
