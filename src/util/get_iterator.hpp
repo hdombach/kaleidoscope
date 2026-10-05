@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ranges>
+#include <utility>
 
 namespace util {
 	template<std::ranges::range R>

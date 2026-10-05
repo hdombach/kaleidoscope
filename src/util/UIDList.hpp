@@ -77,19 +77,20 @@ namespace util {
 			using const_iterator = util::get_iterator<ConstView>;
 
 		public:
+			UIDList() = default;
 
 			iterator begin() {
-				return (_elements | std::views::filter(Pred(this))).begin();
+				return _view.begin();
 			}
 			iterator end() {
-				return (_elements | std::views::filter(Pred(this))).end();
+				return _view.end();
 			}
 
 			const_iterator begin() const {
-				return (_elements | std::views::filter(Pred(this))).begin();
+				return _cview.begin();
 			}
 			const_iterator end() const {
-				return (_elements | std::views::filter(Pred(this))).end();
+				return _cview.end();
 			}
 
 			Container &raw() { return _elements; }
@@ -149,15 +150,18 @@ namespace util {
 					_elements.push_back(Element());
 				}
 
+
 				// Fast track the process if get_id is used.
 				if (!_empty.empty() && _empty.back() == id) {
 					_elements[_empty.back()] = element;
 					_empty.pop_back();
+					_recreate_view();
 					return true;
 				}
 
 				// Check whether it is a duplicate
 				if (contains(id)) {
+					_recreate_view();
 					return false;
 				}
 
@@ -172,6 +176,7 @@ namespace util {
 					}
 				}
 
+				_recreate_view();
 				return true;
 			}
 
@@ -190,15 +195,18 @@ namespace util {
 					_elements.push_back(Element());
 				}
 
+
 				// Fast track the process if get_id is used.
 				if (!_empty.empty() && _empty.back() == id) {
 					_elements[_empty.back()] = std::move(element);
 					_empty.pop_back();
+					_recreate_view();
 					return true;
 				}
 
 				// Check whether it is a duplicate
 				if (contains(id)) {
+					_recreate_view();
 					return false;
 				}
 
@@ -213,6 +221,7 @@ namespace util {
 					}
 				}
 
+				_recreate_view();
 				return true;
 			}
 
@@ -223,6 +232,7 @@ namespace util {
 			 */
 			bool remove(uint32_t id) {
 				if (!contains(id)) {
+					_recreate_view();
 					return false;
 				}
 
@@ -230,10 +240,12 @@ namespace util {
 				for (auto b = _empty.begin(); b < _empty.end(); b++) {
 					if (*b > id) {
 						_empty.insert(b, id);
+						_recreate_view();
 						return true;
 					}
 				}
 				_empty.push_back(id);
+				_recreate_view();
 				return true;
 
 			}
@@ -249,6 +261,7 @@ namespace util {
 			void clear() {
 				_elements.clear();
 				_empty.clear();
+				_recreate_view();
 			}
 
 		private:
@@ -258,5 +271,16 @@ namespace util {
 			 * @brief Sorted list of unused element indexes/ids
 			 */
 			std::vector<uint32_t> _empty;
+
+			/**
+			 * Filter view into the elements
+			 */
+			View _view = _elements | std::views::filter(Pred(this));
+			mutable ConstView _cview = std::as_const(_elements) | std::views::filter(Pred(this));
+
+			void _recreate_view() {
+				_view = _elements | std::views::filter(Pred(this));
+				_cview = std::as_const(_elements) | std::views::filter(Pred(this));
+			}
 	};
 }
