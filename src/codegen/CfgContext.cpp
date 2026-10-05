@@ -202,18 +202,17 @@ namespace cg {
 		}
 	}
 
-	#pragma GCC diagnostic push
-	#pragma GCC diagnostic ignored "-Wrange-loop-construct"
 	void CfgContext::_remove_cls() {
 		auto new_sets = std::vector<CfgRuleSet>();
 
 		for (auto i = 0; i < _cfg_rule_sets.size(); i++) {
 			auto const &set = _cfg_rule_sets[i];
 			int rule_idx = 0;
-			// Create copies because everything will be invalidated
-			for (auto const rule : set.rules()) {
+			for (auto const &r : set.rules()) {
+				auto rule = r; // Local copy because everything will be invalidated
 				int leaf_idx = 0;
-				for (auto const leaf : rule.leaves()) {
+				for (auto const &l : rule.leaves()) {
+					auto leaf = l;
 					if (leaf.type() == CfgLeaf::Type::cls) {
 						// Chop off the end of the rule and make a new rule.
 						// <foo> -> [<bar>] <rest>
@@ -263,7 +262,6 @@ namespace cg {
 			}
 		}
 	}
-	#pragma GCC diagnostic pop
 
 	void CfgContext::_remove_empty() {
 		auto empty_sets = get_empty_sets(*this);

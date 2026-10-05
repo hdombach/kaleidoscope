@@ -17,7 +17,7 @@ namespace cg {
 	util::FileLocation Token::loc() const { return _loc; }
 	std::string Token::debug_str(Config const &config) const {
 		const char *name = "UNKNOWN";
-		if (_type < 0 || _type >= config.name_table.size()) {
+		if (_type >= 0 || _type < config.name_table.size()) {
 			name = config.name_table[_type].c_str();
 		}
 		return util::f("(", name, " \"", util::escape_str(content()), "\")");

@@ -2,6 +2,7 @@
 
 #include <string_view>
 #include <string>
+#include <ranges>
 
 namespace util {
 	class lines_iterator {
