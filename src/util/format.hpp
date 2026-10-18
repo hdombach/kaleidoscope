@@ -4,6 +4,7 @@
 
 #include <sstream>
 #include <ostream>
+#include <format>
 
 namespace util {
 	inline void fImpl_(std::stringstream &) {};
@@ -41,3 +42,31 @@ inline std::ostream& operator<<(std::ostream& os, glm::mat4 const &m) {
 		<< "," << m[3][0] << "," << m[3][1] << "," << m[3][2] << "," << m[3][3]
 		<< "]";
 }
+
+template<typename T>
+concept OsPrintable =
+	requires(std::ostream &os, T const &t) {
+		{ os << t } -> std::convertible_to<std::ostream &>;
+	};
+
+template<typename T>
+struct DefaultFormatter {
+	DefaultFormatter() = default;
+
+	DefaultFormatter(DefaultFormatter const &other) = default;
+	DefaultFormatter &operator=(DefaultFormatter const &other) = default;
+
+	DefaultFormatter(DefaultFormatter &&other) = default;
+	DefaultFormatter &operator=(DefaultFormatter &&other) = default;
+
+	template<class ParseContext>
+	constexpr ParseContext::iterator parse(ParseContext &ctx) {
+		return ctx.begin();
+	}
+	template<class FmtContext>
+	FmtContext::iterator format(T const &t, FmtContext &ctx) const {
+		std::ostringstream out;
+		out << t;
+		return std::ranges::copy(std::move(out).str(), ctx.out()).out;
+	}
+};

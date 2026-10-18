@@ -6,8 +6,9 @@ serial_sources = [
 	'Tokenizer.cpp',
 	'main.cpp',
 	'Validate.cpp',
-  'Object.cpp',
-	]
+	'Object.cpp',
+	'Metadata.cpp',
+]
 
 serial_deps = [
 	vulkan,

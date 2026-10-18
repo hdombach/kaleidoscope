@@ -11,5 +11,7 @@ const char *serial::Error::type_str(serial::ErrorType t) {
 			return "SerialError.INVALID_STATE";
 		case serial::ErrorType::VALIDATE_ERROR:
 			return "SerialError.VALIDATE_ERROR";
+		case serial::ErrorType::INVALID_ARG:
+			return "SerialError.INVALID_ARG";
 	}
 }

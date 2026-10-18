@@ -8,6 +8,7 @@ namespace serial {
 		PARSE_ERROR,
 		INVALID_STATE,
 		VALIDATE_ERROR,
+		INVALID_ARG,
 	};
 }
 
