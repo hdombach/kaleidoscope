@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <cstring>
 
 namespace serial {
 	int Args::parse_args(int argc, char **argv) {

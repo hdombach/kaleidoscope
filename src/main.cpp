@@ -6,6 +6,7 @@
 #include "App.hpp"
 #include "util/Env.hpp"
 #include "util/ThreadPool.hpp"
+#include "util/log.hpp"
 
 int parse_args(int argc, char **argv) {
 	if (argc <= 0) {

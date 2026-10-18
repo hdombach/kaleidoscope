@@ -27,15 +27,15 @@ namespace util {
 	};
 
 	namespace color {
-		static const char *RESET    = "\033[0m";
-		static const char *BLACK    = "\033[30m";
-		static const char *RED      = "\033[31m";
-		static const char *GREEN    = "\033[32m";
-		static const char *YELLOW   = "\033[33m";
-		static const char *BLUE     = "\033[34m";
-		static const char *MAGENTA  = "\033[35m";
-		static const char *CYAN     = "\033[36m";
-		static const char *WHILE    = "\033[37m";
+		[[maybe_unused]] static const char *RESET    = "\033[0m";
+		[[maybe_unused]] static const char *BLACK    = "\033[30m";
+		[[maybe_unused]] static const char *RED      = "\033[31m";
+		[[maybe_unused]] static const char *GREEN    = "\033[32m";
+		[[maybe_unused]] static const char *YELLOW   = "\033[33m";
+		[[maybe_unused]] static const char *BLUE     = "\033[34m";
+		[[maybe_unused]] static const char *MAGENTA  = "\033[35m";
+		[[maybe_unused]] static const char *CYAN     = "\033[36m";
+		[[maybe_unused]] static const char *WHILE    = "\033[37m";
 	}
 
 	extern uint8_t g_log_flags;

@@ -19,7 +19,7 @@ shaderc = dependency('shaderc')
 portable_file_dialogs = dependency('portable-file-dialogs')
 stb = dependency('stb')
 
-add_global_arguments(['-Wall', '-Werror', '-Wno-nontrivial-memcall'], language : 'cpp')
+# add_global_arguments(['-Wall', '-Werror', '-Wno-nontrivial-memcall'], language : 'cpp')
 
 subdir('src/util')
 subdir('src/types')
@@ -39,6 +39,7 @@ dependencies = [
 	vulkan_headers,
 	glfw3,
 	imgui,
+	glm,
 ]
 
 libs = [

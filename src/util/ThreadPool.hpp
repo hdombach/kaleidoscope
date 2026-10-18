@@ -5,6 +5,7 @@
 #include <thread>
 #include <semaphore>
 #include <string>
+#include <queue>
 
 class TPTask {
 	public:

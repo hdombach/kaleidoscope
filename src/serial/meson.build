@@ -11,6 +11,8 @@ serial_sources = [
 
 serial_deps = [
 	vulkan,
+	vulkan_headers,
+	glm,
 	# tests,
 ]
 

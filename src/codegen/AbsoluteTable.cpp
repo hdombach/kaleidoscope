@@ -247,7 +247,7 @@ namespace cg::abs {
 	AbsoluteTable::Row AbsoluteTable::row(Entry const &state_id) {
 		return std::ranges::subrange(
 			&_states[state_id * _state_size()],
-			&_states[(state_id + 1) * _state_size()]
+			&_states[state_id * _state_size()] + _state_size()
 		);
 	}
 

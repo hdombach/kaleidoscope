@@ -10,13 +10,14 @@ ui_deps = [
 	imgui,
 	portable_file_dialogs,
 	vulkan,
+	vulkan_headers,
 	glfw3,
 ]
 
 ui = static_library(
 	'ui',
 	ui_sources,
-	include_directories: [src_include],
+	include_directories: [src_include, root_include],
 	dependencies: ui_deps,
 	link_with: [vulkan_wrap],
 )

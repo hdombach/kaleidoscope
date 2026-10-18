@@ -14,12 +14,13 @@ type_sources = [
 types = static_library(
 	'types',
 	type_sources,
-  include_directories: [src_include],
+	include_directories: [src_include, root_include],
 	dependencies: [
 		glm,
 		glfw3,
 		tinyobjloader,
 		imgui,
-    vulkan,
+		vulkan,
+		vulkan_headers,
 	],
 )

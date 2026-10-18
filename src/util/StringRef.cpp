@@ -1,6 +1,8 @@
 #include "StringRef.hpp"
 #include "util/log.hpp"
 
+#include <cstring>
+
 namespace util {
 	StringRef::StringRef():
 		_start(0),

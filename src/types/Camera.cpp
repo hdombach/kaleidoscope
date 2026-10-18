@@ -130,7 +130,10 @@ namespace types {
 		rotation_axis = rotation_matrix() * rotation_axis;
 
 		if (!std::isnan(rotation_axis.x)) {
-			auto rotation_quat = glm::angleAxis(angle, glm::vec3(rotation_axis.x, rotation_axis.y, rotation_axis.z));
+			auto rotation_quat = glm::angleAxis(
+				static_cast<float>(angle),
+				glm::vec3(rotation_axis.x, rotation_axis.y, rotation_axis.z)
+			);
 			this->_q = glm::normalize(this->_q * rotation_quat);
 			set_rotation(util::quaternion_to_euler(this->_q));
 		}
