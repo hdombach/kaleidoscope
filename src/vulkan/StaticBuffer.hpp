@@ -14,31 +14,44 @@ namespace vulkan {
 			static util::Result<StaticBuffer, Error> create(
 				void *data,
 				VkDeviceSize range,
-				VkBufferUsageFlags usage
+				VkBufferUsageFlags usage,
+				std::string const &debug_name
 			);
 
 			template<typename T>
-				static util::Result<StaticBuffer, Error> create(std::vector<T> &buf) {
+				static util::Result<StaticBuffer, Error> create(
+					std::vector<T> &buf,
+					std::string const &debug_name
+				) {
 					return create(
 						buf.data(),
 						buf.size() * sizeof(T),
-						VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
+						VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+						debug_name
 					);
 				}
 
-			static util::Result<StaticBuffer, Error> create_vertices(std::vector<Vertex> &buf) {
+			static util::Result<StaticBuffer, Error> create_vertices(
+				std::vector<Vertex> &buf,
+				std::string const &debug_name
+			) {
 				return create(
 					buf.data(),
 					buf.size() * sizeof(Vertex),
-					VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
+					VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+					debug_name
 				);
 			}
 
-			static util::Result<StaticBuffer, Error> create_indices(std::vector<uint32_t> &buf) {
+			static util::Result<StaticBuffer, Error> create_indices(
+				std::vector<uint32_t> &buf,
+				std::string const &debug_name
+			) {
 				return create(
 					buf.data(),
 					buf.size() * sizeof(uint32_t),
-					VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT
+					VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+					debug_name
 				);
 			}
 

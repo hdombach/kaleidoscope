@@ -55,7 +55,8 @@ namespace vulkan {
 
 		if (auto buffer = StaticBuffer::create(
 				buf.data(), buffer_range,
-				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT
+				VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+				"Material properites"
 		)) {
 			return buffer.move_value();
 		} else {

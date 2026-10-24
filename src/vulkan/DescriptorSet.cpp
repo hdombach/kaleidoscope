@@ -169,6 +169,7 @@ namespace vulkan {
 			size_t i = 0;
 			for (auto ds : set._descriptor_sets) {
 				Graphics::DEFAULT->set_debug_name(ds, util::f(debug_name, " #", std::to_string(i)));
+				i++;
 			}
 		}
 

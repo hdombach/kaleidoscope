@@ -169,28 +169,48 @@ namespace vulkan {
 	
 	}
 
+	void Graphics::set_debug_name(VkBuffer buffer, std::string const &name) {
+		_set_debug_name(VK_OBJECT_TYPE_BUFFER, buffer, "VkBuffer: " + name);
+	}
+
 	void Graphics::set_debug_name(VkImage image, std::string const &name) {
-		_set_debug_name(VK_OBJECT_TYPE_IMAGE, image, name);
+		_set_debug_name(VK_OBJECT_TYPE_IMAGE, image, "VkImage: " + name);
+	}
+
+	void Graphics::set_debug_name(VkDeviceMemory memory, std::string const &name) {
+		_set_debug_name(VK_OBJECT_TYPE_DEVICE_MEMORY, memory, "VkDeviceMemory: " + name);
+	}
+
+	void Graphics::set_debug_name(VkImageView image_view, std::string const &name) {
+		_set_debug_name(VK_OBJECT_TYPE_IMAGE_VIEW, image_view, "VkImageView: " + name);
 	}
 
 	void Graphics::set_debug_name(VkDescriptorSet descriptor_set, std::string const &name) {
-		_set_debug_name(VK_OBJECT_TYPE_DESCRIPTOR_SET, descriptor_set, name);
+		_set_debug_name(VK_OBJECT_TYPE_DESCRIPTOR_SET, descriptor_set, "VkDescriptorSet: " + name);
 	}
 
 	void Graphics::set_debug_name(VkDescriptorPool descriptor_pool, std::string const &name) {
-		_set_debug_name(VK_OBJECT_TYPE_DESCRIPTOR_POOL, descriptor_pool, name);
+		_set_debug_name(VK_OBJECT_TYPE_DESCRIPTOR_POOL, descriptor_pool, "VkDescriptorPool: " + name);
 	}
 
 	void Graphics::set_debug_name(VkSemaphore semaphore, std::string const &name) {
-		_set_debug_name(VK_OBJECT_TYPE_SEMAPHORE, semaphore, name);
+		_set_debug_name(VK_OBJECT_TYPE_SEMAPHORE, semaphore, "VkSemaphore: " + name);
 	}
 
 	void Graphics::set_debug_name(VkQueue queue, std::string const &name) {
-		_set_debug_name(VK_OBJECT_TYPE_QUEUE, queue, name);
+		_set_debug_name(VK_OBJECT_TYPE_QUEUE, queue, "VkQueue: " + name);
 	}
 
 	void Graphics::set_debug_name(VkPipelineLayout pipeline_layout, std::string const &name) {
-		_set_debug_name(VK_OBJECT_TYPE_PIPELINE_LAYOUT, pipeline_layout, name);
+		_set_debug_name(VK_OBJECT_TYPE_PIPELINE_LAYOUT, pipeline_layout, "VkPipelineLayout: " + name);
+	}
+
+	void Graphics::set_debug_name(VkRenderPass render_pass, std::string const &name) {
+		_set_debug_name(VK_OBJECT_TYPE_RENDER_PASS, render_pass, "VkRenderPass: " + name);
+	}
+
+	void Graphics::set_debug_name(VkShaderModule shader_module, std::string const &name) {
+		_set_debug_name(VK_OBJECT_TYPE_SHADER_MODULE, shader_module, "VkShaderModule: " + name);
 	}
 
 	Graphics::Graphics():

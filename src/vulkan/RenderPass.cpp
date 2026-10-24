@@ -34,7 +34,8 @@ namespace vulkan {
 	RenderPass::~RenderPass() { destroy(); }
 
 	util::Result<RenderPass, Error> RenderPass::create(
-		std::vector<FrameAttachment> &&frame_attachments
+		std::vector<FrameAttachment> &&frame_attachments,
+		std::string const &debug_name
 	) {
 		auto render_pass = RenderPass();
 		render_pass._frame_attachments = std::move(frame_attachments);
@@ -118,6 +119,8 @@ namespace vulkan {
 			nullptr,
 			&render_pass._render_pass
 		);
+
+		Graphics::DEFAULT->set_debug_name(render_pass._render_pass, debug_name);
 
 		if (res != VK_SUCCESS) {
 			return Error(ErrorType::VULKAN, "Could not create render pass", VkError(res));

@@ -487,7 +487,7 @@ namespace vulkan {
 	}
 
 	util::Result<void, RayPass::Error> RayPass::_create_pipeline() {
-		auto compute_shader = Shader::from_source_code(_codegen(used_textures().size()), Shader::Type::Compute);
+		auto compute_shader = Shader::from_source_code(_codegen(used_textures().size()), Shader::Type::Compute, "raytrace cg");
 		if (!compute_shader) {
 			return Error(ErrorType::VULKAN, "Could not compile compute shader code", compute_shader.error());
 		}
@@ -635,7 +635,7 @@ namespace vulkan {
 			vertices.push_back(vulkan::Vertex());
 		}
 
-		if (auto buffer = StaticBuffer::create(vertices)) {
+		if (auto buffer = StaticBuffer::create(vertices, "Combined vertices")) {
 			_vertex_buffer = std::move(buffer.value());
 		} else {
 			if (buffer.error().type() != vulkan::ErrorType::EMPTY_BUFFER) {
@@ -643,7 +643,7 @@ namespace vulkan {
 			}
 		}
 
-		if (auto buffer = StaticBuffer::create(bvnodes)) {
+		if (auto buffer = StaticBuffer::create(bvnodes, "BVNode tree")) {
 			_bvnode_buffer = std::move(buffer.value());
 		} else {
 			if (buffer.error().type() != vulkan::ErrorType::EMPTY_BUFFER) {
@@ -662,7 +662,7 @@ namespace vulkan {
 			nodes.push_back(RayPassNode::VImpl::create_empty());
 		}
 
-		if (auto buffer = StaticBuffer::create(nodes)) {
+		if (auto buffer = StaticBuffer::create(nodes, "Node shared attributes")) {
 			_node_buffer = std::move(buffer.value());
 		} else {
 			if (buffer.error().type() != vulkan::ErrorType::EMPTY_BUFFER) {

@@ -90,12 +90,17 @@ namespace vulkan {
 					VkDeviceSize size) const;
 			void execute_single_time_command(std::function<void(VkCommandBuffer)>) const;
 
+			void set_debug_name(VkBuffer buffer, std::string const &name);
 			void set_debug_name(VkImage image, std::string const &name);
+			void set_debug_name(VkDeviceMemory memory, std::string const &name);
+			void set_debug_name(VkImageView image_view, std::string const &name);
 			void set_debug_name(VkDescriptorSet descriptor_set, std::string const &name);
 			void set_debug_name(VkDescriptorPool descriptor_pool, std::string const &name);
 			void set_debug_name(VkSemaphore semaphore, std::string const &name);
 			void set_debug_name(VkQueue queue, std::string const &name);
 			void set_debug_name(VkPipelineLayout pipeline_layout, std::string const &name);
+			void set_debug_name(VkRenderPass render_pass, std::string const &name);
+			void set_debug_name(VkShaderModule shader_module, std::string const &name);
 
 			struct SwapchainSupportDetails {
 				VkSurfaceCapabilitiesKHR capabilities;

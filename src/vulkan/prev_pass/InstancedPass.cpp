@@ -287,7 +287,7 @@ namespace vulkan {
 		vkCmdEndRenderPass(_command_buffer);
 
 
-		{ // DE
+		{ // DE and composite
 			auto render_pass_info = VkRenderPassBeginInfo{};
 			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			render_pass_info.renderPass = _composite_pipeline.render_pass().render_pass();
@@ -579,7 +579,7 @@ namespace vulkan {
 
 		if (!_render_pass.has_value()) {
 			main_framebuffer = false;
-			if (auto err = RenderPass::create(_frame_attachments()).move_or(_render_pass)) {
+			if (auto err = RenderPass::create(_frame_attachments(), "Deferred mesh").move_or(_render_pass)) {
 				return Error(ErrorType::MISC, "Could not create main render pass", err.value());
 			}
 		}
@@ -592,7 +592,7 @@ namespace vulkan {
 
 		if (!_composite_render_pass.has_value()) {
 			composite_framebuffer = false;
-			if (auto err = RenderPass::create(_composite_frame_attachments()).move_or(_composite_render_pass)) {
+			if (auto err = RenderPass::create(_composite_frame_attachments(), "Composite").move_or(_composite_render_pass)) {
 				return Error(ErrorType::MISC, "Could not create composite render pass", err.value());
 			}
 		}
@@ -667,7 +667,7 @@ namespace vulkan {
 				<< util::add_strnum(source_code) << std::endl;
 
 			if (auto err = Shader::from_source_code(
-				source_code, Shader::Type::Vertex
+				source_code, Shader::Type::Vertex, "Instanced vert cg"
 			).move_or(vert_shader)) {
 				return Error(ErrorType::MISC, "Problem parsing instanced vert shader", err.value());
 			}
@@ -688,7 +688,7 @@ namespace vulkan {
 				<< util::add_strnum(source_code) << std::endl;
 
 			if (auto err = Shader::from_source_code(
-					source_code, Shader::Type::Fragment
+					source_code, Shader::Type::Fragment, "Instanced frag cg"
 			).move_or(frag_shader)) {
 				return Error(ErrorType::MISC, "Problem parsing instanced frag shader", err.value());
 			}
@@ -743,7 +743,7 @@ namespace vulkan {
 
 		{
 			auto vert_source_code = util::readEnvFile("assets/shaders/unit_square.vert");
-			if (auto err = Shader::from_source_code(vert_source_code, Shader::Type::Vertex).move_or(vert_shader)) {
+			if (auto err = Shader::from_source_code(vert_source_code, Shader::Type::Vertex, "unit_square.vert").move_or(vert_shader)) {
 				return Error(ErrorType::VULKAN, "could not load unit square shader", err.value());
 			}
 		}
@@ -753,7 +753,8 @@ namespace vulkan {
 
 			if (auto err = Shader::from_source_code(
 					source_code,
-					Shader::Type::Fragment
+					Shader::Type::Fragment,
+					"composite cg"
 			).move_or(frag_shader)) {
 				return Error(ErrorType::MISC, "Problem parsing instanced composite shader", err.value());
 			}
@@ -800,7 +801,7 @@ namespace vulkan {
 		auto start = log_start_timer();
 		source_code = cg::TemplGen::codegen(source_code, args, "instanced_overlay.comp.cg").value();
 		log_info() << "instanced_overlay took " << start << std::endl;
-		auto compute_shader = Shader::from_source_code(source_code, Shader::Type::Compute);
+		auto compute_shader = Shader::from_source_code(source_code, Shader::Type::Compute, "Instanced overlay cg");
 		log_info() << "\n" << util::add_strnum(source_code) << std::endl;
 		if (!compute_shader) {
 			log_fatal_error() << "Overlay error " << compute_shader.error() << std::endl;
@@ -1008,7 +1009,7 @@ namespace vulkan {
 			nodes.push_back(VImpl::create_empty());
 		}
 
-		if (auto err = StaticBuffer::create(nodes).move_or(_node_buffer)) {
+		if (auto err = StaticBuffer::create(nodes, "Node attributes").move_or(_node_buffer)) {
 			if (err->type() != vulkan::ErrorType::EMPTY_BUFFER) {
 				log_error() << err.value() << std::endl;
 			}

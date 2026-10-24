@@ -9,7 +9,8 @@ namespace vulkan {
 	util::Result<StaticBuffer, Error> StaticBuffer::create(
 		void *data,
 		VkDeviceSize range,
-		VkBufferUsageFlags usage
+		VkBufferUsageFlags usage,
+		std::string const &debug_name
 	) {
 		auto result = StaticBuffer();
 
@@ -28,6 +29,9 @@ namespace vulkan {
 				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
 				staging_buffer, 
 				staging_buffer_memory);
+
+		Graphics::DEFAULT->set_debug_name(staging_buffer, debug_name + " staging");
+		Graphics::DEFAULT->set_debug_name(staging_buffer_memory, debug_name + " staging");
 
 		void *mapped_data;
 		auto res = vkMapMemory(
@@ -51,6 +55,9 @@ namespace vulkan {
 				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 				result._buffer,
 				result._buffer_memory);
+
+		Graphics::DEFAULT->set_debug_name(result._buffer, debug_name);
+		Graphics::DEFAULT->set_debug_name(result._buffer_memory, debug_name);
 
 		Graphics::DEFAULT->copy_buffer(staging_buffer, result._buffer, range);
 

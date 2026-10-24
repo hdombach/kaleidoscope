@@ -9,22 +9,24 @@
 #include "graphics.hpp"
 
 namespace vulkan {
-	Shader::Shader(const std::string &code):
-		Shader(reinterpret_cast<const uint32_t*>(code.data()), code.size())
+	Shader::Shader(const std::string &code, std::string const &debug_name):
+		Shader(reinterpret_cast<const uint32_t*>(code.data()), code.size(), debug_name)
 	{ }
 
-	Shader::Shader(const std::vector<uint32_t> &code):
-		Shader(code.data(), code.size() * sizeof(uint32_t))
+	Shader::Shader(const std::vector<uint32_t> &code, std::string const &debug_name):
+		Shader(code.data(), code.size() * sizeof(uint32_t), debug_name)
 	{}
 
 	Shader Shader::from_env_file(std::string const &file_name) {
-		return Shader(util::readEnvFile(file_name));
+		auto debug_name = std::filesystem::path(file_name).filename();
+		return Shader(util::readEnvFile(file_name), debug_name);
 	}
 
 	util::Result<Shader, Error> Shader::from_source_code(
-			const std::string &code,
-			Type type)
-	{
+		const std::string &code,
+		Type type,
+		std::string const &debug_name
+	) {
 		auto compiler = shaderc::Compiler();
 		auto options = shaderc::CompileOptions();
 
@@ -49,7 +51,7 @@ namespace vulkan {
 		}
 
 		auto srv_code = std::vector<uint32_t>{module.begin(), module.end()};
-		return Shader(srv_code);
+		return Shader(srv_code, debug_name);
 	}
 
 	Shader::Shader(Shader &&other) {
@@ -89,7 +91,11 @@ namespace vulkan {
 		return _shader_module;
 	}
 
-	Shader::Shader(const uint32_t *code, size_t code_s) {
+	Shader::Shader(
+		const uint32_t *code,
+		size_t code_s,
+		std::string const &debug_name
+	) {
 		auto createInfo = VkShaderModuleCreateInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 		createInfo.codeSize = code_s;
@@ -101,5 +107,6 @@ namespace vulkan {
 					nullptr,
 					&_shader_module));
 
+		Graphics::DEFAULT->set_debug_name(_shader_module, debug_name);
 	}
 }

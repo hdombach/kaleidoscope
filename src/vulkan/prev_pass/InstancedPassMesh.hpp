@@ -25,6 +25,8 @@ namespace vulkan {
 			 * @brief Values that are used per instance of this mesh that is used
 			 *
 			 * The node_id is assumed based off where the node is in the buffer
+			 *
+			 * TODO: what is the difference between InstancedPassNode::VImpl
 			 */
 			struct NodeVImpl {
 				alignas(4) uint32_t node_id;

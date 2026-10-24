@@ -23,7 +23,8 @@ namespace vulkan {
 			~RenderPass();
 
 			static util::Result<RenderPass, Error> create(
-				std::vector<FrameAttachment> &&frame_attachments
+				std::vector<FrameAttachment> &&frame_attachments,
+				std::string const &debug_name
 			);
 
 			bool has_value() const;

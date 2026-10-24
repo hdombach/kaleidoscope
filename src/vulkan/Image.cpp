@@ -122,6 +122,8 @@ namespace vulkan {
 				result._image_memory,
 				0);
 
+		Graphics::DEFAULT->set_debug_name(result._image_memory, debug_name + " backed memory");
+
 		/* Image View */
 		auto image_view_info = VkImageViewCreateInfo{};
 		image_view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -140,6 +142,9 @@ namespace vulkan {
 				&image_view_info,
 				nullptr,
 				&result._image_view);
+
+		Graphics::DEFAULT->set_debug_name(result._image_view, debug_name);
+
 		if (res != VK_SUCCESS) {
 			return Error(ErrorType::VULKAN, "Could not create image view.", VkError(res));
 		}

@@ -17,12 +17,14 @@ namespace vulkan {
 			};
 
 			Shader() = default;
-			Shader(const std::string& code);
-			Shader(const std::vector<uint32_t> &code);
+			Shader(const std::string& code, std::string const &debug_name);
+			Shader(const std::vector<uint32_t> &code, std::string const &debug_name);
 			static Shader from_env_file(std::string const &file_name);
 			static util::Result<Shader, Error> from_source_code(
-					std::string const &code,
-					Type type);
+				std::string const &code,
+				Type type,
+				std::string const &debug_name
+			);
 
 			Shader(const Shader& other) = delete;
 			Shader(Shader &&other);
@@ -37,7 +39,7 @@ namespace vulkan {
 
 			VkShaderModule shader_module() const;
 		private:
-			Shader(const uint32_t *code, size_t code_s);
+			Shader(const uint32_t *code, size_t code_s, std::string const &debug_name);
 
 		private:
 			VkShaderModule _shader_module = nullptr;
