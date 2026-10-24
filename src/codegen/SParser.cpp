@@ -2,7 +2,7 @@
 
 #include "util/StringRef.hpp"
 #include "util/log.hpp"
-#include "util/log.hpp"
+#include "util/format.hpp"
 #include "util/result.hpp"
 #include "CfgContext.hpp"
 #include "AstNode.hpp"

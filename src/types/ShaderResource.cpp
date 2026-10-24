@@ -12,77 +12,76 @@
 #include "util/format.hpp"
 
 namespace types {
-	ShaderResource ShaderResource::create_primitive(
+	ShaderResource::Ptr ShaderResource::create_primitive(
 			std::string name,
-			uint32_t val)
-	{
-		auto result = ShaderResource(name, Type::Uint);
-		result._as_float = val;
-		result._primitive_size = sizeof(uint32_t);
-		result._declaration = util::f("uint ", name);
-		result._uniform_declaration = result._glsl_declaration = "uint";
-		result._alignment = 4;
-		return result;
-
+			uint32_t val
+	) {
+		auto result = new ShaderResource(name, Type::Uint);
+		result->_as_float = val;
+		result->_primitive_size = sizeof(uint32_t);
+		result->_declaration = util::f("uint ", name);
+		result->_uniform_declaration = result->_glsl_declaration = "uint";
+		result->_alignment = 4;
+		return Ptr(result);
 	}
 
-	ShaderResource ShaderResource::create_primitive(
+	ShaderResource::Ptr ShaderResource::create_primitive(
 			std::string name,
-			float val)
-	{
-		auto result = ShaderResource(name, Type::Float);
-		result._as_float = val;
-		result._primitive_size = sizeof(float);
-		result._declaration = util::f("float ", name);
-		result._uniform_declaration = result._glsl_declaration = "float";
-		result._alignment = 4;
-		return result;
+			float val
+	) {
+		auto result = new ShaderResource(name, Type::Float);
+		result->_as_float = val;
+		result->_primitive_size = sizeof(float);
+		result->_declaration = util::f("float ", name);
+		result->_uniform_declaration = result->_glsl_declaration = "float";
+		result->_alignment = 4;
+		return Ptr(result);
 	}
 
-	ShaderResource ShaderResource::create_primitive(
+	ShaderResource::Ptr ShaderResource::create_primitive(
 			std::string name,
-			glm::mat4 mat)
-	{
-		auto result = ShaderResource(name, Type::Mat4);
-		result._as_mat4 = mat;
-		result._primitive_size = sizeof(mat);
-		result._declaration = util::f("mat4 ", name);
-		result._uniform_declaration = result._glsl_declaration = "mat4";
-		result._alignment = 16;
-		return result;
+			glm::mat4 mat
+	) {
+		auto result = new ShaderResource(name, Type::Mat4);
+		result->_as_mat4 = mat;
+		result->_primitive_size = sizeof(mat);
+		result->_declaration = util::f("mat4 ", name);
+		result->_uniform_declaration = result->_glsl_declaration = "mat4";
+		result->_alignment = 16;
+		return Ptr(result);
 	}
 
-	ShaderResource ShaderResource::create_primitive(
+	ShaderResource::Ptr ShaderResource::create_primitive(
 			std::string name,
-			glm::vec3 vec)
-	{
-		auto result = ShaderResource(name, Type::Vec3);
-		result._as_vec3 = vec;
-		result._primitive_size = sizeof(vec);
-		result._declaration = util::f("vec3 ", name);
-		result._uniform_declaration = result._glsl_declaration = "vec3";
-		result._alignment = 16;
-		return result;
+			glm::vec3 vec
+	) {
+		auto result = new ShaderResource(name, Type::Vec3);
+		result->_as_vec3 = vec;
+		result->_primitive_size = sizeof(vec);
+		result->_declaration = util::f("vec3 ", name);
+		result->_uniform_declaration = result->_glsl_declaration = "vec3";
+		result->_alignment = 16;
+		return Ptr(result);
 	}
 
-ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
+	ShaderResource::Ptr ShaderResource::create_color(std::string name, glm::vec3 color) {
 	auto result = create_primitive(name, color);
-	result._type = Type::Color3;
+	result->_type = Type::Color3;
 	return result;
 }
 
-	ShaderResource ShaderResource::create_texture(
+ShaderResource::Ptr ShaderResource::create_texture(
 			std::string name,
-			const vulkan::Texture *texture)
-	{
-		auto result = ShaderResource(name, Type::Texture);
-		result._as_texture = texture;
-		result._primitive_size = sizeof(uint32_t);
-		result._declaration = util::f("sampler2D ", name);
-		result._glsl_declaration = "sampler2D"; // reference to a list of textures
-		result._uniform_declaration = "uint";
-		result._alignment = 4;
-		return result;
+			const vulkan::Texture *texture
+	) {
+		auto result = new ShaderResource(name, Type::Texture);
+		result->_as_texture = texture;
+		result->_primitive_size = sizeof(uint32_t);
+		result->_declaration = util::f("sampler2D ", name);
+		result->_glsl_declaration = "sampler2D"; // reference to a list of textures
+		result->_uniform_declaration = "uint";
+		result->_alignment = 4;
+		return Ptr(result);
 	}
 
 	bool ShaderResource::is_primitive() const {
@@ -229,7 +228,7 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	}
 
 
-	ShaderResource::ShaderResource(std::string &name, Type type):
+	ShaderResource::ShaderResource(std::string const &name, Type type):
 		_name(name),
 		_primitive_size(0),
 		_type(type),
@@ -250,14 +249,14 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 		add_resource(ShaderResource::create_primitive("object_transformation", glm::mat4(1.0)));
 	}
 
-	void ShaderResources::add_resource(ShaderResource resource) {
+	void ShaderResources::add_resource(ShaderResource::Ptr &&resource) {
 		for (auto &r : _resources) {
-			if (r.name() == resource.name()) {
+			if (r->name() == resource->name()) {
 				return;
 			}
 		}
-		log_trace() << "Added resource " << resource.name() << std::endl;
-		_resources.push_back(resource);
+		log_trace() << "Added resource " << resource->name() << std::endl;
+		_resources.push_back(std::move(resource));
 		_range = _calc_range();
 	}
 
@@ -269,28 +268,35 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 			for (auto &new_r : c->_resources) {
 				bool found = false;
 				for (auto &r : result) {
-					if (r->name() == new_r.name()) {
+					if (r->name() == new_r->name()) {
 						found = true;
 					}
 				}
 				if (!found) {
-					result.push_back(&new_r);
+					result.push_back(new_r.get());
+					//log_debug() << "Adding shader resource with name " << new_r.name() << std::endl;
 				}
 			}
 			c = c->_parent;
 		}
 
+		for (auto &r : result) {
+			//log_debug() << "before: " << r->name() << std::endl;
+		}
 		std::sort(result.begin(), result.end(), [](ShaderResource const *l, ShaderResource const *r) {
 			return l->name() > r->name();
 		});
+		for (auto &r : result) {
+			log_debug() << "adding to get for " << r << ": " << r->name() << std::endl;
+		}
 
 		return result;
 	}
 
 	ShaderResource const *ShaderResources::get(std::string name) const {
 		for (auto &r : _resources) {
-			if (r.name() == name) {
-				return &r;
+			if (r->name() == name) {
+				return r.get();
 			}
 		}
 		if (_parent) {
@@ -313,9 +319,9 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 			const vulkan::Texture *texture)
 	{
 		for (auto &resource : _resources) {
-			if (resource.name() == name) {
+			if (resource->name() == name) {
 				log_trace() << "Updating texture resource " << name << " = "  << texture->name() << std::endl;
-				if (auto err = resource.set_texture(texture).move_or()) {
+				if (auto err = resource->set_texture(texture).move_or()) {
 					log_error() << "Could not set texture: \n" << err.value() << std::endl;
 				}
 				return;
@@ -327,8 +333,8 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 
 	void ShaderResources::set_mat4(const std::string &name, const glm::mat4 &val) {
 		for (auto &resource : _resources) {
-			if (resource.name() == name) {
-				if (auto err = resource.set_mat4(val).move_or()) {
+			if (resource->name() == name) {
+				if (auto err = resource->set_mat4(val).move_or()) {
 					log_error() << "Could not set mat4: " << err.value() << std::endl;
 				}
 				return;
@@ -340,9 +346,9 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	void ShaderResources::set_vec3(std::string const &name, glm::vec3 const &val) {
 		using namespace std::chrono_literals;
 		for (auto &resource : _resources) {
-			if (resource.name() == name) {
+			if (resource->name() == name) {
 				log_every_t(util::TRACE, 1s) << "Updating vec3 resource " << name << " = " << val << std::endl;
-				if (auto err = resource.set_vec3(val).move_or()) {
+				if (auto err = resource->set_vec3(val).move_or()) {
 					log_error() << "Could not set vec3: " << err.value() << std::endl;
 				}
 				return;
@@ -355,9 +361,9 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	void ShaderResources::set_color3(const std::string &name, const glm::vec3 &val) {
 		using namespace std::chrono_literals;
 		for (auto &resource : _resources) {
-			if (resource.name() == name) {
+			if (resource->name() == name) {
 				log_every_t(util::TRACE, 1s) << "Update color resource " << name << " = " << val << std::endl;
-				if (auto err = resource.set_color3(val).move_or()) {
+				if (auto err = resource->set_color3(val).move_or()) {
 					log_error() << "Could not set color3: " << err.value() << std::endl;
 				}
 				return;
@@ -370,9 +376,9 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	void ShaderResources::set_float(const std::string &name, float &val) {
 		using namespace std::chrono_literals;
 		for (auto &resource : _resources) {
-			if (resource.name() == name) {
+			if (resource->name() == name) {
 				log_every_t(util::TRACE, 1s) << "Update float resource " << name << " = " << val << std::endl;
-				if (auto err = resource.set_float(val).move_or()) {
+				if (auto err = resource->set_float(val).move_or()) {
 					log_error() << "Could not set float: " << err.value() << std::endl;
 				}
 				return;
@@ -385,9 +391,9 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	void ShaderResources::set_uint32(const std::string &name, uint32_t &val) {
 		using namespace std::chrono_literals;
 		for (auto &resource : _resources) {
-			if (resource.name() == name) {
+			if (resource->name() == name) {
 				log_every_t(util::TRACE, 1s) << "Updating uint32_t resource " << name << " = " << val << std::endl;
-				if (auto err = resource.set_uint32(val).move_or()) {
+				if (auto err = resource->set_uint32(val).move_or()) {
 					log_error() << "Could not set uint32_t: " << err.value() << std::endl;
 				}
 				return;
@@ -438,14 +444,14 @@ ShaderResource ShaderResource::create_color(std::string name, glm::vec3 color) {
 	bool ShaderResources::dirty_bits() const {
 		bool res = false;
 		for (auto &resource : _resources) {
-			res |= resource.dirty_bit();
+			res |= resource->dirty_bit();
 		}
 		return res;
 	}
 
 	void ShaderResources::clear_dirty_bits() {
 		for (auto &resource : _resources) {
-			resource.clear_dirty_bit();
+			resource->clear_dirty_bit();
 		}
 	}
 

@@ -10,6 +10,7 @@
 #include "result.hpp"
 #include "util/Env.hpp"
 #include "util/log.hpp"
+#include "util/format.hpp"
 
 namespace util {
 

@@ -4,6 +4,7 @@
 
 #include "Image.hpp"
 #include "vulkan/Error.hpp"
+#include "util/format.hpp"
 
 namespace vulkan {
 	FrameAttachment FrameAttachment::create(const Image &image) {

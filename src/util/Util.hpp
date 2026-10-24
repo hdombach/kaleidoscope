@@ -8,6 +8,8 @@
 #include <array>
 #include <glm/fwd.hpp>
 
+#include <execinfo.h>
+
 #include "format.hpp"
 #include "util/FileLocation.hpp"
 #include "util/lines_iterator.hpp"

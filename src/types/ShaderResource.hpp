@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 #include <glm/glm.hpp>
 
@@ -14,6 +15,9 @@
 namespace types {
 	class ShaderResource {
 		public:
+			using Ptr = std::unique_ptr<ShaderResource>;
+
+		public:
 			enum class Type {
 				Unknown,
 				Texture,
@@ -24,13 +28,15 @@ namespace types {
 				Float,
 			};
 
-			static ShaderResource create_primitive(std::string name, uint32_t val);
-			static ShaderResource create_primitive(std::string name, float val);
-			static ShaderResource create_primitive(std::string name, glm::mat4 mat);
-			static ShaderResource create_primitive(std::string name, glm::vec3 vec);
-			static ShaderResource create_color(std::string name, glm::vec3 color);
+			ShaderResource() = default;
 
-			static ShaderResource create_texture(std::string name, vulkan::Texture const *texture);
+			static Ptr create_primitive(std::string name, uint32_t val);
+			static Ptr create_primitive(std::string name, float val);
+			static Ptr create_primitive(std::string name, glm::mat4 mat);
+			static Ptr create_primitive(std::string name, glm::vec3 vec);
+			static Ptr create_color(std::string name, glm::vec3 color);
+
+			static Ptr create_texture(std::string name, vulkan::Texture const *texture);
 
 			~ShaderResource() = default;
 
@@ -65,7 +71,7 @@ namespace types {
 			void clear_dirty_bit() { _dirty_bit = false; }
 
 		private:
-			ShaderResource(std::string &name, Type type);
+			ShaderResource(std::string const &name, Type type);
 			void _set_dirty_bit();
 
 		private:
@@ -82,23 +88,23 @@ namespace types {
 				const vulkan::Texture *_as_texture;
 			};
 
-			size_t _alignment;
-			size_t _primitive_size;
+			size_t _alignment = 0;
+			size_t _primitive_size = 0;
 
-			Type _type;
-			bool _dirty_bit;
+			Type _type = Type::Unknown;
+			bool _dirty_bit = false;
 	};
 
 	class ShaderResources {
 		private:
-			using Container = std::vector<ShaderResource>;
+			using Container = std::vector<ShaderResource::Ptr>;
 		public:
 			using iterator = Container::iterator;
 			using const_iterator = Container::const_iterator;
 
 			ShaderResources(ShaderResources const *parent = nullptr);
 
-			void add_resource(ShaderResource resource);
+			void add_resource(ShaderResource::Ptr &&resource);
 
 			std::vector<ShaderResource const *> get() const;
 			ShaderResource const *get(std::string name) const;
@@ -128,8 +134,8 @@ namespace types {
 			void clear_dirty_bits();
 		private:
 			Container _resources;
-			size_t _range;
-			ShaderResources const *_parent;
+			size_t _range = 0;
+			ShaderResources const *_parent = nullptr;
 
 		private:
 			static size_t _calc_alignment(size_t alignment, size_t cur_offset);

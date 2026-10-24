@@ -55,7 +55,8 @@ project_target = executable(
 	source_files,
 	include_directories: [src_include],
 	dependencies: dependencies,
-	link_with: libs
+	link_with: libs,
+  export_dynamic: true,
 )
 
 executable(

@@ -7,6 +7,7 @@
 #include <functional>
 
 #include "util/result.hpp"
+#include "util/format.hpp"
 #include "Error.hpp"
 
 namespace cg {

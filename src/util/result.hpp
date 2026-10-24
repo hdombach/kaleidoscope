@@ -1,11 +1,8 @@
 #pragma once
 
-#include "format.hpp"
 #include "util/BaseError.hpp"
 #include "util/log.hpp"
 #include <optional>
-#include <stdexcept>
-#include <string>
 #include <type_traits>
 #include <variant>
 #include <type_traits>
@@ -30,13 +27,29 @@ namespace util {
 				}
 
 				Value &value() {
-					log_assert(std::holds_alternative<Value>(*this), "Check has_value() before accessing value()");
-					return std::get<Value>(*this);
+					if (std::holds_alternative<Value>(*this)) {
+						return std::get<Value>(*this);
+					} else {
+						if constexpr (std::is_base_of_v<BaseError, Error>) {
+							log_error(std::get<Error>(*this)) << std::endl;
+						} else {
+							log_error() << std::get<Error>(*this) << std::endl;
+						}
+						std::exit(EXIT_FAILURE);
+					}
 				}
 
 				Value const &value() const {
-					log_assert(std::holds_alternative<Value>(*this), "Check has_value() before accessing value()");
-					return std::get<Value>(*this);
+					if (std::holds_alternative<Value>(*this)) {
+						return std::get<Value>(*this);
+					} else {
+						if constexpr (std::is_base_of_v<BaseError, Error>) {
+							log_error(std::get<Error>(*this)) << std::endl;
+						} else {
+							log_error() << std::get<Error>(*this) << std::endl;
+						}
+						std::exit(EXIT_FAILURE);
+					}
 				}
 
 				Value &&move_value() {
@@ -108,7 +121,14 @@ namespace util {
 				}
 
 				void value() const {
-					log_assert(!parent_t::has_value(), "Check has_value() before accessing value()");
+					if (std::holds_alternative<Error>) {
+						if constexpr (std::is_base_of_v<BaseError, Error>) {
+							log_error(std::get<Error>(*this)) << std::endl;
+						} else {
+							log_error() << std::get<Error>(*this) << std::endl;
+						}
+						std::exit(EXIT_FAILURE);
+					}
 				}
 				Error const &error() const {
 					log_assert(parent_t::has_value(), "Check has_value() before acessing error()");

@@ -5,6 +5,7 @@
 
 #include "Shader.hpp"
 #include "util/file.hpp"
+#include "util/format.hpp"
 #include "graphics.hpp"
 
 namespace vulkan {

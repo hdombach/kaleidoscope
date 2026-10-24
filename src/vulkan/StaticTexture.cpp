@@ -7,6 +7,7 @@
 #include "StaticTexture.hpp"
 #include "graphics.hpp"
 #include "imgui_impl_vulkan.h"
+#include "util/format.hpp"
 
 namespace vulkan {
 	util::Result<StaticTexture::Ptr, BaseError> StaticTexture::from_file(

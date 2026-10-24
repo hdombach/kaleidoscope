@@ -207,5 +207,6 @@ namespace vulkan {
 			Sampler _near_sampler;
 			SwapchainSupportDetails _swapchain_support_details;
 			PFN_vkSetDebugUtilsObjectNameEXT _set_obj_name = nullptr;
+			std::vector<VkExtensionProperties> _available_extensions;
 	};
 }

@@ -2,7 +2,7 @@
 
 #include "Image.hpp"
 #include "graphics.hpp"
-#include "util/log.hpp"
+#include "util/format.hpp"
 
 namespace vulkan {
 	const std::string Image::format_str(VkFormat format) {

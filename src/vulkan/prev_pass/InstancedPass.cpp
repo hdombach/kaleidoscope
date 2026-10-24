@@ -287,7 +287,7 @@ namespace vulkan {
 		vkCmdEndRenderPass(_command_buffer);
 
 
-		{
+		{ // DE
 			auto render_pass_info = VkRenderPassBeginInfo{};
 			render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			render_pass_info.renderPass = _composite_pipeline.render_pass().render_pass();

@@ -430,9 +430,10 @@ namespace ui {
 	{
 		ImGui::Text("Shader Resources");
 		if (ImGui::BeginTable("Shader Resource", 2, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg)) {
-			for (auto r : shader_resources.get()) {
+			for (auto &r : shader_resources.get()) {
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
+				log_debug() << "name for " << r << " is " << r->name() << std::endl;
 				ImGui::Text("%s:", r->name().data());
 				ImGui::TableNextColumn();
 				switch (r->type()) {

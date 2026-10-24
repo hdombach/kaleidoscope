@@ -269,7 +269,9 @@ namespace vulkan {
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 		createInfo.ppEnabledExtensionNames = extensions.data();
 
-		createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+		// Should be enabled for macos
+		// TODO: smarter lookup
+		//createInfo.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
 
 		auto debugCreateInfo = VkDebugUtilsMessengerCreateInfoEXT{};
 		if (ENABLE_VALIDATION_LAYERS) {
@@ -285,6 +287,9 @@ namespace vulkan {
 
 		VkResult result = vkCreateInstance(&createInfo, nullptr, &_instance);
 		if (result != VK_SUCCESS) {
+			for (auto &ext : extensions) {
+				log_debug() << "extension is " << ext << std::endl;
+			}
 			return Error(ErrorType::VULKAN, "Could not create vulkan instance", VkError(result));
 		}
 		log_memory() << "Create instance " << _instance << std::endl;
@@ -356,7 +361,7 @@ namespace vulkan {
 		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 		std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 		extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-		extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+		//extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
 		return extensions;
 	}
 	util::Result<void, Error> Graphics::_setup_debug_messenger() {
@@ -423,10 +428,10 @@ namespace vulkan {
 	bool Graphics::_check_device_extension_support(VkPhysicalDevice device) {
 		uint32_t extensionCount;
 		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-		auto availableExtensions = std::vector<VkExtensionProperties>(extensionCount);
-		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+		_available_extensions.resize(extensionCount);
+		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, _available_extensions.data());
 		auto requiredExtensions = std::set<std::string>(DEVICE_EXTENSIONS.begin(), DEVICE_EXTENSIONS.end());
-		for (const auto& extension: availableExtensions) {
+		for (const auto& extension: _available_extensions) {
 			requiredExtensions.erase(extension.extensionName);
 		}
 		return requiredExtensions.empty();
@@ -456,7 +461,11 @@ namespace vulkan {
 		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 
 		std::vector<const char*> extensions;
-		extensions.push_back("VK_KHR_portability_subset");
+		for (auto &e : _available_extensions) {
+			if (strcmp(e.extensionName, "VK_KHR_portability_subset") == 0) {
+				extensions.push_back("VK_KHR_portability_subset");
+			}
+		}
 		extensions.insert(extensions.end(), DEVICE_EXTENSIONS.begin(), DEVICE_EXTENSIONS.end());
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 		createInfo.ppEnabledExtensionNames = extensions.data();

@@ -109,7 +109,7 @@ namespace vulkan {
 
 			// The nodes are owned by the Scene so that the scene can keep track
 			// of uid's and observers
-			Node *_parent;
+			Node *_parent = nullptr;
 			Container _children;
 
 			glm::vec3 _position;
