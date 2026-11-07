@@ -5,15 +5,15 @@
 #include <string>
 namespace vulkan {
 
-#ifdef NDEBUG
-	static bool ENABLE_VALIDATION_LAYERS = false;
-#else
+#ifdef DEBUG_MODE_ENABLED
 	static bool ENABLE_VALIDATION_LAYERS = true;
+#else
+	static bool ENABLE_VALIDATION_LAYERS = false;
 #endif
 
 	static const uint32_t WIDTH = 800;
 	static const uint32_t HEIGHT = 600;
-	static const int FRAMES_IN_FLIGHT = 2;
+	static const int FRAMES_IN_FLIGHT = 1;
 	static const std::string MODEL_PATH = "assets/viking_room.obj";
 	static const std::string TEXTURE_PATH = "assets/viking_room.png";
 

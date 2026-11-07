@@ -17,9 +17,13 @@ namespace vulkan {
 			UIRenderPipeline();
 			~UIRenderPipeline();
 
+			void prepare_frame();
+
 			VkSemaphore submit(
 					std::function<void()> ui_callback,
 					VkSemaphore semaphore);
+
+			VkCommandBuffer command_buffer();
 
 		private:
 			void _create_descriptor_pool();

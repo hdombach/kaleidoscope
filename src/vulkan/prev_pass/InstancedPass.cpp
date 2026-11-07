@@ -55,13 +55,13 @@ namespace vulkan {
 			return Error(ErrorType::VULKAN, "Could not create fence", VkError(err.value()));
 		}
 
-		if (auto err = Semaphore::create("Instanced pass semaphore").move_or(p->_semaphore)) {
-			return Error(ErrorType::VULKAN, "Could not create semaphore", VkError(err.value()));
-		}
+//		if (auto err = Semaphore::create("Instanced pass semaphore").move_or(p->_semaphore)) {
+//			return Error(ErrorType::VULKAN, "Could not create semaphore", VkError(err.value()));
+//		}
 
-		if (auto err = p->_create_command_buffer().move_or(p->_command_buffer)) {
-			return Error(ErrorType::MISC, "Could not create command buffer", err.value());
-		}
+//		if (auto err = p->_create_command_buffer().move_or(p->_command_buffer)) {
+//			return Error(ErrorType::MISC, "Could not create command buffer", err.value());
+//		}
 
 		if (auto err = p->_regenerate().move_or()) {
 			return Error(ErrorType::MISC, "Could not create resources needed rendering preview", err.value());
@@ -187,32 +187,33 @@ namespace vulkan {
 
 	VkSemaphore InstancedPass::render(
 		VkSemaphore semaphore,
-		types::Camera const &camera
+		types::Camera const &camera,
+		VkCommandBuffer command_buffer
 	) {
 		VkResult r;
 
 		if (_size.width == 0 || _size.height == 0) return semaphore;
 
-		if ((r = _fence.wait()) != VK_SUCCESS) {
-			log_error() << "Problem waiting on fence: " << VkError::type_str(r) << std::endl;
-		}
-		if ((r = _fence.reset()) != VK_SUCCESS) {
-			log_error() << "Problem reseting fence: " << VkError::type_str(r) << std::endl;
-		}
+//		if ((r = _fence.wait()) != VK_SUCCESS) {
+//			log_error() << "Problem waiting on fence: " << VkError::type_str(r) << std::endl;
+//		}
+//		if ((r = _fence.reset()) != VK_SUCCESS) {
+//			log_error() << "Problem reseting fence: " << VkError::type_str(r) << std::endl;
+//		}
 
 		if (auto err = _regenerate().move_or()) {
 			log_error() << "Could not create resources required for render preview:\n" << err.value();
 			return semaphore;
 		}
 
-		util::require(vkResetCommandBuffer(_command_buffer, 0));
-
-		auto begin_info = VkCommandBufferBeginInfo{};
-		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		begin_info.flags = 0;
-		begin_info.pInheritanceInfo = nullptr;
-		util::require(vkBeginCommandBuffer(_command_buffer, &begin_info));
-
+//		util::require(vkResetCommandBuffer(_command_buffer, 0));
+//
+//		auto begin_info = VkCommandBufferBeginInfo{};
+//		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+//		begin_info.flags = 0;
+//		begin_info.pInheritanceInfo = nullptr;
+//		util::require(vkBeginCommandBuffer(_command_buffer, &begin_info));
+//
 		auto viewport = VkViewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
@@ -220,12 +221,12 @@ namespace vulkan {
 		viewport.height = static_cast<float>(_size.height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(_command_buffer, 0, 1, &viewport);
+		vkCmdSetViewport(command_buffer, 0, 1, &viewport);
 
 		auto scissor = VkRect2D{};
 		scissor.offset = {0, 0};
 		scissor.extent = _size;
-		vkCmdSetScissor(_command_buffer, 0, 1, &scissor);
+		vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
 		auto render_pass_info = VkRenderPassBeginInfo{};
 		render_pass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -239,10 +240,10 @@ namespace vulkan {
 		render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
 		render_pass_info.pClearValues = clear_values.data();
 
-		vkCmdBeginRenderPass(_command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+		vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
 		log_assert(_pipeline, "Instanced pipeline does not exist");
-		vkCmdBindPipeline(_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.pipeline());
+		vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.pipeline());
 
 		_prim_uniform.set_value(GlobalPrevPassUniform::create(camera));
 
@@ -256,7 +257,7 @@ namespace vulkan {
 			};
 
 			vkCmdBindDescriptorSets(
-				_command_buffer,
+				command_buffer,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				_pipeline.pipeline_layout(),
 				0,
@@ -268,23 +269,23 @@ namespace vulkan {
 
 			VkBuffer vertex_buffers[] = {mesh.vertex_buffer().buffer()};
 			VkDeviceSize offsets[] = {0};
-			vkCmdBindVertexBuffers(_command_buffer, 0, 1, vertex_buffers, offsets);
+			vkCmdBindVertexBuffers(command_buffer, 0, 1, vertex_buffers, offsets);
 			vkCmdBindIndexBuffer(
-				_command_buffer,
+				command_buffer,
 				mesh.index_buffer().buffer(),
 				0,
 				VK_INDEX_TYPE_UINT32
 			);
 
 			vkCmdDrawIndexed(
-				_command_buffer,
+				command_buffer,
 				mesh.index_count(),
 				mesh.instance_count(),
 				0, 0, 0
 			);
 		}
 
-		vkCmdEndRenderPass(_command_buffer);
+		vkCmdEndRenderPass(command_buffer);
 
 
 		{ // DE and composite
@@ -300,15 +301,15 @@ namespace vulkan {
 			render_pass_info.clearValueCount = static_cast<uint32_t>(clear_values.size());
 			render_pass_info.pClearValues = clear_values.data();
 
-			vkCmdBeginRenderPass(_command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdBindPipeline(_command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _composite_pipeline.pipeline());
+			vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _composite_pipeline.pipeline());
 
 			auto descriptor_sets = std::array{
 				_composite_descriptor_set.descriptor_set(),
 			};
 
 			vkCmdBindDescriptorSets(
-				_command_buffer,
+				command_buffer,
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
 				_composite_pipeline.pipeline_layout(),
 				0,
@@ -318,9 +319,9 @@ namespace vulkan {
 				nullptr
 			);
 
-			vkCmdDraw(_command_buffer, 6, 1, 0, 0);
+			vkCmdDraw(command_buffer, 6, 1, 0, 0);
 
-			vkCmdEndRenderPass(_command_buffer);
+			vkCmdEndRenderPass(command_buffer);
 		}
 
 		// Overlay
@@ -328,7 +329,7 @@ namespace vulkan {
 			_overlay_uniform.set_value({_scene->selected_node()});
 
 			vkCmdBindPipeline(
-				_command_buffer,
+				command_buffer,
 				VK_PIPELINE_BIND_POINT_COMPUTE,
 				_overlay_pipeline.pipeline()
 			);
@@ -336,7 +337,7 @@ namespace vulkan {
 			auto descriptor_set = _overlay_descriptor_set.descriptor_set();
 
 			vkCmdBindDescriptorSets(
-				_command_buffer,
+				command_buffer,
 				VK_PIPELINE_BIND_POINT_COMPUTE,
 				_overlay_pipeline.pipeline_layout(),
 				0,
@@ -346,12 +347,44 @@ namespace vulkan {
 				nullptr
 			);
 
-			vkCmdDispatch(_command_buffer, _size.width, _size.height, 1);
+			vkCmdDispatch(command_buffer, _size.width, _size.height, 1);
+
+			VkImageMemoryBarrier imageBarrier{};
+			imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+			// 1. Memory Visibility: Flush the compute writes and make it visible to the shader read
+			imageBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;       // Compute wrote to image
+			imageBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;        // Graphics will read image
+
+			// 2. Layout Transition: Change from General (compute write) to Shader Read Only
+			imageBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;              // Layout required for storage image writes
+			imageBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // Layout optimal for texture sampling
+
+			imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+			imageBarrier.image = _result_image.image();
+
+			// Subresource range (define what parts of the image to transition)
+			imageBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+			imageBarrier.subresourceRange.baseMipLevel = 0;
+			imageBarrier.subresourceRange.levelCount = 1;
+			imageBarrier.subresourceRange.baseArrayLayer = 0;
+			imageBarrier.subresourceRange.layerCount = 1;
+
+			vkCmdPipelineBarrier(
+					command_buffer,
+					VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,   // Wait for compute dispatch to finish writing
+					VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,  // Stall the fragment shader until layout changes & memory is ready
+					0, 
+					0, nullptr,
+					0, nullptr,
+					1, &imageBarrier                         // The image barrier handles layout + visibility
+			);
+
 		}
 
-		util::require(vkEndCommandBuffer(_command_buffer), "Problem ending command buffer: ");
+		//util::require(vkEndCommandBuffer(command_buffer), "Problem ending command buffer: ");
 
-		VkSemaphore finish_semaphore = _semaphore.get();
+		//VkSemaphore finish_semaphore = _semaphore.get();
 
 		auto wait_stages = std::array{
 			VkPipelineStageFlags(VK_PIPELINE_STAGE_VERTEX_INPUT_BIT),
@@ -362,20 +395,21 @@ namespace vulkan {
 		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submit_info.pWaitDstStageMask = wait_stages.data();
 		submit_info.commandBufferCount = 1;
-		submit_info.pCommandBuffers = &_command_buffer;
-		if (semaphore) {
-			submit_info.waitSemaphoreCount = 1;
-			submit_info.pWaitSemaphores = &semaphore;
-		}
-		submit_info.signalSemaphoreCount = 1;
-		submit_info.pSignalSemaphores = &finish_semaphore;
+		submit_info.pCommandBuffers = &command_buffer;
+//		if (semaphore) {
+//			submit_info.waitSemaphoreCount = 1;
+//			submit_info.pWaitSemaphores = &semaphore;
+//		}
+//		submit_info.signalSemaphoreCount = 1;
+//		submit_info.pSignalSemaphores = &finish_semaphore;
 
-		util::require(
-			vkQueueSubmit(Graphics::DEFAULT->graphics_queue(), 1, &submit_info, _fence.get()),
-			"Problem submitting queue: "
-		);
+//		util::require(
+//			vkQueueSubmit(Graphics::DEFAULT->graphics_queue(), 1, &submit_info, _fence.get()),
+//			"Problem submitting queue: "
+//		);
 
-		return finish_semaphore;
+		//return finish_semaphore;
+		return nullptr;
 	}
 
 	RenderPass const &InstancedPass::render_pass() const {
@@ -961,7 +995,7 @@ namespace vulkan {
 		_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
 			*Graphics::DEFAULT->main_texture_sampler(),
 			_result_image.image_view(),
-			VK_IMAGE_LAYOUT_GENERAL
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		);
 
 		return {};

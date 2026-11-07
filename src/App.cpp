@@ -138,13 +138,15 @@ void App::main_loop() {
 		auto time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 		comb_ratio_value = 0.5 + 0.4 * sin(time * 1);
 
-		VkSemaphore semaphore;
+		VkSemaphore semaphore = nullptr;
 		_scene->update();
 		_scene->set_selected_node(_view_state->selected_node());
+		_ui_render_pipeline->prepare_frame();
 		if (_view_state->showing_preview) {
-			semaphore = _scene->render_preview(_prev_semaphore);
+			semaphore = _scene->render_preview(_prev_semaphore, _ui_render_pipeline->command_buffer());
 		} else {
-			semaphore = _scene->render_raytrace(_prev_semaphore);
+			//TODO:
+			//semaphore = _scene->render_raytrace(_prev_semaphore);
 		}
 		if (semaphore == nullptr) {
 			semaphore = _prev_semaphore;

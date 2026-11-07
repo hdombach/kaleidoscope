@@ -39,11 +39,9 @@ namespace vulkan {
 		vkDestroyDescriptorPool(Graphics::DEFAULT->device(), _descriptor_pool, nullptr);
 	}
 
-	VkSemaphore UIRenderPipeline::submit(
-			std::function<void()> ui_callback,
-			VkSemaphore semaphore)
-	{
-		VkSemaphore result = nullptr;
+	void UIRenderPipeline::prepare_frame() {
+		VkResult err;
+
 		glfwPollEvents();
 		if (_swapchain_rebuild) {
 			int width, height;
@@ -65,6 +63,44 @@ namespace vulkan {
 			}
 		}
 
+		auto image_acquired_semaphore =_window_data.FrameSemaphores[_window_data.SemaphoreIndex].ImageAcquiredSemaphore;
+		auto render_complete_semaphore = _window_data.FrameSemaphores[_window_data.SemaphoreIndex].RenderCompleteSemaphore;
+
+		err = vkAcquireNextImageKHR(
+				Graphics::DEFAULT->device(),
+				_window_data.Swapchain,
+				UINT64_MAX,
+				image_acquired_semaphore,
+				VK_NULL_HANDLE,
+				&_window_data.FrameIndex);
+		if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) {
+			_swapchain_rebuild = true;
+			return;
+		}
+		util::require(err);
+
+		auto frame = &_window_data.Frames[_window_data.FrameIndex];
+
+		util::require(vkWaitForFences(
+					Graphics::DEFAULT->device(),
+					1,
+					&frame->Fence,
+					VK_TRUE, UINT64_MAX));
+		util::require(vkResetFences(Graphics::DEFAULT->device(), 1, &frame->Fence));
+
+		util::require(vkResetCommandPool(Graphics::DEFAULT->device(), frame->CommandPool, 0));
+		auto buffer_begin_info = VkCommandBufferBeginInfo{};
+		buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		buffer_begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		util::require(vkBeginCommandBuffer(frame->CommandBuffer, &buffer_begin_info));
+
+	}
+
+	VkSemaphore UIRenderPipeline::submit(
+			std::function<void()> ui_callback,
+			VkSemaphore semaphore)
+	{
+		VkSemaphore result = nullptr;
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
@@ -93,6 +129,11 @@ namespace vulkan {
 		}
 
 		return result;
+	}
+
+	VkCommandBuffer UIRenderPipeline::command_buffer() {
+		auto frame = &_window_data.Frames[_window_data.FrameIndex];
+		return frame->CommandBuffer;
 	}
 
 	void UIRenderPipeline::_create_descriptor_pool() {
@@ -225,34 +266,7 @@ namespace vulkan {
 
 		auto image_acquired_semaphore =_window_data.FrameSemaphores[_window_data.SemaphoreIndex].ImageAcquiredSemaphore;
 		auto render_complete_semaphore = _window_data.FrameSemaphores[_window_data.SemaphoreIndex].RenderCompleteSemaphore;
-
-		err = vkAcquireNextImageKHR(
-				Graphics::DEFAULT->device(),
-				_window_data.Swapchain,
-				UINT64_MAX,
-				image_acquired_semaphore,
-				VK_NULL_HANDLE,
-				&_window_data.FrameIndex);
-		if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) {
-			_swapchain_rebuild = true;
-			return nullptr;
-		}
-		util::require(err);
-
 		auto frame = &_window_data.Frames[_window_data.FrameIndex];
-
-		util::require(vkWaitForFences(
-					Graphics::DEFAULT->device(),
-					1,
-					&frame->Fence,
-					VK_TRUE, UINT64_MAX));
-		util::require(vkResetFences(Graphics::DEFAULT->device(), 1, &frame->Fence));
-
-		util::require(vkResetCommandPool(Graphics::DEFAULT->device(), frame->CommandPool, 0));
-		auto buffer_begin_info = VkCommandBufferBeginInfo{};
-		buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		buffer_begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-		util::require(vkBeginCommandBuffer(frame->CommandBuffer, &buffer_begin_info));
 
 		auto pass_begin_info = VkRenderPassBeginInfo{};
 		pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

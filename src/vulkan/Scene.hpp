@@ -53,7 +53,7 @@ namespace vulkan {
 			int render_rate() const;
 			void set_render_rate(int rate);
 			void set_is_preview(bool is_preview);
-			VkSemaphore render_preview(VkSemaphore semaphore);
+			VkSemaphore render_preview(VkSemaphore semaphore, VkCommandBuffer command_buffer);
 			VkSemaphore render_raytrace(VkSemaphore semaphore);
 			void update();
 

@@ -112,7 +112,7 @@ namespace vulkan {
 			 * @param[in] semaphore The semaphore to wait on before starting
 			 * @returns The semaphore marking when the InstancedPass is done
 			 */
-			VkSemaphore render(VkSemaphore semaphore, types::Camera const &camera);
+			VkSemaphore render(VkSemaphore semaphore, types::Camera const &camera, VkCommandBuffer command_buffe);
 
 			/**
 			 * @brief The render pass for the rasterization stage
@@ -209,7 +209,7 @@ namespace vulkan {
 
 		private:
 			const static VkFormat _MATERIAL_IMAGE_FORMAT = VK_FORMAT_R16_UINT;
-			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_SRGB;
+			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_UNORM;
 			const static VkFormat _NODE_IMAGE_FORMAT = VK_FORMAT_R16_UINT;
 			const static VkFormat _UV_IMAGE_FORMAT = VK_FORMAT_R32G32_SFLOAT;
 			const static VkFormat _DEPTH_BUF_IMAGE_FORMAT = VK_FORMAT_R8_SRGB;

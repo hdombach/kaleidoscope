@@ -5,6 +5,9 @@ project(
 	default_options: ['cpp_std=c++20']
 )
 
+if get_option('buildtype') in ['debug', 'debugoptimized']
+  add_project_arguments('-DDEBUG_MODE_ENABLED', language: 'cpp')
+endif
 
 root_include = include_directories('.')
 src_include = include_directories('src')

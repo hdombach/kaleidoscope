@@ -280,15 +280,9 @@ ShaderResource::Ptr ShaderResource::create_texture(
 			c = c->_parent;
 		}
 
-		for (auto &r : result) {
-			//log_debug() << "before: " << r->name() << std::endl;
-		}
 		std::sort(result.begin(), result.end(), [](ShaderResource const *l, ShaderResource const *r) {
 			return l->name() > r->name();
 		});
-		for (auto &r : result) {
-			log_debug() << "adding to get for " << r << ": " << r->name() << std::endl;
-		}
 
 		return result;
 	}

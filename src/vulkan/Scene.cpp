@@ -112,8 +112,8 @@ namespace vulkan {
 		_is_preview = is_preview;
 	}
 
-	VkSemaphore Scene::render_preview(VkSemaphore semaphore) {
-		return _instanced_pass->render(semaphore, camera());
+	VkSemaphore Scene::render_preview(VkSemaphore semaphore, VkCommandBuffer command_buffer) {
+		return _instanced_pass->render(semaphore, camera(), command_buffer);
 	}
 
 	VkSemaphore Scene::render_raytrace(VkSemaphore semaphore) {

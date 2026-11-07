@@ -113,6 +113,7 @@ namespace vulkan {
 		auto blend_attachment = VkPipelineColorBlendAttachmentState{};
 		switch (_image->format()) {
 			case VK_FORMAT_R8G8B8A8_SRGB:
+			case VK_FORMAT_R8G8B8A8_UNORM:
 				blend_attachment.colorWriteMask =
 					VK_COLOR_COMPONENT_R_BIT |
 					VK_COLOR_COMPONENT_G_BIT |

@@ -69,7 +69,7 @@ namespace vulkan {
 		image_info.extent.depth = 1;
 		image_info.arrayLayers = 1;
 		image_info.format = format;
-		image_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+		image_info.tiling = VK_IMAGE_TILING_LINEAR;
 		image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		image_info.usage = usage;
 		image_info.samples = VK_SAMPLE_COUNT_1_BIT;

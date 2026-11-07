@@ -288,6 +288,9 @@ namespace vulkan {
 		extensions.push_back("VK_KHR_get_physical_device_properties2");
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 		createInfo.ppEnabledExtensionNames = extensions.data();
+		for (auto &extension : extensions) {
+			log_debug() << "Extension: " << extension << std::endl;
+		}
 
 		// Should be enabled for macos
 		// TODO: smarter lookup
@@ -490,12 +493,6 @@ namespace vulkan {
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 		createInfo.ppEnabledExtensionNames = extensions.data();
 
-		if (ENABLE_VALIDATION_LAYERS) {
-			createInfo.enabledLayerCount = static_cast<uint32_t>(VALIDATION_LAYERS.size());
-			createInfo.ppEnabledLayerNames = VALIDATION_LAYERS.data();
-		} else {
-			createInfo.enabledLayerCount = 0;
-		}
 		auto result = vkCreateDevice(_physical_device, &createInfo, nullptr, &_device);
 		if (result != VK_SUCCESS) {
 			return Error(ErrorType::VULKAN, "Could not create device", VkError(result));
@@ -558,7 +555,7 @@ namespace vulkan {
 
 		int i = 0;
 		for (const auto& queueFamily : queueFamilies) {
-			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+			if (queueFamily.queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) {
 				indices.graphics_family = i;
 			}
 

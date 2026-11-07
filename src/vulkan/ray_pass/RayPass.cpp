@@ -552,7 +552,7 @@ namespace vulkan {
 		_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
 			*Graphics::DEFAULT->main_texture_sampler(), 
 			_result_image.image_view(), 
-			VK_IMAGE_LAYOUT_GENERAL
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		);
 		log_assert(_imgui_descriptor_set, "imgui descriptor set must be initialized");
 
