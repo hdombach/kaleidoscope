@@ -212,7 +212,7 @@ namespace vulkan {
 			const static VkFormat _RESULT_IMAGE_FORMAT = VK_FORMAT_R8G8B8A8_UNORM;
 			const static VkFormat _NODE_IMAGE_FORMAT = VK_FORMAT_R16_UINT;
 			const static VkFormat _UV_IMAGE_FORMAT = VK_FORMAT_R32G32_SFLOAT;
-			const static VkFormat _DEPTH_BUF_IMAGE_FORMAT = VK_FORMAT_R8_SRGB;
+			const static VkFormat _DEPTH_BUF_IMAGE_FORMAT = VK_FORMAT_R8_UNORM;
 
 			/**
 			 * @brief Sets up all the resources needed to render

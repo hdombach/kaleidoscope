@@ -88,11 +88,11 @@ namespace vulkan {
 					VK_TRUE, UINT64_MAX));
 		util::require(vkResetFences(Graphics::DEFAULT->device(), 1, &frame->Fence));
 
-		util::require(vkResetCommandPool(Graphics::DEFAULT->device(), frame->CommandPool, 0));
-		auto buffer_begin_info = VkCommandBufferBeginInfo{};
-		buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		buffer_begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-		util::require(vkBeginCommandBuffer(frame->CommandBuffer, &buffer_begin_info));
+		//util::require(vkResetCommandPool(Graphics::DEFAULT->device(), frame->CommandPool, 0));
+		//auto buffer_begin_info = VkCommandBufferBeginInfo{};
+		//buffer_begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		//buffer_begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		//util::require(vkBeginCommandBuffer(frame->CommandBuffer, &buffer_begin_info));
 
 	}
 
@@ -226,7 +226,7 @@ namespace vulkan {
 		}
 
     const VkFormat requestSurfaceImageFormat[] = {
-			VK_FORMAT_R8G8B8A8_SRGB,
+			VK_FORMAT_R8G8B8A8_UNORM
 		};
    	const VkColorSpaceKHR requestSurfaceColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 

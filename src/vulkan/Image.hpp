@@ -28,7 +28,8 @@ namespace vulkan {
 					VkImageUsageFlags usage,
 					std::string const &debug_name,
 					VkImageAspectFlagBits aspect,
-					VkMemoryPropertyFlagBits memory_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+					VkMemoryPropertyFlagBits memory_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+					VkImageTiling tiling = VK_IMAGE_TILING_LINEAR
 				);
 
 			Image();

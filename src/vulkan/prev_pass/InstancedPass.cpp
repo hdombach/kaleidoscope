@@ -208,12 +208,39 @@ namespace vulkan {
 
 //		util::require(vkResetCommandBuffer(_command_buffer, 0));
 //
-//		auto begin_info = VkCommandBufferBeginInfo{};
-//		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-//		begin_info.flags = 0;
-//		begin_info.pInheritanceInfo = nullptr;
-//		util::require(vkBeginCommandBuffer(_command_buffer, &begin_info));
-//
+		auto begin_info = VkCommandBufferBeginInfo{};
+		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		begin_info.flags = 0;
+		begin_info.pInheritanceInfo = nullptr;
+		util::require(vkBeginCommandBuffer(command_buffer, &begin_info));
+
+
+		VkImageMemoryBarrier imageBarrier{};
+		imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		imageBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;       // Compute wrote to image
+		imageBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;        // Graphics will read image
+		imageBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;              // Layout required for storage image writes
+		imageBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // Layout optimal for texture sampling
+		imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageBarrier.image = _result_image.image();
+		imageBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBarrier.subresourceRange.baseMipLevel = 0;
+		imageBarrier.subresourceRange.levelCount = 1;
+		imageBarrier.subresourceRange.baseArrayLayer = 0;
+		imageBarrier.subresourceRange.layerCount = 1;
+
+		vkCmdPipelineBarrier(
+			command_buffer,
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,   // Wait for compute dispatch to finish writing
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,  // Stall the fragment shader until layout changes & memory is ready
+			0, 
+			0, nullptr,
+			0, nullptr,
+			1, &imageBarrier                         // The image barrier handles layout + visibility
+		);
+
+
 		auto viewport = VkViewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
@@ -324,6 +351,32 @@ namespace vulkan {
 			vkCmdEndRenderPass(command_buffer);
 		}
 
+		VkImageMemoryBarrier imageBarrier2{};
+		imageBarrier2.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		imageBarrier2.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;       // Compute wrote to image
+		imageBarrier2.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;        // Graphics will read image
+		imageBarrier2.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;              // Layout required for storage image writes
+		imageBarrier2.newLayout = VK_IMAGE_LAYOUT_GENERAL; // Layout optimal for texture sampling
+		imageBarrier2.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageBarrier2.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		imageBarrier2.image = _result_image.image();
+		imageBarrier2.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageBarrier2.subresourceRange.baseMipLevel = 0;
+		imageBarrier2.subresourceRange.levelCount = 1;
+		imageBarrier2.subresourceRange.baseArrayLayer = 0;
+		imageBarrier2.subresourceRange.layerCount = 1;
+
+		vkCmdPipelineBarrier(
+			command_buffer,
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,   // Wait for compute dispatch to finish writing
+			VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,  // Stall the fragment shader until layout changes & memory is ready
+			0, 
+			0, nullptr,
+			0, nullptr,
+			1, &imageBarrier2                         // The image barrier handles layout + visibility
+		);
+
+
 		// Overlay
 		{
 			_overlay_uniform.set_value({_scene->selected_node()});
@@ -351,19 +404,13 @@ namespace vulkan {
 
 			VkImageMemoryBarrier imageBarrier{};
 			imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-			// 1. Memory Visibility: Flush the compute writes and make it visible to the shader read
 			imageBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;       // Compute wrote to image
 			imageBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;        // Graphics will read image
-
-			// 2. Layout Transition: Change from General (compute write) to Shader Read Only
 			imageBarrier.oldLayout = VK_IMAGE_LAYOUT_GENERAL;              // Layout required for storage image writes
 			imageBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL; // Layout optimal for texture sampling
-
 			imageBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 			imageBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 			imageBarrier.image = _result_image.image();
-
-			// Subresource range (define what parts of the image to transition)
 			imageBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 			imageBarrier.subresourceRange.baseMipLevel = 0;
 			imageBarrier.subresourceRange.levelCount = 1;
@@ -873,7 +920,8 @@ namespace vulkan {
 			| VK_IMAGE_USAGE_SAMPLED_BIT,
 			"InstancedPass depth buffer",
 			VK_IMAGE_ASPECT_DEPTH_BIT,
-			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			VK_IMAGE_TILING_OPTIMAL
 		).move_or(_depth_image)) {
 			return Error(ErrorType::VULKAN, "Could not create depth image", err.value());
 		}
@@ -1013,7 +1061,7 @@ namespace vulkan {
 
 	std::vector<FrameAttachment> InstancedPass::_composite_frame_attachments() {
 		return {
-			FrameAttachment::create(_result_image).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
+			FrameAttachment::create(_result_image).set_image_layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
 			FrameAttachment::create(_node_image_post).set_image_layout(VK_IMAGE_LAYOUT_GENERAL),
 		};
 	}

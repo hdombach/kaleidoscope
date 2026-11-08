@@ -23,6 +23,7 @@ namespace vulkan {
 				attachment._clear_color = {{{0}}};
 				break;
 			case VK_FORMAT_R8_SRGB:
+			case VK_FORMAT_R8_UNORM:
 				attachment._clear_color = {{{0}}};
 				break;
 			case VK_FORMAT_R32G32_SFLOAT:
@@ -129,6 +130,7 @@ namespace vulkan {
 				break;
 			case VK_FORMAT_R16_UINT:
 			case VK_FORMAT_R8_SRGB:
+			case VK_FORMAT_R8_UNORM:
 			case VK_FORMAT_R32_SFLOAT:
 				blend_attachment.colorWriteMask =
 					VK_COLOR_COMPONENT_R_BIT |

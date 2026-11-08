@@ -532,7 +532,7 @@ namespace vulkan {
 		// result image
 		if (auto err = Image::create(
 			_size,
-			VK_FORMAT_R8G8B8A8_SRGB,
+			VK_FORMAT_R8G8B8A8_UNORM,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT
 				| VK_IMAGE_USAGE_STORAGE_BIT
 				| VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -543,7 +543,7 @@ namespace vulkan {
 
 		Graphics::DEFAULT->transition_image_layout(
 			_result_image.image(),
-			VK_FORMAT_R8G8B8A8_SRGB,
+			VK_FORMAT_R8G8B8A8_UNORM,
 			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_GENERAL,
 			1

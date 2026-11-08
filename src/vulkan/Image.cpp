@@ -27,6 +27,8 @@ namespace vulkan {
 				return "VK_FORMAT_R16_UINT";
 			case VK_FORMAT_R8_SRGB:
 				return "VK_FORMAT_R8_SRGB";
+			case VK_FORMAT_R8_UNORM:
+				return "VK_FORMAT_R8_UNORM:";
 			case VK_FORMAT_R8G8_SRGB:
 				return "VK_FORMAT_R8G8_SRGB";
 			default:
@@ -51,13 +53,14 @@ namespace vulkan {
 	}
 
 	util::Result<Image, Error> Image::create(
-			VkExtent2D size,
-			VkFormat format,
-			VkImageUsageFlags usage,
-			std::string const &debug_name,
-			VkImageAspectFlagBits aspect,
-			VkMemoryPropertyFlagBits memory_properties)
-	{
+		VkExtent2D size,
+		VkFormat format,
+		VkImageUsageFlags usage,
+		std::string const &debug_name,
+		VkImageAspectFlagBits aspect,
+		VkMemoryPropertyFlagBits memory_properties,
+		VkImageTiling tiling
+	) {
 		auto result = Image();
 
 		/* Create Image */
@@ -69,7 +72,7 @@ namespace vulkan {
 		image_info.extent.depth = 1;
 		image_info.arrayLayers = 1;
 		image_info.format = format;
-		image_info.tiling = VK_IMAGE_TILING_LINEAR;
+		image_info.tiling = tiling;
 		image_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		image_info.usage = usage;
 		image_info.samples = VK_SAMPLE_COUNT_1_BIT;
