@@ -75,14 +75,8 @@ namespace vulkan {
 	VkCommandPool Graphics::command_pool() const {
 		return _command_pool;
 	}
-	VkQueue Graphics::graphics_queue() const {
-		return _graphics_queue;
-	}
-	VkQueue Graphics::present_queue() const {
-		return _present_queue;
-	}
-	VkQueue Graphics::compute_queue() const {
-		return _compute_queue;
+	VkQueue Graphics::queue() const {
+		return _queue;
 	}
 	Graphics::SwapchainSupportDetails const &Graphics::swapchain_support_details() const {
 		return _swapchain_support_details;
@@ -115,8 +109,8 @@ namespace vulkan {
 	VkShaderModule Graphics::create_shader_module(const std::string &code) const {
 		return _create_shader_module(code);
 	}
-	QueueFamilyIndices Graphics::find_queue_families() const {
-		return _find_queue_families(_physical_device);
+	std::optional<uint32_t> Graphics::get_queue_index() const {
+		return _get_queue_index(_physical_device);
 	}
 	void Graphics::create_buffer(
 			VkDeviceSize size,
@@ -213,22 +207,6 @@ namespace vulkan {
 		_set_debug_name(VK_OBJECT_TYPE_SHADER_MODULE, shader_module, "VkShaderModule: " + name);
 	}
 
-	Graphics::Graphics():
-		_name(nullptr),
-		_window(nullptr),
-		_instance(nullptr),
-		_debug_messenger(nullptr),
-		_physical_device(nullptr),
-		_device(nullptr),
-		_graphics_queue(nullptr),
-		_present_queue(nullptr),
-		_compute_queue(nullptr),
-		_surface(nullptr),
-		_descriptor_pool(nullptr),
-		_command_pool(nullptr),
-		_swapchain_support_details()
-	{}
-
 	void Graphics::_init_window() {
 		glfwInit();
 
@@ -253,7 +231,11 @@ namespace vulkan {
 			log_fatal_error(err.value());
 		}
 		_create_surface();
-		_pick_physical_device();
+		if (auto d = _pick_physical_device()) {
+			_physical_device = d.value();
+		} else {
+			log_error() << "Could not pick physical device" << std::endl;
+		}
 		if (auto err = _create_logical_device().move_or()) {
 			log_fatal_error(err.value());
 		}
@@ -411,77 +393,84 @@ namespace vulkan {
 
 		createInfo.pfnUserCallback = _debug_callback;
 	}
-	void Graphics::_pick_physical_device() {
-		uint32_t deviceCount = 0;
-		vkEnumeratePhysicalDevices(_instance, &deviceCount, nullptr);
 
-		if (deviceCount == 0) {
+	struct StrCmp {
+		bool operator()(const char *lhs, const char *rhs) const {
+			return strcmp(lhs, rhs);
+		}
+	};
+
+	std::optional<VkPhysicalDevice> Graphics::_pick_physical_device() {
+		uint32_t device_count = 0;
+		vkEnumeratePhysicalDevices(_instance, &device_count, nullptr);
+
+		if (device_count == 0) {
 			throw std::runtime_error("failed to find GPUs with Vulkan support!");
 		}
 
-		auto devices = std::vector<VkPhysicalDevice>(deviceCount);
-		vkEnumeratePhysicalDevices(_instance, &deviceCount, devices.data());
+		auto devices = std::vector<VkPhysicalDevice>(device_count);
+		vkEnumeratePhysicalDevices(_instance, &device_count, devices.data());
 
 		for (const auto& device : devices) {
-			if (_is_device_suitable(device)) {
-				_physical_device = device;
-				break;
+			uint32_t extension_count = 0;
+			vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, nullptr);
+			auto extensions = std::vector<VkExtensionProperties>(extension_count);
+			vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, extensions.data());
+
+			auto required = std::set<const char *, StrCmp>(REQUIRED_DEVICE_EXTENSIONS.begin(), REQUIRED_DEVICE_EXTENSIONS.end());
+			for (auto &extension : extensions) {
+				if (required.contains(extension.extensionName)) {
+					required.erase(extension.extensionName);
+				}
 			}
+
+			if (!required.empty()) {
+				continue;
+			}
+
+			auto surface_capabilities = VkSurfaceCapabilitiesKHR{};
+			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, _surface, &surface_capabilities);
+
+			uint32_t format_count;
+			vkGetPhysicalDeviceSurfaceFormatsKHR(device, _surface, &format_count, nullptr);
+			if (format_count == 0) continue;
+			auto surface_formats = std::vector<VkSurfaceFormatKHR>(format_count);
+			vkGetPhysicalDeviceSurfaceFormatsKHR(device, _surface, &format_count, surface_formats.data());
+
+			uint32_t present_mode_count;
+			vkGetPhysicalDeviceSurfacePresentModesKHR(device, _surface, &present_mode_count, nullptr);
+			if (present_mode_count == 0) continue;
+			auto present_modes = std::vector<VkPresentModeKHR>(present_mode_count);
+			vkGetPhysicalDeviceSurfacePresentModesKHR(device, _surface, &present_mode_count, present_modes.data());
+
+			VkPhysicalDeviceFeatures supported_features;
+			vkGetPhysicalDeviceFeatures(device, &supported_features);
+
+			if (!supported_features.samplerAnisotropy) continue;
+			return device;
 		}
 
-		if (_physical_device == VK_NULL_HANDLE) {
-			throw std::runtime_error("failed to find a suitable GPU!");
-		}
+		return std::nullopt;
 	}
 
-	bool Graphics::_is_device_suitable(VkPhysicalDevice device) {
-		auto indices = _find_queue_families(device);
-		bool extensionsSupported = _check_device_extension_support(device);
-		bool swapChainAdequate = false;
-		if (extensionsSupported) {
-			_swapchain_support_details = _query_swap_chain_support(device);
-			swapChainAdequate = !_swapchain_support_details.formats.empty() && !_swapchain_support_details.present_modes.empty();
-		} else {
-			log_error() << "Extensions are not supported" << std::endl;
-		}
-		VkPhysicalDeviceFeatures supportedFeatures;
-		vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
-		return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
-	}
-	bool Graphics::_check_device_extension_support(VkPhysicalDevice device) {
-		uint32_t extensionCount;
-		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-		_available_extensions.resize(extensionCount);
-		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, _available_extensions.data());
-		auto requiredExtensions = std::set<std::string>(DEVICE_EXTENSIONS.begin(), DEVICE_EXTENSIONS.end());
-		for (const auto& extension: _available_extensions) {
-			requiredExtensions.erase(extension.extensionName);
-		}
-		return requiredExtensions.empty();
-	}
 	util::Result<void, Error> Graphics::_create_logical_device() {
-		auto indices = _find_queue_families(_physical_device);
-		std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-		auto uniqueQueueFamilies = std::set<uint32_t>{indices.graphics_family.value(), indices.present_family.value()};
+		auto index = _get_queue_index(_physical_device);
 		float queuePriority = 1.0f;
-		for (auto queueFamily : uniqueQueueFamilies) {
-			auto queueCreateInfo = VkDeviceQueueCreateInfo{};
-			queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-			queueCreateInfo.queueFamilyIndex = queueFamily;
-			queueCreateInfo.queueCount = 1;
-			queueCreateInfo.pQueuePriorities = &queuePriority;
-			queueCreateInfos.push_back(queueCreateInfo);
-		}
+
+		auto queue_create_info = VkDeviceQueueCreateInfo{};
+		queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queue_create_info.queueFamilyIndex = index.value();
+		queue_create_info.queueCount = 1;
+		queue_create_info.pQueuePriorities = &queuePriority;
 
 		auto deviceFeatures = VkPhysicalDeviceFeatures{};
 		deviceFeatures.samplerAnisotropy = VK_TRUE;
 		deviceFeatures.independentBlend = VK_TRUE;
 		auto createInfo = VkDeviceCreateInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
-		createInfo.pQueueCreateInfos = queueCreateInfos.data();
+		createInfo.queueCreateInfoCount = 1;
+		createInfo.pQueueCreateInfos = &queue_create_info;
 		createInfo.pEnabledFeatures = &deviceFeatures;
-		createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 
 		std::vector<const char*> extensions;
 		for (auto &e : _available_extensions) {
@@ -489,7 +478,7 @@ namespace vulkan {
 				extensions.push_back("VK_KHR_portability_subset");
 			}
 		}
-		extensions.insert(extensions.end(), DEVICE_EXTENSIONS.begin(), DEVICE_EXTENSIONS.end());
+		extensions.insert(extensions.end(), REQUIRED_DEVICE_EXTENSIONS.begin(), REQUIRED_DEVICE_EXTENSIONS.end());
 		createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
 		createInfo.ppEnabledExtensionNames = extensions.data();
 
@@ -499,24 +488,20 @@ namespace vulkan {
 		}
 		log_memory() << "Created device " << _device << std::endl;
 		//TODO: the pipeline objects should probably own graphics queue
-		vkGetDeviceQueue(_device, indices.graphics_family.value(), 0, &_graphics_queue);
+		vkGetDeviceQueue(_device, index.value(), 0, &_queue);
 		//TODO: search specifically for a compute queue
-		vkGetDeviceQueue(_device, indices.graphics_family.value(), 0, &_compute_queue);
-		vkGetDeviceQueue(_device, indices.present_family.value(), 0, &_present_queue);
 
-		set_debug_name(_graphics_queue, "Graphics queue");
-		set_debug_name(_compute_queue, "Compute queue");
-		set_debug_name(_present_queue, "Present queue");
+		set_debug_name(_queue, "Graphics queue");
 		return {};
 	}
 
 	void Graphics::_create_command_pool() {
-		QueueFamilyIndices queueFamilyIndices = _find_queue_families(_physical_device);
+		auto index = _get_queue_index(_physical_device);
 
 		VkCommandPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-		poolInfo.queueFamilyIndex = queueFamilyIndices.graphics_family.value();
+		poolInfo.queueFamilyIndex = index.value();
 
 		if (vkCreateCommandPool(_device, &poolInfo, nullptr, &_command_pool) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create command pool!");
@@ -544,80 +529,26 @@ namespace vulkan {
 		}
 	}
 
-	QueueFamilyIndices Graphics::_find_queue_families(VkPhysicalDevice device) const {
-		QueueFamilyIndices indices;
+	std::optional<uint32_t> Graphics::_get_queue_index(VkPhysicalDevice device) const {
+		uint32_t property_count = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &property_count, nullptr);
 
-		uint32_t queueFamilyCount = 0;
-		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+		auto properties = std::vector<VkQueueFamilyProperties>(property_count);
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &property_count, properties.data());
 
 		int i = 0;
-		for (const auto& queueFamily : queueFamilies) {
-			if (queueFamily.queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) {
-				indices.graphics_family = i;
-			}
+		for (const auto &property : properties) {
+			VkBool32 queue_support = property.queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);	
+			VkBool32 present_support = false;
+			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, _surface, &present_support);
 
-			VkBool32 presentSupport = false;
-			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, _surface, &presentSupport);
-
-			if (presentSupport) {
-				indices.present_family = i;
-			}
-
-			if (indices.isComplete()) {
-				break;
+			if (queue_support && present_support) {
+				return i;
 			}
 
 			i++;
 		}
-
-		return indices;
-	}
-
-	Graphics::SwapchainSupportDetails Graphics::_query_swap_chain_support(VkPhysicalDevice device) {
-		auto details = SwapchainSupportDetails{};
-
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, _surface, &details.capabilities);
-
-		uint32_t formatCount;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(device, _surface, &formatCount, nullptr);
-
-		if (formatCount != 0) {
-			details.formats.resize(formatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(device, _surface, &formatCount, details.formats.data());
-		}
-
-		uint32_t presentModeCount;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(device, _surface, &presentModeCount, nullptr);
-
-		if (presentModeCount != 0) {
-			details.present_modes.resize(presentModeCount);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(device, _surface, &presentModeCount, details.present_modes.data());
-		}
-
-		return details;
-	}
-
-	VkSurfaceFormatKHR Graphics::_choose_swap_surface_format(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
-		for (const auto& availableFormat : availableFormats) {
-			if (availableFormat.format == VK_FORMAT_R8G8B8A8_SRGB &&
-					availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-				return availableFormat;
-			}
-		}
-
-		return availableFormats[0];
-	}
-
-	VkPresentModeKHR Graphics::_choose_swap_present_mode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
-		for (const auto& availablePresentMode : availablePresentModes) {
-			if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
-				return availablePresentMode;
-			}
-		}
-		return VK_PRESENT_MODE_FIFO_KHR;
+		return std::nullopt;
 	}
 
 	void Graphics::_create_surface() {
@@ -723,8 +654,8 @@ namespace vulkan {
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &commandBuffer;
 
-		vkQueueSubmit(_graphics_queue, 1, &submitInfo, VK_NULL_HANDLE);
-		vkQueueWaitIdle(_graphics_queue);
+		vkQueueSubmit(_queue, 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(_queue);
 
 		vkFreeCommandBuffers(_device, _command_pool, 1, &commandBuffer);
 	}

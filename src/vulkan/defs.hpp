@@ -21,7 +21,7 @@ namespace vulkan {
 			"VK_LAYER_KHRONOS_validation"
 	};
 
-	static std::vector<const char*> DEVICE_EXTENSIONS = {
+	static std::vector<const char*> REQUIRED_DEVICE_EXTENSIONS = {
 			VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 	};
 }

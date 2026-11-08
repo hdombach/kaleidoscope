@@ -339,7 +339,7 @@ namespace vulkan {
 		submit_info.signalSemaphoreCount = 1;
 		submit_info.pSignalSemaphores = &ray_semaphore;
 
-		auto res = vkQueueSubmit(Graphics::DEFAULT->compute_queue(), 1, &submit_info, *_pass_fence);
+		auto res = vkQueueSubmit(Graphics::DEFAULT->queue(), 1, &submit_info, *_pass_fence);
 		if (res != VK_SUCCESS) {
 			log_error() << "Problem submitting queue" << std::endl;
 		}

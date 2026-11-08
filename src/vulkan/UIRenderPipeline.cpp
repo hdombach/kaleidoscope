@@ -53,7 +53,7 @@ namespace vulkan {
 						Graphics::DEFAULT->physical_device(),
 						Graphics::DEFAULT->device(),
 						&_window_data,
-						Graphics::DEFAULT->find_queue_families().graphics_family.value(),
+						Graphics::DEFAULT->get_queue_index().value(),
 						nullptr,
 						width,
 						height,
@@ -198,8 +198,8 @@ namespace vulkan {
 		init_info.Instance = Graphics::DEFAULT->instance();
 		init_info.PhysicalDevice = Graphics::DEFAULT->physical_device();
 		init_info.Device = Graphics::DEFAULT->device();
-		init_info.QueueFamily = Graphics::DEFAULT->find_queue_families().graphics_family.value();
-		init_info.Queue = Graphics::DEFAULT->graphics_queue();
+		init_info.QueueFamily = Graphics::DEFAULT->get_queue_index().value();
+		init_info.Queue = Graphics::DEFAULT->queue();
 		init_info.DescriptorPool = _descriptor_pool;
 		init_info.Subpass = 0;
 		init_info.MinImageCount = FRAMES_IN_FLIGHT;
@@ -218,7 +218,7 @@ namespace vulkan {
 		VkBool32 res;
 		vkGetPhysicalDeviceSurfaceSupportKHR(
 				Graphics::DEFAULT->physical_device(),
-				Graphics::DEFAULT->find_queue_families().graphics_family.value(),
+				Graphics::DEFAULT->get_queue_index().value(),
 				Graphics::DEFAULT->surface(),
 				&res);
 		if (res != VK_TRUE) {
@@ -251,7 +251,7 @@ namespace vulkan {
 				Graphics::DEFAULT->physical_device(),
 				Graphics::DEFAULT->device(),
 				&_window_data,
-				Graphics::DEFAULT->find_queue_families().graphics_family.value(),
+				Graphics::DEFAULT->get_queue_index().value(),
 				nullptr,
 				width,
 				height,
@@ -311,7 +311,7 @@ namespace vulkan {
 
 		util::require(vkEndCommandBuffer(frame->CommandBuffer));
 		util::require(vkQueueSubmit(
-					Graphics::DEFAULT->graphics_queue(),
+					Graphics::DEFAULT->queue(),
 					1,
 					&submit_info,
 					frame->Fence));
@@ -334,7 +334,7 @@ namespace vulkan {
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = &_window_data.Swapchain;
 		presentInfo.pImageIndices = &_window_data.FrameIndex;
-		VkResult err = vkQueuePresentKHR(Graphics::DEFAULT->graphics_queue(), &presentInfo);
+		VkResult err = vkQueuePresentKHR(Graphics::DEFAULT->queue(), &presentInfo);
 		if (err == VK_ERROR_OUT_OF_DATE_KHR || err == VK_SUBOPTIMAL_KHR) {
 			_swapchain_rebuild = true;
 			return;

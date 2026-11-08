@@ -14,15 +14,6 @@
 namespace vulkan {
 	class Semaphore;
 
-	struct QueueFamilyIndices {
-		std::optional<uint32_t> graphics_family;
-		std::optional<uint32_t> present_family;
-
-		bool isComplete() {
-			return graphics_family.has_value() && present_family.has_value();
-		}
-	};
-
 	class Graphics {
 		public:
 			struct SwapchainSupportDetails;
@@ -47,47 +38,52 @@ namespace vulkan {
 			Sampler const &near_texture_sampler() const;
 			GLFWwindow* window() const;
 			VkCommandPool command_pool() const;
-			VkQueue graphics_queue() const;
-			VkQueue present_queue() const;
-			VkQueue compute_queue() const;
+			VkQueue queue() const;
 			SwapchainSupportDetails const &swapchain_support_details() const;
 			util::Result<uint32_t, Error> find_memory_type(
-					uint32_t type_filter,
-					VkMemoryPropertyFlags properties);
+				uint32_t type_filter,
+				VkMemoryPropertyFlags properties
+			);
 
 			VkFormat find_supported_format(
-					const std::vector<VkFormat>& candidates,
-					VkImageTiling tiling,
-					VkFormatFeatureFlags features) const;
+				const std::vector<VkFormat>& candidates,
+				VkImageTiling tiling,
+				VkFormatFeatureFlags features
+			) const;
 			VkShaderModule create_shader_module(std::string const &code) const;
-			QueueFamilyIndices find_queue_families() const;
+			std::optional<uint32_t> get_queue_index() const;
 			void create_buffer(
-					VkDeviceSize size,
-					VkBufferUsageFlags usage,
-					VkMemoryPropertyFlags properties,
-					VkBuffer& buffer,
-					VkDeviceMemory& buffer_memory) const;
+				VkDeviceSize size,
+				VkBufferUsageFlags usage,
+				VkMemoryPropertyFlags properties,
+				VkBuffer& buffer,
+				VkDeviceMemory& buffer_memory
+			) const;
 			void transition_image_layout(
-					VkImage image,
-					VkFormat format,
-					VkImageLayout old_layout,
-					VkImageLayout new_layout,
-					uint32_t mipLevels) const;
+				VkImage image,
+				VkFormat format,
+				VkImageLayout old_layout,
+				VkImageLayout new_layout,
+				uint32_t mipLevels
+			) const;
 			void copy_buffer_to_image(
-					VkBuffer buffer,
-					VkImage image,
-					uint32_t width,
-					uint32_t height) const;
+				VkBuffer buffer,
+				VkImage image,
+				uint32_t width,
+				uint32_t height
+			) const;
 			void generate_mipmaps(
-					VkImage image,
-					VkFormat image_format,
-					int32_t tex_width,
-					int32_t tex_height,
-					uint32_t mip_levels) const;
+				VkImage image,
+				VkFormat image_format,
+				int32_t tex_width,
+				int32_t tex_height,
+				uint32_t mip_levels
+			) const;
 			void copy_buffer(
-					VkBuffer src_buffer,
-					VkBuffer dst_buffer,
-					VkDeviceSize size) const;
+				VkBuffer src_buffer,
+				VkBuffer dst_buffer,
+				VkDeviceSize size
+			) const;
 			void execute_single_time_command(std::function<void(VkCommandBuffer)>) const;
 
 			void set_debug_name(VkBuffer buffer, std::string const &name);
@@ -109,14 +105,12 @@ namespace vulkan {
 			};
 
 		private:
-			Graphics();
+			Graphics() = default;
 			void _init_window();
 			void _init_vulkan();
 			util::Result<void, Error> _create_instance();
 			util::Result<void, Error> _setup_debug_messenger();
-			void _pick_physical_device();
-			bool _is_device_suitable(VkPhysicalDevice device);
-			bool _check_device_extension_support(VkPhysicalDevice device);
+			std::optional<VkPhysicalDevice> _pick_physical_device();
 			util::Result<void, Error> _create_logical_device();
 			void _create_command_pool();
 			void _create_descriptor_pool();
@@ -126,72 +120,79 @@ namespace vulkan {
 			void _destroy();
 
 			VkResult _create_debug_utils_messenger_EXT(
-					VkInstance instance,
-					const VkDebugUtilsMessengerCreateInfoEXT* p_create_info,
-					const VkAllocationCallbacks* p_allocater,
-					VkDebugUtilsMessengerEXT* p_debug_messenger);
+				VkInstance instance,
+				const VkDebugUtilsMessengerCreateInfoEXT* p_create_info,
+				const VkAllocationCallbacks* p_allocater,
+				VkDebugUtilsMessengerEXT* p_debug_messenger
+			);
 			void _destroy_debug_utils_messenger_EXT(
-					VkInstance instance,
-					VkDebugUtilsMessengerEXT debug_messenger,
-					const VkAllocationCallbacks* p_allocator);
+				VkInstance instance,
+				VkDebugUtilsMessengerEXT debug_messenger,
+				const VkAllocationCallbacks* p_allocator
+			);
 			static void _framebuffer_resize_callback(
-					GLFWwindow* window,
-					 int width,
-					 int height);
+				GLFWwindow* window,
+				int width,
+				int height
+			);
 			std::vector<const char*> _get_required_extensions();
 			void _populate_debug_messenger_create_info(
-					VkDebugUtilsMessengerCreateInfoEXT& create_info);
-			QueueFamilyIndices _find_queue_families(VkPhysicalDevice device) const;
-			SwapchainSupportDetails _query_swap_chain_support(VkPhysicalDevice device);
-			VkSurfaceFormatKHR _choose_swap_surface_format(
-					const std::vector<VkSurfaceFormatKHR>& available_formats);
-			VkPresentModeKHR _choose_swap_present_mode(
-					const std::vector<VkPresentModeKHR>& available_present_modes);
+				VkDebugUtilsMessengerCreateInfoEXT& create_info
+			);
+			std::optional<uint32_t> _get_queue_index(VkPhysicalDevice device) const;
 			VkShaderModule _create_shader_module(const std::string& code) const;
 			uint32_t _find_memory_type(
-					uint32_t type_filter,
-					VkMemoryPropertyFlags properties) const;
+				uint32_t type_filter,
+				VkMemoryPropertyFlags properties
+			) const;
 			void _create_buffer(
-					VkDeviceSize size,
-					VkBufferUsageFlags usage,
-					VkMemoryPropertyFlags properties,
-					VkBuffer& buffer,
-					VkDeviceMemory& buffer_memory) const;
+				VkDeviceSize size,
+				VkBufferUsageFlags usage,
+				VkMemoryPropertyFlags properties,
+				VkBuffer& buffer,
+				VkDeviceMemory& buffer_memory
+			) const;
 			void _copy_buffer(
-					VkBuffer src_buffer,
-					VkBuffer dst_buffer,
-					VkDeviceSize size) const;
+				VkBuffer src_buffer,
+				VkBuffer dst_buffer,
+				VkDeviceSize size
+			) const;
 			VkCommandBuffer _begin_single_time_commands() const;
 			void _end_single_time_commands(VkCommandBuffer command_buffer) const;
 			void _transition_image_layout(
-					VkImage image,
-					VkFormat format,
-					VkImageLayout old_layout,
-					VkImageLayout new_layout,
-					uint32_t mip_levels) const;
+				VkImage image,
+				VkFormat format,
+				VkImageLayout old_layout,
+				VkImageLayout new_layout,
+				uint32_t mip_levels
+			) const;
 			void _copy_buffer_to_image(
-					VkBuffer buffer,
-					VkImage image,
-					uint32_t width,
-					uint32_t height) const;
+				VkBuffer buffer,
+				VkImage image,
+				uint32_t width,
+				uint32_t height
+			) const;
 			VkFormat _find_supported_format(
-					const std::vector<VkFormat>& candidates,
-					VkImageTiling tiling,
-					VkFormatFeatureFlags features) const;
+				const std::vector<VkFormat>& candidates,
+				VkImageTiling tiling,
+				VkFormatFeatureFlags features
+			) const;
 			VkFormat _find_depth_format();
 			bool _has_stencil_component(VkFormat format) const;
 			void _generate_mipmaps(
-					VkImage image,
-					VkFormat image_format,
-					int32_t tex_width,
-					int32_t tex_height,
-					uint32_t mip_levels) const;
+				VkImage image,
+				VkFormat image_format,
+				int32_t tex_width,
+				int32_t tex_height,
+				uint32_t mip_levels
+			) const;
 
 			static VKAPI_ATTR VkBool32 VKAPI_CALL _debug_callback(
 				VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
 				VkDebugUtilsMessageTypeFlagsEXT message_typedata,
 				const VkDebugUtilsMessengerCallbackDataEXT * p_callback_data,
-				void* p_user_data);
+				void* p_user_data
+			);
 
 			void _set_debug_name(VkObjectType type, void *addr, std::string const &name);
 
@@ -202,9 +203,7 @@ namespace vulkan {
 			VkDebugUtilsMessengerEXT _debug_messenger = nullptr;
 			VkPhysicalDevice _physical_device = nullptr;
 			VkDevice _device = nullptr;
-			VkQueue _graphics_queue = nullptr;
-			VkQueue _present_queue = nullptr;
-			VkQueue _compute_queue = nullptr;
+			VkQueue _queue = nullptr;
 			VkSurfaceKHR _surface = nullptr;
 			VkDescriptorPool _descriptor_pool = nullptr;
 			VkCommandPool _command_pool = nullptr;
