@@ -225,8 +225,10 @@ namespace vulkan {
 			log_error() << "No WSI support on physical device 0" << std::endl;
 		}
 
+		// TODO: error handling if format is unsupported?
     const VkFormat requestSurfaceImageFormat[] = {
-			VK_FORMAT_R8G8B8A8_UNORM
+			VK_FORMAT_R8G8B8A8_UNORM,
+			VK_FORMAT_B8G8R8A8_UNORM,
 		};
    	const VkColorSpaceKHR requestSurfaceColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
 
