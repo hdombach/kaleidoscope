@@ -28,7 +28,7 @@ namespace vulkan {
 
 		auto image_size = (VkDeviceSize) tex_width * texHeight * 4;
 
-		result->_mip_levels = 1;
+		result->_mip_levels = 0;
 
 		if (!pixels) {
 			return BaseError(util::f("Problem loading image from file: ", url));
@@ -73,7 +73,7 @@ namespace vulkan {
 				VK_FORMAT_R8G8B8A8_UNORM,
 				VK_IMAGE_LAYOUT_UNDEFINED,
 				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-				1);
+				0);
 
 		Graphics::DEFAULT->copy_buffer_to_image(
 				staging_buffer,
@@ -84,11 +84,13 @@ namespace vulkan {
 		vkDestroyBuffer(Graphics::DEFAULT->device(), staging_buffer, nullptr);
 		vkFreeMemory(Graphics::DEFAULT->device(), staging_buffer_memory, nullptr);
 
-		Graphics::DEFAULT->generate_mipmaps(result->_image.image(),
-				VK_FORMAT_R8G8B8A8_UNORM,
-				tex_width,
-				texHeight,
-				result->_mip_levels);
+		// Breaks with deferred rendering. The GPU automatically tries to calculate
+		// gradients at the borders of triangles
+		//Graphics::DEFAULT->generate_mipmaps(result->_image.image(),
+		//		VK_FORMAT_R8G8B8A8_UNORM,
+		//		tex_width,
+		//		texHeight,
+		//		result->_mip_levels);
 
 		result->_imgui_descriptor_set = ImGui_ImplVulkan_AddTexture(
 				*Graphics::DEFAULT->main_texture_sampler(),

@@ -11,7 +11,6 @@ namespace vulkan {
 
 		sampler_info.magFilter = VK_FILTER_LINEAR;
 		sampler_info.minFilter = VK_FILTER_LINEAR;
-		sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
 		auto err = vkCreateSampler(Graphics::DEFAULT->device(), &sampler_info, nullptr, &result._sampler);
 		if (err != VK_SUCCESS) {
@@ -28,7 +27,6 @@ namespace vulkan {
 
 		sampler_info.magFilter = VK_FILTER_NEAREST;
 		sampler_info.minFilter = VK_FILTER_NEAREST;
-		sampler_info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
 
 		auto err = vkCreateSampler(Graphics::DEFAULT->device(), &sampler_info, nullptr, &result._sampler);
 		if (err != VK_SUCCESS) {
@@ -76,13 +74,14 @@ namespace vulkan {
 		info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		info.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
 		info.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		info.anisotropyEnable = VK_TRUE;
+		// Disable because it causes artifacts in deferred rendering.
+		info.anisotropyEnable = VK_FALSE;
 		info.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
 		info.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
 		info.unnormalizedCoordinates = VK_FALSE;
 		info.compareEnable = VK_FALSE;
 		info.compareOp = VK_COMPARE_OP_ALWAYS;
-		info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+		info.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
 		info.minLod = 0;
 		info.maxLod = 0;
 		info.mipLodBias = 0.0f;
