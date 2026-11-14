@@ -216,7 +216,7 @@ namespace vulkan {
 		_window_data.Surface = Graphics::DEFAULT->surface();
 
 		VkBool32 res;
-		vkGetPhysicalDeviceSurfaceSupportKHR(
+		res = vkGetPhysicalDeviceSurfaceSupportKHR(
 				Graphics::DEFAULT->physical_device(),
 				Graphics::DEFAULT->get_queue_index().value(),
 				Graphics::DEFAULT->surface(),
